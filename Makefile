@@ -1,8 +1,6 @@
-verichess: verichess.sv
-	iverilog -Wall -o verichess verichess.sv
-
-test: verichess
-	./verichess
+SRC := tb.sv vchess.sv
+vchess: $(SRC)
+	iverilog -Wall -o tb $(SRC)
 
 clean:
-	rm -f verichess wave.vcd
+	rm -f tb wave.vcd
