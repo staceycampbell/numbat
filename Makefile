@@ -1,4 +1,4 @@
-SRC := tb.sv vchess.sv
+SRC := tb.sv vchess.sv display_board.sv
 vchess: $(SRC)
 	iverilog -Wall -o tb $(SRC)
 

@@ -12,6 +12,8 @@ module tb;
    integer i;
 
    reg [BOARD_WIDTH - 1:0] board;
+   reg                     board_valid = 0;
+   reg                     white_to_move = 1;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -52,17 +54,29 @@ module tb;
         t <= t + 1;
         reset <= t < 64;
 
+        board_valid <= t == 72;
+        white_to_move <= 1;
+
         if (t >= 512)
           $finish;
      end
 
    /* vchess AUTO_TEMPLATE (
     );*/
-   vchess vchess
+   vchess #
+     (
+      .PIECE_WIDTH (PIECE_WIDTH),
+      .ROW_WIDTH (ROW_WIDTH),
+      .BOARD_WIDTH (BOARD_WIDTH)
+      )
+   vchess
      (/*AUTOINST*/
       // Inputs
       .reset                            (reset),
-      .clk                              (clk));
+      .clk                              (clk),
+      .board                            (board[BOARD_WIDTH-1:0]),
+      .board_valid                      (board_valid),
+      .white_to_move                    (white_to_move));
 
 endmodule
 
