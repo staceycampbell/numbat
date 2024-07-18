@@ -13,7 +13,7 @@ module display_board #
     );
 
    reg [7:0]                  piece_char [0:(1 << PIECE_WIDTH) - 1];
-   reg [$clog2(BOARD_WIDTH) - 1:0] index;
+   reg [$clog2(BOARD_WIDTH) - 1:0] index, row_start;
    reg [2:0]                       col;
 
    initial
@@ -45,7 +45,8 @@ module display_board #
        case (state)
          STATE_INIT :
            begin
-              index <= 0;
+              row_start <= ROW_WIDTH * 7;
+              index <= ROW_WIDTH * 7;
               col <= 0;
               if (display)
                 state <= STATE_ROW;
@@ -57,11 +58,13 @@ module display_board #
               if (col == 7)
                 begin
                    col <= 0;
+                   row_start <= row_start - ROW_WIDTH;
+                   index <= row_start - ROW_WIDTH;
                    $write("\n");
                 end
               else
                 col <= col + 1;
-              if (index == BOARD_WIDTH - PIECE_WIDTH)
+              if (index == ROW_WIDTH - PIECE_WIDTH)
                 state <= STATE_INIT;
            end
        endcase
