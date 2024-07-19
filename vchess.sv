@@ -1,7 +1,7 @@
 module vchess #
   (
    parameter PIECE_WIDTH = 0,
-   parameter ROW_WIDTH = 0,
+   parameter SIDE_WIDTH = 0,
    parameter BOARD_WIDTH = 0
    )
    (
@@ -30,7 +30,7 @@ module vchess #
    display_board #
      (
       .PIECE_WIDTH (PIECE_WIDTH),
-      .ROW_WIDTH (ROW_WIDTH),
+      .SIDE_WIDTH (SIDE_WIDTH),
       .BOARD_WIDTH (BOARD_WIDTH)
       )
    display_board
@@ -53,7 +53,7 @@ module vchess #
              is_attacked #
                    (
                     .PIECE_WIDTH (PIECE_WIDTH),
-                    .ROW_WIDTH (ROW_WIDTH),
+                    .SIDE_WIDTH (SIDE_WIDTH),
                     .BOARD_WIDTH (BOARD_WIDTH),
                     .ATTACKER (`WHITE_ATTACK),
                     .ROW (row),
@@ -77,7 +77,7 @@ module vchess #
              is_attacked #
                (
                 .PIECE_WIDTH (PIECE_WIDTH),
-                .ROW_WIDTH (ROW_WIDTH),
+                .SIDE_WIDTH (SIDE_WIDTH),
                 .BOARD_WIDTH (BOARD_WIDTH),
                 .ATTACKER (`BLACK_ATTACK),
                 .ROW (row),

@@ -1,7 +1,7 @@
 module display_board #
   (
    parameter PIECE_WIDTH = 0,
-   parameter ROW_WIDTH = 0,
+   parameter SIDE_WIDTH = 0,
    parameter BOARD_WIDTH = 0
    )
    (
@@ -45,8 +45,8 @@ module display_board #
        case (state)
          STATE_INIT :
            begin
-              row_start <= ROW_WIDTH * 7;
-              index <= ROW_WIDTH * 7;
+              row_start <= SIDE_WIDTH * 7;
+              index <= SIDE_WIDTH * 7;
               col <= 0;
               if (display)
                 state <= STATE_ROW;
@@ -58,13 +58,13 @@ module display_board #
               if (col == 7)
                 begin
                    col <= 0;
-                   row_start <= row_start - ROW_WIDTH;
-                   index <= row_start - ROW_WIDTH;
+                   row_start <= row_start - SIDE_WIDTH;
+                   index <= row_start - SIDE_WIDTH;
                    $write("\n");
                 end
               else
                 col <= col + 1;
-              if (index == ROW_WIDTH - PIECE_WIDTH)
+              if (index == SIDE_WIDTH - PIECE_WIDTH)
                 state <= STATE_INIT;
            end
        endcase
