@@ -18,7 +18,7 @@ module display_board #
 
    initial
      begin
-        piece_char[0] = ".";
+        piece_char[`EMPTY_POSN] = ".";
         piece_char[`WHITE_PAWN] = "P";
         piece_char[`WHITE_ROOK] = "R";
         piece_char[`WHITE_KNIT] = "N";
@@ -31,7 +31,7 @@ module display_board #
         piece_char[`BLACK_BISH] = "b";
         piece_char[`BLACK_KING] = "k";
         piece_char[`BLACK_QUEN] = "q";
-     end // initial begin
+     end
 
    localparam STATE_INIT = 0;
    localparam STATE_ROW = 1;

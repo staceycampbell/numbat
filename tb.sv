@@ -24,7 +24,8 @@ module tb;
      begin
         $dumpfile("wave.vcd");
         $dumpvars(0, tb);
-        board = 0; // wipe the board
+        for (i = 0; i < 64; i = i + 1)
+          board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
         board[0 * ROW_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
         board[0 * ROW_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KNIT;
         board[0 * ROW_WIDTH + 2 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_BISH;

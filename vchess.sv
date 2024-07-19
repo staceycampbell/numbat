@@ -7,7 +7,7 @@ module vchess #
    (
     input                     reset,
     input                     clk,
-
+   
     input [BOARD_WIDTH - 1:0] board,
     input                     board_valid,
     input                     white_to_move
@@ -22,7 +22,7 @@ module vchess #
    wire [63:0]                attacked_white, attacked_black;
    wire [63:0]                attacked_white_valid, attacked_black_valid;
 
-   genvar                     rank, file;
+   genvar                     row, col;
 
    /* display_board AUTO_TEMPLATE (
     .display (board_valid),
@@ -42,37 +42,37 @@ module vchess #
       .display                          (board_valid));           // Templated
 
    generate
-      for (rank = 0; rank < 8; rank = rank + 1)
-        for (file = 0; file < 8; file = file + 1)
+      for (row = 0; row < 8; row = row + 1)
+        for (col = 0; col < 8; col = col + 1)
           begin : is_attacked_block
 
              /* is_attacked AUTO_TEMPLATE (
-              .attacked (attacked_white[rank << 3 | file]),
-              .attacked_valid (attacked_white_valid[rank << 3 | file]),
+              .attacked (attacked_white[row << 3 | col]),
+              .attacked_valid (attacked_white_valid[row << 3 | col]),
               );*/
              is_attacked #
-                    (
-                     .PIECE_WIDTH (PIECE_WIDTH),
-                     .ROW_WIDTH (ROW_WIDTH),
-                     .BOARD_WIDTH (BOARD_WIDTH),
-                     .ATTACKER (`WHITE_ATTACK),
-                     .RANK (rank),
-                     .FILE (file)
-                     )
+                   (
+                    .PIECE_WIDTH (PIECE_WIDTH),
+                    .ROW_WIDTH (ROW_WIDTH),
+                    .BOARD_WIDTH (BOARD_WIDTH),
+                    .ATTACKER (`WHITE_ATTACK),
+                    .ROW (row),
+                    .COL (col)
+                    )
              is_attacked_white
-                    (/*AUTOINST*/
-                     // Outputs
-                     .attacked          (attacked_white[rank << 3 | file]), // Templated
-                     .attacked_valid    (attacked_white_valid[rank << 3 | file]), // Templated
-                     // Inputs
-                     .clk               (clk),
-                     .reset             (reset),
-                     .board             (board[BOARD_WIDTH-1:0]),
-                     .board_valid       (board_valid));
+                   (/*AUTOINST*/
+                    // Outputs
+                    .attacked           (attacked_white[row << 3 | col]), // Templated
+                    .attacked_valid     (attacked_white_valid[row << 3 | col]), // Templated
+                    // Inputs
+                    .clk                (clk),
+                    .reset              (reset),
+                    .board              (board[BOARD_WIDTH-1:0]),
+                    .board_valid        (board_valid));
              
              /* is_attacked AUTO_TEMPLATE (
-              .attacked (attacked_black[rank << 3 | file]),
-              .attacked_valid (attacked_black_valid[rank << 3 | file]),
+              .attacked (attacked_black[row << 3 | col]),
+              .attacked_valid (attacked_black_valid[row << 3 | col]),
               );*/
              is_attacked #
                (
@@ -80,14 +80,14 @@ module vchess #
                 .ROW_WIDTH (ROW_WIDTH),
                 .BOARD_WIDTH (BOARD_WIDTH),
                 .ATTACKER (`BLACK_ATTACK),
-                .RANK (rank),
-                .FILE (file)
+                .ROW (row),
+                .COL (col)
                 )
              is_attacked_black
                (/*AUTOINST*/
                 // Outputs
-                .attacked               (attacked_black[rank << 3 | file]), // Templated
-                .attacked_valid         (attacked_black_valid[rank << 3 | file]), // Templated
+                .attacked               (attacked_black[row << 3 | col]), // Templated
+                .attacked_valid         (attacked_black_valid[row << 3 | col]), // Templated
                 // Inputs
                 .clk                    (clk),
                 .reset                  (reset),
