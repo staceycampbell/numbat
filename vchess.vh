@@ -14,7 +14,7 @@
 `define BLACK_KING (1 << 12)
 `define BLACK_QUEN (1 << 13)
 
-`define PIECE_BITS 14
+`define PIECE_BITS 16
 
 `define WHITE_ATTACK 0
 `define BLACK_ATTACK 1

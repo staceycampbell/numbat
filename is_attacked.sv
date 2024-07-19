@@ -32,18 +32,25 @@ module is_attacked #
 
    initial
      begin
+        $dumpfile("wave.vcd");
+        for (i = 0; i <= 6; i = i + 1)
+          begin
+             $dumpvars(0, rook_row_pattern[i]);
+             $dumpvars(0, rook_col_pattern[i]);
+          end
+        
         idx = 0;
         for (i = 0; i < 8; i = i + 1)
           if (i != COL)
             begin
                for (j = 0; j < 8; j = j + 1)
                  rook_row_pattern[idx][j * PIECE_WIDTH+:PIECE_WIDTH] = 0;
-               rook_row_pattern[idx][idx * PIECE_WIDTH+:PIECE_WIDTH] = ATTACK_ROOK;
-               if (idx < COL)
-                 for (j = idx + 1; j < COL; j = j + 1)
+               rook_row_pattern[idx][i * PIECE_WIDTH+:PIECE_WIDTH] = ATTACK_ROOK;
+               if (i < COL)
+                 for (j = i + 1; j < COL; j = j + 1)
                    rook_row_pattern[idx][j * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
                else
-                 for (j = COL + 1; j < idx; j = j + 1)
+                 for (j = COL + 1; j < i; j = j + 1)
                    rook_row_pattern[idx][j * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
                idx = idx + 1;
             end
@@ -53,12 +60,12 @@ module is_attacked #
             begin
                for (j = 0; j < 8; j = j + 1)
                  rook_col_pattern[idx][j * PIECE_WIDTH+:PIECE_WIDTH] = 0;
-               rook_col_pattern[idx][idx * PIECE_WIDTH+:PIECE_WIDTH] = ATTACK_ROOK;
-               if (idx < ROW)
-                 for (j = idx + 1; j < ROW; j = j + 1)
+               rook_col_pattern[idx][i * PIECE_WIDTH+:PIECE_WIDTH] = ATTACK_ROOK;
+               if (i < ROW)
+                 for (j = i + 1; j < ROW; j = j + 1)
                    rook_col_pattern[idx][j * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
                else
-                 for (j = ROW + 1; j < idx; j = j + 1)
+                 for (j = ROW + 1; j < i; j = j + 1)
                    rook_col_pattern[idx][j * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
                idx = idx + 1;
             end
