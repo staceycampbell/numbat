@@ -30,23 +30,23 @@ module is_attacked #
    localparam ATTACK_KING = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_KING : `BLACK_KING);
    localparam ATTACK_PAWN = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_PAWN : `BLACK_PAWN);
 
-   localparam ATTACK_COUNT = 14;
+   localparam ATTACK_COUNT = 28;
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
    reg [PIECE_WIDTH2 - 1:0]   attack_array [0:7][0:7];
 
-   integer                    idx, i, j, ai, aj, f;
+   integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
 
    wire [BOARD_WIDTH2 - 1:0]  board2;
 
    initial
      begin
-        $dumpfile("wave.vcd");
-        for (i = 0; i < ATTACK_COUNT; i = i + 1)
-          begin
-             $dumpvars(0, attack_mask[i]);
-          end
+//        $dumpfile("wave.vcd");
+//        for (i = 0; i < ATTACK_COUNT; i = i + 1)
+//          begin
+//             $dumpvars(0, attack_mask[i]);
+//          end
         for (idx = 0; idx < ATTACK_COUNT; idx = idx + 1)
           attack_mask[idx] = 0; // default is "don't care"
         idx = 0;
@@ -84,6 +84,55 @@ module is_attacked #
                    attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
                idx = idx + 1;
             end
+        // bishop, queen, diag 0
+        i = ROW - 1;
+        j = COL - 1;
+        while (i >= 0 && j >= 0)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][j] = ATTACK_BISH | ATTACK_QUEN;
+             fi = i + 1;
+             fj = j + 1;
+             while (fi < ROW && fj < COL)
+               begin
+                  attack_array[fi][fj] = EMPTY_POSN2;
+                  fi = fi + 1;
+                  fj = fj + 1;
+               end
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+             i = i - 1;
+             j = j - 1;
+          end
+        // bishop, queen, diag 1
+        i = ROW + 1;
+        j = COL + 1;
+        while (i < 8 && j < 8)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][j] = ATTACK_BISH | ATTACK_QUEN;
+             fi = i - 1;
+             fj = j - 1;
+             while (fi > ROW && fj > COL)
+               begin
+                  attack_array[fi][fj] = EMPTY_POSN2;
+                  fi = fi - 1;
+                  fj = fj - 1;
+               end
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+             i = i + 1;
+             j = j + 1;
+          end
+        $display("%d", idx);
      end
 
    generate
