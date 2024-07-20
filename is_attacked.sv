@@ -132,6 +132,54 @@ module is_attacked #
              i = i + 1;
              j = j + 1;
           end
+        // bishop, queen, diag 2
+        i = ROW - 1;
+        j = COL + 1;
+        while (i >= 0 && j < 8)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][j] = ATTACK_BISH | ATTACK_QUEN;
+             fi = i + 1;
+             fj = j - 1;
+             while (fi < ROW && fj > COL)
+               begin
+                  attack_array[fi][fj] = EMPTY_POSN2;
+                  fi = fi + 1;
+                  fj = fj - 1;
+               end
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+             i = i - 1;
+             j = j + 1;
+          end
+        // bishop, queen, diag 3
+        i = ROW + 1;
+        j = COL - 1;
+        while (i < 8 && j < 8)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][j] = ATTACK_BISH | ATTACK_QUEN;
+             fi = i - 1;
+             fj = j + 1;
+             while (fi > ROW && fj < COL)
+               begin
+                  attack_array[fi][fj] = EMPTY_POSN2;
+                  fi = fi - 1;
+                  fj = fj + 1;
+               end
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+             i = i + 1;
+             j = j - 1;
+          end
         $display("%d", idx);
      end
 
