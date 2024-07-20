@@ -15,6 +15,7 @@
 `define BLACK_QUEN 13
 
 `define PIECE_BITS 4
+`define PIECE_MASK_BITS 14
 
 `define WHITE_ATTACK 0
 `define BLACK_ATTACK 1

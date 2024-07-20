@@ -18,9 +18,9 @@ module is_attacked #
     output reg                attacked_valid
     );
 
-   localparam PIECE_WIDTH2 = 1 << PIECE_WIDTH;
+   localparam PIECE_WIDTH2 = `PIECE_MASK_BITS;
    localparam SIDE_WIDTH2 = PIECE_WIDTH2 * 8;
-   localparam BOARD_WIDTH2 = PIECE_WIDTH2 * 64;
+   localparam BOARD_WIDTH2 = SIDE_WIDTH2 * 8;
 
    localparam EMPTY_POSN2 = 1 << `EMPTY_POSN;
    localparam ATTACK_ROOK = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_ROOK : `BLACK_ROOK);
@@ -33,41 +33,55 @@ module is_attacked #
    localparam ATTACK_COUNT = 14;
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
+   reg [PIECE_WIDTH2 - 1:0]   attack_array [0:7][0:7];
 
-   integer                    idx, i, j, a;
+   integer                    idx, i, j, ai, aj, f;
    genvar                     gen_i;
 
    wire [BOARD_WIDTH2 - 1:0]  board2;
 
    initial
      begin
-        //        $dumpfile("wave.vcd");
-        //        for (i = 0; i <= 6; i = i + 1)
-        //          begin
-        //          end
+        $dumpfile("wave.vcd");
+        for (i = 0; i < ATTACK_COUNT; i = i + 1)
+          begin
+             $dumpvars(0, attack_mask[i]);
+          end
         for (idx = 0; idx < ATTACK_COUNT; idx = idx + 1)
           attack_mask[idx] = 0; // default is "don't care"
         idx = 0;
         // rook, queen, horizontal
-        for (i = 0; i < 8; i = i + 1)
-          if (i != COL)
+        for (j = 0; j < 8; j = j + 1)
+          if (j != COL)
             begin
-               attack_mask[idx][ROW * SIDE_WIDTH2 + i * PIECE_WIDTH2+:PIECE_WIDTH2] = ATTACK_ROOK | ATTACK_QUEN;
-               for (j = i + 1; j < COL; j = j + 1)
-                 attack_mask[idx][ROW * SIDE_WIDTH2 + j * PIECE_WIDTH2+:PIECE_WIDTH2] = EMPTY_POSN2;
-               for (j = COL + 1; j < i - 1; j = j + 1)
-                 attack_mask[idx][ROW * SIDE_WIDTH2 + j * PIECE_WIDTH2+:PIECE_WIDTH2] = EMPTY_POSN2;
+               for (ai = 0; ai < 8; ai = ai + 1)
+                 for (aj = 0; aj < 8; aj = aj + 1)
+                   attack_array[ai][aj] = 0;
+               attack_array[ROW][j] = ATTACK_ROOK | ATTACK_QUEN;
+               for (f = j + 1; f < COL; f = f + 1)
+                 attack_array[ROW][f] = EMPTY_POSN2;
+               for (f = COL + 1; f < j - 1; f = f + 1)
+                 attack_array[ROW][f] = EMPTY_POSN2;
+               for (ai = 0; ai < 8; ai = ai + 1)
+                 for (aj = 0; aj < 8; aj = aj + 1)
+                   attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
                idx = idx + 1;
             end
-        // rook, queen, vertical 
+        // rook, queen, vertical
         for (i = 0; i < 8; i = i + 1)
           if (i != ROW)
             begin
-               attack_mask[idx][COL * PIECE_WIDTH2 + i * SIDE_WIDTH2+:PIECE_WIDTH2] = ATTACK_ROOK | ATTACK_QUEN;
-               for (j = i + 1; j < ROW; j = j + 1)
-                 attack_mask[idx][COL * PIECE_WIDTH2 + j * SIDE_WIDTH2+:PIECE_WIDTH2] = EMPTY_POSN2;
-               for (j = ROW + 1; j < i - 1; j = j + 1)
-                 attack_mask[idx][COL * PIECE_WIDTH2 + j * SIDE_WIDTH2+:PIECE_WIDTH2] = EMPTY_POSN2;
+               for (ai = 0; ai < 8; ai = ai + 1)
+                 for (aj = 0; aj < 8; aj = aj + 1)
+                   attack_array[ai][aj] = 0;
+               attack_array[i][COL] = ATTACK_ROOK | ATTACK_QUEN;
+               for (f = i + 1; f < ROW; f = f + 1)
+                 attack_array[f][COL] = EMPTY_POSN2;
+               for (f = ROW + 1; f < i; f = f + 1)
+                 attack_array[f][COL] = EMPTY_POSN2;
+               for (ai = 0; ai < 8; ai = ai + 1)
+                 for (aj = 0; aj < 8; aj = aj + 1)
+                   attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
                idx = idx + 1;
             end
      end

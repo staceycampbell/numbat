@@ -43,58 +43,59 @@ module vchess #
 
    generate
       for (row = 0; row < 8; row = row + 1)
-        for (col = 0; col < 8; col = col + 1)
-          begin : is_attacked_block
+        begin : row_attacked_blk
+           for (col = 0; col < 8; col = col + 1)
+             begin : col_attacked_block
 
-             /* is_attacked AUTO_TEMPLATE (
-              .attacked (attacked_white[row << 3 | col]),
-              .attacked_valid (attacked_white_valid[row << 3 | col]),
-              );*/
-             is_attacked #
-                   (
-                    .PIECE_WIDTH (PIECE_WIDTH),
-                    .SIDE_WIDTH (SIDE_WIDTH),
-                    .BOARD_WIDTH (BOARD_WIDTH),
-                    .ATTACKER (`WHITE_ATTACK),
-                    .ROW (row),
-                    .COL (col)
-                    )
-             is_attacked_white
-                   (/*AUTOINST*/
-                    // Outputs
-                    .attacked           (attacked_white[row << 3 | col]), // Templated
-                    .attacked_valid     (attacked_white_valid[row << 3 | col]), // Templated
-                    // Inputs
-                    .clk                (clk),
-                    .reset              (reset),
-                    .board              (board[BOARD_WIDTH-1:0]),
-                    .board_valid        (board_valid));
-             
-             /* is_attacked AUTO_TEMPLATE (
-              .attacked (attacked_black[row << 3 | col]),
-              .attacked_valid (attacked_black_valid[row << 3 | col]),
-              );*/
-             is_attacked #
-               (
-                .PIECE_WIDTH (PIECE_WIDTH),
-                .SIDE_WIDTH (SIDE_WIDTH),
-                .BOARD_WIDTH (BOARD_WIDTH),
-                .ATTACKER (`BLACK_ATTACK),
-                .ROW (row),
-                .COL (col)
-                )
-             is_attacked_black
-               (/*AUTOINST*/
-                // Outputs
-                .attacked               (attacked_black[row << 3 | col]), // Templated
-                .attacked_valid         (attacked_black_valid[row << 3 | col]), // Templated
-                // Inputs
-                .clk                    (clk),
-                .reset                  (reset),
-                .board                  (board[BOARD_WIDTH-1:0]),
-                .board_valid            (board_valid));
-             
-          end
+                /* is_attacked AUTO_TEMPLATE (
+                 .attacked (attacked_white[row << 3 | col]),
+                 .attacked_valid (attacked_white_valid[row << 3 | col]),
+                 );*/
+                is_attacked #
+                      (
+                       .PIECE_WIDTH (PIECE_WIDTH),
+                       .SIDE_WIDTH (SIDE_WIDTH),
+                       .BOARD_WIDTH (BOARD_WIDTH),
+                       .ATTACKER (`WHITE_ATTACK),
+                       .ROW (row),
+                       .COL (col)
+                       )
+                is_attacked_white
+                      (/*AUTOINST*/
+                       // Outputs
+                       .attacked        (attacked_white[row << 3 | col]), // Templated
+                       .attacked_valid  (attacked_white_valid[row << 3 | col]), // Templated
+                       // Inputs
+                       .clk             (clk),
+                       .reset           (reset),
+                       .board           (board[BOARD_WIDTH-1:0]),
+                       .board_valid     (board_valid));
+                
+                /* is_attacked AUTO_TEMPLATE (
+                 .attacked (attacked_black[row << 3 | col]),
+                 .attacked_valid (attacked_black_valid[row << 3 | col]),
+                 );*/
+                is_attacked #
+                  (
+                   .PIECE_WIDTH (PIECE_WIDTH),
+                   .SIDE_WIDTH (SIDE_WIDTH),
+                   .BOARD_WIDTH (BOARD_WIDTH),
+                   .ATTACKER (`BLACK_ATTACK),
+                   .ROW (row),
+                   .COL (col)
+                   )
+                is_attacked_black
+                  (/*AUTOINST*/
+                   // Outputs
+                   .attacked            (attacked_black[row << 3 | col]), // Templated
+                   .attacked_valid      (attacked_black_valid[row << 3 | col]), // Templated
+                   // Inputs
+                   .clk                 (clk),
+                   .reset               (reset),
+                   .board               (board[BOARD_WIDTH-1:0]),
+                   .board_valid         (board_valid));
+             end
+        end
    endgenerate
 
 endmodule // vchess
