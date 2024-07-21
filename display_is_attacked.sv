@@ -55,6 +55,7 @@ module display_is_attacked
                 col <= col + 1;
               if (index == SIDE_WIDTH - PIECE_WIDTH)
                 begin
+                   $write("\n");
                    display_done = 1;
                    state <= STATE_INIT;
                 end
