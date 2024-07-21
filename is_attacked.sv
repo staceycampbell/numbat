@@ -30,7 +30,7 @@ module is_attacked #
    localparam ATTACK_KING = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_KING : `BLACK_KING);
    localparam ATTACK_PAWN = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_PAWN : `BLACK_PAWN);
 
-   localparam ATTACK_COUNT = 31;
+   localparam ATTACK_COUNT = 34;
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
    reg [PIECE_WIDTH2 - 1:0]   attack_array [0:7][0:7];
@@ -39,6 +39,8 @@ module is_attacked #
    reg                        board_valid_t1;
 
    reg signed [2:0]           knight_offset_x [0:7], knight_offset_y [0:7];
+
+   integer                    idx_test;
 
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
@@ -226,13 +228,14 @@ module is_attacked #
             attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
         idx = idx + 1;
         // pawn
+        idx_test = idx;
         for (ai = 0; ai < 8; ai = ai + 1)
           for (aj = 0; aj < 8; aj = aj + 1)
             attack_array[ai][aj] = 0;
         if (ATTACKER == `WHITE_ATTACK)
-          fi = ROW + 1;
-        else
           fi = ROW - 1;
+        else
+          fi = ROW + 1;
         if (fi >= 0 && fi < 8)
           begin
              fj = COL - 1;
@@ -247,7 +250,7 @@ module is_attacked #
             attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
         idx = idx + 1;
         
-        $display("%d", idx);
+        $display("%d %d %d", ROW, COL, idx);
      end
 
    generate
@@ -260,7 +263,11 @@ module is_attacked #
    always @(posedge clk)
      begin
         for (i = 0; i < ATTACK_COUNT; i = i + 1)
-          attack_list_t1[i] <= (board2_t0 & attack_mask[i]) != 0;
+          if (attack_mask[i] != 0)
+            attack_list_t1[i] <= (board2_t0 & attack_mask[i]) == attack_mask[i];
+          else
+            attack_list_t1[i] <= 1'b0;
+
         attacked <= attack_list_t1 != 0;
         
         board_valid_t1 <= board_valid_t0;
