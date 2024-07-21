@@ -34,13 +34,17 @@ module is_attacked #
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
    reg [PIECE_WIDTH2 - 1:0]   attack_array [0:7][0:7];
+   reg [ATTACK_COUNT - 1:0]   attack_list_t1;
+   reg                        attacked_valid_t1;
+   reg                        board_valid_t1;
 
    reg signed [2:0]           knight_offset_x [0:7], knight_offset_y [0:7];
 
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
 
-   wire [BOARD_WIDTH2 - 1:0]  board2;
+   wire [BOARD_WIDTH2 - 1:0]  board2_t0;
+   wire                       board_valid_t0 = board_valid;
 
    initial
      begin
@@ -249,8 +253,18 @@ module is_attacked #
    generate
       for (gen_i = 0; gen_i < 64; gen_i = gen_i + 1)
         begin : bitmap_assign_blk
-           assign board2[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] = 1 << (board[gen_i * PIECE_WIDTH+:PIECE_WIDTH]);
+           assign board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] = 1 << (board[gen_i * PIECE_WIDTH+:PIECE_WIDTH]);
         end
    endgenerate
+
+   always @(posedge clk)
+     begin
+        for (i = 0; i < ATTACK_COUNT; i = i + 1)
+          attack_list_t1[i] <= (board2_t0 & attack_mask[i]) != 0;
+        attacked <= attack_list_t1 != 0;
+        
+        board_valid_t1 <= board_valid_t0;
+        attacked_valid <= board_valid_t1;
+     end
 
 endmodule
