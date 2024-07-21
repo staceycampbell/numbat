@@ -30,10 +30,12 @@ module is_attacked #
    localparam ATTACK_KING = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_KING : `BLACK_KING);
    localparam ATTACK_PAWN = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_PAWN : `BLACK_PAWN);
 
-   localparam ATTACK_COUNT = 28;
+   localparam ATTACK_COUNT = 30;
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
    reg [PIECE_WIDTH2 - 1:0]   attack_array [0:7][0:7];
+
+   reg signed [2:0]           knight_offset_x [0:7], knight_offset_y [0:7];
 
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
@@ -42,11 +44,11 @@ module is_attacked #
 
    initial
      begin
-//        $dumpfile("wave.vcd");
-//        for (i = 0; i < ATTACK_COUNT; i = i + 1)
-//          begin
-//             $dumpvars(0, attack_mask[i]);
-//          end
+        //        $dumpfile("wave.vcd");
+        //        for (i = 0; i < ATTACK_COUNT; i = i + 1)
+        //          begin
+        //             $dumpvars(0, attack_mask[i]);
+        //          end
         for (idx = 0; idx < ATTACK_COUNT; idx = idx + 1)
           attack_mask[idx] = 0; // default is "don't care"
         idx = 0;
@@ -180,6 +182,30 @@ module is_attacked #
              i = i + 1;
              j = j - 1;
           end
+        // knight
+        knight_offset_x[0] = -2; knight_offset_y[0] = -1;
+        knight_offset_x[1] = -1; knight_offset_y[1] = -2;
+        knight_offset_x[2] = +1; knight_offset_y[2] = -2;
+        knight_offset_x[3] = +2; knight_offset_y[3] = -1;
+        knight_offset_x[4] = +2; knight_offset_y[4] = +1;
+        knight_offset_x[5] = +1; knight_offset_y[5] = +2;
+        knight_offset_x[6] = -1; knight_offset_y[6] = +2;
+        knight_offset_x[7] = -2; knight_offset_y[7] = +1;
+        for (ai = 0; ai < 8; ai = ai + 1)
+          for (aj = 0; aj < 8; aj = aj + 1)
+            attack_array[ai][aj] = 0;
+        for (i = 0; i < 8; i = i + 1)
+          begin
+             fi = ROW + knight_offset_y[i];
+             fj = COL + knight_offset_x[i];
+             if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
+               attack_array[fi][fj] = ATTACK_KNIT;
+          end
+        for (ai = 0; ai < 8; ai = ai + 1)
+          for (aj = 0; aj < 8; aj = aj + 1)
+            attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+        idx = idx + 1;
+        
         $display("%d", idx);
      end
 
