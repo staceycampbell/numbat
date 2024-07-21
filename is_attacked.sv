@@ -30,7 +30,7 @@ module is_attacked #
    localparam ATTACK_KING = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_KING : `BLACK_KING);
    localparam ATTACK_PAWN = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_PAWN : `BLACK_PAWN);
 
-   localparam ATTACK_COUNT = 30;
+   localparam ATTACK_COUNT = 31;
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
    reg [PIECE_WIDTH2 - 1:0]   attack_array [0:7][0:7];
@@ -200,6 +200,43 @@ module is_attacked #
              fj = COL + knight_offset_x[i];
              if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
                attack_array[fi][fj] = ATTACK_KNIT;
+          end
+        for (ai = 0; ai < 8; ai = ai + 1)
+          for (aj = 0; aj < 8; aj = aj + 1)
+            attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+        idx = idx + 1;
+        // king
+        for (ai = 0; ai < 8; ai = ai + 1)
+          for (aj = 0; aj < 8; aj = aj + 1)
+            attack_array[ai][aj] = 0;
+        for (ai = -1; ai <= 1; ai = ai + 1)
+          for (aj = -1; aj <= 1; aj = aj + 1)
+            begin
+               fi = ROW + ai;
+               fj = COL + aj;
+               if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
+                 attack_array[fi][fj] = ATTACK_KING;
+            end
+        for (ai = 0; ai < 8; ai = ai + 1)
+          for (aj = 0; aj < 8; aj = aj + 1)
+            attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+        idx = idx + 1;
+        // pawn
+        for (ai = 0; ai < 8; ai = ai + 1)
+          for (aj = 0; aj < 8; aj = aj + 1)
+            attack_array[ai][aj] = 0;
+        if (ATTACKER == `WHITE_ATTACK)
+          fi = ROW + 1;
+        else
+          fi = ROW - 1;
+        if (fi >= 0 && fi < 8)
+          begin
+             fj = COL - 1;
+             if (fj > 0)
+               attack_array[fi][fj] = ATTACK_PAWN;
+             fj = COL + 1;
+             if (fj < 8)
+               attack_array[fi][fj] = ATTACK_PAWN;
           end
         for (ai = 0; ai < 8; ai = ai + 1)
           for (aj = 0; aj < 8; aj = aj + 1)
