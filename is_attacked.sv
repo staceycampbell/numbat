@@ -30,7 +30,7 @@ module is_attacked #
    localparam ATTACK_KING = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_KING : `BLACK_KING);
    localparam ATTACK_PAWN = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_PAWN : `BLACK_PAWN);
 
-   localparam ATTACK_COUNT = 34;
+   localparam ATTACK_COUNT = 72;
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
    reg [PIECE_WIDTH2 - 1:0]   attack_array [0:7][0:7];
@@ -38,7 +38,7 @@ module is_attacked #
    reg                        attacked_valid_t1;
    reg                        board_valid_t1;
 
-   reg signed [2:0]           knight_offset_x [0:7], knight_offset_y [0:7];
+   integer                    knight_offset_x [0:7], knight_offset_y [0:7];
 
    integer                    idx_test;
 
@@ -50,22 +50,25 @@ module is_attacked #
 
    initial
      begin
-        //        $dumpfile("wave.vcd");
-        //        for (i = 0; i < ATTACK_COUNT; i = i + 1)
-        //          begin
-        //             $dumpvars(0, attack_mask[i]);
-        //          end
+        if (0)
+          begin
+             $dumpfile("wave.vcd");
+             for (i = 0; i < ATTACK_COUNT; i = i + 1)
+               begin
+                  $dumpvars(0, attack_mask[i]);
+               end
+          end
         for (idx = 0; idx < ATTACK_COUNT; idx = idx + 1)
           attack_mask[idx] = 0; // default is "don't care"
         idx = 0;
-        // rook, queen, horizontal
+        // rook horizontal
         for (j = 0; j < 8; j = j + 1)
           if (j != COL)
             begin
                for (ai = 0; ai < 8; ai = ai + 1)
                  for (aj = 0; aj < 8; aj = aj + 1)
                    attack_array[ai][aj] = 0;
-               attack_array[ROW][j] = ATTACK_ROOK | ATTACK_QUEN;
+               attack_array[ROW][j] = ATTACK_ROOK;
                for (f = j + 1; f < COL; f = f + 1)
                  attack_array[ROW][f] = EMPTY_POSN2;
                for (f = COL + 1; f < j - 1; f = f + 1)
@@ -75,14 +78,14 @@ module is_attacked #
                    attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
                idx = idx + 1;
             end
-        // rook, queen, vertical
+        // rook vertical
         for (i = 0; i < 8; i = i + 1)
           if (i != ROW)
             begin
                for (ai = 0; ai < 8; ai = ai + 1)
                  for (aj = 0; aj < 8; aj = aj + 1)
                    attack_array[ai][aj] = 0;
-               attack_array[i][COL] = ATTACK_ROOK | ATTACK_QUEN;
+               attack_array[i][COL] = ATTACK_ROOK;
                for (f = i + 1; f < ROW; f = f + 1)
                  attack_array[f][COL] = EMPTY_POSN2;
                for (f = ROW + 1; f < i; f = f + 1)
@@ -92,7 +95,41 @@ module is_attacked #
                    attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
                idx = idx + 1;
             end
-        // bishop, queen, diag 0
+        // queen horizontal
+        for (j = 0; j < 8; j = j + 1)
+          if (j != COL)
+            begin
+               for (ai = 0; ai < 8; ai = ai + 1)
+                 for (aj = 0; aj < 8; aj = aj + 1)
+                   attack_array[ai][aj] = 0;
+               attack_array[ROW][j] = ATTACK_QUEN;
+               for (f = j + 1; f < COL; f = f + 1)
+                 attack_array[ROW][f] = EMPTY_POSN2;
+               for (f = COL + 1; f < j - 1; f = f + 1)
+                 attack_array[ROW][f] = EMPTY_POSN2;
+               for (ai = 0; ai < 8; ai = ai + 1)
+                 for (aj = 0; aj < 8; aj = aj + 1)
+                   attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+               idx = idx + 1;
+            end
+        // queen vertical
+        for (i = 0; i < 8; i = i + 1)
+          if (i != ROW)
+            begin
+               for (ai = 0; ai < 8; ai = ai + 1)
+                 for (aj = 0; aj < 8; aj = aj + 1)
+                   attack_array[ai][aj] = 0;
+               attack_array[i][COL] = ATTACK_QUEN;
+               for (f = i + 1; f < ROW; f = f + 1)
+                 attack_array[f][COL] = EMPTY_POSN2;
+               for (f = ROW + 1; f < i; f = f + 1)
+                 attack_array[f][COL] = EMPTY_POSN2;
+               for (ai = 0; ai < 8; ai = ai + 1)
+                 for (aj = 0; aj < 8; aj = aj + 1)
+                   attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+               idx = idx + 1;
+            end
+        // bishop, diag 0
         i = ROW - 1;
         j = COL - 1;
         while (i >= 0 && j >= 0)
@@ -100,7 +137,7 @@ module is_attacked #
              for (ai = 0; ai < 8; ai = ai + 1)
                for (aj = 0; aj < 8; aj = aj + 1)
                  attack_array[ai][aj] = 0;
-             attack_array[i][j] = ATTACK_BISH | ATTACK_QUEN;
+             attack_array[i][j] = ATTACK_BISH;
              fi = i + 1;
              fj = j + 1;
              while (fi < ROW && fj < COL)
@@ -116,7 +153,7 @@ module is_attacked #
              i = i - 1;
              j = j - 1;
           end
-        // bishop, queen, diag 1
+        // bishop, diag 1
         i = ROW + 1;
         j = COL + 1;
         while (i < 8 && j < 8)
@@ -124,7 +161,7 @@ module is_attacked #
              for (ai = 0; ai < 8; ai = ai + 1)
                for (aj = 0; aj < 8; aj = aj + 1)
                  attack_array[ai][aj] = 0;
-             attack_array[i][j] = ATTACK_BISH | ATTACK_QUEN;
+             attack_array[i][j] = ATTACK_BISH;
              fi = i - 1;
              fj = j - 1;
              while (fi > ROW && fj > COL)
@@ -140,7 +177,7 @@ module is_attacked #
              i = i + 1;
              j = j + 1;
           end
-        // bishop, queen, diag 2
+        // bishop, diag 2
         i = ROW - 1;
         j = COL + 1;
         while (i >= 0 && j < 8)
@@ -148,7 +185,7 @@ module is_attacked #
              for (ai = 0; ai < 8; ai = ai + 1)
                for (aj = 0; aj < 8; aj = aj + 1)
                  attack_array[ai][aj] = 0;
-             attack_array[i][j] = ATTACK_BISH | ATTACK_QUEN;
+             attack_array[i][j] = ATTACK_BISH;
              fi = i + 1;
              fj = j - 1;
              while (fi < ROW && fj > COL)
@@ -164,7 +201,7 @@ module is_attacked #
              i = i - 1;
              j = j + 1;
           end
-        // bishop, queen, diag 3
+        // bishop, diag 3
         i = ROW + 1;
         j = COL - 1;
         while (i < 8 && j < 8)
@@ -172,7 +209,103 @@ module is_attacked #
              for (ai = 0; ai < 8; ai = ai + 1)
                for (aj = 0; aj < 8; aj = aj + 1)
                  attack_array[ai][aj] = 0;
-             attack_array[i][j] = ATTACK_BISH | ATTACK_QUEN;
+             attack_array[i][j] = ATTACK_BISH;
+             fi = i - 1;
+             fj = j + 1;
+             while (fi > ROW && fj < COL)
+               begin
+                  attack_array[fi][fj] = EMPTY_POSN2;
+                  fi = fi - 1;
+                  fj = fj + 1;
+               end
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+             i = i + 1;
+             j = j - 1;
+          end
+        // queen, diag 0
+        i = ROW - 1;
+        j = COL - 1;
+        while (i >= 0 && j >= 0)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][j] = ATTACK_QUEN;
+             fi = i + 1;
+             fj = j + 1;
+             while (fi < ROW && fj < COL)
+               begin
+                  attack_array[fi][fj] = EMPTY_POSN2;
+                  fi = fi + 1;
+                  fj = fj + 1;
+               end
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+             i = i - 1;
+             j = j - 1;
+          end
+        // queen, diag 1
+        i = ROW + 1;
+        j = COL + 1;
+        while (i < 8 && j < 8)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][j] = ATTACK_QUEN;
+             fi = i - 1;
+             fj = j - 1;
+             while (fi > ROW && fj > COL)
+               begin
+                  attack_array[fi][fj] = EMPTY_POSN2;
+                  fi = fi - 1;
+                  fj = fj - 1;
+               end
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+             i = i + 1;
+             j = j + 1;
+          end
+        // queen, diag 2
+        i = ROW - 1;
+        j = COL + 1;
+        while (i >= 0 && j < 8)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][j] = ATTACK_QUEN;
+             fi = i + 1;
+             fj = j - 1;
+             while (fi < ROW && fj > COL)
+               begin
+                  attack_array[fi][fj] = EMPTY_POSN2;
+                  fi = fi + 1;
+                  fj = fj - 1;
+               end
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+             i = i - 1;
+             j = j + 1;
+          end
+        // queen, diag 3
+        i = ROW + 1;
+        j = COL - 1;
+        while (i < 8 && j < 8)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][j] = ATTACK_QUEN;
              fi = i - 1;
              fj = j + 1;
              while (fi > ROW && fj < COL)
@@ -189,6 +322,7 @@ module is_attacked #
              j = j - 1;
           end
         // knight
+        idx_test = idx;
         knight_offset_x[0] = -2; knight_offset_y[0] = -1;
         knight_offset_x[1] = -1; knight_offset_y[1] = -2;
         knight_offset_x[2] = +1; knight_offset_y[2] = -2;
@@ -197,20 +331,20 @@ module is_attacked #
         knight_offset_x[5] = +1; knight_offset_y[5] = +2;
         knight_offset_x[6] = -1; knight_offset_y[6] = +2;
         knight_offset_x[7] = -2; knight_offset_y[7] = +1;
-        for (ai = 0; ai < 8; ai = ai + 1)
-          for (aj = 0; aj < 8; aj = aj + 1)
-            attack_array[ai][aj] = 0;
         for (i = 0; i < 8; i = i + 1)
           begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
              fi = ROW + knight_offset_y[i];
              fj = COL + knight_offset_x[i];
              if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
                attack_array[fi][fj] = ATTACK_KNIT;
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
           end
-        for (ai = 0; ai < 8; ai = ai + 1)
-          for (aj = 0; aj < 8; aj = aj + 1)
-            attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
-        idx = idx + 1;
         // king
         for (ai = 0; ai < 8; ai = ai + 1)
           for (aj = 0; aj < 8; aj = aj + 1)
@@ -228,7 +362,6 @@ module is_attacked #
             attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
         idx = idx + 1;
         // pawn
-        idx_test = idx;
         for (ai = 0; ai < 8; ai = ai + 1)
           for (aj = 0; aj < 8; aj = aj + 1)
             attack_array[ai][aj] = 0;
@@ -250,7 +383,7 @@ module is_attacked #
             attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
         idx = idx + 1;
         
-        $display("%d %d %d", ROW, COL, idx);
+        $display("%d %d %d", idx, ROW, COL);
      end
 
    generate
@@ -267,10 +400,9 @@ module is_attacked #
             attack_list_t1[i] <= (board2_t0 & attack_mask[i]) == attack_mask[i];
           else
             attack_list_t1[i] <= 1'b0;
-
-        attacked <= attack_list_t1 != 0;
-        
         board_valid_t1 <= board_valid_t0;
+        
+        attacked <= attack_list_t1 != 0;
         attacked_valid <= board_valid_t1;
      end
 

@@ -18,6 +18,9 @@ module vchess #
    /*AUTOREGINPUT*/
    
    /*AUTOWIRE*/
+   // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire                 attacked_white_display_done;// From display_is_attacked_white of display_is_attacked.v
+   // End of automatics
    
    wire [63:0]                attacked_white, attacked_black;
    wire [63:0]                attacked_white_valid, attacked_black_valid;
@@ -25,7 +28,7 @@ module vchess #
    genvar                     row, col;
 
    /* display_board AUTO_TEMPLATE (
-    .display (board_valid),
+    .display (attacked_white_display_done),
     );*/
    display_board #
      (
@@ -39,7 +42,34 @@ module vchess #
       .reset                            (reset),
       .clk                              (clk),
       .board                            (board[BOARD_WIDTH-1:0]),
-      .display                          (board_valid));           // Templated
+      .display                          (attacked_white_display_done)); // Templated
+
+   /* display_is_attacked AUTO_TEMPLATE (
+    .attacked (attacked_white[]),
+    .attacked_valid (attacked_white_valid != 0),
+    .display_done (attacked_white_display_done),
+    );*/
+   display_is_attacked display_is_attacked_white
+     (/*AUTOINST*/
+      // Outputs
+      .display_done                     (attacked_white_display_done), // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .attacked                         (attacked_white[63:0]),  // Templated
+      .attacked_valid                   (attacked_white_valid != 0)); // Templated
+
+   //   /* display_is_attacked AUTO_TEMPLATE (
+   //    .attacked (attacked_black[]),
+   //    .attacked_valid (attacked_black_valid[0]),
+   //    );*/
+   //   display_is_attacked display_is_attacked_black
+   //     (/*AUTOINST*/
+   //      // Inputs
+   //      .clk                              (clk),
+   //      .reset                            (reset),
+   //      .attacked                         (attacked_black[63:0]),
+   //      .attacked_valid                   (attacked_black_valid[0]));
 
    generate
       for (row = 0; row < 8; row = row + 1)

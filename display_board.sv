@@ -1,8 +1,8 @@
 module display_board #
   (
-   parameter PIECE_WIDTH = 0,
-   parameter SIDE_WIDTH = 0,
-   parameter BOARD_WIDTH = 0
+   parameter PIECE_WIDTH = 4,
+   parameter SIDE_WIDTH = 4 * 8,
+   parameter BOARD_WIDTH = SIDE_WIDTH * 8
    )
    (
     input                     reset,
