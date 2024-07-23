@@ -1,6 +1,6 @@
-SRC := tb.sv vchess.sv display_board.sv is_attacked.sv display_is_attacked.sv
+SRC := tb.sv vchess.sv display_board.sv is_attacking.sv display_is_attacking.sv
 
-vchess: $(SRC)
+tb: $(SRC)
 	iverilog -Wall -o tb $(SRC)
 
 clean:

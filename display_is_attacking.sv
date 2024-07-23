@@ -1,6 +1,6 @@
-module display_is_attacked #
+module display_is_attacking #
   (
-   parameter WHITE_ATTACKS = "White"
+   parameter COLOR_ATTACKS = "White"
    )
    (
     input        clk,
@@ -46,7 +46,7 @@ module display_is_attacked #
            end
          STATE_TITLE :
            begin
-              $display("%s", WHITE_ATTACKS);
+              $display("%s", COLOR_ATTACKS);
               state <= STATE_ROW;
            end
          STATE_ROW :

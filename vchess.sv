@@ -12,7 +12,7 @@ module vchess #
     input                     board_valid,
     input                     white_to_move,
 
-    output                    is_attacked_done
+    output                    is_attacking_done
     );
 
    // should be empty
@@ -20,7 +20,7 @@ module vchess #
    
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 attacked_white_display_done;// From display_is_attacked_white of display_is_attacked.v
+   wire                 attacked_white_display_done;// From display_is_attacking_white of display_is_attacking.v
    // End of automatics
    
    wire [63:0]                attacked_white, attacked_black;
@@ -34,11 +34,11 @@ module vchess #
            for (col = 0; col < 8; col = col + 1)
              begin : col_attacked_block
 
-                /* is_attacked AUTO_TEMPLATE (
+                /* is_attacking AUTO_TEMPLATE (
                  .attacked (attacked_white[row << 3 | col]),
                  .attacked_valid (attacked_white_valid[row << 3 | col]),
                  );*/
-                is_attacked #
+                is_attacking #
                       (
                        .PIECE_WIDTH (PIECE_WIDTH),
                        .SIDE_WIDTH (SIDE_WIDTH),
@@ -47,7 +47,7 @@ module vchess #
                        .ROW (row),
                        .COL (col)
                        )
-                is_attacked_white
+                is_attacking_white
                       (/*AUTOINST*/
                        // Outputs
                        .attacked        (attacked_white[row << 3 | col]), // Templated
@@ -58,11 +58,11 @@ module vchess #
                        .board           (board[BOARD_WIDTH-1:0]),
                        .board_valid     (board_valid));
                 
-                /* is_attacked AUTO_TEMPLATE (
+                /* is_attacking AUTO_TEMPLATE (
                  .attacked (attacked_black[row << 3 | col]),
                  .attacked_valid (attacked_black_valid[row << 3 | col]),
                  );*/
-                is_attacked #
+                is_attacking #
                   (
                    .PIECE_WIDTH (PIECE_WIDTH),
                    .SIDE_WIDTH (SIDE_WIDTH),
@@ -71,7 +71,7 @@ module vchess #
                    .ROW (row),
                    .COL (col)
                    )
-                is_attacked_black
+                is_attacking_black
                   (/*AUTOINST*/
                    // Outputs
                    .attacked            (attacked_black[row << 3 | col]), // Templated
@@ -86,16 +86,16 @@ module vchess #
       
    endgenerate
    
-   /* display_is_attacked AUTO_TEMPLATE (
+   /* display_is_attacking AUTO_TEMPLATE (
     .attacked (attacked_white[]),
     .attacked_valid (attacked_white_valid != 0),
     .display_done (attacked_white_display_done),
     );*/
-   display_is_attacked #
+   display_is_attacking #
      (
-      .WHITE_ATTACKS ("White")
+      .COLOR_ATTACKS ("White")
       )
-   display_is_attacked_white
+   display_is_attacking_white
      (/*AUTOINST*/
       // Outputs
       .display_done                     (attacked_white_display_done), // Templated
@@ -105,19 +105,19 @@ module vchess #
       .attacked                         (attacked_white[63:0]),  // Templated
       .attacked_valid                   (attacked_white_valid != 0)); // Templated
 
-   /* display_is_attacked AUTO_TEMPLATE (
+   /* display_is_attacking AUTO_TEMPLATE (
     .attacked (attacked_black[]),
     .attacked_valid (attacked_white_display_done),
-    .display_done (is_attacked_done),
+    .display_done (is_attacking_done),
     );*/
-   display_is_attacked #
+   display_is_attacking #
      (
-      .WHITE_ATTACKS ("Black")
+      .COLOR_ATTACKS ("Black")
       )
-   display_is_attacked_black
+   display_is_attacking_black
      (/*AUTOINST*/
       // Outputs
-      .display_done                     (is_attacked_done),      // Templated
+      .display_done                     (is_attacking_done),      // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

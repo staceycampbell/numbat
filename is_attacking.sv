@@ -1,4 +1,4 @@
-module is_attacked #
+module is_attacking #
   (
    parameter PIECE_WIDTH = 0,
    parameter SIDE_WIDTH = 0,
