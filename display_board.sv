@@ -53,7 +53,7 @@ module display_board #
            end
          STATE_ROW :
            begin
-              $write("%c", piece_char[board[index+:PIECE_WIDTH]]);
+              $write("%c ", piece_char[board[index+:PIECE_WIDTH]]);
               index <= index + PIECE_WIDTH;
               if (col == 7)
                 begin

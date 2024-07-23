@@ -42,7 +42,7 @@ module display_is_attacked
            end
          STATE_ROW :
            begin
-              $write("%c", piece_char[attacked[index+:PIECE_WIDTH]]);
+              $write("%c ", piece_char[attacked[index+:PIECE_WIDTH]]);
               index <= index + PIECE_WIDTH;
               if (col == 7)
                 begin

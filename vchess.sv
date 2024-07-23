@@ -19,7 +19,7 @@ module vchess #
    
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 attacked_black_display_done;// From display_is_attacked_black of display_is_attacked.v
+   wire                 attacked_white_display_done;// From display_is_attacked_white of display_is_attacked.v
    // End of automatics
    
    wire [63:0]                attacked_white, attacked_black;
@@ -28,7 +28,7 @@ module vchess #
    genvar                     row, col;
 
    /* display_board AUTO_TEMPLATE (
-    .display (attacked_black_display_done),
+    .display (attacked_white_display_done),
     );*/
    display_board #
      (
@@ -42,37 +42,37 @@ module vchess #
       .reset                            (reset),
       .clk                              (clk),
       .board                            (board[BOARD_WIDTH-1:0]),
-      .display                          (attacked_black_display_done)); // Templated
-
-//   /* display_is_attacked AUTO_TEMPLATE (
-//    .attacked (attacked_white[]),
-//    .attacked_valid (attacked_white_valid != 0),
-//    .display_done (attacked_white_display_done),
-//    );*/
-//   display_is_attacked display_is_attacked_white
-//     (/*AUTOINST*/
-//      // Outputs
-//      .display_done                     (attacked_white_display_done),
-//      // Inputs
-//      .clk                              (clk),
-//      .reset                            (reset),
-//      .attacked                         (attacked_white[63:0]),
-//      .attacked_valid                   (attacked_white_valid != 0));
+      .display                          (attacked_white_display_done)); // Templated
 
    /* display_is_attacked AUTO_TEMPLATE (
-    .attacked (attacked_black[]),
-    .attacked_valid (attacked_black_valid != 0),
-    .display_done (attacked_black_display_done),
+    .attacked (attacked_white[]),
+    .attacked_valid (attacked_white_valid != 0),
+    .display_done (attacked_white_display_done),
     );*/
-   display_is_attacked display_is_attacked_black
+   display_is_attacked display_is_attacked_white
      (/*AUTOINST*/
       // Outputs
-      .display_done                     (attacked_black_display_done), // Templated
+      .display_done                     (attacked_white_display_done), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .attacked                         (attacked_black[63:0]),  // Templated
-      .attacked_valid                   (attacked_black_valid != 0)); // Templated
+      .attacked                         (attacked_white[63:0]),  // Templated
+      .attacked_valid                   (attacked_white_valid != 0)); // Templated
+
+//   /* display_is_attacked AUTO_TEMPLATE (
+//    .attacked (attacked_black[]),
+//    .attacked_valid (attacked_black_valid != 0),
+//    .display_done (attacked_black_display_done),
+//    );*/
+//   display_is_attacked display_is_attacked_black
+//     (/*AUTOINST*/
+//      // Outputs
+//      .display_done                     (attacked_black_display_done),
+//      // Inputs
+//      .clk                              (clk),
+//      .reset                            (reset),
+//      .attacked                         (attacked_black[63:0]),
+//      .attacked_valid                   (attacked_black_valid != 0));
 
    generate
       for (row = 0; row < 8; row = row + 1)
