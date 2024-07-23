@@ -1,4 +1,6 @@
 vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
+../control.sv
+../axi4lite_write.sv
 ../display_board.sv
 ../display_is_attacking.sv
 ../is_attacking.sv

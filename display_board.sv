@@ -1,3 +1,5 @@
+`include "vchess.vh"
+
 module display_board #
   (
    parameter PIECE_WIDTH = 4,

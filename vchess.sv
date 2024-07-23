@@ -14,6 +14,8 @@ module vchess #
     input                     board_valid,
     input                     white_to_move,
 
+    output [63:0]             attacked_white,
+    output [63:0]             attacked_black,
     output                    is_attacking_done
     );
 
@@ -22,11 +24,11 @@ module vchess #
    
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 attacked_white_display_done;// From display_is_attacking_white of display_is_attacking.v
+   wire                       attacked_white_display_done;// From display_is_attacking_white of display_is_attacking.v
    // End of automatics
    
-   wire [63:0]                attacked_white, attacked_black;
    wire [63:0]                attacked_white_valid, attacked_black_valid;
+   
 
    genvar                     row, col;
 

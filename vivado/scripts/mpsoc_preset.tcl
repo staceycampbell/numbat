@@ -192,7 +192,7 @@ proc create_root_design { parentCell } {
   set ctrl0_axi [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ctrl0_axi ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {40} \
-   CONFIG.DATA_WIDTH {64} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.HAS_REGION {0} \
    CONFIG.NUM_READ_OUTSTANDING {8} \
    CONFIG.NUM_WRITE_OUTSTANDING {8} \
@@ -202,7 +202,7 @@ proc create_root_design { parentCell } {
   set ctrl1_axi [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ctrl1_axi ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {40} \
-   CONFIG.DATA_WIDTH {64} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.HAS_REGION {0} \
    CONFIG.NUM_READ_OUTSTANDING {8} \
    CONFIG.NUM_WRITE_OUTSTANDING {8} \
@@ -627,7 +627,7 @@ sclk_out#miso_mo1#mo2#mo3#mosi_mi0#n_ss_out#clk_for_lpbk#n_ss_out_upper#mo_upper
    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {200} \
    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__SRCSEL {RPLL} \
    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__ACT_FREQMHZ {199.980026} \
-   CONFIG.PSU__CRL_APB__PL1_REF_CTRL__DIVISOR0 {6} \
+   CONFIG.PSU__CRL_APB__PL1_REF_CTRL__DIVISOR0 {4} \
    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__DIVISOR1 {1} \
    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ {100} \
    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__SRCSEL {RPLL} \

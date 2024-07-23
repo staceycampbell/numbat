@@ -3,3 +3,4 @@ create_hardware:
 
 clean:
 	rm -fr vchess vivado.jou vivado.log vivado*backup.log vivado*backup.jou
+	rm -fr vivado_pid*.str
