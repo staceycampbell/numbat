@@ -40,9 +40,6 @@ module is_attacking #
    reg                        attacked_valid_t1;
    reg                        board_valid_t1;
 
-   integer                    knight_offset_x [0:7], knight_offset_y [0:7];
-   integer                    king_offset_x [0:7], king_offset_y [0:7];
-
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
 
@@ -205,7 +202,7 @@ module is_attacking #
         // bishop, diag 3
         i = ROW + 1;
         j = COL - 1;
-        while (i < 8 && j < 8)
+        while (i < 8 && j >= 0)
           begin
              for (ai = 0; ai < 8; ai = ai + 1)
                for (aj = 0; aj < 8; aj = aj + 1)
@@ -301,7 +298,7 @@ module is_attacking #
         // queen, diag 3
         i = ROW + 1;
         j = COL - 1;
-        while (i < 8 && j < 8)
+        while (i < 8 && j >= 0)
           begin
              for (ai = 0; ai < 8; ai = ai + 1)
                for (aj = 0; aj < 8; aj = aj + 1)
@@ -323,18 +320,50 @@ module is_attacking #
              j = j - 1;
           end
         // knight
-        knight_offset_x[0] = -2; knight_offset_y[0] = -1;
-        knight_offset_x[1] = -1; knight_offset_y[1] = -2;
-        knight_offset_x[2] = +1; knight_offset_y[2] = -2;
-        knight_offset_x[3] = +2; knight_offset_y[3] = -1;
-        knight_offset_x[4] = +2; knight_offset_y[4] = +1;
-        knight_offset_x[5] = +1; knight_offset_y[5] = +2;
-        knight_offset_x[6] = -1; knight_offset_y[6] = +2;
-        knight_offset_x[7] = -2; knight_offset_y[7] = +1;
         for (i = 0; i < 8; i = i + 1)
           begin
-             fi = ROW + knight_offset_y[i];
-             fj = COL + knight_offset_x[i];
+             case (i) // coded like this for vivado :-(
+               0 :
+                 begin
+                    fj = COL + -2;
+                    fi = ROW + -1;
+                 end
+               1 :
+                 begin
+                    fj = COL + -1;
+                    fi = ROW + -2;
+                 end
+               2 :
+                 begin
+                    fj = COL +  1;
+                    fi = ROW + -2;
+                 end
+               3 :
+                 begin
+                    fj = COL +  2;
+                    fi = ROW + -1;
+                 end
+               4 :
+                 begin
+                    fj = COL +  2;
+                    fi = ROW +  1;
+                 end
+               5 :
+                 begin
+                    fj = COL +  1;
+                    fi = ROW +  2;
+                 end
+               6 :
+                 begin
+                    fj = COL + -1;
+                    fi = ROW +  2;
+                 end
+               6 :
+                 begin
+                    fj = COL + -2;
+                    fi = ROW +  1;
+                 end
+             endcase
              if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
                begin
                   for (ai = 0; ai < 8; ai = ai + 1)
@@ -348,30 +377,20 @@ module is_attacking #
                end
           end
         // king
-        king_offset_x[0] = -1; king_offset_y[0] = -1;
-        king_offset_x[1] =  0; king_offset_y[1] = -1;
-        king_offset_x[2] = +1; king_offset_y[2] = -1;
-        king_offset_x[3] = +1; king_offset_y[3] =  0;
-        king_offset_x[4] = +1; king_offset_y[4] = +1;
-        king_offset_x[5] =  0; king_offset_y[5] = +1;
-        king_offset_x[6] = -1; king_offset_y[6] = +1;
-        king_offset_x[7] = -1; king_offset_y[7] =  0;
-        for (i = 0; i < 8; i = i + 1)
-            begin
-               fi = ROW + king_offset_y[i];
-               fj = COL + king_offset_x[i];
-               if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
-                 begin
-                    for (ai = 0; ai < 8; ai = ai + 1)
-                      for (aj = 0; aj < 8; aj = aj + 1)
-                        attack_array[ai][aj] = 0;
-                    attack_array[fi][fj] = ATTACK_KING;
-                    for (ai = 0; ai < 8; ai = ai + 1)
-                      for (aj = 0; aj < 8; aj = aj + 1)
-                        attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
-                    idx = idx + 1;
-                 end
-            end
+        for (fi = ROW - 1; fi <= ROW + 1; fi = fi + 1)
+          for (fj = COL - 1; fj <= COL + 1; fj = fj + 1)
+            if (fi != ROW && fj != COL)
+              if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
+                begin
+                   for (ai = 0; ai < 8; ai = ai + 1)
+                     for (aj = 0; aj < 8; aj = aj + 1)
+                       attack_array[ai][aj] = 0;
+                   attack_array[fi][fj] = ATTACK_KING;
+                   for (ai = 0; ai < 8; ai = ai + 1)
+                     for (aj = 0; aj < 8; aj = aj + 1)
+                       attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+                   idx = idx + 1;
+                end
         // pawn
         if (ATTACKER == `WHITE_ATTACK)
           fi = ROW - 1;
