@@ -41,8 +41,6 @@ module is_attacked #
    integer                    knight_offset_x [0:7], knight_offset_y [0:7];
    integer                    king_offset_x [0:7], king_offset_y [0:7];
 
-   integer                    idx_test;
-
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
 
@@ -323,7 +321,6 @@ module is_attacked #
              j = j - 1;
           end
         // knight
-        idx_test = idx;
         knight_offset_x[0] = -2; knight_offset_y[0] = -1;
         knight_offset_x[1] = -1; knight_offset_y[1] = -2;
         knight_offset_x[2] = +1; knight_offset_y[2] = -2;
@@ -405,8 +402,6 @@ module is_attacked #
                   idx = idx + 1;
                end
           end
-        
-        $display("%d %d %d", idx, ROW, COL);
      end
 
    generate

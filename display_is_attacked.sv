@@ -1,17 +1,20 @@
-module display_is_attacked
+module display_is_attacked #
   (
-   input        clk,
-   input        reset,
-   input [63:0] attacked,
-   input        attacked_valid,
+   parameter WHITE_ATTACKS = "White"
+   )
+   (
+    input        clk,
+    input        reset,
+    input [63:0] attacked,
+    input        attacked_valid,
 
-   output reg   display_done = 0
-   );
+    output reg   display_done = 0
+    );
 
    localparam PIECE_WIDTH = 1;
    localparam SIDE_WIDTH = 8;
 
-   reg [7:0]    piece_char [0:1];
+   reg [7:0]     piece_char [0:1];
    reg [$clog2(64) - 1:0] index, row_start;
    reg [2:0]              col;
 
@@ -22,10 +25,11 @@ module display_is_attacked
      end
 
    localparam STATE_INIT = 0;
-   localparam STATE_ROW = 1;
+   localparam STATE_TITLE = 1;
+   localparam STATE_ROW = 2;
 
    reg [1:0] state = STATE_INIT;
-   
+
    always @(posedge clk)
      if (reset)
        state <= STATE_INIT;
@@ -38,7 +42,12 @@ module display_is_attacked
               index <= SIDE_WIDTH * 7;
               col <= 0;
               if (attacked_valid)
-                state <= STATE_ROW;
+                state <= STATE_TITLE;
+           end
+         STATE_TITLE :
+           begin
+              $display("%s", WHITE_ATTACKS);
+              state <= STATE_ROW;
            end
          STATE_ROW :
            begin

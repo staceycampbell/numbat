@@ -10,9 +10,10 @@ module vchess #
    
     input [BOARD_WIDTH - 1:0] board,
     input                     board_valid,
-    input                     white_to_move
-    );
+    input                     white_to_move,
 
+    output                    is_attacked_done
+    );
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -26,53 +27,6 @@ module vchess #
    wire [63:0]                attacked_white_valid, attacked_black_valid;
 
    genvar                     row, col;
-
-   /* display_board AUTO_TEMPLATE (
-    .display (attacked_white_display_done),
-    );*/
-   display_board #
-     (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH)
-      )
-   display_board
-     (/*AUTOINST*/
-      // Inputs
-      .reset                            (reset),
-      .clk                              (clk),
-      .board                            (board[BOARD_WIDTH-1:0]),
-      .display                          (attacked_white_display_done)); // Templated
-
-   /* display_is_attacked AUTO_TEMPLATE (
-    .attacked (attacked_white[]),
-    .attacked_valid (attacked_white_valid != 0),
-    .display_done (attacked_white_display_done),
-    );*/
-   display_is_attacked display_is_attacked_white
-     (/*AUTOINST*/
-      // Outputs
-      .display_done                     (attacked_white_display_done), // Templated
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .attacked                         (attacked_white[63:0]),  // Templated
-      .attacked_valid                   (attacked_white_valid != 0)); // Templated
-
-//   /* display_is_attacked AUTO_TEMPLATE (
-//    .attacked (attacked_black[]),
-//    .attacked_valid (attacked_black_valid != 0),
-//    .display_done (attacked_black_display_done),
-//    );*/
-//   display_is_attacked display_is_attacked_black
-//     (/*AUTOINST*/
-//      // Outputs
-//      .display_done                     (attacked_black_display_done),
-//      // Inputs
-//      .clk                              (clk),
-//      .reset                            (reset),
-//      .attacked                         (attacked_black[63:0]),
-//      .attacked_valid                   (attacked_black_valid != 0));
 
    generate
       for (row = 0; row < 8; row = row + 1)
@@ -129,9 +83,48 @@ module vchess #
                    .board_valid         (board_valid));
              end
         end
+      
    endgenerate
+   
+   /* display_is_attacked AUTO_TEMPLATE (
+    .attacked (attacked_white[]),
+    .attacked_valid (attacked_white_valid != 0),
+    .display_done (attacked_white_display_done),
+    );*/
+   display_is_attacked #
+     (
+      .WHITE_ATTACKS ("White")
+      )
+   display_is_attacked_white
+     (/*AUTOINST*/
+      // Outputs
+      .display_done                     (attacked_white_display_done), // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .attacked                         (attacked_white[63:0]),  // Templated
+      .attacked_valid                   (attacked_white_valid != 0)); // Templated
 
-endmodule // vchess
+   /* display_is_attacked AUTO_TEMPLATE (
+    .attacked (attacked_black[]),
+    .attacked_valid (attacked_white_display_done),
+    .display_done (is_attacked_done),
+    );*/
+   display_is_attacked #
+     (
+      .WHITE_ATTACKS ("Black")
+      )
+   display_is_attacked_black
+     (/*AUTOINST*/
+      // Outputs
+      .display_done                     (is_attacked_done),      // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .attacked                         (attacked_black[63:0]),  // Templated
+      .attacked_valid                   (attacked_white_display_done)); // Templated
+
+endmodule
 
 // Local Variables:
 // verilog-auto-inst-param-value:t
