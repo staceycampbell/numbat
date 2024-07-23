@@ -1,3 +1,5 @@
+`include "vchess.vh"
+
 module vchess #
   (
    parameter PIECE_WIDTH = 0,

@@ -1,3 +1,5 @@
+`include "vchess.vh"
+
 module is_attacking #
   (
    parameter PIECE_WIDTH = 0,
