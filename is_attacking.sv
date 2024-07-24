@@ -114,39 +114,59 @@ module is_attacking #
              idx = idx + 1;
           end
         // queen horizontal
-        for (j = 0; j < 8; j = j + 1)
-          if (j != COL)
-            begin
-               for (ai = 0; ai < 8; ai = ai + 1)
-                 for (aj = 0; aj < 8; aj = aj + 1)
-                   attack_array[ai][aj] = 0;
-               attack_array[ROW][j] = ATTACK_QUEN;
-               for (f = j + 1; f < COL; f = f + 1)
-                 attack_array[ROW][f] = EMPTY_POSN2;
-               for (f = COL + 1; f < j - 1; f = f + 1)
-                 attack_array[ROW][f] = EMPTY_POSN2;
-               for (ai = 0; ai < 8; ai = ai + 1)
-                 for (aj = 0; aj < 8; aj = aj + 1)
-                   attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
-               idx = idx + 1;
-            end
+        for (j = COL - 1; j >= 0; j = j - 1)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[ROW][j] = ATTACK_QUEN;
+             for (f = j + 1; f < COL; f = f + 1)
+               attack_array[ROW][f] = EMPTY_POSN2;
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+          end
+        for (j = COL + 1; j < 8; j = j + 1)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[ROW][j] = ATTACK_QUEN;
+             for (f = j - 1; f > COL; f = f - 1)
+               attack_array[ROW][f] = EMPTY_POSN2;
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+          end
         // queen vertical
-        for (i = 0; i < 8; i = i + 1)
-          if (i != ROW)
-            begin
-               for (ai = 0; ai < 8; ai = ai + 1)
-                 for (aj = 0; aj < 8; aj = aj + 1)
-                   attack_array[ai][aj] = 0;
-               attack_array[i][COL] = ATTACK_QUEN;
-               for (f = i + 1; f < ROW; f = f + 1)
-                 attack_array[f][COL] = EMPTY_POSN2;
-               for (f = ROW + 1; f < i; f = f + 1)
-                 attack_array[f][COL] = EMPTY_POSN2;
-               for (ai = 0; ai < 8; ai = ai + 1)
-                 for (aj = 0; aj < 8; aj = aj + 1)
-                   attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
-               idx = idx + 1;
-            end
+        for (i = ROW - 1; i >= 0; i = i - 1)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][COL] = ATTACK_QUEN;
+             for (f = i + 1; f < ROW; f = f + 1)
+               attack_array[f][COL] = EMPTY_POSN2;
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+          end
+        for (i = ROW + 1; i < 8; i = i + 1)
+          begin
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_array[ai][aj] = 0;
+             attack_array[i][COL] = ATTACK_QUEN;
+             for (f = i - 1; f > ROW; f = f - 1)
+               attack_array[f][COL] = EMPTY_POSN2;
+             for (ai = 0; ai < 8; ai = ai + 1)
+               for (aj = 0; aj < 8; aj = aj + 1)
+                 attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+             idx = idx + 1;
+          end
         // bishop, diag 0
         i = ROW - 1;
         j = COL - 1;
