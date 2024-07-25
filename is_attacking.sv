@@ -32,6 +32,8 @@ module is_attacking #
    localparam ATTACK_KING = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_KING : `BLACK_KING);
    localparam ATTACK_PAWN = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_PAWN : `BLACK_PAWN);
 
+   localparam PIECE_MASK = ATTACKER == `WHITE_ATTACK ? `WHITE_MASK : `BLACK_MASK;
+   
    localparam ATTACK_COUNT = 75;
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
@@ -43,9 +45,31 @@ module is_attacking #
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
 
+   wire [63:0]                occupied_t0;
    wire [BOARD_WIDTH2 - 1:0]  board2_t0;
    wire                       board_valid_t0 = board_valid;
 
+   generate
+      for (gen_i = 0; gen_i < 64; gen_i = gen_i + 1)
+        begin : bitmap_assign_blk
+           assign board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] = 1 << (board[gen_i * PIECE_WIDTH+:PIECE_WIDTH]);
+           assign occupied_t0[gen_i] = (board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] & PIECE_MASK) != 0;
+        end
+   endgenerate
+
+   always @(posedge clk)
+     begin
+        for (i = 0; i < ATTACK_COUNT; i = i + 1)
+          if (attack_mask[i] != 0 && ! occupied_t0[ROW << 3 | COL])
+            attack_list_t1[i] <= ((board2_t0 & attack_mask[i]) == attack_mask[i]);
+          else
+            attack_list_t1[i] <= 1'b0;
+        board_valid_t1 <= board_valid_t0;
+        
+        attacked <= attack_list_t1 != 0;
+        attacked_valid <= board_valid_t1;
+     end
+   
    initial
      begin
         if (0)
@@ -463,26 +487,6 @@ module is_attacking #
                   idx = idx + 1;
                end
           end
-     end
-
-   generate
-      for (gen_i = 0; gen_i < 64; gen_i = gen_i + 1)
-        begin : bitmap_assign_blk
-           assign board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] = 1 << (board[gen_i * PIECE_WIDTH+:PIECE_WIDTH]);
-        end
-   endgenerate
-
-   always @(posedge clk)
-     begin
-        for (i = 0; i < ATTACK_COUNT; i = i + 1)
-          if (attack_mask[i] != 0)
-            attack_list_t1[i] <= (board2_t0 & attack_mask[i]) == attack_mask[i];
-          else
-            attack_list_t1[i] <= 1'b0;
-        board_valid_t1 <= board_valid_t0;
-        
-        attacked <= attack_list_t1 != 0;
-        attacked_valid <= board_valid_t1;
      end
 
 endmodule
