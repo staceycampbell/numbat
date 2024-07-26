@@ -24,6 +24,7 @@ module is_attacking #
    localparam SIDE_WIDTH2 = PIECE_WIDTH2 * 8;
    localparam BOARD_WIDTH2 = SIDE_WIDTH2 * 8;
 
+   // convert encoded piece id to bitmask piece id
    localparam EMPTY_POSN2 = 1 << `EMPTY_POSN;
    localparam ATTACK_ROOK = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_ROOK : `BLACK_ROOK);
    localparam ATTACK_KNIT = 1 << (ATTACKER == `WHITE_ATTACK ? `WHITE_KNIT : `BLACK_KNIT);
@@ -34,6 +35,7 @@ module is_attacking #
 
    localparam PIECE_MASK = ATTACKER == `WHITE_ATTACK ? `WHITE_MASK : `BLACK_MASK;
    
+   // maximum number of attacks possible from any square on the board using any piece
    localparam ATTACK_COUNT = 75;
 
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
@@ -45,7 +47,7 @@ module is_attacking #
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
 
-   wire [63:0]                occupied_t0;
+   wire [63:0]                my_piece_t0;
    wire [BOARD_WIDTH2 - 1:0]  board2_t0;
    wire                       board_valid_t0 = board_valid;
 
@@ -53,14 +55,14 @@ module is_attacking #
       for (gen_i = 0; gen_i < 64; gen_i = gen_i + 1)
         begin : bitmap_assign_blk
            assign board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] = 1 << (board[gen_i * PIECE_WIDTH+:PIECE_WIDTH]);
-           assign occupied_t0[gen_i] = (board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] & PIECE_MASK) != 0;
+           assign my_piece_t0[gen_i] = (board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] & PIECE_MASK) != 0;
         end
    endgenerate
 
    always @(posedge clk)
      begin
         for (i = 0; i < ATTACK_COUNT; i = i + 1)
-          if (attack_mask[i] != 0 && ! occupied_t0[ROW << 3 | COL])
+          if (attack_mask[i] != 0 && ! my_piece_t0[ROW << 3 | COL])
             attack_list_t1[i] <= ((board2_t0 & attack_mask[i]) == attack_mask[i]);
           else
             attack_list_t1[i] <= 1'b0;
@@ -72,14 +74,6 @@ module is_attacking #
    
    initial
      begin
-        if (0)
-          begin
-             $dumpfile("wave.vcd");
-             for (i = 0; i < ATTACK_COUNT; i = i + 1)
-               begin
-                  $dumpvars(0, attack_mask[i]);
-               end
-          end
         for (idx = 0; idx < ATTACK_COUNT; idx = idx + 1)
           attack_mask[idx] = 0; // default is "don't care"
         idx = 0;
@@ -443,18 +437,17 @@ module is_attacking #
         // king
         for (fi = ROW - 1; fi <= ROW + 1; fi = fi + 1)
           for (fj = COL - 1; fj <= COL + 1; fj = fj + 1)
-            if (fi != ROW && fj != COL)
-              if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
-                begin
-                   for (ai = 0; ai < 8; ai = ai + 1)
-                     for (aj = 0; aj < 8; aj = aj + 1)
-                       attack_array[ai][aj] = 0;
-                   attack_array[fi][fj] = ATTACK_KING;
-                   for (ai = 0; ai < 8; ai = ai + 1)
-                     for (aj = 0; aj < 8; aj = aj + 1)
-                       attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
-                   idx = idx + 1;
-                end
+            if (fi != ROW && fj != COL && fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
+              begin
+                 for (ai = 0; ai < 8; ai = ai + 1)
+                   for (aj = 0; aj < 8; aj = aj + 1)
+                     attack_array[ai][aj] = 0;
+                 attack_array[fi][fj] = ATTACK_KING;
+                 for (ai = 0; ai < 8; ai = ai + 1)
+                   for (aj = 0; aj < 8; aj = aj + 1)
+                     attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+                 idx = idx + 1;
+              end
         // pawn
         if (ATTACKER == `WHITE_ATTACK)
           fi = ROW - 1;
