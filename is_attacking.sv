@@ -16,8 +16,8 @@ module is_attacking #
     input [BOARD_WIDTH - 1:0] board,
     input                     board_valid,
 
-    output reg                attacked,
-    output reg                attacked_valid
+    output                    attacking,
+    output                    attacking_valid
     );
 
    localparam PIECE_WIDTH2 = `PIECE_MASK_BITS;
@@ -41,8 +41,9 @@ module is_attacking #
    reg [BOARD_WIDTH2 - 1:0]   attack_mask [0:ATTACK_COUNT - 1];
    reg [PIECE_WIDTH2 - 1:0]   attack_array [0:7][0:7];
    reg [ATTACK_COUNT - 1:0]   attack_list_t1;
-   reg                        attacked_valid_t1;
+   reg                        attacking_valid_t1;
    reg                        board_valid_t1;
+   reg                        attacking_t2, attacking_valid_t2;
 
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
@@ -59,6 +60,9 @@ module is_attacking #
         end
    endgenerate
 
+   assign attacking = attacking_t2;
+   assign attacking_valid = attacking_valid_t2;
+
    always @(posedge clk)
      begin
         for (i = 0; i < ATTACK_COUNT; i = i + 1)
@@ -68,8 +72,8 @@ module is_attacking #
             attack_list_t1[i] <= 1'b0;
         board_valid_t1 <= board_valid_t0;
         
-        attacked <= attack_list_t1 != 0;
-        attacked_valid <= board_valid_t1;
+        attacking_t2 <= attack_list_t1 != 0;
+        attacking_valid_t2 <= board_valid_t1;
      end
    
    initial
@@ -479,6 +483,11 @@ module is_attacking #
                       attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
                   idx = idx + 1;
                end
+          end
+        if (idx >= ATTACK_COUNT)
+          begin
+             $display("ERROR: check ATTACK_COUNT, idx is %d, ATTACK_COUNT is %d", idx, ATTACK_COUNT);
+             $finish;
           end
      end
 

@@ -5,8 +5,8 @@ module display_is_attacking #
    (
     input        clk,
     input        reset,
-    input [63:0] attacked,
-    input        attacked_valid,
+    input [63:0] attacking,
+    input        attacking_valid,
 
     output reg   display_done = 0
     );
@@ -41,7 +41,7 @@ module display_is_attacking #
               row_start <= SIDE_WIDTH * 7;
               index <= SIDE_WIDTH * 7;
               col <= 0;
-              if (attacked_valid)
+              if (attacking_valid)
                 state <= STATE_TITLE;
            end
          STATE_TITLE :
@@ -51,7 +51,7 @@ module display_is_attacking #
            end
          STATE_ROW :
            begin
-              $write("%c ", piece_char[attacked[index+:PIECE_WIDTH]]);
+              $write("%c ", piece_char[attacking[index+:PIECE_WIDTH]]);
               index <= index + PIECE_WIDTH;
               if (col == 7)
                 begin

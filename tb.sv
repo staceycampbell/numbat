@@ -20,7 +20,10 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                    is_attacking_done;       // From vchess of vchess.v
+   wire [63:0]          attacking_black;        // From vchess of vchess.v
+   wire [63:0]          attacking_white;        // From vchess of vchess.v
+   wire                 display_attacking_done; // From vchess of vchess.v
+   wire                 is_attacking_done;      // From vchess of vchess.v
    // End of automatics
 
    initial
@@ -92,7 +95,10 @@ module tb;
    vchess
      (/*AUTOINST*/
       // Outputs
-      .is_attacking_done                 (is_attacking_done),
+      .attacking_white                  (attacking_white[63:0]),
+      .attacking_black                  (attacking_black[63:0]),
+      .is_attacking_done                (is_attacking_done),
+      .display_attacking_done           (display_attacking_done),
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
@@ -101,7 +107,7 @@ module tb;
       .white_to_move                    (white_to_move));
 
    /* display_board AUTO_TEMPLATE (
-    .display (is_attacking_done),
+    .display (display_attacking_done),
     );*/
    display_board #
      (
@@ -115,7 +121,7 @@ module tb;
       .reset                            (reset),
       .clk                              (clk),
       .board                            (board[BOARD_WIDTH-1:0]),
-      .display                          (is_attacking_done));      // Templated
+      .display                          (display_attacking_done)); // Templated
 
 endmodule
 
