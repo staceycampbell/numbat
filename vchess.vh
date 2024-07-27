@@ -24,4 +24,6 @@
 `define WHITE_ATTACK 0
 `define BLACK_ATTACK 1
 
+`define COLOR_BIT 3 // if clear this is a white piece
+
 `define MAX_POSITIONS 218
