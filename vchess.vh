@@ -9,17 +9,19 @@
 
 `define WHITE_MASK (1 << `WHITE_PAWN | 1 << `WHITE_ROOK | 1 << `WHITE_KNIT | 1 << `WHITE_BISH | 1 << `WHITE_KING | 1 << `WHITE_QUEN)
 
-`define BLACK_PAWN 8
-`define BLACK_ROOK 9
-`define BLACK_KNIT 10
-`define BLACK_BISH 11
-`define BLACK_KING 12
-`define BLACK_QUEN 13
+`define BLACK_PAWN 9
+`define BLACK_ROOK 10
+`define BLACK_KNIT 11
+`define BLACK_BISH 12
+`define BLACK_KING 13
+`define BLACK_QUEN 14
 
 `define BLACK_MASK (1 << `BLACK_PAWN | 1 << `BLACK_ROOK | 1 << `BLACK_KNIT | 1 << `BLACK_BISH | 1 << `BLACK_KING | 1 << `BLACK_QUEN)
 
 `define PIECE_BITS 4
-`define PIECE_MASK_BITS 14
+`define PIECE_MASK_BITS 15
 
 `define WHITE_ATTACK 0
 `define BLACK_ATTACK 1
+
+`define MAX_POSITIONS 218

@@ -20,10 +20,10 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [63:0]          attacking_black;        // From vchess of vchess.v
-   wire [63:0]          attacking_white;        // From vchess of vchess.v
+   wire [63:0]          black_is_attacking;     // From vchess of vchess.v
    wire                 display_attacking_done; // From vchess of vchess.v
    wire                 is_attacking_done;      // From vchess of vchess.v
+   wire [63:0]          white_is_attacking;     // From vchess of vchess.v
    // End of automatics
 
    initial
@@ -95,8 +95,8 @@ module tb;
    vchess
      (/*AUTOINST*/
       // Outputs
-      .attacking_white                  (attacking_white[63:0]),
-      .attacking_black                  (attacking_black[63:0]),
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .black_is_attacking               (black_is_attacking[63:0]),
       .is_attacking_done                (is_attacking_done),
       .display_attacking_done           (display_attacking_done),
       // Inputs

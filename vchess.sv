@@ -14,8 +14,8 @@ module vchess #
     input                     board_valid,
     input                     white_to_move,
 
-    output [63:0]             attacking_white,
-    output [63:0]             attacking_black,
+    output [63:0]             white_is_attacking,
+    output [63:0]             black_is_attacking,
     output                    is_attacking_done,
     output                    display_attacking_done
     );
@@ -36,8 +36,8 @@ module vchess #
    board_attack
      (/*AUTOINST*/
       // Outputs
-      .attacking_white                  (attacking_white[63:0]),
-      .attacking_black                  (attacking_black[63:0]),
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .black_is_attacking               (black_is_attacking[63:0]),
       .is_attacking_done                (is_attacking_done),
       .display_attacking_done           (display_attacking_done),
       // Inputs
