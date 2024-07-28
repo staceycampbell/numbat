@@ -16,6 +16,8 @@ module vchess #
 
     output [63:0]             white_is_attacking,
     output [63:0]             black_is_attacking,
+    output                    black_in_check,
+    output                    white_in_check,
     output                    is_attacking_done,
     output                    display_attacking_done
     );
@@ -24,10 +26,6 @@ module vchess #
    /*AUTOREGINPUT*/
    
    /*AUTOWIRE*/
-   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From board_attack of board_attack.v
-   wire                 white_in_check;         // From board_attack of board_attack.v
-   // End of automatics
 
    /* board_attack AUTO_TEMPLATE (
     );*/

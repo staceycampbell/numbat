@@ -20,10 +20,12 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [63:0]             black_is_attacking;     // From vchess of vchess.v
-   wire                    display_attacking_done; // From vchess of vchess.v
-   wire                    is_attacking_done;      // From vchess of vchess.v
-   wire [63:0]             white_is_attacking;     // From vchess of vchess.v
+   wire                 black_in_check;         // From vchess of vchess.v
+   wire [63:0]          black_is_attacking;     // From vchess of vchess.v
+   wire                 display_attacking_done; // From vchess of vchess.v
+   wire                 is_attacking_done;      // From vchess of vchess.v
+   wire                 white_in_check;         // From vchess of vchess.v
+   wire [63:0]          white_is_attacking;     // From vchess of vchess.v
    // End of automatics
 
    initial
@@ -33,14 +35,14 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
         // board[1 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
-        board[0 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
+        board[1 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
         board[7 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
         // board[3 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
         // board[4 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
         // board[4 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
         // board[3 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
         board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
-        board[1 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
+        board[1 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
         board[7 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
         if (0)
           begin
@@ -101,6 +103,8 @@ module tb;
       // Outputs
       .white_is_attacking               (white_is_attacking[63:0]),
       .black_is_attacking               (black_is_attacking[63:0]),
+      .black_in_check                   (black_in_check),
+      .white_in_check                   (white_in_check),
       .is_attacking_done                (is_attacking_done),
       .display_attacking_done           (display_attacking_done),
       // Inputs
@@ -125,6 +129,8 @@ module tb;
       .reset                            (reset),
       .clk                              (clk),
       .board                            (board[BOARD_WIDTH-1:0]),
+      .white_in_check                   (white_in_check),
+      .black_in_check                   (black_in_check),
       .display                          (display_attacking_done)); // Templated
 
 endmodule

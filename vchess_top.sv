@@ -17,8 +17,8 @@ module vchess_top;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [63:0]          attacking_black;        // From vchess of vchess.v
-   wire [63:0]          attacking_white;        // From vchess of vchess.v
+   wire                 black_in_check;         // From vchess of vchess.v
+   wire [63:0]          black_is_attacking;     // From vchess of vchess.v
    wire                 clk200;                 // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
@@ -63,6 +63,8 @@ module vchess_top;
    wire [BOARD_WIDTH-1:0] new_board;            // From control of control.v
    wire                 new_board_valid;        // From control of control.v
    wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 white_in_check;         // From vchess of vchess.v
+   wire [63:0]          white_is_attacking;     // From vchess of vchess.v
    // End of automatics
    
    wire                    clk = clk200;
@@ -123,8 +125,10 @@ module vchess_top;
    vchess
      (/*AUTOINST*/
       // Outputs
-      .attacking_white                  (attacking_white[63:0]),
-      .attacking_black                  (attacking_black[63:0]),
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .black_is_attacking               (black_is_attacking[63:0]),
+      .black_in_check                   (black_in_check),
+      .white_in_check                   (white_in_check),
       .is_attacking_done                (is_attacking_done),
       .display_attacking_done           (display_attacking_done),
       // Inputs
@@ -135,8 +139,6 @@ module vchess_top;
       .white_to_move                    (white_to_move));
 
    /* control AUTO_TEMPLATE (
-    .black_attacks (attacking_black[]),
-    .white_attacks (attacking_white[]),
     );*/
    control #
      (
@@ -168,8 +170,10 @@ module vchess_top;
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
-      .black_attacks                    (attacking_black[63:0]), // Templated
-      .white_attacks                    (attacking_white[63:0]), // Templated
+      .black_is_attacking               (black_is_attacking[63:0]),
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .white_in_check                   (white_in_check),
+      .black_in_check                   (black_in_check),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid[0:0]),

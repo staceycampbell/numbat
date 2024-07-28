@@ -11,8 +11,10 @@ module control #
     output reg [BOARD_WIDTH - 1:0] new_board,
     output reg                     new_board_valid,
 
-    input [63:0]                   black_attacks,
-    input [63:0]                   white_attacks,
+    input [63:0]                   black_is_attacking,
+    input [63:0]                   white_is_attacking,
+    input                          white_in_check,
+    input                          black_in_check,
    
     input [39:0]                   ctrl0_axi_araddr,
     input [2:0]                    ctrl0_axi_arprot,
@@ -78,7 +80,7 @@ module control #
        if (ctrl0_wr_addr == 0)
          new_board_valid <= ctrl0_wr_data[0];
        else if (ctrl0_wr_addr >= 1 && ctrl0_wr_addr <= 65)
-         new_board[board_address+:PIECE_WIDTH] <= ctrl0_wr_data[0+:PIECE_WIDTH];
+         new_board[board_address+:PIECE_WIDTH] <= ctrl0_wr_data[PIECE_WIDTH - 1:0];
 
    always @(posedge clk)
      begin
@@ -87,10 +89,11 @@ module control #
         if (ctrl0_axi_arvalid)
           begin
              case (rd_reg_addr)
-               0 : ctrl0_axi_rdata <= black_attacks[31:0];
-               1 : ctrl0_axi_rdata <= black_attacks[63:31];
-               2 : ctrl0_axi_rdata <= white_attacks[31:0];
-               3 : ctrl0_axi_rdata <= white_attacks[63:31];
+               0 : ctrl0_axi_rdata <= black_is_attacking[31:0];
+               1 : ctrl0_axi_rdata <= black_is_attacking[63:31];
+               2 : ctrl0_axi_rdata <= white_is_attacking[31:0];
+               3 : ctrl0_axi_rdata <= white_is_attacking[63:31];
+               4 : ctrl0_axi_rdata <= {black_in_check, white_in_check};
              endcase
              ctrl0_axi_rvalid <= 1;
           end

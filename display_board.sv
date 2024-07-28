@@ -11,6 +11,8 @@ module display_board #
     input                     clk,
 
     input [BOARD_WIDTH - 1:0] board,
+    input                     white_in_check,
+    input                     black_in_check,
     input                     display
     );
 
@@ -37,6 +39,7 @@ module display_board #
 
    localparam STATE_INIT = 0;
    localparam STATE_ROW = 1;
+   localparam STATE_DONE = 2;
 
    reg [1:0] state = STATE_INIT;
 
@@ -67,7 +70,19 @@ module display_board #
               else
                 col <= col + 1;
               if (index == SIDE_WIDTH - PIECE_WIDTH)
-                state <= STATE_INIT;
+                state <= STATE_DONE;
+           end
+         STATE_DONE :
+           begin
+              if (white_in_check)
+                if (black_in_check)
+                  $display("Both in check!");
+                else
+                  $display("White in check.");
+              else
+                if (black_in_check)
+                  $display("Black in check.");
+              state <= STATE_INIT;
            end
        endcase
 
