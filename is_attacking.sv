@@ -17,6 +17,7 @@ module is_attacking #
     input                     board_valid,
 
     output                    attacking,
+    output                    opponent_in_check,
     output                    attacking_valid
     );
 
@@ -35,6 +36,8 @@ module is_attacking #
 
    localparam PIECE_MASK = ATTACKER == `WHITE_ATTACK ? `WHITE_MASK : `BLACK_MASK;
    
+   localparam ATTACKED_KING = 1 << (ATTACKER == `BLACK_ATTACK ? `WHITE_KING : `BLACK_KING);
+   
    // maximum number of attacks possible from any square on the board using any piece
    localparam ATTACK_COUNT = 75;
 
@@ -43,6 +46,7 @@ module is_attacking #
    reg [ATTACK_COUNT - 1:0]   attack_list_t1;
    reg                        attacking_valid_t1;
    reg                        board_valid_t1;
+   reg                        opponent_king_t1, opponent_king_t2;
    reg                        attacking_t2, attacking_valid_t2;
 
    integer                    idx, i, j, ai, aj, f, fi, fj;
@@ -51,6 +55,9 @@ module is_attacking #
    wire [63:0]                my_piece_t0;
    wire [BOARD_WIDTH2 - 1:0]  board2_t0;
    wire                       board_valid_t0 = board_valid;
+   wire [PIECE_WIDTH2 - 1:0]  piece_t0 = board2_t0[ROW * SIDE_WIDTH2 + COL * PIECE_WIDTH2+:PIECE_WIDTH2];
+   wire [PIECE_WIDTH2 - 1:0]  attacked_king_t0 = ATTACKED_KING;
+   wire                       opponent_king_t0 = piece_t0 == attacked_king_t0;
 
    generate
       for (gen_i = 0; gen_i < 64; gen_i = gen_i + 1)
@@ -62,6 +69,7 @@ module is_attacking #
 
    assign attacking = attacking_t2;
    assign attacking_valid = attacking_valid_t2;
+   assign opponent_in_check = attacking_t2 && opponent_king_t2;
 
    always @(posedge clk)
      begin
@@ -71,6 +79,8 @@ module is_attacking #
           else
             attack_list_t1[i] <= 1'b0;
         board_valid_t1 <= board_valid_t0;
+        opponent_king_t1 <= opponent_king_t0;
+        opponent_king_t2 <= opponent_king_t1;
         
         attacking_t2 <= attack_list_t1 != 0;
         attacking_valid_t2 <= board_valid_t1;
@@ -441,17 +451,18 @@ module is_attacking #
         // king
         for (fi = ROW - 1; fi <= ROW + 1; fi = fi + 1)
           for (fj = COL - 1; fj <= COL + 1; fj = fj + 1)
-            if (fi != ROW && fj != COL && fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
-              begin
-                 for (ai = 0; ai < 8; ai = ai + 1)
-                   for (aj = 0; aj < 8; aj = aj + 1)
-                     attack_array[ai][aj] = 0;
-                 attack_array[fi][fj] = ATTACK_KING;
-                 for (ai = 0; ai < 8; ai = ai + 1)
-                   for (aj = 0; aj < 8; aj = aj + 1)
-                     attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
-                 idx = idx + 1;
-              end
+            if (fi >= 0 && fi < 8 && fj >= 0 && fj < 8)
+              if (! (fi == ROW && fj == COL))
+                begin
+                   for (ai = 0; ai < 8; ai = ai + 1)
+                     for (aj = 0; aj < 8; aj = aj + 1)
+                       attack_array[ai][aj] = 0;
+                   attack_array[fi][fj] = ATTACK_KING;
+                   for (ai = 0; ai < 8; ai = ai + 1)
+                     for (aj = 0; aj < 8; aj = aj + 1)
+                       attack_mask[idx][ai * SIDE_WIDTH2 + aj * PIECE_WIDTH2+:PIECE_WIDTH2] = attack_array[ai][aj];
+                   idx = idx + 1;
+                end
         // pawn
         if (ATTACKER == `WHITE_ATTACK)
           fi = ROW - 1;

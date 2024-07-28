@@ -15,6 +15,8 @@ module board_attack #
 
     output [63:0]             white_is_attacking,
     output [63:0]             black_is_attacking,
+    output                    white_in_check,
+    output                    black_in_check,
     output                    is_attacking_done,
     output                    display_attacking_done
     );
@@ -29,9 +31,12 @@ module board_attack #
    // End of automatics
    
    wire [63:0]                white_is_attacking_valid, black_is_attacking_valid;
+   wire [63:0]                white_in_check_list, black_in_check_list;
 
    genvar                     row, col;
 
+   assign white_in_check = white_in_check_list != 0;
+   assign black_in_check = black_in_check_list != 0;
    assign is_attacking_done = white_is_attacking_valid != 0;
    assign display_attacking_done = black_is_attacking_display_done;
 
@@ -44,6 +49,7 @@ module board_attack #
                 /* is_attacking AUTO_TEMPLATE (
                  .attacking (white_is_attacking[row << 3 | col]),
                  .attacking_valid (white_is_attacking_valid[row << 3 | col]),
+                 .opponent_in_check (black_in_check_list[row << 3 | col]),
                  );*/
                 is_attacking #
                       (
@@ -58,6 +64,7 @@ module board_attack #
                       (/*AUTOINST*/
                        // Outputs
                        .attacking       (white_is_attacking[row << 3 | col]), // Templated
+                       .opponent_in_check(black_in_check_list[row << 3 | col]), // Templated
                        .attacking_valid (white_is_attacking_valid[row << 3 | col]), // Templated
                        // Inputs
                        .clk             (clk),
@@ -68,6 +75,7 @@ module board_attack #
                 /* is_attacking AUTO_TEMPLATE (
                  .attacking (black_is_attacking[row << 3 | col]),
                  .attacking_valid (black_is_attacking_valid[row << 3 | col]),
+                 .opponent_in_check (white_in_check_list[row << 3 | col]),
                  );*/
                 is_attacking #
                   (
@@ -82,6 +90,7 @@ module board_attack #
                   (/*AUTOINST*/
                    // Outputs
                    .attacking           (black_is_attacking[row << 3 | col]), // Templated
+                   .opponent_in_check   (white_in_check_list[row << 3 | col]), // Templated
                    .attacking_valid     (black_is_attacking_valid[row << 3 | col]), // Templated
                    // Inputs
                    .clk                 (clk),
