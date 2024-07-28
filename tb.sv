@@ -14,6 +14,10 @@ module tb;
    reg [BOARD_WIDTH - 1:0] board;
    reg                     board_valid = 0;
    reg                     white_to_move = 1;
+   reg [3:0]               castle_mask = 4'b1111;
+   reg                     clear_moves = 1'b0;
+   reg [3:0]               en_passant_col = 4'b1000;
+   reg [($clog2(`MAX_POSITIONS))-1:0] move_index = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -22,10 +26,16 @@ module tb;
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 black_in_check;         // From vchess of vchess.v
    wire [63:0]          black_is_attacking;     // From vchess of vchess.v
+   wire [BOARD_WIDTH-1:0] board_out;            // From all_moves_initial of all_moves.v
+   wire [3:0]           castle_mask_out;        // From all_moves_initial of all_moves.v
    wire                 display_attacking_done; // From vchess of vchess.v
+   wire [3:0]           en_passant_col_out;     // From all_moves_initial of all_moves.v
    wire                 is_attacking_done;      // From vchess of vchess.v
+   wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
+   wire                 moves_ready;            // From all_moves_initial of all_moves.v
    wire                 white_in_check;         // From vchess of vchess.v
    wire [63:0]          white_is_attacking;     // From vchess of vchess.v
+   wire                 white_to_move_out;      // From all_moves_initial of all_moves.v
    // End of automatics
 
    initial
@@ -89,6 +99,36 @@ module tb;
         if (t >= 512)
           $finish;
      end
+   
+   /* all_moves AUTO_TEMPLATE (
+    );*/
+   all_moves #
+     (
+      .PIECE_WIDTH (PIECE_WIDTH),
+      .SIDE_WIDTH (SIDE_WIDTH),
+      .BOARD_WIDTH (BOARD_WIDTH),
+      .MAX_POSITIONS (`MAX_POSITIONS),
+      .MAX_POSITIONS_LOG2 ($clog2(`MAX_POSITIONS))
+      )
+   all_moves_initial
+     (/*AUTOINST*/
+      // Outputs
+      .moves_ready                      (moves_ready),
+      .move_count                       (move_count[($clog2(`MAX_POSITIONS))-1:0]),
+      .board_out                        (board_out[BOARD_WIDTH-1:0]),
+      .white_to_move_out                (white_to_move_out),
+      .castle_mask_out                  (castle_mask_out[3:0]),
+      .en_passant_col_out               (en_passant_col_out[3:0]),
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (board_valid),
+      .board                            (board[BOARD_WIDTH-1:0]),
+      .white_to_move                    (white_to_move),
+      .castle_mask                      (castle_mask[3:0]),
+      .en_passant_col                   (en_passant_col[3:0]),
+      .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
+      .clear_moves                      (clear_moves));
 
    /* vchess AUTO_TEMPLATE (
     );*/

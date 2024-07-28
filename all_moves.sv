@@ -34,22 +34,35 @@ module all_moves #
    reg [RAM_WIDTH - 1:0]              ram_rd_data;
    reg [MAX_POSITIONS_LOG2 - 1:0]     ram_wr_addr;
    reg [2:0]                          row, col;
+   reg [$clog2(BOARD_WIDTH) - 1:0]    idx [0:7][0:7];
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
-   wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
+   wire                               display_attacking_done; // From board_attack of board_attack.v
+   wire                               is_attacking_done;      // From board_attack of board_attack.v
+   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
-   wire                 black_to_move = ~white_to_move;
+   integer                            i, x, y, ri;
+
+   wire                               black_to_move = ~white_to_move;
 
    assign move_count = ram_wr_addr;
    assign {en_passant_col_out, castle_mask_out, white_to_move_out, board_out} = ram_rd_data;
+
+   initial
+     begin
+        for (y = 0; y < 8; y = y + 1)
+          begin
+             ri = y * SIDE_WIDTH;
+             for (x = 0; x < 8; x = x + 1)
+               idx[y][x] = ri + x * PIECE_WIDTH;
+          end
+     end
 
    always @(posedge clk)
      ram_rd_data <= move_ram[move_index];
@@ -60,11 +73,12 @@ module all_moves #
    localparam STATE_DO_SQUARE = 3;
    localparam STATE_NEXT = 4;
    localparam STATE_DONE = 5;
+   localparam STATE_ROOK_INIT = 6;
 
    reg [5:0]                          state = STATE_IDLE;
 
    always @(posedge clk)
-     if (reset || clear_moves)
+     if (reset)
        state <= STATE_IDLE;
      else
        case (state)
@@ -86,22 +100,26 @@ module all_moves #
            end
          STATE_DO_SQUARE :
            begin
-              if (board[row << 3 | col+:PIECE_WIDTH] == `EMPTY_POSN) // empty square
+              if (board[idx[row][col]+:PIECE_WIDTH] == `EMPTY_POSN) // empty square
                 state <= STATE_NEXT;
-              else if (board[(row << 3 | col) + `BLACK_BIT] != black_to_move) // not color-to-move's piece
+              else if (board[idx[row][col] + `BLACK_BIT] != black_to_move) // not color-to-move's piece
+                state <= STATE_NEXT;
+              else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_ROOK)
+                state <= STATE_ROOK_INIT;
+              else
                 state <= STATE_NEXT;
            end
+         STATE_ROOK_INIT :
+           state <= STATE_NEXT;
          STATE_NEXT :
            begin
+              col <= col + 1;
               if (col == 7)
-                begin
-                   if (row == 7)
-                     state <= STATE_DONE;
-                   row <= row + 1;
-                end
+                row <= row + 1;
+              if (col == 7 && row == 7)
+                state <= STATE_DONE;
               else
-                col <= col + 1;
-              state <= STATE_DO_SQUARE;
+                state <= STATE_DO_SQUARE;
            end
          STATE_DONE :
            begin
@@ -117,7 +135,8 @@ module all_moves #
      (
       .PIECE_WIDTH (PIECE_WIDTH),
       .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH)
+      .BOARD_WIDTH (BOARD_WIDTH),
+      .DO_DISPLAY (0)
       )
    board_attack
      (/*AUTOINST*/

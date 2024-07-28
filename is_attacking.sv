@@ -80,10 +80,10 @@ module is_attacking #
             attack_list_t1[i] <= 1'b0;
         board_valid_t1 <= board_valid_t0;
         opponent_king_t1 <= opponent_king_t0;
-        opponent_king_t2 <= opponent_king_t1;
         
         attacking_t2 <= attack_list_t1 != 0;
         attacking_valid_t2 <= board_valid_t1;
+        opponent_king_t2 <= opponent_king_t1;
      end
    
    initial

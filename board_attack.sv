@@ -4,7 +4,8 @@ module board_attack #
   (
    parameter PIECE_WIDTH = 0,
    parameter SIDE_WIDTH = 0,
-   parameter BOARD_WIDTH = 0
+   parameter BOARD_WIDTH = 0,
+   parameter DO_DISPLAY = 0
    )
    (
     input                     reset,
@@ -26,8 +27,8 @@ module board_attack #
    
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_is_attacking_display_done;// From display_is_black_is_attacking of display_is_attacking.v
-   wire                 white_is_attacking_display_done;// From display_is_white_is_attacking of display_is_attacking.v
+   wire                       black_is_attacking_display_done;// From display_is_black_is_attacking of display_is_attacking.v
+   wire                       white_is_attacking_display_done;// From display_is_white_is_attacking of display_is_attacking.v
    // End of automatics
    
    wire [63:0]                white_is_attacking_valid, black_is_attacking_valid;
@@ -101,44 +102,50 @@ module board_attack #
         end
       
    endgenerate
-   
-   /* display_is_attacking AUTO_TEMPLATE (
-    .attacking (white_is_attacking[]),
-    .attacking_valid (white_is_attacking_valid != 0),
-    .display_done (white_is_attacking_display_done),
-    );*/
-   display_is_attacking #
-     (
-      .COLOR_ATTACKS ("White")
-      )
-   display_is_white_is_attacking
-     (/*AUTOINST*/
-      // Outputs
-      .display_done                     (white_is_attacking_display_done), // Templated
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .attacking                        (white_is_attacking[63:0]), // Templated
-      .attacking_valid                  (white_is_attacking_valid != 0)); // Templated
 
-   /* display_is_attacking AUTO_TEMPLATE (
-    .attacking (black_is_attacking[]),
-    .attacking_valid (white_is_attacking_display_done),
-    .display_done (black_is_attacking_display_done),
-    );*/
-   display_is_attacking #
-     (
-      .COLOR_ATTACKS ("Black")
-      )
-   display_is_black_is_attacking
-     (/*AUTOINST*/
-      // Outputs
-      .display_done                     (black_is_attacking_display_done), // Templated
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .attacking                        (black_is_attacking[63:0]), // Templated
-      .attacking_valid                  (white_is_attacking_display_done)); // Templated
+   generate
+      if (DO_DISPLAY)
+        begin
+           
+           /* display_is_attacking AUTO_TEMPLATE (
+            .attacking (white_is_attacking[]),
+            .attacking_valid (white_is_attacking_valid != 0),
+            .display_done (white_is_attacking_display_done),
+            );*/
+           display_is_attacking #
+             (
+              .COLOR_ATTACKS ("White")
+              )
+           display_is_white_is_attacking
+             (/*AUTOINST*/
+              // Outputs
+              .display_done                     (white_is_attacking_display_done), // Templated
+              // Inputs
+              .clk                              (clk),
+              .reset                            (reset),
+              .attacking                        (white_is_attacking[63:0]), // Templated
+              .attacking_valid                  (white_is_attacking_valid != 0)); // Templated
+
+           /* display_is_attacking AUTO_TEMPLATE (
+            .attacking (black_is_attacking[]),
+            .attacking_valid (white_is_attacking_display_done),
+            .display_done (black_is_attacking_display_done),
+            );*/
+           display_is_attacking #
+             (
+              .COLOR_ATTACKS ("Black")
+              )
+           display_is_black_is_attacking
+             (/*AUTOINST*/
+              // Outputs
+              .display_done                     (black_is_attacking_display_done), // Templated
+              // Inputs
+              .clk                              (clk),
+              .reset                            (reset),
+              .attacking                        (black_is_attacking[63:0]), // Templated
+              .attacking_valid                  (white_is_attacking_display_done)); // Templated
+        end // if (DO_DISPLAY)
+   endgenerate
 
 endmodule
 
