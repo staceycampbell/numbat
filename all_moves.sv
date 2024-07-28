@@ -40,11 +40,13 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
-   wire                               display_attacking_done; // From board_attack of board_attack.v
-   wire                               is_attacking_done;      // From board_attack of board_attack.v
-   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
+   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire                 display_attacking_done; // From board_attack of board_attack.v
+   wire                 is_attacking_done;      // From board_attack of board_attack.v
+   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
+
+   wire                 black_to_move = ~white_to_move;
 
    assign move_count = ram_wr_addr;
    assign {en_passant_col_out, castle_mask_out, white_to_move_out, board_out} = ram_rd_data;
@@ -84,7 +86,9 @@ module all_moves #
            end
          STATE_DO_SQUARE :
            begin
-              if (board[row << 3 | col] == `EMPTY_POSN)
+              if (board[row << 3 | col+:PIECE_WIDTH] == `EMPTY_POSN) // empty square
+                state <= STATE_NEXT;
+              else if (board[(row << 3 | col) + `BLACK_BIT] != black_to_move) // not color-to-move's piece
                 state <= STATE_NEXT;
            end
          STATE_NEXT :

@@ -1,21 +1,29 @@
 `define EMPTY_POSN 0
 
-`define WHITE_PAWN 1
-`define WHITE_ROOK 2
-`define WHITE_KNIT 3
-`define WHITE_BISH 4
-`define WHITE_KING 5
-`define WHITE_QUEN 6
+`define PIECE_PAWN 1
+`define PIECE_ROOK 2
+`define PIECE_KNIT 3
+`define PIECE_BISH 4
+`define PIECE_KING 5
+`define PIECE_QUEN 6
+
+`define BLACK_BIT 3 // if set this is a black piece
+
+`define WHITE_PAWN `PIECE_PAWN
+`define WHITE_ROOK `PIECE_ROOK
+`define WHITE_KNIT `PIECE_KNIT
+`define WHITE_BISH `PIECE_BISH
+`define WHITE_KING `PIECE_KING
+`define WHITE_QUEN `PIECE_QUEN
+
+`define BLACK_PAWN ((1 << `BLACK_BIT) | `PIECE_PAWN)
+`define BLACK_ROOK ((1 << `BLACK_BIT) | `PIECE_ROOK)
+`define BLACK_KNIT ((1 << `BLACK_BIT) | `PIECE_KNIT)
+`define BLACK_BISH ((1 << `BLACK_BIT) | `PIECE_BISH)
+`define BLACK_KING ((1 << `BLACK_BIT) | `PIECE_KING)
+`define BLACK_QUEN ((1 << `BLACK_BIT) | `PIECE_QUEN)
 
 `define WHITE_MASK (1 << `WHITE_PAWN | 1 << `WHITE_ROOK | 1 << `WHITE_KNIT | 1 << `WHITE_BISH | 1 << `WHITE_KING | 1 << `WHITE_QUEN)
-
-`define BLACK_PAWN 9
-`define BLACK_ROOK 10
-`define BLACK_KNIT 11
-`define BLACK_BISH 12
-`define BLACK_KING 13
-`define BLACK_QUEN 14
-
 `define BLACK_MASK (1 << `BLACK_PAWN | 1 << `BLACK_ROOK | 1 << `BLACK_KNIT | 1 << `BLACK_BISH | 1 << `BLACK_KING | 1 << `BLACK_QUEN)
 
 `define PIECE_BITS 4
@@ -24,6 +32,5 @@
 `define WHITE_ATTACK 0
 `define BLACK_ATTACK 1
 
-`define COLOR_BIT 3 // if clear this is a white piece
 
 `define MAX_POSITIONS 218
