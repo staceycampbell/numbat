@@ -220,8 +220,11 @@ proc create_root_design { parentCell } {
   # Create instance: ps8_0_axi_periph, and set properties
   set ps8_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 ps8_0_axi_periph ]
   set_property -dict [ list \
+   CONFIG.M00_HAS_REGSLICE {4} \
+   CONFIG.M01_HAS_REGSLICE {4} \
    CONFIG.NUM_MI {2} \
    CONFIG.NUM_SI {1} \
+   CONFIG.S00_HAS_REGSLICE {4} \
    CONFIG.STRATEGY {0} \
  ] $ps8_0_axi_periph
 
