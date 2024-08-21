@@ -46,7 +46,7 @@ module tb;
           board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
         // board[1 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
         board[1 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
-        board[7 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
+        board[7 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
         // board[3 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
         // board[4 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
         // board[4 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
@@ -101,6 +101,7 @@ module tb;
      end
    
    /* all_moves AUTO_TEMPLATE (
+    .\(.*\)_in (\1[]),
     );*/
    all_moves #
      (
@@ -123,10 +124,10 @@ module tb;
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (board_valid),
-      .board                            (board[BOARD_WIDTH-1:0]),
-      .white_to_move                    (white_to_move),
-      .castle_mask                      (castle_mask[3:0]),
-      .en_passant_col                   (en_passant_col[3:0]),
+      .board_in                         (board[BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in                 (white_to_move),         // Templated
+      .castle_mask_in                   (castle_mask[3:0]),      // Templated
+      .en_passant_col_in                (en_passant_col[3:0]),   // Templated
       .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
       .clear_moves                      (clear_moves));
 
