@@ -34,7 +34,7 @@ module vchess #
       .PIECE_WIDTH (PIECE_WIDTH),
       .SIDE_WIDTH (SIDE_WIDTH),
       .BOARD_WIDTH (BOARD_WIDTH),
-      .DO_DISPLAY (1)
+      .DO_DISPLAY (0)
       )
    board_attack
      (/*AUTOINST*/

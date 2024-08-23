@@ -18,6 +18,7 @@ module tb;
    reg                     clear_moves = 1'b0;
    reg [3:0]               en_passant_col = 4'b1000;
    reg [($clog2(`MAX_POSITIONS))-1:0] move_index = 0;
+   reg                                display_move = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -29,6 +30,7 @@ module tb;
    wire [BOARD_WIDTH-1:0] board_out;            // From all_moves_initial of all_moves.v
    wire [3:0]           castle_mask_out;        // From all_moves_initial of all_moves.v
    wire                 display_attacking_done; // From vchess of vchess.v
+   wire                 display_done;           // From display_board of display_board.v
    wire [3:0]           en_passant_col_out;     // From all_moves_initial of all_moves.v
    wire                 is_attacking_done;      // From vchess of vchess.v
    wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
@@ -45,14 +47,14 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
         // board[1 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
-        board[1 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
+        board[1 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
         board[7 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
         // board[3 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
         // board[4 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
         // board[4 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
         // board[3 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
         board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
-        board[1 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
+        board[1 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
         board[7 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
         if (0)
           begin
@@ -96,9 +98,64 @@ module tb;
         board_valid <= t == 72;
         white_to_move <= 1;
 
-        if (t >= 512)
+        if (t >= 5000)
           $finish;
-     end
+     end // always @ (posedge clk)
+
+   localparam STATE_IDLE = 0;
+   localparam STATE_DISP_INIT = 1;
+   localparam STATE_DISP_BOARD_0 = 2;
+   localparam STATE_DISP_BOARD_1 = 3;
+   localparam STATE_DISP_BOARD_2 = 4;
+   localparam STATE_DONE_0 = 5;
+   localparam STATE_DONE_1 = 6;
+   
+   reg [4:0] state = STATE_IDLE;
+
+   always @(posedge clk)
+     case (state)
+       STATE_IDLE :
+         begin
+            move_index <= 0;
+            display_move <= 0;
+            clear_moves <= 0;
+            if (clear_moves)
+              $finish; // fixme hack
+            if (moves_ready)
+              begin
+                 $display("move_count: %d", move_count);
+                 state <= STATE_DISP_INIT;
+              end
+         end
+       STATE_DISP_INIT :
+         begin
+            display_move <= 1;
+            state <= STATE_DISP_BOARD_0;
+         end
+       STATE_DISP_BOARD_0 :
+         begin
+            display_move <= 0;
+            if (display_done)
+              state <= STATE_DISP_BOARD_1;
+         end
+       STATE_DISP_BOARD_1 :
+         begin
+            move_index <= move_index + 1;
+            if (move_index + 1 < move_count)
+              state <= STATE_DISP_BOARD_2;
+            else
+              state <= STATE_DONE_0;
+         end
+       STATE_DISP_BOARD_2 : // wait state for move RAM
+         state <= STATE_DISP_INIT;
+       STATE_DONE_0 :
+         begin
+            clear_moves <= 1;
+            state <= STATE_DONE_1;
+         end
+       STATE_DONE_1 : // wait state for moves state machine to reset
+         state <= STATE_IDLE;
+     endcase
    
    /* all_moves AUTO_TEMPLATE (
     .\(.*\)_in (\1[]),
@@ -156,7 +213,10 @@ module tb;
       .white_to_move                    (white_to_move));
 
    /* display_board AUTO_TEMPLATE (
-    .display (display_attacking_done),
+    .display (display_move),
+    .board (board_out[]),
+    .white_in_check (1'b0),
+    .black_in_check (1'b0),
     );*/
    display_board #
      (
@@ -166,13 +226,15 @@ module tb;
       )
    display_board
      (/*AUTOINST*/
+      // Outputs
+      .display_done                     (display_done),
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
-      .board                            (board[BOARD_WIDTH-1:0]),
-      .white_in_check                   (white_in_check),
-      .black_in_check                   (black_in_check),
-      .display                          (display_attacking_done)); // Templated
+      .board                            (board_out[BOARD_WIDTH-1:0]), // Templated
+      .white_in_check                   (1'b0),                  // Templated
+      .black_in_check                   (1'b0),                  // Templated
+      .display                          (display_move));          // Templated
 
 endmodule
 

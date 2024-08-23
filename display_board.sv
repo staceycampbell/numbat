@@ -13,7 +13,9 @@ module display_board #
     input [BOARD_WIDTH - 1:0] board,
     input                     white_in_check,
     input                     black_in_check,
-    input                     display
+    input                     display,
+
+    output reg                display_done = 0
     );
 
    reg [7:0]                  piece_char [0:(1 << PIECE_WIDTH) - 1];
@@ -53,6 +55,7 @@ module display_board #
               row_start <= SIDE_WIDTH * 7;
               index <= SIDE_WIDTH * 7;
               col <= 0;
+              display_done <= 0;
               if (display)
                 state <= STATE_ROW;
            end
@@ -82,6 +85,8 @@ module display_board #
               else
                 if (black_in_check)
                   $display("Black in check.");
+              $display("");
+              display_done <= 1;
               state <= STATE_INIT;
            end
        endcase

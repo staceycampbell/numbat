@@ -182,25 +182,25 @@ module all_moves #
               en_passant_col_ram_wr <= en_passant_col;
               if (rook_col == 0)
                 if (col == 7)
-                  state <= STATE_NEXT; // fixme
+                  state <= STATE_NEXT; // fixme, becomes rook up
                 else
                   begin
                      rook_col <= col + 1;
                      state <= STATE_ROOK_RIGHT_0;
                   end
-              else if (board[idx[rook_row][rook_col]+ `BLACK_BIT] != black_to_move) // took a piece, move on
-                if (col == 7)
-                  state <= STATE_NEXT; // fixme
-                else
-                  begin
-                     rook_col <= col + 1;
-                     state <= STATE_ROOK_RIGHT_0;
-                  end
-              else if (board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN)
+              else if (board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN) // keep moving left
                 begin
                    rook_col <= rook_col - 1;
                    state <= STATE_ROOK_LEFT_0;
                 end
+              else // took a piece, or square occupied by own piece, stop moving left
+                if (col == 7)
+                  state <= STATE_NEXT; // fixme, becomes rook up
+                else
+                  begin
+                     rook_col <= col + 1;
+                     state <= STATE_ROOK_RIGHT_0;
+                  end
            end
          STATE_ROOK_RIGHT_0 :
            begin
