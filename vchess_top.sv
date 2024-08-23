@@ -24,41 +24,41 @@ module vchess_top;
    wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           ctrl0_axi_arready;      // From control of control.v
-   wire [0:0]           ctrl0_axi_arvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl0_axi_arvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [39:0]          ctrl0_axi_awaddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [2:0]           ctrl0_axi_awprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           ctrl0_axi_awready;      // From control of control.v
-   wire [0:0]           ctrl0_axi_awvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl0_axi_bready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl0_axi_awvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl0_axi_bready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [1:0]           ctrl0_axi_bresp;        // From control of control.v
    wire [0:0]           ctrl0_axi_bvalid;       // From control of control.v
    wire [31:0]          ctrl0_axi_rdata;        // From control of control.v
-   wire [0:0]           ctrl0_axi_rready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl0_axi_rready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [1:0]           ctrl0_axi_rresp;        // From control of control.v
    wire [0:0]           ctrl0_axi_rvalid;       // From control of control.v
    wire [31:0]          ctrl0_axi_wdata;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           ctrl0_axi_wready;       // From control of control.v
    wire [3:0]           ctrl0_axi_wstrb;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl0_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl0_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [39:0]          ctrl1_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [2:0]           ctrl1_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           ctrl1_axi_arready;      // From control of control.v
-   wire [0:0]           ctrl1_axi_arvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl1_axi_arvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [39:0]          ctrl1_axi_awaddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [2:0]           ctrl1_axi_awprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           ctrl1_axi_awready;      // From control of control.v
-   wire [0:0]           ctrl1_axi_awvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl1_axi_bready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl1_axi_awvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl1_axi_bready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [1:0]           ctrl1_axi_bresp;        // From control of control.v
    wire [0:0]           ctrl1_axi_bvalid;       // From control of control.v
    wire [31:0]          ctrl1_axi_rdata;        // From control of control.v
-   wire [0:0]           ctrl1_axi_rready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl1_axi_rready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [1:0]           ctrl1_axi_rresp;        // From control of control.v
    wire [0:0]           ctrl1_axi_rvalid;       // From control of control.v
    wire [31:0]          ctrl1_axi_wdata;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           ctrl1_axi_wready;       // From control of control.v
    wire [3:0]           ctrl1_axi_wstrb;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl1_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl1_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 display_attacking_done; // From vchess of vchess.v
    wire [3:0]           en_passant_col;         // From control of control.v
    wire [BOARD_WIDTH-1:0] initial_board;        // From all_moves_initial of all_moves.v
@@ -130,6 +130,7 @@ module vchess_top;
     .castle_mask_out (initial_castle_mask[]),
     .en_passant_col_out (initial_en_passant_col[]),
     .white_to_move_out (initial_white_to_move),
+    .\(.*\)_in (\1[]),
     );*/
    all_moves #
      (
@@ -152,10 +153,10 @@ module vchess_top;
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (board_valid),
-      .board                            (board[BOARD_WIDTH-1:0]),
-      .white_to_move                    (white_to_move),
-      .castle_mask                      (castle_mask[3:0]),
-      .en_passant_col                   (en_passant_col[3:0]),
+      .board_in                         (board[BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in                 (white_to_move),         // Templated
+      .castle_mask_in                   (castle_mask[3:0]),      // Templated
+      .en_passant_col_in                (en_passant_col[3:0]),   // Templated
       .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
       .clear_moves                      (clear_moves));
 
@@ -231,26 +232,26 @@ module vchess_top;
       .initial_white_to_move            (initial_white_to_move),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
-      .ctrl0_axi_arvalid                (ctrl0_axi_arvalid[0:0]),
+      .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
       .ctrl0_axi_awaddr                 (ctrl0_axi_awaddr[39:0]),
       .ctrl0_axi_awprot                 (ctrl0_axi_awprot[2:0]),
-      .ctrl0_axi_awvalid                (ctrl0_axi_awvalid[0:0]),
-      .ctrl0_axi_bready                 (ctrl0_axi_bready[0:0]),
-      .ctrl0_axi_rready                 (ctrl0_axi_rready[0:0]),
+      .ctrl0_axi_awvalid                (ctrl0_axi_awvalid),
+      .ctrl0_axi_bready                 (ctrl0_axi_bready),
+      .ctrl0_axi_rready                 (ctrl0_axi_rready),
       .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
       .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
-      .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid[0:0]),
+      .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
       .ctrl1_axi_araddr                 (ctrl1_axi_araddr[39:0]),
       .ctrl1_axi_arprot                 (ctrl1_axi_arprot[2:0]),
-      .ctrl1_axi_arvalid                (ctrl1_axi_arvalid[0:0]),
+      .ctrl1_axi_arvalid                (ctrl1_axi_arvalid),
       .ctrl1_axi_awaddr                 (ctrl1_axi_awaddr[39:0]),
       .ctrl1_axi_awprot                 (ctrl1_axi_awprot[2:0]),
-      .ctrl1_axi_awvalid                (ctrl1_axi_awvalid[0:0]),
-      .ctrl1_axi_bready                 (ctrl1_axi_bready[0:0]),
-      .ctrl1_axi_rready                 (ctrl1_axi_rready[0:0]),
+      .ctrl1_axi_awvalid                (ctrl1_axi_awvalid),
+      .ctrl1_axi_bready                 (ctrl1_axi_bready),
+      .ctrl1_axi_rready                 (ctrl1_axi_rready),
       .ctrl1_axi_wdata                  (ctrl1_axi_wdata[31:0]),
       .ctrl1_axi_wstrb                  (ctrl1_axi_wstrb[3:0]),
-      .ctrl1_axi_wvalid                 (ctrl1_axi_wvalid[0:0]));
+      .ctrl1_axi_wvalid                 (ctrl1_axi_wvalid));
 
    /* mpsoc_preset_wrapper AUTO_TEMPLATE (
     );*/
@@ -260,44 +261,44 @@ module vchess_top;
       .clk200                           (clk200),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
-      .ctrl0_axi_arvalid                (ctrl0_axi_arvalid[0:0]),
+      .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
       .ctrl0_axi_awaddr                 (ctrl0_axi_awaddr[39:0]),
       .ctrl0_axi_awprot                 (ctrl0_axi_awprot[2:0]),
-      .ctrl0_axi_awvalid                (ctrl0_axi_awvalid[0:0]),
-      .ctrl0_axi_bready                 (ctrl0_axi_bready[0:0]),
-      .ctrl0_axi_rready                 (ctrl0_axi_rready[0:0]),
+      .ctrl0_axi_awvalid                (ctrl0_axi_awvalid),
+      .ctrl0_axi_bready                 (ctrl0_axi_bready),
+      .ctrl0_axi_rready                 (ctrl0_axi_rready),
       .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
       .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
-      .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid[0:0]),
+      .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
       .ctrl1_axi_araddr                 (ctrl1_axi_araddr[39:0]),
       .ctrl1_axi_arprot                 (ctrl1_axi_arprot[2:0]),
-      .ctrl1_axi_arvalid                (ctrl1_axi_arvalid[0:0]),
+      .ctrl1_axi_arvalid                (ctrl1_axi_arvalid),
       .ctrl1_axi_awaddr                 (ctrl1_axi_awaddr[39:0]),
       .ctrl1_axi_awprot                 (ctrl1_axi_awprot[2:0]),
-      .ctrl1_axi_awvalid                (ctrl1_axi_awvalid[0:0]),
-      .ctrl1_axi_bready                 (ctrl1_axi_bready[0:0]),
-      .ctrl1_axi_rready                 (ctrl1_axi_rready[0:0]),
+      .ctrl1_axi_awvalid                (ctrl1_axi_awvalid),
+      .ctrl1_axi_bready                 (ctrl1_axi_bready),
+      .ctrl1_axi_rready                 (ctrl1_axi_rready),
       .ctrl1_axi_wdata                  (ctrl1_axi_wdata[31:0]),
       .ctrl1_axi_wstrb                  (ctrl1_axi_wstrb[3:0]),
-      .ctrl1_axi_wvalid                 (ctrl1_axi_wvalid[0:0]),
+      .ctrl1_axi_wvalid                 (ctrl1_axi_wvalid),
       .reset                            (reset[0:0]),
       // Inputs
-      .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
-      .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
+      .ctrl0_axi_arready                (ctrl0_axi_arready),
+      .ctrl0_axi_awready                (ctrl0_axi_awready),
       .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),
-      .ctrl0_axi_bvalid                 (ctrl0_axi_bvalid[0:0]),
+      .ctrl0_axi_bvalid                 (ctrl0_axi_bvalid),
       .ctrl0_axi_rdata                  (ctrl0_axi_rdata[31:0]),
       .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
-      .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid[0:0]),
-      .ctrl0_axi_wready                 (ctrl0_axi_wready[0:0]),
-      .ctrl1_axi_arready                (ctrl1_axi_arready[0:0]),
-      .ctrl1_axi_awready                (ctrl1_axi_awready[0:0]),
+      .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid),
+      .ctrl0_axi_wready                 (ctrl0_axi_wready),
+      .ctrl1_axi_arready                (ctrl1_axi_arready),
+      .ctrl1_axi_awready                (ctrl1_axi_awready),
       .ctrl1_axi_bresp                  (ctrl1_axi_bresp[1:0]),
-      .ctrl1_axi_bvalid                 (ctrl1_axi_bvalid[0:0]),
+      .ctrl1_axi_bvalid                 (ctrl1_axi_bvalid),
       .ctrl1_axi_rdata                  (ctrl1_axi_rdata[31:0]),
       .ctrl1_axi_rresp                  (ctrl1_axi_rresp[1:0]),
-      .ctrl1_axi_rvalid                 (ctrl1_axi_rvalid[0:0]),
-      .ctrl1_axi_wready                 (ctrl1_axi_wready[0:0]));
+      .ctrl1_axi_rvalid                 (ctrl1_axi_rvalid),
+      .ctrl1_axi_wready                 (ctrl1_axi_wready));
 
 endmodule
 

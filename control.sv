@@ -28,15 +28,15 @@ module control #
    
     input [39:0]                              ctrl0_axi_araddr,
     input [2:0]                               ctrl0_axi_arprot,
-    input [0:0]                               ctrl0_axi_arvalid,
+    input                                     ctrl0_axi_arvalid,
     input [39:0]                              ctrl0_axi_awaddr,
     input [2:0]                               ctrl0_axi_awprot,
-    input [0:0]                               ctrl0_axi_awvalid,
-    input [0:0]                               ctrl0_axi_bready,
-    input [0:0]                               ctrl0_axi_rready,
+    input                                     ctrl0_axi_awvalid,
+    input                                     ctrl0_axi_bready,
+    input                                     ctrl0_axi_rready,
     input [31:0]                              ctrl0_axi_wdata,
     input [3:0]                               ctrl0_axi_wstrb,
-    input [0:0]                               ctrl0_axi_wvalid,
+    input                                     ctrl0_axi_wvalid,
    
     output [0:0]                              ctrl0_axi_arready,
     output [0:0]                              ctrl0_axi_awready,
@@ -49,15 +49,15 @@ module control #
    
     input [39:0]                              ctrl1_axi_araddr,
     input [2:0]                               ctrl1_axi_arprot,
-    input [0:0]                               ctrl1_axi_arvalid,
+    input                                     ctrl1_axi_arvalid,
     input [39:0]                              ctrl1_axi_awaddr,
     input [2:0]                               ctrl1_axi_awprot,
-    input [0:0]                               ctrl1_axi_awvalid,
-    input [0:0]                               ctrl1_axi_bready,
-    input [0:0]                               ctrl1_axi_rready,
+    input                                     ctrl1_axi_awvalid,
+    input                                     ctrl1_axi_bready,
+    input                                     ctrl1_axi_rready,
     input reg [31:0]                          ctrl1_axi_wdata,
     input [3:0]                               ctrl1_axi_wstrb,
-    input [0:0]                               ctrl1_axi_wvalid,
+    input                                     ctrl1_axi_wvalid,
    
     output [0:0]                              ctrl1_axi_arready,
     output [0:0]                              ctrl1_axi_awready,
@@ -76,9 +76,9 @@ module control #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [39:0]                                ctrl0_wr_addr;          // From axi4lite_write_ctrl0 of axi4lite_write.v
-   wire [31:0]                                ctrl0_wr_data;          // From axi4lite_write_ctrl0 of axi4lite_write.v
-   wire                                       ctrl0_wr_valid;         // From axi4lite_write_ctrl0 of axi4lite_write.v
+   wire [39:0]          ctrl0_wr_addr;          // From axi4lite_write_ctrl0 of axi4lite_write.v
+   wire [31:0]          ctrl0_wr_data;          // From axi4lite_write_ctrl0 of axi4lite_write.v
+   wire                 ctrl0_wr_valid;         // From axi4lite_write_ctrl0 of axi4lite_write.v
    // End of automatics
 
    wire [15:0]                                wr_reg_addr = ctrl0_wr_addr[15:2];
