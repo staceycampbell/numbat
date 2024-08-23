@@ -48,6 +48,7 @@ module all_moves #
    reg [3:0]                          en_passant_col_ram_wr;
    reg [3:0]                          castle_mask_ram_wr;
    reg                                white_to_move_ram_wr;
+   reg                                ram_wr;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -78,7 +79,11 @@ module all_moves #
      end
 
    always @(posedge clk)
-     ram_rd_data <= move_ram[move_index];
+     begin
+        ram_rd_data <= move_ram[move_index];
+        if (ram_wr)
+          move_ram[ram_wr_addr] <= {en_passant_col_ram_wr, castle_mask_ram_wr, white_to_move_ram_wr, board_ram_wr};
+     end
 
    localparam STATE_IDLE = 0;
    localparam STATE_GET_ATTACKS = 1;
@@ -86,8 +91,10 @@ module all_moves #
    localparam STATE_DO_SQUARE = 3;
    localparam STATE_NEXT = 4;
    localparam STATE_DONE = 5;
-   localparam STATE_ROOK_LEFT = 6;
-   localparam STATE_ROOK_RIGHT = 7;
+   localparam STATE_ROOK_LEFT_0 = 6;
+   localparam STATE_ROOK_LEFT_1 = 7;
+   localparam STATE_ROOK_RIGHT_0 = 8;
+   localparam STATE_ROOK_RIGHT_1 = 9;
 
    reg [6:0]                          state = STATE_IDLE;
 
@@ -99,7 +106,6 @@ module all_moves #
          STATE_IDLE :
            begin
               moves_ready <= 0;
-              ram_wr_addr <= 0;
               board <= board_in;
               white_to_move <= white_to_move_in;
               castle_mask <= castle_mask_in;
@@ -114,11 +120,16 @@ module all_moves #
            begin
               row <= 0;
               col <= 0;
+              ram_wr_addr <= 0;
+              ram_wr <= 0;
               white_to_move_ram_wr <= ~white_to_move;
               state <= STATE_DO_SQUARE;
            end
          STATE_DO_SQUARE :
            begin
+              board_ram_wr <= board;
+              castle_mask_ram_wr <= castle_mask;
+              en_passant_col_ram_wr <= en_passant_col;
               rook_row <= row;
               piece <= board[idx[row][col]+:PIECE_WIDTH];
               is_queen <= board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_QUEN;
@@ -128,31 +139,71 @@ module all_moves #
                 state <= STATE_NEXT;
               else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_ROOK ||
                        board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_QUEN)
-                if (col > 0)
-                  begin
-                     rook_col <= col - 1;
-                     state <= STATE_ROOK_LEFT;
-                  end
-                else if (col < 7)
+                begin
+                   if (col > 0)
+                     begin
+                        rook_col <= col - 1;
+                        state <= STATE_ROOK_LEFT_0;
+                     end
+                   else if (col < 7)
+                     begin
+                        rook_col <= col + 1;
+                        state <= STATE_ROOK_RIGHT_0;
+                     end
+                   else
+                     state <= STATE_NEXT;
+                end
+              else
+                state <= STATE_NEXT;
+           end
+         STATE_ROOK_LEFT_0 :
+           begin
+              if (board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
+                  board[idx[rook_row][rook_col]+ `BLACK_BIT] != black_to_move) // opponent's piece
+                begin
+                   board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
+                   board_ram_wr[idx[rook_row][rook_col]+:PIECE_WIDTH] <= piece;
+                   if (row == 0 && col == 7)
+                     castle_mask_ram_wr[`CASTLE_WHITE_SHORT] <= 0;
+                   if (row == 7 && col == 7)
+                     castle_mask_ram_wr[`CASTLE_BLACK_SHORT] <= 0;
+                   en_passant_col_ram_wr <= `EN_PASSANT_INVALID;
+                   ram_wr <= 1;
+                end
+              state <= STATE_ROOK_LEFT_1;
+           end
+         STATE_ROOK_LEFT_1 :
+           begin
+              if (ram_wr)
+                ram_wr_addr <= ram_wr_addr + 1;
+              ram_wr <= 0;
+              board_ram_wr <= board;
+              castle_mask_ram_wr <= castle_mask;
+              en_passant_col_ram_wr <= en_passant_col;
+              if (rook_col == 0)
+                if (col == 7)
+                  state <= STATE_NEXT; // fixme
+                else
                   begin
                      rook_col <= col + 1;
-                     state <= STATE_ROOK_RIGHT;
+                     state <= STATE_ROOK_RIGHT_0;
                   end
+              else if (board[idx[rook_row][rook_col]+ `BLACK_BIT] != black_to_move) // took a piece, move on
+                if (col == 7)
+                  state <= STATE_NEXT; // fixme
                 else
-                  state <= STATE_NEXT;
-           end
-         STATE_ROOK_LEFT :
-           begin
-              if (board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN)
+                  begin
+                     rook_col <= col + 1;
+                     state <= STATE_ROOK_RIGHT_0;
+                  end
+              else if (board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN)
                 begin
+                   rook_col <= rook_col - 1;
+                   state <= STATE_ROOK_LEFT_0;
                 end
-              state <= STATE_NEXT;
            end
-         STATE_ROOK_RIGHT :
+         STATE_ROOK_RIGHT_0 :
            begin
-              if (board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN)
-                begin
-                end
               state <= STATE_NEXT;
            end
          STATE_NEXT :
