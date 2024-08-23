@@ -95,6 +95,8 @@ module all_moves #
    localparam STATE_ROOK_LEFT_1 = 7;
    localparam STATE_ROOK_RIGHT_0 = 8;
    localparam STATE_ROOK_RIGHT_1 = 9;
+   localparam STATE_ROOK_UP_0 = 10;
+   localparam STATE_ROOK_UP_1 = 11;
 
    reg [6:0]                          state = STATE_IDLE;
 
@@ -163,9 +165,9 @@ module all_moves #
                 begin
                    board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
                    board_ram_wr[idx[rook_row][rook_col]+:PIECE_WIDTH] <= piece;
-                   if (row == 0 && col == 7)
+                   if (row == 0 && col == 7 && white_to_move)
                      castle_mask_ram_wr[`CASTLE_WHITE_SHORT] <= 0;
-                   if (row == 7 && col == 7)
+                   if (row == 7 && col == 7 && ! white_to_move)
                      castle_mask_ram_wr[`CASTLE_BLACK_SHORT] <= 0;
                    en_passant_col_ram_wr <= `EN_PASSANT_INVALID;
                    ram_wr <= 1;
@@ -182,7 +184,7 @@ module all_moves #
               en_passant_col_ram_wr <= en_passant_col;
               if (rook_col == 0)
                 if (col == 7)
-                  state <= STATE_NEXT; // fixme, becomes rook up
+                  state <= STATE_ROOK_UP_0;
                 else
                   begin
                      rook_col <= col + 1;
@@ -195,7 +197,7 @@ module all_moves #
                 end
               else // took a piece, or square occupied by own piece, stop moving left
                 if (col == 7)
-                  state <= STATE_NEXT; // fixme, becomes rook up
+                  state <= STATE_ROOK_UP_0;
                 else
                   begin
                      rook_col <= col + 1;
@@ -203,6 +205,38 @@ module all_moves #
                   end
            end
          STATE_ROOK_RIGHT_0 :
+           begin
+              if (board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
+                  board[idx[rook_row][rook_col]+ `BLACK_BIT] != black_to_move) // opponent's piece
+                begin
+                   board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
+                   board_ram_wr[idx[rook_row][rook_col]+:PIECE_WIDTH] <= piece;
+                   if (row == 0 && col == 0 && white_to_move)
+                     castle_mask_ram_wr[`CASTLE_WHITE_LONG] <= 0;
+                   if (row == 7 && col == 0 && ~white_to_move)
+                     castle_mask_ram_wr[`CASTLE_BLACK_LONG] <= 0;
+                   en_passant_col_ram_wr <= `EN_PASSANT_INVALID;
+                   ram_wr <= 1;
+                end
+              state <= STATE_ROOK_RIGHT_1;
+           end
+         STATE_ROOK_RIGHT_1 :
+           begin
+              if (ram_wr)
+                ram_wr_addr <= ram_wr_addr + 1;
+              ram_wr <= 0;
+              board_ram_wr <= board;
+              castle_mask_ram_wr <= castle_mask;
+              en_passant_col_ram_wr <= en_passant_col;
+              if (rook_col < 7 && board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN) // keep moving right
+                begin
+                   rook_col <= rook_col + 1;
+                   state <= STATE_ROOK_RIGHT_0;
+                end
+              else // took a piece, or square occupied by own piece, stop moving right
+                state <= STATE_ROOK_UP_0;
+           end
+         STATE_ROOK_UP_0 :
            begin
               state <= STATE_NEXT;
            end
