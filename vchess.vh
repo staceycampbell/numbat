@@ -1,11 +1,11 @@
 `define EMPTY_POSN 0
 
-`define PIECE_PAWN 1
+`define PIECE_QUEN 1
 `define PIECE_ROOK 2
-`define PIECE_KNIT 3
-`define PIECE_BISH 4
-`define PIECE_KING 5
-`define PIECE_QUEN 6
+`define PIECE_BISH 3
+`define PIECE_PAWN 4
+`define PIECE_KNIT 5
+`define PIECE_KING 6
 
 `define BLACK_BIT 3 // if set this is a black piece
 
