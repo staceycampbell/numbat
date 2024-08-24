@@ -59,10 +59,12 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
-   wire                               display_attacking_done; // From board_attack of board_attack.v
-   wire                               is_attacking_done;      // From board_attack of board_attack.v
-   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
+   wire                 black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire                 display_attacking_done; // From board_attack of board_attack.v
+   wire                 is_attacking_done;      // From board_attack of board_attack.v
+   wire                 white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
    integer                            i, x, y, ri;
@@ -124,11 +126,6 @@ module all_moves #
    localparam STATE_DONE = 255;
 
    reg [7:0]                          state = STATE_IDLE;
-   
-   //              if (board[idx[rook_row][rook_col]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
-   //                  board[idx[rook_row][rook_col]+ `BLACK_BIT] != black_to_move) // opponent's piece
-   //                   board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
-   //                   board_ram_wr[idx[rook_row][rook_col]+:PIECE_WIDTH] <= piece;
 
    always @(posedge clk)
      if (reset)
@@ -175,14 +172,17 @@ module all_moves #
                 state <= STATE_NEXT;
            end
          STATE_SLIDER_INIT :
-           if (slider_index < slider_offset_count[piece[`BLACK_BIT - 1:0]])
-             begin
-                slider_row <= row + slider_offset_row[piece[`BLACK_BIT - 1:0]][slider_index];
-                slider_col <= col + slider_offset_col[piece[`BLACK_BIT - 1:0]][slider_index];
-                state <= STATE_SLIDER;
-             end
-           else
-             state <= STATE_NEXT;
+           begin
+              ram_wr <= 0;
+              if (slider_index < slider_offset_count[piece[`BLACK_BIT - 1:0]])
+                begin
+                   slider_row <= row + slider_offset_row[piece[`BLACK_BIT - 1:0]][slider_index];
+                   slider_col <= col + slider_offset_col[piece[`BLACK_BIT - 1:0]][slider_index];
+                   state <= STATE_SLIDER;
+                end
+              else
+                state <= STATE_NEXT;
+           end
          STATE_SLIDER :
            if ((slider_row >= 0 && slider_row <= 7 && slider_col >= 0 && slider_col <= 7) &&
                (board[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
@@ -194,6 +194,11 @@ module all_moves #
                 board_ram_wr[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] <= piece;
                 slider_row <= slider_row + slider_offset_row[piece[`BLACK_BIT - 1:0]][slider_index];
                 slider_col <= slider_col + slider_offset_col[piece[`BLACK_BIT - 1:0]][slider_index];
+                if (board[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] != `EMPTY_POSN)
+                  begin
+                     slider_index <= slider_index + 1;
+                     state <= STATE_SLIDER_INIT;
+                  end
              end
            else
              begin
@@ -236,6 +241,8 @@ module all_moves #
       // Outputs
       .white_is_attacking               (white_is_attacking[63:0]),
       .black_is_attacking               (black_is_attacking[63:0]),
+      .white_in_check                   (white_in_check),
+      .black_in_check                   (black_in_check),
       .is_attacking_done                (is_attacking_done),
       .display_attacking_done           (display_attacking_done),
       // Inputs

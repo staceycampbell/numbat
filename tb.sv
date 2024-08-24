@@ -13,7 +13,7 @@ module tb;
 
    reg [BOARD_WIDTH - 1:0] board;
    reg                     board_valid = 0;
-   reg                     white_to_move = 1;
+   reg                     white_to_move;
    reg [3:0]               castle_mask = 4'b1111;
    reg                     clear_moves = 1'b0;
    reg [3:0]               en_passant_col = 4'b1000;
@@ -54,8 +54,8 @@ module tb;
         // board[4 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
         // board[3 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
         // board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
-        board[1 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
-        // board[7 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
+        board[1 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
+        board[4 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
         if (0)
           begin
              board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
@@ -96,7 +96,7 @@ module tb;
         reset <= t < 64;
 
         board_valid <= t == 72;
-        white_to_move <= 1;
+        white_to_move <= 0;
 
         if (t >= 5000)
           $finish;
