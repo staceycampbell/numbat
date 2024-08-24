@@ -97,6 +97,8 @@ module all_moves #
    localparam STATE_ROOK_RIGHT_1 = 9;
    localparam STATE_ROOK_UP_0 = 10;
    localparam STATE_ROOK_UP_1 = 11;
+   localparam STATE_ROOK_DOWN_0 = 12;
+   localparam STATE_ROOK_DOWN_1 = 13;
 
    reg [6:0]                          state = STATE_IDLE;
 
@@ -195,14 +197,14 @@ module all_moves #
                    rook_col <= rook_col - 1;
                    state <= STATE_ROOK_LEFT_0;
                 end
-              else // took a piece, or square occupied by own piece, stop moving left
-                if (col == 7)
-                  state <= STATE_ROOK_UP_0;
-                else
-                  begin
-                     rook_col <= col + 1;
-                     state <= STATE_ROOK_RIGHT_0;
-                  end
+              // took a piece, or square occupied by own piece, stop moving left
+              else if (col == 7) // no right move possible
+                state <= STATE_ROOK_UP_0;
+              else
+                begin
+                   rook_col <= col + 1; // start moving right
+                   state <= STATE_ROOK_RIGHT_0;
+                end
            end
          STATE_ROOK_RIGHT_0 :
            begin
@@ -237,6 +239,18 @@ module all_moves #
                 state <= STATE_ROOK_UP_0;
            end
          STATE_ROOK_UP_0 :
+           begin
+              state <= STATE_NEXT;
+           end
+         STATE_ROOK_UP_1 :
+           begin
+              state <= STATE_NEXT;
+           end
+         STATE_ROOK_DOWN_0 :
+           begin
+              state <= STATE_NEXT;
+           end
+         STATE_ROOK_DOWN_1 :
            begin
               state <= STATE_NEXT;
            end
