@@ -86,7 +86,7 @@ module all_moves #
         ri = 0;
         for (y = -1; y <= +1; y = y + 1)
           for (x = -1; x <= +1; x = x + 1)
-            if (y != 0 && x != 0)
+            if (! (y == 0 && x == 0))
               begin
                  slider_offset_row[`PIECE_QUEN][ri] = y;
                  slider_offset_col[`PIECE_QUEN][ri] = x;
