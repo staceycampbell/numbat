@@ -82,6 +82,13 @@ module all_moves #
              for (x = 0; x < 8; x = x + 1)
                idx[y][x] = ri + x * PIECE_WIDTH;
           end
+        // avoid driver warnings in vivado
+        for (ri = `PIECE_QUEN; ri <= `PIECE_BISH; ri = ri + 1)
+          for (x = 0; x < 8; x = x + 1)
+            begin
+               slider_offset_row[ri][x] = 0;
+               slider_offset_col[ri][x] = 0;
+            end
         slider_offset_count[`PIECE_QUEN] = 8;
         ri = 0;
         for (y = -1; y <= +1; y = y + 1)
