@@ -430,7 +430,7 @@ module is_attacking #
                     fj = COL + -1;
                     fi = ROW +  2;
                  end
-               6 :
+               7 :
                  begin
                     fj = COL + -2;
                     fi = ROW +  1;
