@@ -40,19 +40,25 @@ module all_moves #
    reg                                white_to_move;
    reg [3:0]                          castle_mask;
    reg [3:0]                          en_passant_col;
-   
+
    reg [BOARD_WIDTH - 1:0]            board_ram_wr;
    reg [3:0]                          en_passant_col_ram_wr;
    reg [3:0]                          castle_mask_ram_wr;
    reg                                white_to_move_ram_wr;
    reg                                ram_wr;
-   
+
    reg signed [4:0]                   row, col;
-   reg signed [2:0]                   slider_offset_col [`PIECE_QUEN:`PIECE_BISH][0:7];
-   reg signed [2:0]                   slider_offset_row [`PIECE_QUEN:`PIECE_BISH][0:7];
+
+   reg signed [1:0]                   slider_offset_col [`PIECE_QUEN:`PIECE_BISH][0:7];
+   reg signed [1:0]                   slider_offset_row [`PIECE_QUEN:`PIECE_BISH][0:7];
    reg [3:0]                          slider_offset_count [`PIECE_QUEN:`PIECE_BISH];
    reg [3:0]                          slider_index;
    reg signed [4:0]                   slider_row, slider_col;
+
+   reg signed [2:0]                   discrete_offset_col[`PIECE_KNIT:`PIECE_KING][0:7];
+   reg signed [2:0]                   discrete_offset_row[`PIECE_KNIT:`PIECE_KING][0:7];
+   reg [3:0]                          discrete_index;
+   reg signed [4:0]                   discrete_row, discrete_col;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -82,6 +88,7 @@ module all_moves #
              for (x = 0; x < 8; x = x + 1)
                idx[y][x] = ri + x * PIECE_WIDTH;
           end
+
         // avoid driver warnings in vivado
         for (ri = `PIECE_QUEN; ri <= `PIECE_BISH; ri = ri + 1)
           for (x = 0; x < 8; x = x + 1)
@@ -89,6 +96,7 @@ module all_moves #
                slider_offset_row[ri][x] = 0;
                slider_offset_col[ri][x] = 0;
             end
+
         slider_offset_count[`PIECE_QUEN] = 8;
         ri = 0;
         for (y = -1; y <= +1; y = y + 1)
@@ -99,16 +107,37 @@ module all_moves #
                  slider_offset_col[`PIECE_QUEN][ri] = x;
                  ri = ri + 1;
               end
+
         slider_offset_count[`PIECE_ROOK] = 4;
         slider_offset_row[`PIECE_ROOK][0] = 0; slider_offset_col[`PIECE_ROOK][0] = +1;
         slider_offset_row[`PIECE_ROOK][1] = 0; slider_offset_col[`PIECE_ROOK][1] = -1;
         slider_offset_row[`PIECE_ROOK][2] = +1; slider_offset_col[`PIECE_ROOK][2] = 0;
         slider_offset_row[`PIECE_ROOK][3] = -1; slider_offset_col[`PIECE_ROOK][3] = 0;
+
         slider_offset_count[`PIECE_BISH] = 4;
         slider_offset_row[`PIECE_BISH][0] = +1; slider_offset_col[`PIECE_BISH][0] = +1;
         slider_offset_row[`PIECE_BISH][1] = +1; slider_offset_col[`PIECE_BISH][1] = -1;
         slider_offset_row[`PIECE_BISH][2] = -1; slider_offset_col[`PIECE_BISH][2] = +1;
         slider_offset_row[`PIECE_BISH][3] = -1; slider_offset_col[`PIECE_BISH][3] = -1;
+
+        discrete_offset_row[`PIECE_KNIT][0] = -2; discrete_offset_col[`PIECE_KNIT][0] = -1;
+        discrete_offset_row[`PIECE_KNIT][1] = -1; discrete_offset_col[`PIECE_KNIT][1] = -2;
+        discrete_offset_row[`PIECE_KNIT][2] =  1; discrete_offset_col[`PIECE_KNIT][2] = -2;
+        discrete_offset_row[`PIECE_KNIT][3] =  2; discrete_offset_col[`PIECE_KNIT][3] = -1;
+        discrete_offset_row[`PIECE_KNIT][4] =  2; discrete_offset_col[`PIECE_KNIT][4] =  1;
+        discrete_offset_row[`PIECE_KNIT][5] =  1; discrete_offset_col[`PIECE_KNIT][5] =  2;
+        discrete_offset_row[`PIECE_KNIT][6] = -1; discrete_offset_col[`PIECE_KNIT][6] =  2;
+        discrete_offset_row[`PIECE_KNIT][7] = -2; discrete_offset_col[`PIECE_KNIT][7] =  1;
+
+        ri = 0;
+        for (y = -1; y <= +1; y = y + 1)
+          for (x = -1; x <= +1; x = x + 1)
+            if (! (y == 0 && x == 0))
+              begin
+                 discrete_offset_row[`PIECE_KING][ri] = y;
+                 discrete_offset_col[`PIECE_KING][ri] = x;
+                 ri = ri + 1;
+              end
      end
 
    always @(posedge clk)
@@ -129,6 +158,8 @@ module all_moves #
    localparam STATE_DO_SQUARE = 3;
    localparam STATE_SLIDER_INIT = 4;
    localparam STATE_SLIDER = 5;
+   localparam STATE_DISCRETE_INIT = 6;
+   localparam STATE_DISCRETE = 7;
    localparam STATE_NEXT = 127;
    localparam STATE_DONE = 255;
 
@@ -175,6 +206,9 @@ module all_moves #
                        board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_ROOK ||
                        board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_BISH)
                 state <= STATE_SLIDER_INIT;
+              else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_KNIT ||
+                       board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_KING)
+                state <= STATE_DISCRETE_INIT;
               else
                 state <= STATE_NEXT;
            end
@@ -213,8 +247,35 @@ module all_moves #
                 slider_index <= slider_index + 1;
                 state <= STATE_SLIDER_INIT;
              end
+         STATE_DISCRETE_INIT :
+           begin
+              discrete_index <= 1;
+              discrete_row <= row + discrete_offset_row[piece[`BLACK_BIT - 1:0]][0];
+              discrete_col <= col + discrete_offset_col[piece[`BLACK_BIT - 1:0]][0];
+              state <= STATE_DISCRETE;
+           end
+         STATE_DISCRETE :
+           begin
+              if (discrete_row >= 0 && discrete_row <= 7 && discrete_col >= 0 && discrete_col <= 7 &&
+                  board[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
+                  board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move) // opponents's piece
+                begin
+                   ram_wr <= 1;
+                   board_ram_wr <= board;
+                   board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
+                   board_ram_wr[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] <= piece;
+                end
+              else
+                ram_wr <= 0;
+              discrete_index <= discrete_index + 1;
+              discrete_row <= row + discrete_offset_row[piece[`BLACK_BIT - 1:0]][discrete_index];
+              discrete_col <= col + discrete_offset_col[piece[`BLACK_BIT - 1:0]][discrete_index];
+              if (discrete_index == 8)
+                state <= STATE_NEXT;
+           end
          STATE_NEXT :
            begin
+              ram_wr <= 0;
               col <= col + 1;
               if (col == 7)
                 begin
