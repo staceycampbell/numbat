@@ -59,6 +59,18 @@ module all_moves #
    reg signed [2:0]                   discrete_offset_row[`PIECE_KNIT:`PIECE_KING][0:7];
    reg [3:0]                          discrete_index;
    reg signed [4:0]                   discrete_row, discrete_col;
+   
+   reg signed [1:0]                   pawn_advance [0:1];
+   reg signed [4:0]                   pawn_promote_row [0:1];
+   reg signed [4:0]                   pawn_init_row [0:1];
+   reg signed [4:0]                   pawn_row_adv1, pawn_col_adv1;
+   reg signed [4:0]                   pawn_row_adv2, pawn_col_adv2;
+   reg signed [4:0]                   pawn_row_cap_left, pawn_col_cap_left;
+   reg signed [4:0]                   pawn_row_cap_right, pawn_col_cap_right;
+   reg [PIECE_WIDTH - 1:0]            pawn_promotions [0:3];
+   reg [2:0]                          pawn_adv1_mask;
+   reg [2:0]                          pawn_promote_mask;
+   reg                                pawn_adv2;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -88,6 +100,18 @@ module all_moves #
              for (x = 0; x < 8; x = x + 1)
                idx[y][x] = ri + x * PIECE_WIDTH;
           end
+
+        pawn_advance[0] = -1; // black to move
+        pawn_advance[1] =  1; // white to move
+        pawn_promote_row[0] = 1; // black to move
+        pawn_promote_row[1] = 6; // white to move
+        pawn_init_row[0] = 6; // black to move
+        pawn_init_row[1] = 1; // white to move
+
+        pawn_promotions[0] = `PIECE_QUEN;
+        pawn_promotions[1] = `PIECE_BISH;
+        pawn_promotions[2] = `PIECE_ROOK;
+        pawn_promotions[3] = `PIECE_KNIT;
 
         // avoid driver warnings in vivado
         for (ri = `PIECE_QUEN; ri <= `PIECE_BISH; ri = ri + 1)
@@ -152,6 +176,38 @@ module all_moves #
           end
      end
 
+   always @(posedge clk)
+     begin
+        piece <= board[idx[row][col]+:PIECE_WIDTH];
+        
+        white_to_move_ram_wr <= ~white_to_move;
+
+        // free-run these for timing, only valid when state machine piece is a pawn
+        pawn_row_adv1 <= row + pawn_advance[white_to_move];
+        pawn_col_adv1 <= col;
+        pawn_row_adv2 <= row + pawn_advance[white_to_move] * 2;
+        pawn_col_adv2 <= col;
+        pawn_row_cap_left <= row + pawn_advance[white_to_move];
+        pawn_col_cap_left <= col - 1;
+        pawn_row_cap_right <= row + pawn_advance[white_to_move];
+        pawn_col_cap_right <= col + 1;
+        for (i = 0; i < 4; i = i + 1)
+          pawn_promotions[i][`BLACK_BIT] <= black_to_move;
+
+        pawn_adv1_mask[0] <= pawn_col_cap_left >= 0 &&
+                             board[idx[pawn_row_cap_left[2:0]][pawn_col_cap_left[2:0]]+:PIECE_WIDTH] != `EMPTY_POSN && // can't be empty, and
+                             board[idx[pawn_row_cap_left[2:0]][pawn_col_cap_left[2:0]] + `BLACK_BIT] != black_to_move; // contains opponent's piece
+        pawn_adv1_mask[1] <= board[idx[pawn_row_adv1[2:0]][pawn_col_adv1[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN;
+        pawn_adv1_mask[2] <= pawn_col_cap_right <= 7 &&
+                             board[idx[pawn_row_cap_right[2:0]][pawn_col_cap_right[2:0]]+:PIECE_WIDTH] != `EMPTY_POSN && // can't be empty, and
+                             board[idx[pawn_row_cap_right[2:0]][pawn_col_cap_right[2:0]] + `BLACK_BIT] != black_to_move; // contains opponent's piece
+        pawn_adv2 <= pawn_init_row[white_to_move] == row &&
+                     board[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                     board[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN;
+        for (i = 0; i < 3; i = i + 1)
+          pawn_promote_mask[i] <= pawn_adv1_mask[i] && pawn_promote_row[white_to_move] == row;
+     end
+
    localparam STATE_IDLE = 0;
    localparam STATE_GET_ATTACKS = 1;
    localparam STATE_INIT = 2;
@@ -160,6 +216,7 @@ module all_moves #
    localparam STATE_SLIDER = 5;
    localparam STATE_DISCRETE_INIT = 6;
    localparam STATE_DISCRETE = 7;
+   localparam STATE_PAWN_INIT = 8;
    localparam STATE_NEXT = 127;
    localparam STATE_DONE = 255;
 
@@ -188,7 +245,6 @@ module all_moves #
               row <= 0;
               col <= 0;
               ram_wr <= 0;
-              white_to_move_ram_wr <= ~white_to_move;
               state <= STATE_DO_SQUARE;
            end
          STATE_DO_SQUARE :
@@ -196,7 +252,6 @@ module all_moves #
               board_ram_wr <= board;
               castle_mask_ram_wr <= castle_mask;
               en_passant_col_ram_wr <= en_passant_col;
-              piece <= board[idx[row][col]+:PIECE_WIDTH];
               slider_index <= 0;
               if (board[idx[row][col]+:PIECE_WIDTH] == `EMPTY_POSN) // empty square, nothing to move
                 state <= STATE_NEXT;
@@ -209,6 +264,8 @@ module all_moves #
               else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_KNIT ||
                        board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_KING)
                 state <= STATE_DISCRETE_INIT;
+              else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_PAWN)
+                state <= STATE_PAWN_INIT;
               else
                 state <= STATE_NEXT;
            end
@@ -227,7 +284,7 @@ module all_moves #
          STATE_SLIDER :
            if ((slider_row >= 0 && slider_row <= 7 && slider_col >= 0 && slider_col <= 7) &&
                (board[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
-                board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move)) // opponents's piece
+                board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move)) // opponent's piece
              begin
                 ram_wr <= 1;
                 board_ram_wr <= board;
@@ -258,7 +315,7 @@ module all_moves #
            begin
               if (discrete_row >= 0 && discrete_row <= 7 && discrete_col >= 0 && discrete_col <= 7 &&
                   board[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
-                  board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move) // opponents's piece
+                  board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move) // opponent's piece
                 begin
                    ram_wr <= 1;
                    board_ram_wr <= board;
@@ -272,6 +329,10 @@ module all_moves #
               discrete_col <= col + discrete_offset_col[piece[`BLACK_BIT - 1:0]][discrete_index];
               if (discrete_index == 8)
                 state <= STATE_NEXT;
+           end
+         STATE_PAWN_INIT :
+           begin
+              state <= STATE_NEXT;
            end
          STATE_NEXT :
            begin
