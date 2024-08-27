@@ -71,19 +71,28 @@ module all_moves #
    reg [2:0]                          pawn_adv1_mask;
    reg [2:0]                          pawn_promote_mask;
    reg                                pawn_adv2;
+   reg [1:0]                          pawn_en_passant_mask;
+   reg signed [4:0]                   pawn_en_passant_row [0:1];
+   reg                                pawn_en_passant_count;
+   reg [1:0]                          pawn_move_count;
+   reg [1:0]                          pawn_promotion_count;
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
-   wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire                 white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire                               black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
+   wire                               display_attacking_done; // From board_attack of board_attack.v
+   wire                               is_attacking_done;      // From board_attack of board_attack.v
+   wire                               white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
+   
+   wire signed [4:0]                  pawn_adv1_row [0:2];
+   wire signed [4:0]                  pawn_adv1_col [0:2];
+   wire signed [4:0]                  pawn_enp_row[0:1];
 
    integer                            i, x, y, ri;
 
@@ -107,6 +116,8 @@ module all_moves #
         pawn_promote_row[1] = 6; // white to move
         pawn_init_row[0] = 6; // black to move
         pawn_init_row[1] = 1; // white to move
+        pawn_en_passant_row[0] = 3; // black to move
+        pawn_en_passant_row[1] = 4; // white to move
 
         pawn_promotions[0] = `PIECE_QUEN;
         pawn_promotions[1] = `PIECE_BISH;
@@ -174,7 +185,17 @@ module all_moves #
              move_ram[ram_wr_addr] <= {en_passant_col_ram_wr, castle_mask_ram_wr, white_to_move_ram_wr, board_ram_wr};
              ram_wr_addr <= ram_wr_addr + 1;
           end
-     end
+     end // always @ (posedge clk)
+
+   assign pawn_enp_row[0] = pawn_row_cap_left;
+   assign pawn_enp_row[1] = pawn_row_cap_right;
+
+   assign pawn_adv1_row[0] = pawn_row_cap_left;
+   assign pawn_adv1_row[1] = pawn_row_adv1;
+   assign pawn_adv1_row[2] = pawn_row_cap_right;
+   assign pawn_adv1_col[0] = pawn_col_cap_left;
+   assign pawn_adv1_col[1] = pawn_col_adv1;
+   assign pawn_adv1_col[2] = pawn_col_cap_right;
 
    always @(posedge clk)
      begin
@@ -182,7 +203,7 @@ module all_moves #
         
         white_to_move_ram_wr <= ~white_to_move;
 
-        // free-run these for timing, only valid when state machine piece is a pawn
+        // free-run these for timing, only valid when used in states
         pawn_row_adv1 <= row + pawn_advance[white_to_move];
         pawn_col_adv1 <= col;
         pawn_row_adv2 <= row + pawn_advance[white_to_move] * 2;
@@ -201,11 +222,17 @@ module all_moves #
         pawn_adv1_mask[2] <= pawn_col_cap_right <= 7 &&
                              board[idx[pawn_row_cap_right[2:0]][pawn_col_cap_right[2:0]]+:PIECE_WIDTH] != `EMPTY_POSN && // can't be empty, and
                              board[idx[pawn_row_cap_right[2:0]][pawn_col_cap_right[2:0]] + `BLACK_BIT] != black_to_move; // contains opponent's piece
-        pawn_adv2 <= pawn_init_row[white_to_move] == row &&
-                     board[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN &&
+        pawn_adv2 <= board[idx[pawn_row_adv1[2:0]][pawn_col_adv1[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN &&
                      board[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN;
-        for (i = 0; i < 3; i = i + 1)
-          pawn_promote_mask[i] <= pawn_adv1_mask[i] && pawn_promote_row[white_to_move] == row;
+        for (i = 0; i <= 2; i = i + 1)
+          pawn_promote_mask[i] <= pawn_adv1_mask[i];
+
+        pawn_en_passant_mask[0] <= en_passant_col[`EN_PASSANT_VALID_BIT] &&
+                                   pawn_col_cap_left >= 0 &&
+                                   en_passant_col[2:0] == pawn_col_cap_left[2:0];
+        pawn_en_passant_mask[1] <= en_passant_col[`EN_PASSANT_VALID_BIT] &&
+                                   pawn_col_cap_right <= 7 &&
+                                   en_passant_col[2:0] == pawn_col_cap_right[2:0];
      end
 
    localparam STATE_IDLE = 0;
@@ -217,6 +244,10 @@ module all_moves #
    localparam STATE_DISCRETE_INIT = 6;
    localparam STATE_DISCRETE = 7;
    localparam STATE_PAWN_INIT = 8;
+   localparam STATE_PAWN_ROW_1 = 9;
+   localparam STATE_PAWN_ROW_4 = 10;
+   localparam STATE_PAWN_ROW_6 = 11;
+   localparam STATE_PAWN_ADVANCE = 12;
    localparam STATE_NEXT = 127;
    localparam STATE_DONE = 255;
 
@@ -332,6 +363,68 @@ module all_moves #
            end
          STATE_PAWN_INIT :
            begin
+              pawn_en_passant_count <= 0;
+              pawn_move_count <= 0;
+              pawn_promotion_count <= 0;
+              if (row == pawn_init_row[white_to_move])
+                state <= STATE_PAWN_ROW_1;
+              else if (row == pawn_en_passant_row[white_to_move])
+                state <= STATE_PAWN_ROW_4;
+              else if (row == pawn_promote_row[white_to_move])
+                state <= STATE_PAWN_ROW_6;
+              else
+                state <= STATE_PAWN_ADVANCE;
+           end
+         STATE_PAWN_ROW_1 : // initial pawn
+           begin
+              if (pawn_adv2)
+                begin
+                   ram_wr <= 1;
+                   board_ram_wr <= board;
+                   board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+                   board_ram_wr[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:PIECE_WIDTH] <= piece;
+                end
+              state <= STATE_PAWN_ADVANCE;
+           end
+         STATE_PAWN_ROW_4 : // en passant pawn
+           begin
+              if (pawn_en_passant_mask[pawn_en_passant_count])
+                begin
+                   ram_wr <= 1;
+                   board_ram_wr <= board;
+                   board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+                   board_ram_wr[idx[row[2:0]][en_passant_col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+                   board_ram_wr[idx[pawn_enp_row[pawn_en_passant_count][2:0]][en_passant_col[2:0]]+:PIECE_WIDTH] <= piece;
+                   state <= STATE_PAWN_ADVANCE;
+                end
+              pawn_en_passant_count <= pawn_en_passant_count + 1;
+              if (pawn_en_passant_count == 1)
+                state <= STATE_PAWN_ADVANCE;
+           end
+         STATE_PAWN_ROW_6 : // promotion pawn
+           begin
+              ram_wr <= 0;
+              if (pawn_promote_mask[pawn_move_count])
+                begin
+                   ram_wr <= 1;
+                   board_ram_wr <= board;
+                   board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+                   board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:PIECE_WIDTH]
+                     <= pawn_promotions[pawn_promotion_count];
+                end
+              if (pawn_promotion_count == 3)
+                begin
+                   pawn_promotion_count <= 0;
+                   pawn_move_count <= pawn_move_count + 1;
+                   if (pawn_move_count == 2)
+                     state <= STATE_NEXT;
+                end
+              else
+                pawn_promotion_count <= pawn_promotion_count + 1;
+           end
+         STATE_PAWN_ADVANCE :
+           begin
+              ram_wr <= 0;
               state <= STATE_NEXT;
            end
          STATE_NEXT :
