@@ -243,11 +243,12 @@ module all_moves #
    localparam STATE_SLIDER = 5;
    localparam STATE_DISCRETE_INIT = 6;
    localparam STATE_DISCRETE = 7;
-   localparam STATE_PAWN_INIT = 8;
-   localparam STATE_PAWN_ROW_1 = 9;
-   localparam STATE_PAWN_ROW_4 = 10;
-   localparam STATE_PAWN_ROW_6 = 11;
-   localparam STATE_PAWN_ADVANCE = 12;
+   localparam STATE_PAWN_INIT_0 = 8;
+   localparam STATE_PAWN_INIT_1 = 9;
+   localparam STATE_PAWN_ROW_1 = 10;
+   localparam STATE_PAWN_ROW_4 = 11;
+   localparam STATE_PAWN_ROW_6 = 12;
+   localparam STATE_PAWN_ADVANCE = 13;
    localparam STATE_NEXT = 127;
    localparam STATE_DONE = 255;
 
@@ -296,7 +297,7 @@ module all_moves #
                        board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_KING)
                 state <= STATE_DISCRETE_INIT;
               else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_PAWN)
-                state <= STATE_PAWN_INIT;
+                state <= STATE_PAWN_INIT_0;
               else
                 state <= STATE_NEXT;
            end
@@ -361,7 +362,9 @@ module all_moves #
               if (discrete_index == 8)
                 state <= STATE_NEXT;
            end
-         STATE_PAWN_INIT :
+         STATE_PAWN_INIT_0 :
+           state <= STATE_PAWN_INIT_1; // wait state
+         STATE_PAWN_INIT_1 :
            begin
               pawn_en_passant_count <= 0;
               pawn_move_count <= 0;
