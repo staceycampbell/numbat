@@ -33,7 +33,8 @@ module all_moves #
 
    reg [RAM_WIDTH - 1:0]              move_ram [0:MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]              ram_rd_data;
-   reg [MAX_POSITIONS_LOG2 - 1:0]     ram_wr_addr;
+   reg [MAX_POSITIONS_LOG2 - 1:0]     ram_wr_addr, ram_rd_addr;
+   reg [MAX_POSITIONS_LOG2 - 1:0]     attack_test_move_count;
    reg [$clog2(BOARD_WIDTH) - 1:0]    idx [0:7][0:7];
    reg [PIECE_WIDTH - 1:0]            piece;
    reg [BOARD_WIDTH - 1:0]            board;
@@ -41,11 +42,30 @@ module all_moves #
    reg [3:0]                          castle_mask;
    reg [3:0]                          en_passant_col;
 
+   reg [RAM_WIDTH - 1:0]              legal_move_ram [0:MAX_POSITIONS - 1];
+   reg [RAM_WIDTH - 1:0]              legal_ram_rd_data;
+   reg [MAX_POSITIONS_LOG2 - 1:0]     legal_ram_wr_addr;
+   reg                                legal_ram_wr_addr_init;
+   
    reg [BOARD_WIDTH - 1:0]            board_ram_wr;
    reg [3:0]                          en_passant_col_ram_wr;
    reg [3:0]                          castle_mask_ram_wr;
    reg                                white_to_move_ram_wr;
    reg                                ram_wr;
+   
+   reg [BOARD_WIDTH - 1:0]            legal_board_ram_wr;
+   reg [3:0]                          legal_en_passant_col_ram_wr;
+   reg [3:0]                          legal_castle_mask_ram_wr;
+   reg                                legal_white_to_move_ram_wr;
+   reg                                legal_ram_wr;
+
+   reg [BOARD_WIDTH - 1:0]            attack_test_board;
+   reg [3:0]                          attack_test_en_passant_col;
+   reg [3:0]                          attack_test_castle_mask;
+   reg                                attack_test_white_to_move;
+
+   reg [BOARD_WIDTH - 1:0]            attack_test;
+   reg                                attack_test_valid;
 
    reg signed [4:0]                   row, col;
 
@@ -86,12 +106,12 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                               black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
-   wire                               display_attacking_done; // From board_attack of board_attack.v
-   wire                               is_attacking_done;      // From board_attack of board_attack.v
-   wire                               white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
+   wire                 black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire                 display_attacking_done; // From board_attack of board_attack.v
+   wire                 is_attacking_done;      // From board_attack of board_attack.v
+   wire                 white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
    
    wire signed [4:0]                  pawn_adv1_row [0:2];
@@ -102,8 +122,8 @@ module all_moves #
 
    wire                               black_to_move = ~white_to_move;
 
-   assign move_count = ram_wr_addr;
-   assign {en_passant_col_out, castle_mask_out, white_to_move_out, board_out} = ram_rd_data;
+   assign move_count = legal_ram_wr_addr;
+   assign {en_passant_col_out, castle_mask_out, white_to_move_out, board_out} = legal_ram_rd_data;
 
    initial
      begin
@@ -184,7 +204,7 @@ module all_moves #
 
    always @(posedge clk)
      begin
-        ram_rd_data <= move_ram[move_index];
+        ram_rd_data <= move_ram[ram_rd_addr];
         if (is_attacking_done)
           ram_wr_addr <= 0;
         if (ram_wr)
@@ -192,7 +212,19 @@ module all_moves #
              move_ram[ram_wr_addr] <= {en_passant_col_ram_wr, castle_mask_ram_wr, white_to_move_ram_wr, board_ram_wr};
              ram_wr_addr <= ram_wr_addr + 1;
           end
-     end // always @ (posedge clk)
+     end
+
+   always @(posedge clk)
+     begin
+        legal_ram_rd_data <= legal_move_ram[move_index];
+        if (legal_ram_wr_addr_init)
+          legal_ram_wr_addr <= 0;
+        if (legal_ram_wr)
+          begin
+             legal_move_ram[legal_ram_wr_addr] <= {legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr, legal_white_to_move_ram_wr, legal_board_ram_wr};
+             legal_ram_wr_addr <= legal_ram_wr_addr + 1;
+          end
+     end
 
    assign pawn_enp_row[0] = pawn_row_cap_left;
    assign pawn_enp_row[1] = pawn_row_cap_right;
@@ -272,22 +304,28 @@ module all_moves #
      end
 
    localparam STATE_IDLE = 0;
-   localparam STATE_GET_ATTACKS = 1;
-   localparam STATE_INIT = 2;
-   localparam STATE_DO_SQUARE = 3;
-   localparam STATE_SLIDER_INIT = 4;
-   localparam STATE_SLIDER = 5;
-   localparam STATE_DISCRETE_INIT = 6;
-   localparam STATE_DISCRETE = 7;
-   localparam STATE_PAWN_INIT_0 = 8;
-   localparam STATE_PAWN_INIT_1 = 9;
-   localparam STATE_PAWN_ROW_1 = 10;
-   localparam STATE_PAWN_ROW_4 = 11;
-   localparam STATE_PAWN_ROW_6 = 12;
-   localparam STATE_PAWN_ADVANCE = 13;
-   localparam STATE_NEXT = 14;
-   localparam STATE_CASTLE_SHORT = 15;
-   localparam STATE_CASTLE_LONG = 16;
+   localparam STATE_INIT = 1;
+   localparam STATE_DO_SQUARE = 2;
+   localparam STATE_SLIDER_INIT = 3;
+   localparam STATE_SLIDER = 4;
+   localparam STATE_DISCRETE_INIT = 5;
+   localparam STATE_DISCRETE = 6;
+   localparam STATE_PAWN_INIT_0 = 7;
+   localparam STATE_PAWN_INIT_1 = 8;
+   localparam STATE_PAWN_ROW_1 = 9;
+   localparam STATE_PAWN_ROW_4 = 10;
+   localparam STATE_PAWN_ROW_6 = 11;
+   localparam STATE_PAWN_ADVANCE = 12;
+   localparam STATE_NEXT = 13;
+   localparam STATE_CASTLE_SHORT = 14;
+   localparam STATE_CASTLE_LONG = 15;
+   localparam STATE_ALL_MOVES_DONE = 16;
+   localparam STATE_LEGAL_INIT = 17;
+   localparam STATE_LEGAL_LOAD = 18;
+   localparam STATE_LEGAL_KING_POS = 19;
+   localparam STATE_ATTACK_WAIT = 20;
+   localparam STATE_LEGAL_MOVE = 21;
+   localparam STATE_LEGAL_NEXT = 22;
    localparam STATE_DONE = 255;
 
    reg [7:0]                          state = STATE_IDLE;
@@ -304,14 +342,15 @@ module all_moves #
               white_to_move <= white_to_move_in;
               castle_mask <= castle_mask_in;
               en_passant_col <= en_passant_col_in;
-              if (board_valid)
-                state <= STATE_GET_ATTACKS;
+              
+              attack_test <= board_in;
+              attack_test_valid <= board_valid;
+              if (is_attacking_done)
+                state <= STATE_INIT;
            end
-         STATE_GET_ATTACKS :
-           if (is_attacking_done)
-             state <= STATE_INIT;
          STATE_INIT :
            begin
+              legal_ram_wr_addr_init <= 1;
               row <= 0;
               col <= 0;
               ram_wr <= 0;
@@ -512,11 +551,63 @@ module all_moves #
                 ram_wr <= 1;
               else
                 ram_wr <= 0;
-              state <= STATE_DONE;
+              state <= STATE_ALL_MOVES_DONE;
+           end
+         STATE_ALL_MOVES_DONE :
+           begin
+              ram_wr <= 0;
+              legal_ram_wr_addr_init <= 1;
+              state <= STATE_LEGAL_INIT;
+           end
+         STATE_LEGAL_INIT :
+           begin
+              ram_wr <= 0;
+              if (ram_wr_addr == 0)
+                state <= STATE_DONE; // no moves
+              ram_rd_addr <= 0;
+              legal_ram_wr_addr_init <= 0;
+              attack_test_move_count <= ram_wr_addr;
+           end
+         STATE_LEGAL_LOAD :
+           begin
+              {attack_test_en_passant_col, attack_test_castle_mask, attack_test_white_to_move, attack_test_board} <= ram_rd_data;
+              attack_test_valid <= 0;
+              state <= STATE_LEGAL_KING_POS;
+           end
+         STATE_LEGAL_KING_POS :
+           begin
+              attack_test_valid <= 1;
+              ram_rd_addr <= ram_rd_addr + 1;
+              state <= STATE_ATTACK_WAIT;
+           end
+         STATE_ATTACK_WAIT :
+           begin
+              attack_test_valid <= 0;
+              if (is_attacking_done)
+                if ((white_to_move && white_in_check) || (black_to_move && black_in_check))
+                  state <= STATE_LEGAL_NEXT;
+                else
+                  state <= STATE_LEGAL_MOVE;
+           end
+         STATE_LEGAL_MOVE :
+           begin
+              legal_board_ram_wr <= attack_test_board;
+              legal_en_passant_col_ram_wr <= attack_test_en_passant_col;
+              legal_castle_mask_ram_wr <= attack_test_castle_mask;
+              legal_white_to_move_ram_wr <= attack_test_white_to_move;
+              legal_ram_wr <= 1;
+              state <= STATE_LEGAL_NEXT;
+           end
+         STATE_LEGAL_NEXT :
+           begin
+              legal_ram_wr <= 0;
+              if (ram_rd_addr == attack_test_move_count)
+                state <= STATE_DONE;
+              else
+                state <= STATE_LEGAL_LOAD;
            end
          STATE_DONE :
            begin
-              ram_wr <= 0;
               moves_ready <= 1;
               if (clear_moves)
                 state <= STATE_IDLE;
@@ -524,6 +615,8 @@ module all_moves #
        endcase
 
    /* board_attack AUTO_TEMPLATE (
+    .board (attack_test[]),
+    .board_valid (attack_test_valid),
     );*/
    board_attack #
      (
@@ -544,8 +637,8 @@ module all_moves #
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
-      .board                            (board[BOARD_WIDTH-1:0]),
-      .board_valid                      (board_valid));
+      .board                            (attack_test[BOARD_WIDTH-1:0]), // Templated
+      .board_valid                      (attack_test_valid));     // Templated
 
 endmodule
 
