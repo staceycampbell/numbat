@@ -556,17 +556,17 @@ module all_moves #
          STATE_ALL_MOVES_DONE :
            begin
               ram_wr <= 0;
+              if (ram_wr_addr == 0)
+                state <= STATE_DONE; // no moves
               legal_ram_wr_addr_init <= 1;
+              ram_rd_addr <= 0;
               state <= STATE_LEGAL_INIT;
            end
          STATE_LEGAL_INIT :
            begin
-              ram_wr <= 0;
-              if (ram_wr_addr == 0)
-                state <= STATE_DONE; // no moves
-              ram_rd_addr <= 0;
               legal_ram_wr_addr_init <= 0;
               attack_test_move_count <= ram_wr_addr;
+              state <= STATE_LEGAL_LOAD;
            end
          STATE_LEGAL_LOAD :
            begin
@@ -576,6 +576,7 @@ module all_moves #
            end
          STATE_LEGAL_KING_POS :
            begin
+              attack_test <= {attack_test_en_passant_col, attack_test_castle_mask, attack_test_white_to_move, attack_test_board};
               attack_test_valid <= 1;
               ram_rd_addr <= ram_rd_addr + 1;
               state <= STATE_ATTACK_WAIT;
