@@ -13,7 +13,7 @@ module tb;
 
    reg [BOARD_WIDTH - 1:0] board;
    reg                     board_valid = 0;
-   reg                     white_to_move = 0;
+   reg                     white_to_move = 1;
    reg [3:0]               castle_mask = 4'b1111;
    reg                     clear_moves = 1'b0;
    reg [3:0]               en_passant_col = 4'b1000;
@@ -46,10 +46,7 @@ module tb;
         $dumpvars(0, tb);
         for (i = 0; i < 64; i = i + 1)
           board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
-        for (i = 0; i < 8; i = i + 1)
-          board[6 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
-        board[7 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
-        if (0)
+        if (1)
           begin
              board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
              board[0 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KNIT;
