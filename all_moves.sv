@@ -283,7 +283,7 @@ module all_moves #
            begin
               board_ram_wr <= board;
               castle_mask_ram_wr <= castle_mask;
-              en_passant_col_ram_wr <= en_passant_col;
+              en_passant_col_ram_wr <= 0 << `EN_PASSANT_VALID_BIT;
               slider_index <= 0;
               if (board[idx[row][col]+:PIECE_WIDTH] == `EMPTY_POSN) // empty square, nothing to move
                 state <= STATE_NEXT;
@@ -383,6 +383,7 @@ module all_moves #
          STATE_PAWN_ROW_1 : // initial pawn
            begin
               board_ram_wr <= board;
+              en_passant_col_ram_wr <= (1 << `EN_PASSANT_VALID_BIT) | pawn_col_adv2[2:0];
               if (pawn_adv2)
                 begin
                    ram_wr <= 1;
@@ -429,8 +430,18 @@ module all_moves #
            end
          STATE_PAWN_ADVANCE :
            begin
+              en_passant_col_ram_wr <= 0 << `EN_PASSANT_VALID_BIT;
               ram_wr <= 0;
-              state <= STATE_NEXT;
+              board_ram_wr <= board;
+              if (pawn_adv1_mask[pawn_move_count])
+                begin
+                   ram_wr <= 1;
+                   board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+                   board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:PIECE_WIDTH] <= piece;
+                end
+              pawn_move_count <= pawn_move_count + 1;
+              if (pawn_move_count == 2)
+                state <= STATE_NEXT;
            end
          STATE_NEXT :
            begin
