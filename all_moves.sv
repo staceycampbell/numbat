@@ -316,13 +316,13 @@ module all_moves #
          STATE_SLIDER :
            begin
               board_ram_wr <= board;
+              board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] <= piece;
               if ((slider_row >= 0 && slider_row <= 7 && slider_col >= 0 && slider_col <= 7) &&
                   (board[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
                    board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move)) // opponent's piece
                 begin
                    ram_wr <= 1;
-                   board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
-                   board_ram_wr[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] <= piece;
                    slider_row <= slider_row + slider_offset_row[piece[`BLACK_BIT - 1:0]][slider_index];
                    slider_col <= slider_col + slider_offset_col[piece[`BLACK_BIT - 1:0]][slider_index];
                    if (board[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] != `EMPTY_POSN)
@@ -348,14 +348,12 @@ module all_moves #
          STATE_DISCRETE :
            begin
               board_ram_wr <= board;
+              board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] <= piece;
               if (discrete_row >= 0 && discrete_row <= 7 && discrete_col >= 0 && discrete_col <= 7 &&
                   (board[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
                    board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move)) // opponent's piece
-                begin
-                   ram_wr <= 1;
-                   board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
-                   board_ram_wr[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] <= piece;
-                end
+                ram_wr <= 1;
               else
                 ram_wr <= 0;
               discrete_index <= discrete_index + 1;
@@ -384,23 +382,21 @@ module all_moves #
            begin
               board_ram_wr <= board;
               en_passant_col_ram_wr <= (1 << `EN_PASSANT_VALID_BIT) | pawn_col_adv2[2:0];
+              board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:PIECE_WIDTH] <= piece;
               if (pawn_adv2)
-                begin
-                   ram_wr <= 1;
-                   board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
-                   board_ram_wr[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:PIECE_WIDTH] <= piece;
-                end
+                ram_wr <= 1;
               state <= STATE_PAWN_ADVANCE;
            end
          STATE_PAWN_ROW_4 : // en passant pawn
            begin
               board_ram_wr <= board;
+              board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[row[2:0]][en_passant_col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[pawn_enp_row[pawn_en_passant_count][2:0]][en_passant_col[2:0]]+:PIECE_WIDTH] <= piece;
               if (pawn_en_passant_mask[pawn_en_passant_count])
                 begin
                    ram_wr <= 1;
-                   board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
-                   board_ram_wr[idx[row[2:0]][en_passant_col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
-                   board_ram_wr[idx[pawn_enp_row[pawn_en_passant_count][2:0]][en_passant_col[2:0]]+:PIECE_WIDTH] <= piece;
                    state <= STATE_PAWN_ADVANCE;
                 end
               pawn_en_passant_count <= pawn_en_passant_count + 1;
@@ -409,15 +405,14 @@ module all_moves #
            end
          STATE_PAWN_ROW_6 : // promotion pawn
            begin
-              ram_wr <= 0;
               board_ram_wr <= board;
+              board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:PIECE_WIDTH]
+                <= pawn_promotions[pawn_promotion_count];
               if (pawn_promote_mask[pawn_move_count])
-                begin
-                   ram_wr <= 1;
-                   board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
-                   board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:PIECE_WIDTH]
-                     <= pawn_promotions[pawn_promotion_count];
-                end
+                ram_wr <= 1;
+              else
+                ram_wr <= 0;
               if (pawn_promotion_count == 3)
                 begin
                    pawn_promotion_count <= 0;
@@ -431,14 +426,13 @@ module all_moves #
          STATE_PAWN_ADVANCE :
            begin
               en_passant_col_ram_wr <= 0 << `EN_PASSANT_VALID_BIT;
-              ram_wr <= 0;
               board_ram_wr <= board;
+              board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:PIECE_WIDTH] <= piece;
               if (pawn_adv1_mask[pawn_move_count])
-                begin
-                   ram_wr <= 1;
-                   board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
-                   board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:PIECE_WIDTH] <= piece;
-                end
+                ram_wr <= 1;
+              else
+                ram_wr <= 0;
               pawn_move_count <= pawn_move_count + 1;
               if (pawn_move_count == 2)
                 state <= STATE_NEXT;
