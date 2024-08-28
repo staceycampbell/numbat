@@ -77,17 +77,21 @@ module all_moves #
    reg [1:0]                          pawn_move_count;
    reg [1:0]                          pawn_promotion_count;
 
+   reg [1:0]                          castle_short_legal;
+   reg [1:0]                          castle_long_legal;
+   reg [2:0]                          castle_row [0:1];
+
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
-   wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire                 white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire                               black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
+   wire                               display_attacking_done; // From board_attack of board_attack.v
+   wire                               is_attacking_done;      // From board_attack of board_attack.v
+   wire                               white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
    
    wire signed [4:0]                  pawn_adv1_row [0:2];
@@ -173,6 +177,9 @@ module all_moves #
                  discrete_offset_col[`PIECE_KING][ri] = x;
                  ri = ri + 1;
               end
+
+        castle_row[0] = 7; // black to move
+        castle_row[1] = 0; // white to move
      end
 
    always @(posedge clk)
@@ -233,6 +240,35 @@ module all_moves #
         pawn_en_passant_mask[1] <= en_passant_col[`EN_PASSANT_VALID_BIT] &&
                                    pawn_col_cap_right <= 7 &&
                                    en_passant_col[2:0] == pawn_col_cap_right[2:0];
+
+        // black to move
+        castle_short_legal[0] <= castle_mask[`CASTLE_BLACK_SHORT] &&
+                                 board[idx[7][5]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                 board[idx[7][6]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                 white_is_attacking[7 << 3 | 4] == 1'b0 &&
+                                 white_is_attacking[7 << 3 | 5] == 1'b0 &&
+                                 white_is_attacking[7 << 3 | 6] == 1'b0;
+        castle_long_legal[0] <= castle_mask[`CASTLE_BLACK_LONG] &&
+                                board[idx[7][1]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                board[idx[7][2]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                board[idx[7][3]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                white_is_attacking[7 << 3 | 2] == 1'b0 &&
+                                white_is_attacking[7 << 3 | 3] == 1'b0 &&
+                                white_is_attacking[7 << 3 | 4] == 1'b0;
+        // white to move
+        castle_short_legal[1] <= castle_mask[`CASTLE_WHITE_SHORT] &&
+                                 board[idx[0][5]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                 board[idx[0][6]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                 black_is_attacking[0 << 3 | 4] == 1'b0 &&
+                                 black_is_attacking[0 << 3 | 5] == 1'b0 &&
+                                 black_is_attacking[0 << 3 | 6] == 1'b0;
+        castle_long_legal[1] <= castle_mask[`CASTLE_WHITE_LONG] &&
+                                board[idx[0][1]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                board[idx[0][2]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                board[idx[0][3]+:PIECE_WIDTH] == `EMPTY_POSN &&
+                                black_is_attacking[0 << 3 | 2] == 1'b0 &&
+                                black_is_attacking[0 << 3 | 3] == 1'b0 &&
+                                black_is_attacking[0 << 3 | 4] == 1'b0;
      end
 
    localparam STATE_IDLE = 0;
@@ -249,7 +285,9 @@ module all_moves #
    localparam STATE_PAWN_ROW_4 = 11;
    localparam STATE_PAWN_ROW_6 = 12;
    localparam STATE_PAWN_ADVANCE = 13;
-   localparam STATE_NEXT = 127;
+   localparam STATE_NEXT = 14;
+   localparam STATE_CASTLE_SHORT = 15;
+   localparam STATE_CASTLE_LONG = 16;
    localparam STATE_DONE = 255;
 
    reg [7:0]                          state = STATE_IDLE;
@@ -447,12 +485,38 @@ module all_moves #
                    col <= 0;
                 end
               if (col == 7 && row == 7)
-                state <= STATE_DONE;
+                state <= STATE_CASTLE_SHORT;
               else
                 state <= STATE_DO_SQUARE;
            end
+         STATE_CASTLE_SHORT :
+           begin
+              board_ram_wr <= board;
+              board_ram_wr[idx[castle_row[white_to_move]][4]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[castle_row[white_to_move]][7]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[castle_row[white_to_move]][5]+:PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_ROOK;
+              board_ram_wr[idx[castle_row[white_to_move]][6]+:PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_KING;
+              if (castle_short_legal[white_to_move])
+                ram_wr <= 1;
+              state <= STATE_CASTLE_LONG;
+           end
+         STATE_CASTLE_LONG :
+           begin
+              board_ram_wr <= board;
+              board_ram_wr[idx[castle_row[white_to_move]][1]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[castle_row[white_to_move]][2]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[castle_row[white_to_move]][3]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[castle_row[white_to_move]][3]+:PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_ROOK;
+              board_ram_wr[idx[castle_row[white_to_move]][2]+:PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_KING;
+              if (castle_long_legal[white_to_move])
+                ram_wr <= 1;
+              else
+                ram_wr <= 0;
+              state <= STATE_DONE;
+           end
          STATE_DONE :
            begin
+              ram_wr <= 0;
               moves_ready <= 1;
               if (clear_moves)
                 state <= STATE_IDLE;
