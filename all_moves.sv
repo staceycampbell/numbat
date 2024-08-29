@@ -106,12 +106,12 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                               black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
-   wire                               display_attacking_done; // From board_attack of board_attack.v
-   wire                               is_attacking_done;      // From board_attack of board_attack.v
-   wire                               white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
+   wire                 black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire                 display_attacking_done; // From board_attack of board_attack.v
+   wire                 is_attacking_done;      // From board_attack of board_attack.v
+   wire                 white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
    
    wire signed [4:0]                  pawn_adv1_row [0:2];
@@ -500,7 +500,7 @@ module all_moves #
               else
                 pawn_promotion_count <= pawn_promotion_count + 1;
            end
-         STATE_PAWN_ADVANCE :
+         STATE_PAWN_ADVANCE : // default pawn moves
            begin
               en_passant_col_ram_wr <= 0 << `EN_PASSANT_VALID_BIT;
               board_ram_wr <= board;
@@ -621,6 +621,8 @@ module all_moves #
               if (clear_moves)
                 state <= STATE_IDLE;
            end
+         default :
+           state <= STATE_IDLE;
        endcase
 
    /* board_attack AUTO_TEMPLATE (
