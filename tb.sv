@@ -5,6 +5,7 @@ module tb;
    localparam PIECE_WIDTH = `PIECE_BITS;
    localparam SIDE_WIDTH = PIECE_WIDTH * 8;
    localparam BOARD_WIDTH = PIECE_WIDTH * 8 * 8;
+   localparam EVAL_WIDTH = 22;
 
    reg clk = 0;
    reg reset = 1;
@@ -13,10 +14,11 @@ module tb;
 
    reg [BOARD_WIDTH - 1:0] board;
    reg                     board_valid = 0;
-   reg                     white_to_move = 0;
+   reg                     white_to_move = 1;
    reg                     clear_moves = 1'b0;
+   reg                     clear_eval;
    reg [3:0]               castle_mask;
-   reg [3:0]               en_passant_col = (1 << `EN_PASSANT_VALID_BIT) | 5;
+   reg [3:0]               en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 5;
    reg [($clog2(`MAX_POSITIONS))-1:0] move_index = 0;
    reg                                display_move = 0;
 
@@ -32,6 +34,8 @@ module tb;
    wire                 display_attacking_done; // From vchess of vchess.v
    wire                 display_done;           // From display_board of display_board.v
    wire [3:0]           en_passant_col_out;     // From all_moves_initial of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
+   wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From vchess of vchess.v
    wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
    wire                 moves_ready;            // From all_moves_initial of all_moves.v
@@ -58,27 +62,18 @@ module tb;
              board[0 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KNIT;
              board[0 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
              for (i = 0; i < 8; i = i + 1)
-               if (i != 5 && i != 4)
-                 board[1 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
-               else
-                 board[3 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
+               board[1 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
 
              board[7 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
-             // board[7 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
-             board[5 * SIDE_WIDTH + 2 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
-             // board[7 * SIDE_WIDTH + 2 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
-             board[6 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
-             // board[7 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
-             board[6 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
+             board[7 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
+             board[7 * SIDE_WIDTH + 2 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
+             board[7 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
              board[7 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
              board[7 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
              board[7 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
              board[7 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
              for (i = 0; i < 8; i = i + 1)
-               if (i != 4 && i != 3)
-                 board[6 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
-               else
-                 board[4 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
+               board[6 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
           end
         forever
           #1 clk = ~clk;
@@ -112,6 +107,7 @@ module tb;
             move_index <= 0;
             display_move <= 0;
             clear_moves <= 0;
+            clear_eval <= 0;
             if (clear_moves)
               $finish; // fixme hack
             if (moves_ready)
@@ -133,6 +129,9 @@ module tb;
          end
        STATE_DISP_BOARD_1 :
          begin
+            $display("eval: %d", eval);
+            $display("");
+            clear_eval <= 1;
             move_index <= move_index + 1;
             if (move_index + 1 < move_count)
               state <= STATE_DISP_BOARD_2;
@@ -140,7 +139,10 @@ module tb;
               state <= STATE_DONE_0;
          end
        STATE_DISP_BOARD_2 : // wait state for move RAM
-         state <= STATE_DISP_INIT;
+         begin
+            clear_eval <= 0;
+            state <= STATE_DISP_INIT;
+         end
        STATE_DONE_0 :
          begin
             clear_moves <= 1;
@@ -180,6 +182,32 @@ module tb;
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
       .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
       .clear_moves                      (clear_moves));
+   
+   /* evaluate AUTO_TEMPLATE (
+    .board_valid (display_move),
+    .\(.*\)_in (\1_out[]),
+    );*/
+   evaluate #
+     (
+      .PIECE_WIDTH (PIECE_WIDTH),
+      .SIDE_WIDTH (SIDE_WIDTH),
+      .BOARD_WIDTH (BOARD_WIDTH),
+      .EVAL_WIDTH (EVAL_WIDTH)
+      )
+   evaluate
+     (/*AUTOINST*/
+      // Outputs
+      .eval                             (eval[EVAL_WIDTH-1:0]),
+      .eval_valid                       (eval_valid),
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (display_move),          // Templated
+      .board_in                         (board_out[BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in                 (white_to_move_out),     // Templated
+      .castle_mask_in                   (castle_mask_out[3:0]),  // Templated
+      .en_passant_col_in                (en_passant_col_out[3:0]), // Templated
+      .clear_eval                       (clear_eval));
 
    /* vchess AUTO_TEMPLATE (
     );*/

@@ -88,7 +88,6 @@ module display_board #
                 if (black_in_check)
                   $display("Black in check.");
               $display("castle=%04b en_passant=%04b", castle_mask, en_passant_col);
-              $display("");
               display_done <= 1;
               state <= STATE_INIT;
            end
