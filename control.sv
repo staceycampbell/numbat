@@ -2,7 +2,8 @@ module control #
   (
    parameter PIECE_WIDTH = 0,
    parameter SIDE_WIDTH = 0,
-   parameter BOARD_WIDTH = 0
+   parameter BOARD_WIDTH = 0,
+   parameter EVAL_WIDTH = 0
    )
    (
     input                                     reset,
@@ -15,6 +16,10 @@ module control #
     output reg [3:0]                          en_passant_col,
     output reg                                white_to_move,
     output reg [($clog2(`MAX_POSITIONS))-1:0] move_index,
+    output reg                                clear_eval,
+
+    input                                     eval_valid,
+    input signed [EVAL_WIDTH - 1:0]           eval,
 
     input [63:0]                              black_is_attacking,
     input [63:0]                              white_is_attacking,
@@ -97,6 +102,8 @@ module control #
          clear_moves <= ctrl0_wr_data;
        else if (ctrl0_wr_addr == 68)
          {white_to_move, castle_mask, en_passant_col} <= ctrl0_wr_data;
+       else if (ctrl0_wr_addr == 69)
+         clear_eval <= ctrl0_wr_data;
 
    always @(posedge clk)
      begin
@@ -112,6 +119,8 @@ module control #
                4 : ctrl0_axi_rdata <= {black_in_check, white_in_check};
                5 : ctrl0_axi_rdata <= initial_moves_ready;
                6 : ctrl0_axi_rdata <= {initial_white_to_move, initial_castle_mask, initial_en_passant_col};
+               7 : ctrl0_axi_rdata <= eval_valid;
+               8 : ctrl0_axi_rdata <= eval;
                default :
                  begin
                     if (rd_reg_addr >= 16)

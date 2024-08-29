@@ -5,6 +5,7 @@ module vchess_top;
    localparam PIECE_WIDTH = `PIECE_BITS;
    localparam SIDE_WIDTH = PIECE_WIDTH * 8;
    localparam BOARD_WIDTH = PIECE_WIDTH * 8 * 8;
+   localparam EVAL_WIDTH = 22;
 
    integer i;
 
@@ -19,6 +20,7 @@ module vchess_top;
    wire                 black_in_check;         // From vchess of vchess.v
    wire [63:0]          black_is_attacking;     // From vchess of vchess.v
    wire [3:0]           castle_mask;            // From control of control.v
+   wire                 clear_eval;             // From control of control.v
    wire                 clear_moves;            // From control of control.v
    wire                 clk200;                 // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
@@ -61,6 +63,8 @@ module vchess_top;
    wire                 ctrl1_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 display_attacking_done; // From vchess of vchess.v
    wire [3:0]           en_passant_col;         // From control of control.v
+   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
+   wire                 eval_valid;             // From evaluate of evaluate.v
    wire [BOARD_WIDTH-1:0] initial_board;        // From all_moves_initial of all_moves.v
    wire [3:0]           initial_castle_mask;    // From all_moves_initial of all_moves.v
    wire [3:0]           initial_en_passant_col; // From all_moves_initial of all_moves.v
@@ -160,6 +164,31 @@ module vchess_top;
       .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
       .clear_moves                      (clear_moves));
 
+   /* evaluate AUTO_TEMPLATE (
+    .\(.*\)_in (\1[]),
+    );*/
+   evaluate #
+     (
+      .PIECE_WIDTH (PIECE_WIDTH),
+      .SIDE_WIDTH (SIDE_WIDTH),
+      .BOARD_WIDTH (BOARD_WIDTH),
+      .EVAL_WIDTH (EVAL_WIDTH)
+      )
+   evaluate
+     (/*AUTOINST*/
+      // Outputs
+      .eval                             (eval[EVAL_WIDTH-1:0]),
+      .eval_valid                       (eval_valid),
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (board_valid),
+      .board_in                         (board[BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in                 (white_to_move),         // Templated
+      .castle_mask_in                   (castle_mask[3:0]),      // Templated
+      .en_passant_col_in                (en_passant_col[3:0]),   // Templated
+      .clear_eval                       (clear_eval));
+
    /* vchess AUTO_TEMPLATE (
     );*/
    vchess #
@@ -190,7 +219,8 @@ module vchess_top;
      (
       .PIECE_WIDTH (PIECE_WIDTH),
       .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH)
+      .BOARD_WIDTH (BOARD_WIDTH),
+      .EVAL_WIDTH (EVAL_WIDTH)
       )
    control
      (/*AUTOINST*/
@@ -202,6 +232,7 @@ module vchess_top;
       .en_passant_col                   (en_passant_col[3:0]),
       .white_to_move                    (white_to_move),
       .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
+      .clear_eval                       (clear_eval),
       .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
       .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
       .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),
@@ -221,6 +252,8 @@ module vchess_top;
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
+      .eval_valid                       (eval_valid),
+      .eval                             (eval[EVAL_WIDTH-1:0]),
       .black_is_attacking               (black_is_attacking[63:0]),
       .white_is_attacking               (white_is_attacking[63:0]),
       .white_in_check                   (white_in_check),

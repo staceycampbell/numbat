@@ -90,6 +90,8 @@ module evaluate #
               if (clear_eval)
                 state <= STATE_IDLE;
            end
+         default :
+           state <= STATE_IDLE;
        endcase
 
    initial
