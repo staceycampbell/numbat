@@ -106,12 +106,12 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
-   wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire                 white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire                               black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
+   wire                               display_attacking_done; // From board_attack of board_attack.v
+   wire                               is_attacking_done;      // From board_attack of board_attack.v
+   wire                               white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
    
    wire signed [4:0]                  pawn_adv1_row [0:2];
@@ -542,9 +542,9 @@ module all_moves #
          STATE_CASTLE_LONG :
            begin
               board_ram_wr <= board;
+              board_ram_wr[idx[castle_row[white_to_move]][0]+:PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[castle_row[white_to_move]][1]+:PIECE_WIDTH] <= `EMPTY_POSN;
-              board_ram_wr[idx[castle_row[white_to_move]][2]+:PIECE_WIDTH] <= `EMPTY_POSN;
-              board_ram_wr[idx[castle_row[white_to_move]][3]+:PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[castle_row[white_to_move]][4]+:PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[castle_row[white_to_move]][3]+:PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_ROOK;
               board_ram_wr[idx[castle_row[white_to_move]][2]+:PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_KING;
               if (castle_long_legal[white_to_move])
@@ -576,6 +576,14 @@ module all_moves #
            end
          STATE_LEGAL_KING_POS :
            begin
+              if (attack_test_board[idx[0][0]+:PIECE_WIDTH] != `WHITE_ROOK || attack_test_board[idx[0][4]+:PIECE_WIDTH] != `WHITE_KING)
+                attack_test_castle_mask[`CASTLE_WHITE_LONG] <= 1'b0;
+              if (attack_test_board[idx[0][7]+:PIECE_WIDTH] != `WHITE_ROOK || attack_test_board[idx[0][4]+:PIECE_WIDTH] != `WHITE_KING)
+                attack_test_castle_mask[`CASTLE_WHITE_SHORT] <= 1'b0;
+              if (attack_test_board[idx[7][0]+:PIECE_WIDTH] != `BLACK_ROOK || attack_test_board[idx[7][4]+:PIECE_WIDTH] != `BLACK_KING)
+                attack_test_castle_mask[`CASTLE_BLACK_LONG] <= 1'b0;
+              if (attack_test_board[idx[7][7]+:PIECE_WIDTH] != `BLACK_ROOK || attack_test_board[idx[7][4]+:PIECE_WIDTH] != `BLACK_KING)
+                attack_test_castle_mask[`CASTLE_BLACK_SHORT] <= 1'b0;
               attack_test <= {attack_test_en_passant_col, attack_test_castle_mask, attack_test_white_to_move, attack_test_board};
               attack_test_valid <= 1;
               ram_rd_addr <= ram_rd_addr + 1;
