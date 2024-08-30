@@ -17,8 +17,6 @@ module vchess_top;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From vchess of vchess.v
-   wire [63:0]          black_is_attacking;     // From vchess of vchess.v
    wire [3:0]           castle_mask;            // From control of control.v
    wire                 clear_eval;             // From control of control.v
    wire                 clear_moves;            // From control of control.v
@@ -61,23 +59,22 @@ module vchess_top;
    wire [0:0]           ctrl1_axi_wready;       // From control of control.v
    wire [3:0]           ctrl1_axi_wstrb;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 ctrl1_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 display_attacking_done; // From vchess of vchess.v
    wire [3:0]           en_passant_col;         // From control of control.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
+   wire                 initial_black_in_check; // From all_moves_initial of all_moves.v
    wire [BOARD_WIDTH-1:0] initial_board;        // From all_moves_initial of all_moves.v
+   wire                 initial_capture;        // From all_moves_initial of all_moves.v
    wire [3:0]           initial_castle_mask;    // From all_moves_initial of all_moves.v
    wire [3:0]           initial_en_passant_col; // From all_moves_initial of all_moves.v
    wire                 initial_moves_ready;    // From all_moves_initial of all_moves.v
+   wire                 initial_white_in_check; // From all_moves_initial of all_moves.v
    wire                 initial_white_to_move;  // From all_moves_initial of all_moves.v
-   wire                 is_attacking_done;      // From vchess of vchess.v
    wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
    wire [($clog2(`MAX_POSITIONS))-1:0] move_index;// From control of control.v
    wire [BOARD_WIDTH-1:0] new_board;            // From control of control.v
    wire                 new_board_valid;        // From control of control.v
    wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 white_in_check;         // From vchess of vchess.v
-   wire [63:0]          white_is_attacking;     // From vchess of vchess.v
    wire                 white_to_move;          // From control of control.v
    // End of automatics
    
@@ -134,6 +131,9 @@ module vchess_top;
     .castle_mask_out (initial_castle_mask[]),
     .en_passant_col_out (initial_en_passant_col[]),
     .white_to_move_out (initial_white_to_move),
+    .white_in_check_out (initial_white_in_check),
+    .black_in_check_out (initial_black_in_check),
+    .capture_out (initial_capture),
     .\(.*\)_in (\1[]),
     );*/
    all_moves #
@@ -153,6 +153,9 @@ module vchess_top;
       .white_to_move_out                (initial_white_to_move), // Templated
       .castle_mask_out                  (initial_castle_mask[3:0]), // Templated
       .en_passant_col_out               (initial_en_passant_col[3:0]), // Templated
+      .capture_out                      (initial_capture),       // Templated
+      .white_in_check_out               (initial_white_in_check), // Templated
+      .black_in_check_out               (initial_black_in_check), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -188,30 +191,6 @@ module vchess_top;
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
       .clear_eval                       (clear_eval));
-
-   /* vchess AUTO_TEMPLATE (
-    );*/
-   vchess #
-     (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH)
-      )
-   vchess
-     (/*AUTOINST*/
-      // Outputs
-      .white_is_attacking               (white_is_attacking[63:0]),
-      .black_is_attacking               (black_is_attacking[63:0]),
-      .black_in_check                   (black_in_check),
-      .white_in_check                   (white_in_check),
-      .is_attacking_done                (is_attacking_done),
-      .display_attacking_done           (display_attacking_done),
-      // Inputs
-      .reset                            (reset),
-      .clk                              (clk),
-      .board                            (board[BOARD_WIDTH-1:0]),
-      .board_valid                      (board_valid),
-      .white_to_move                    (white_to_move));
 
    /* control AUTO_TEMPLATE (
     );*/
@@ -254,15 +233,14 @@ module vchess_top;
       .clk                              (clk),
       .eval_valid                       (eval_valid),
       .eval                             (eval[EVAL_WIDTH-1:0]),
-      .black_is_attacking               (black_is_attacking[63:0]),
-      .white_is_attacking               (white_is_attacking[63:0]),
-      .white_in_check                   (white_in_check),
-      .black_in_check                   (black_in_check),
       .initial_moves_ready              (initial_moves_ready),
       .initial_board                    (initial_board[BOARD_WIDTH-1:0]),
       .initial_castle_mask              (initial_castle_mask[3:0]),
       .initial_en_passant_col           (initial_en_passant_col[3:0]),
       .initial_white_to_move            (initial_white_to_move),
+      .initial_white_in_check           (initial_white_in_check),
+      .initial_black_in_check           (initial_black_in_check),
+      .initial_capture                  (initial_capture),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),

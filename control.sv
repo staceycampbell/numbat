@@ -21,15 +21,14 @@ module control #
     input                                     eval_valid,
     input signed [EVAL_WIDTH - 1:0]           eval,
 
-    input [63:0]                              black_is_attacking,
-    input [63:0]                              white_is_attacking,
-    input                                     white_in_check,
-    input                                     black_in_check,
     input                                     initial_moves_ready,
     input [BOARD_WIDTH-1:0]                   initial_board,
     input [3:0]                               initial_castle_mask,
     input [3:0]                               initial_en_passant_col,
     input                                     initial_white_to_move,
+    input                                     initial_white_in_check,
+    input                                     initial_black_in_check,
+    input                                     initial_capture,
    
     input [39:0]                              ctrl0_axi_araddr,
     input [2:0]                               ctrl0_axi_arprot,
@@ -112,11 +111,7 @@ module control #
         if (ctrl0_axi_arvalid)
           begin
              case (rd_reg_addr)
-               0 : ctrl0_axi_rdata <= black_is_attacking[31:0];
-               1 : ctrl0_axi_rdata <= black_is_attacking[63:31];
-               2 : ctrl0_axi_rdata <= white_is_attacking[31:0];
-               3 : ctrl0_axi_rdata <= white_is_attacking[63:31];
-               4 : ctrl0_axi_rdata <= {black_in_check, white_in_check};
+               4 : ctrl0_axi_rdata <= {initial_black_in_check, initial_white_in_check, initial_capture};
                5 : ctrl0_axi_rdata <= initial_moves_ready;
                6 : ctrl0_axi_rdata <= {initial_white_to_move, initial_castle_mask, initial_en_passant_col};
                7 : ctrl0_axi_rdata <= eval_valid;
