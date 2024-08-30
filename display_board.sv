@@ -13,6 +13,7 @@ module display_board #
     input [BOARD_WIDTH - 1:0] board,
     input [3:0]               castle_mask,
     input [3:0]               en_passant_col,
+    input                     capture,
     input                     white_in_check,
     input                     black_in_check,
     input                     display,
@@ -87,7 +88,7 @@ module display_board #
               else
                 if (black_in_check)
                   $display("Black in check.");
-              $display("castle=%04b en_passant=%04b", castle_mask, en_passant_col);
+              $display("castle=%04b en_passant=%04b capture=%1b", castle_mask, en_passant_col, capture);
               display_done <= 1;
               state <= STATE_INIT;
            end

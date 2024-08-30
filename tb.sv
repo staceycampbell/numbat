@@ -28,8 +28,10 @@ module tb;
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 black_in_check;         // From vchess of vchess.v
+   wire                 black_in_check_out;     // From all_moves_initial of all_moves.v
    wire [63:0]          black_is_attacking;     // From vchess of vchess.v
    wire [BOARD_WIDTH-1:0] board_out;            // From all_moves_initial of all_moves.v
+   wire                 capture_out;            // From all_moves_initial of all_moves.v
    wire [3:0]           castle_mask_out;        // From all_moves_initial of all_moves.v
    wire                 display_attacking_done; // From vchess of vchess.v
    wire                 display_done;           // From display_board of display_board.v
@@ -40,6 +42,7 @@ module tb;
    wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
    wire                 moves_ready;            // From all_moves_initial of all_moves.v
    wire                 white_in_check;         // From vchess of vchess.v
+   wire                 white_in_check_out;     // From all_moves_initial of all_moves.v
    wire [63:0]          white_is_attacking;     // From vchess of vchess.v
    wire                 white_to_move_out;      // From all_moves_initial of all_moves.v
    // End of automatics
@@ -51,7 +54,12 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
         castle_mask = 4'b1111;
-        if (1)
+        board[0 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
+        board[1 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
+        board[2 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
+        board[7 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
+        board[6 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
+        if (0)
           begin
              board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
              board[0 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KNIT;
@@ -117,10 +125,13 @@ module tb;
               end
          end
        STATE_DISP_INIT :
-         begin
-            display_move <= 1;
-            state <= STATE_DISP_BOARD_0;
-         end
+         if (move_count == 0)
+           state <= STATE_DONE_0;
+         else
+           begin
+              display_move <= 1;
+              state <= STATE_DISP_BOARD_0;
+           end
        STATE_DISP_BOARD_0 :
          begin
             display_move <= 0;
@@ -172,6 +183,9 @@ module tb;
       .white_to_move_out                (white_to_move_out),
       .castle_mask_out                  (castle_mask_out[3:0]),
       .en_passant_col_out               (en_passant_col_out[3:0]),
+      .capture_out                      (capture_out),
+      .white_in_check_out               (white_in_check_out),
+      .black_in_check_out               (black_in_check_out),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -237,9 +251,10 @@ module tb;
     .display (display_move),
     .board (board_out[]),
     .castle_mask (castle_mask_out[]),
+    .capture (capture_out[]),
     .en_passant_col (en_passant_col_out[]),
-    .white_in_check (1'b0),
-    .black_in_check (1'b0),
+    .white_in_check (white_in_check_out),
+    .black_in_check (black_in_check_out),
     );*/
    display_board #
      (
@@ -257,8 +272,9 @@ module tb;
       .board                            (board_out[BOARD_WIDTH-1:0]), // Templated
       .castle_mask                      (castle_mask_out[3:0]),  // Templated
       .en_passant_col                   (en_passant_col_out[3:0]), // Templated
-      .white_in_check                   (1'b0),                  // Templated
-      .black_in_check                   (1'b0),                  // Templated
+      .capture                          (capture_out),           // Templated
+      .white_in_check                   (white_in_check_out),    // Templated
+      .black_in_check                   (black_in_check_out),    // Templated
       .display                          (display_move));          // Templated
 
 endmodule
