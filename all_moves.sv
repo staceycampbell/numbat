@@ -407,7 +407,8 @@ module all_moves #
               board_ram_wr <= board;
               board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] <= piece;
-              capture_ram_wr <= board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move;
+              capture_ram_wr <= board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move &&
+                                ! board[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN;
               if ((slider_row >= 0 && slider_row <= 7 && slider_col >= 0 && slider_col <= 7) &&
                   (board[idx[slider_row[2:0]][slider_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
                    board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move)) // opponent's piece
@@ -440,7 +441,8 @@ module all_moves #
               board_ram_wr <= board;
               board_ram_wr[idx[row][col]+:PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] <= piece;
-              capture_ram_wr <= board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move;
+              capture_ram_wr <= board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move &&
+                                ! board[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN;
               if (discrete_row >= 0 && discrete_row <= 7 && discrete_col >= 0 && discrete_col <= 7 &&
                   (board[idx[discrete_row[2:0]][discrete_col[2:0]]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square
                    board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move)) // opponent's piece
@@ -504,7 +506,7 @@ module all_moves #
               board_ram_wr[idx[row[2:0]][col[2:0]]+:PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:PIECE_WIDTH]
                 <= pawn_promotions[pawn_promotion_count];
-              capture_ram_wr <= pawn_promotion_count != 1;
+              capture_ram_wr <= pawn_move_count != 1;
               if (pawn_promote_mask[pawn_move_count])
                 ram_wr <= 1;
               else
