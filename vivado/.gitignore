@@ -2,3 +2,4 @@ vchess/
 vivado*.jou
 vivado*.log
 .Xil
+xrc.log
