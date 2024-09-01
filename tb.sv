@@ -41,6 +41,7 @@ module tb;
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From vchess of vchess.v
    wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
+   wire                 move_ready;             // From all_moves_initial of all_moves.v
    wire                 moves_ready;            // From all_moves_initial of all_moves.v
    wire                 white_in_check;         // From vchess of vchess.v
    wire                 white_in_check_out;     // From all_moves_initial of all_moves.v
@@ -181,6 +182,7 @@ module tb;
      (/*AUTOINST*/
       // Outputs
       .moves_ready                      (moves_ready),
+      .move_ready                       (move_ready),
       .move_count                       (move_count[($clog2(`MAX_POSITIONS))-1:0]),
       .board_out                        (board_out[BOARD_WIDTH-1:0]),
       .white_to_move_out                (white_to_move_out),
