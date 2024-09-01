@@ -28,12 +28,14 @@ module all_moves #
     output [3:0]                      en_passant_col_out,
     output                            capture_out,
     output                            white_in_check_out,
-    output                            black_in_check_out
+    output                            black_in_check_out,
+    output [63:0]                     white_is_attacking_out,
+    output [63:0]                     black_is_attacking_out
     );
 
    // board + castle mask + en_passant_col + color_to_move + capture
    localparam RAM_WIDTH = BOARD_WIDTH + 4 + 4 + 1 + 1;
-   localparam LEGAL_RAM_WIDTH = RAM_WIDTH + 1 + 1; // white, black in check
+   localparam LEGAL_RAM_WIDTH = 64 + 64 + RAM_WIDTH + 1 + 1; // is-attacking, board, white, black in check
 
    reg [RAM_WIDTH - 1:0]              move_ram [0:MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]              ram_rd_data;
@@ -65,6 +67,8 @@ module all_moves #
    reg                                legal_capture_ram_wr;
    reg                                legal_white_in_check_ram_wr;
    reg                                legal_black_in_check_ram_wr;
+   reg [63:0]                         legal_white_is_attacking_ram_wr;
+   reg [63:0]                         legal_black_is_attacking_ram_wr;
    reg                                legal_ram_wr;
 
    reg [BOARD_WIDTH - 1:0]            attack_test_board;
@@ -74,6 +78,8 @@ module all_moves #
    reg                                attack_test_capture;
    reg                                attack_test_white_in_check;
    reg                                attack_test_black_in_check;
+   reg [63:0]                         attack_test_white_is_attacking;
+   reg [63:0]                         attack_test_black_is_attacking;
 
    reg [BOARD_WIDTH - 1:0]            attack_test;
    reg                                attack_test_valid;
@@ -134,7 +140,10 @@ module all_moves #
    wire                               black_to_move = ~white_to_move;
 
    assign move_count = legal_ram_wr_addr;
-   assign {white_in_check_out, black_in_check_out, capture_out, en_passant_col_out, castle_mask_out, white_to_move_out, board_out} = legal_ram_rd_data;
+   assign {white_is_attacking_out, black_is_attacking_out,
+           white_in_check_out, black_in_check_out,
+           capture_out, en_passant_col_out, castle_mask_out, white_to_move_out,
+           board_out} = legal_ram_rd_data;
 
    initial
      begin
@@ -232,7 +241,8 @@ module all_moves #
           legal_ram_wr_addr <= 0;
         if (legal_ram_wr)
           begin
-             legal_move_ram[legal_ram_wr_addr] <= {legal_white_in_check_ram_wr, legal_black_in_check_ram_wr,
+             legal_move_ram[legal_ram_wr_addr] <= {legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
+                                                   legal_white_in_check_ram_wr, legal_black_in_check_ram_wr,
                                                    legal_capture_ram_wr, legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
                                                    legal_white_to_move_ram_wr, legal_board_ram_wr};
              legal_ram_wr_addr <= legal_ram_wr_addr + 1;
@@ -619,6 +629,8 @@ module all_moves #
               attack_test_valid <= 0;
               attack_test_white_in_check <= white_in_check;
               attack_test_black_in_check <= black_in_check;
+              attack_test_white_is_attacking <= white_is_attacking;
+              attack_test_black_is_attacking <= black_is_attacking;
               if (is_attacking_done)
                 if ((white_to_move && white_in_check) || (black_to_move && black_in_check))
                   state <= STATE_LEGAL_NEXT;
@@ -634,6 +646,8 @@ module all_moves #
               legal_capture_ram_wr <= attack_test_capture;
               legal_white_in_check_ram_wr <= attack_test_white_in_check;
               legal_black_in_check_ram_wr <= attack_test_black_in_check;
+              legal_white_is_attacking_ram_wr <= attack_test_white_is_attacking;
+              legal_black_is_attacking_ram_wr <= attack_test_black_is_attacking;
               legal_ram_wr <= 1;
               state <= STATE_LEGAL_NEXT;
            end

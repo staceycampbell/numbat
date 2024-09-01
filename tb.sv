@@ -30,6 +30,7 @@ module tb;
    wire                 black_in_check;         // From vchess of vchess.v
    wire                 black_in_check_out;     // From all_moves_initial of all_moves.v
    wire [63:0]          black_is_attacking;     // From vchess of vchess.v
+   wire [63:0]          black_is_attacking_out; // From all_moves_initial of all_moves.v
    wire [BOARD_WIDTH-1:0] board_out;            // From all_moves_initial of all_moves.v
    wire                 capture_out;            // From all_moves_initial of all_moves.v
    wire [3:0]           castle_mask_out;        // From all_moves_initial of all_moves.v
@@ -44,6 +45,7 @@ module tb;
    wire                 white_in_check;         // From vchess of vchess.v
    wire                 white_in_check_out;     // From all_moves_initial of all_moves.v
    wire [63:0]          white_is_attacking;     // From vchess of vchess.v
+   wire [63:0]          white_is_attacking_out; // From all_moves_initial of all_moves.v
    wire                 white_to_move_out;      // From all_moves_initial of all_moves.v
    // End of automatics
 
@@ -187,6 +189,8 @@ module tb;
       .capture_out                      (capture_out),
       .white_in_check_out               (white_in_check_out),
       .black_in_check_out               (black_in_check_out),
+      .white_is_attacking_out           (white_is_attacking_out[63:0]),
+      .black_is_attacking_out           (black_is_attacking_out[63:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
