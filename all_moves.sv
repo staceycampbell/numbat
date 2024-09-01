@@ -21,6 +21,7 @@ module all_moves #
     input                             clear_moves,
 
     output reg                        moves_ready,
+    output reg                        move_ready,
     output [MAX_POSITIONS_LOG2 - 1:0] move_count,
     output [BOARD_WIDTH - 1:0]        board_out,
     output                            white_to_move_out,
@@ -70,6 +71,8 @@ module all_moves #
    reg [63:0]                         legal_white_is_attacking_ram_wr;
    reg [63:0]                         legal_black_is_attacking_ram_wr;
    reg                                legal_ram_wr;
+
+   reg [MAX_POSITIONS_LOG2 - 1:0]     move_index_r;
 
    reg [BOARD_WIDTH - 1:0]            attack_test_board;
    reg [3:0]                          attack_test_en_passant_col;
@@ -236,6 +239,9 @@ module all_moves #
 
    always @(posedge clk)
      begin
+        move_index_r <= move_index;
+        move_ready <= move_index == move_index_r;
+        
         legal_ram_rd_data <= legal_move_ram[move_index];
         if (legal_ram_wr_addr_init)
           legal_ram_wr_addr <= 0;
