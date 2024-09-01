@@ -14,4 +14,4 @@ clean:
 	rm -fr vchess_workspace vivado*.jou vivado*.log xrc.log vivado_pid*.str vitis_pid*.str gtwiz_us_nlv.log xrc.log
 
 distclean: clean
-	rm -fr vchess vivado.jou vivado.log vivado*backup.log vivado*backup.jou
+	rm -fr .Xil vchess vivado.jou vivado.log vivado*backup.log vivado*backup.jou
