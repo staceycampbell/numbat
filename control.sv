@@ -28,6 +28,8 @@ module control #
     input                                     initial_white_to_move,
     input                                     initial_white_in_check,
     input                                     initial_black_in_check,
+    input [63:0]                              initial_white_is_attacking,
+    input [63:0]                              initial_black_is_attacking,
     input                                     initial_capture,
    
     input [39:0]                              ctrl0_axi_araddr,
@@ -111,6 +113,10 @@ module control #
         if (ctrl0_axi_arvalid)
           begin
              case (rd_reg_addr)
+               0 : ctrl0_axi_rdata <= initial_white_is_attacking[31:0];
+               1 : ctrl0_axi_rdata <= initial_white_is_attacking[63:32];
+               2 : ctrl0_axi_rdata <= initial_black_is_attacking[31:0];
+               3 : ctrl0_axi_rdata <= initial_black_is_attacking[63:32];
                4 : ctrl0_axi_rdata <= {initial_black_in_check, initial_white_in_check, initial_capture};
                5 : ctrl0_axi_rdata <= initial_moves_ready;
                6 : ctrl0_axi_rdata <= {initial_white_to_move, initial_castle_mask, initial_en_passant_col};

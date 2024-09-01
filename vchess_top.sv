@@ -63,12 +63,14 @@ module vchess_top;
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 initial_black_in_check; // From all_moves_initial of all_moves.v
+   wire [63:0]          initial_black_is_attacking;// From all_moves_initial of all_moves.v
    wire [BOARD_WIDTH-1:0] initial_board;        // From all_moves_initial of all_moves.v
    wire                 initial_capture;        // From all_moves_initial of all_moves.v
    wire [3:0]           initial_castle_mask;    // From all_moves_initial of all_moves.v
    wire [3:0]           initial_en_passant_col; // From all_moves_initial of all_moves.v
    wire                 initial_moves_ready;    // From all_moves_initial of all_moves.v
    wire                 initial_white_in_check; // From all_moves_initial of all_moves.v
+   wire [63:0]          initial_white_is_attacking;// From all_moves_initial of all_moves.v
    wire                 initial_white_to_move;  // From all_moves_initial of all_moves.v
    wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
    wire [($clog2(`MAX_POSITIONS))-1:0] move_index;// From control of control.v
@@ -125,6 +127,8 @@ module vchess_top;
     .white_to_move_out (initial_white_to_move),
     .white_in_check_out (initial_white_in_check),
     .black_in_check_out (initial_black_in_check),
+    .white_is_attacking_out (initial_white_is_attacking[]),
+    .black_is_attacking_out (initial_black_is_attacking[]),
     .capture_out (initial_capture),
     .\(.*\)_in (\1[]),
     );*/
@@ -148,6 +152,8 @@ module vchess_top;
       .capture_out                      (initial_capture),       // Templated
       .white_in_check_out               (initial_white_in_check), // Templated
       .black_in_check_out               (initial_black_in_check), // Templated
+      .white_is_attacking_out           (initial_white_is_attacking[63:0]), // Templated
+      .black_is_attacking_out           (initial_black_is_attacking[63:0]), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -232,6 +238,8 @@ module vchess_top;
       .initial_white_to_move            (initial_white_to_move),
       .initial_white_in_check           (initial_white_in_check),
       .initial_black_in_check           (initial_black_in_check),
+      .initial_white_is_attacking       (initial_white_is_attacking[63:0]),
+      .initial_black_is_attacking       (initial_black_is_attacking[63:0]),
       .initial_capture                  (initial_capture),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
