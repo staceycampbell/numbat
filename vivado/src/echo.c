@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <string.h>
-#include "lwip/err.h"
-#include "lwip/tcp.h"
-#include "xil_printf.h"
+#include <lwip/err.h>
+#include <lwip/tcp.h>
+#include <xil_printf.h>
+#include "vchess.h"
 
 int
 transfer_data()
@@ -17,7 +18,7 @@ print_app_header()
 	xil_printf("TCP packets sent to port 6001 will be echoed back\n\r");
 }
 
-err_t
+static err_t
 recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
 	char buffer[TCP_SND_BUF + 1];
@@ -50,7 +51,7 @@ recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 	return ERR_OK;
 }
 
-err_t
+static err_t
 accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
 	static int connection = 1;
@@ -69,7 +70,7 @@ accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
 }
 
 int
-start_application()
+start_application(void)
 {
 	struct tcp_pcb *pcb;
 	err_t err;
