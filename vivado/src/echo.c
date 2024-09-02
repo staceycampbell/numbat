@@ -20,6 +20,7 @@ print_app_header()
 err_t
 recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
+	char buffer[TCP_SND_BUF + 1];
 	/* do not read the packet if we are not in ESTABLISHED state */
 	if (!p)
 	{
@@ -36,6 +37,9 @@ recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 	if (tcp_sndbuf(tpcb) > p->len)
 	{
 		err = tcp_write(tpcb, p->payload, p->len, 1);
+		memset(buffer, 0, sizeof(buffer));
+		memcpy(buffer, p->payload, p->len);
+		xil_printf("payload: %s", buffer);
 	}
 	else
 		xil_printf("no space in tcp_sndbuf\n\r");
