@@ -9,6 +9,7 @@ module control #
     input                                     reset,
     input                                     clk,
 
+    output reg                                soft_reset = 0,
     output reg [BOARD_WIDTH - 1:0]            new_board,
     output reg                                new_board_valid,
     output reg [3:0]                          castle_mask,
@@ -100,6 +101,7 @@ module control #
               new_board_valid <= ctrl0_wr_data[0];
               clear_moves <= ctrl0_wr_data[1];
               clear_eval <= ctrl0_wr_data[2];
+              soft_reset <= ctrl0_wr_data[31];
            end
          4'h1 : move_index <= ctrl0_wr_data;
          4'h8 : new_board[SIDE_WIDTH * 0+:SIDE_WIDTH] <= ctrl0_wr_data[SIDE_WIDTH - 1:0];

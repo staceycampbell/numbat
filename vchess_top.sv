@@ -78,6 +78,7 @@ module vchess_top;
    wire [BOARD_WIDTH-1:0] new_board;            // From control of control.v
    wire                 new_board_valid;        // From control of control.v
    wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 soft_reset;             // From control of control.v
    wire                 white_to_move;          // From control of control.v
    // End of automatics
    
@@ -121,6 +122,7 @@ module vchess_top;
      end
    
    /* all_moves AUTO_TEMPLATE (
+    .reset (soft_reset),
     .moves_ready (initial_moves_ready),
     .board_out (initial_board[]),
     .castle_mask_out (initial_castle_mask[]),
@@ -159,7 +161,7 @@ module vchess_top;
       .black_is_attacking_out           (initial_black_is_attacking[63:0]), // Templated
       // Inputs
       .clk                              (clk),
-      .reset                            (reset),
+      .reset                            (soft_reset),            // Templated
       .board_valid                      (board_valid),
       .board_in                         (board[BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated
@@ -169,6 +171,7 @@ module vchess_top;
       .clear_moves                      (clear_moves));
 
    /* evaluate AUTO_TEMPLATE (
+    .reset (soft_reset),
     .\(.*\)_in (\1[]),
     );*/
    evaluate #
@@ -185,7 +188,7 @@ module vchess_top;
       .eval_valid                       (eval_valid),
       // Inputs
       .clk                              (clk),
-      .reset                            (reset),
+      .reset                            (soft_reset),            // Templated
       .board_valid                      (board_valid),
       .board_in                         (board[BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated
@@ -205,6 +208,7 @@ module vchess_top;
    control
      (/*AUTOINST*/
       // Outputs
+      .soft_reset                       (soft_reset),
       .new_board                        (new_board[BOARD_WIDTH-1:0]),
       .new_board_valid                  (new_board_valid),
       .castle_mask                      (castle_mask[3:0]),
