@@ -35,6 +35,7 @@ main(void)
 {
 	ip_addr_t ipaddr, netmask, gw;
 	unsigned char mac_ethernet_address[] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x03 };
+	board_t board;
 
 	echo_netif = &server_netif;
 
@@ -59,6 +60,8 @@ main(void)
 	print_ip_settings(&ipaddr, &netmask, &gw);
 
 	start_application();
+
+	vchess_init_board(&board);
 
 	while (1)
 	{

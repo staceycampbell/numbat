@@ -23,9 +23,6 @@
 #define BLACK_KING ((1 << BLACK_BIT) | PIECE_KING)
 #define BLACK_QUEN ((1 << BLACK_BIT) | PIECE_QUEN)
 
-#define WHITE_MASK (1 << WHITE_PAWN | 1 << WHITE_ROOK | 1 << WHITE_KNIT | 1 << WHITE_BISH | 1 << WHITE_KING | 1 << WHITE_QUEN)
-#define BLACK_MASK (1 << BLACK_PAWN | 1 << BLACK_ROOK | 1 << BLACK_KNIT | 1 << BLACK_BISH | 1 << BLACK_KING | 1 << BLACK_QUEN)
-
 #define PIECE_BITS 4
 #define PIECE_MASK_BITS 15
 
@@ -54,3 +51,6 @@ extern int start_application(void);
 extern void init_platform(void);
 extern void cleanup_platform(void);
 extern void platform_enable_interrupts(void);
+
+extern uint32_t move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
+extern void vchess_init_board(board_t *board);
