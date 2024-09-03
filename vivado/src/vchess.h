@@ -78,3 +78,123 @@ vchess_read(uint32_t reg)
 
 	return val;
 }
+
+static inline void
+vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves, uint32_t clear_eval)
+{
+	uint32_t val;
+	
+	soft_reset = (soft_reset != 0) << 31;
+	new_board_valid = (new_board_valid != 0) << 0;
+	clear_moves = (clear_moves != 0) << 1;
+	clear_eval = (clear_eval != 0) << 2;
+
+	val = soft_reset | new_board_valid | clear_moves | clear_eval;
+	vchess_write(0, val);
+}
+
+static inline void
+vchess_move_index(uint32_t move_index)
+{
+	vchess_write(1, move_index);
+}
+
+static inline void
+vchess_write_board_row(uint32_t row, uint32_t row_pieces)
+{
+	vchess_write(8 + row, row_pieces);
+}
+
+static inline uint32_t
+vchess_status(uint32_t *eval_valid, uint32_t *move_ready, uint32_t *moves_ready)
+{
+	uint32_t val;
+
+	val = vchess_read(0);
+	if (eval_valid)
+		*eval_valid = (val & (1 << 5)) != 0;
+	if (move_ready)
+		*move_ready = (val & (1 << 4)) != 0;
+	if (moves_ready)
+		*moves_ready = (val & (1 << 3)) != 0;
+
+	return val;
+}
+
+static inline uint32_t
+vchess_read_move_row(uint32_t row)
+{
+	uint32_t val;
+	
+	val = vchess_read(172 + row);
+
+	return val;
+}
+
+static inline uint64_t
+vchess_read_white_is_attacking(void)
+{
+	uint64_t bits_lo, bits_hi, val;
+
+	bits_lo = vchess_read(128);
+	bits_hi = vchess_read(129);
+
+	val = bits_hi << 31 | bits_lo;
+
+	return val;
+}
+
+static inline uint64_t
+vchess_read_black_is_attacking(void)
+{
+	uint64_t bits_lo, bits_hi, val;
+
+	bits_lo = vchess_read(130);
+	bits_hi = vchess_read(131);
+
+	val = bits_hi << 31 | bits_lo;
+
+	return val;
+}
+
+static inline uint32_t
+vchess_board_status0(uint32_t *black_in_check, uint32_t *white_in_check, uint32_t *capture)
+{
+	uint32_t val;
+
+	val = vchess_read(132);
+	if (capture)
+		*capture = (val & (1 << 0)) != 0;
+	if (white_in_check)
+		*white_in_check = (val & (1 << 1)) != 0;
+	if (black_in_check)
+		*black_in_check = (val & (1 << 2)) != 0;
+
+	return val;
+}
+
+static inline uint32_t
+vchess_board_status1(uint32_t *white_to_move, uint32_t *castle_mask, uint32_t *en_passant_col)
+{
+	uint32_t val;
+
+	val = vchess_read(133);
+	if (white_to_move)
+		*white_to_move = (val & (1 << 8)) != 0;
+	if (castle_mask)
+		*castle_mask = (val & (0xF << 4)) >> 4;
+	if (en_passant_col)
+		*en_passant_col = val & 0xF;
+
+	return val;
+}
+
+static inline int32_t
+vchess_eval(void)
+{
+	int32_t val;
+
+	val = (int32_t)vchess_read(134); // check this is sign extended
+
+	return val;
+}
