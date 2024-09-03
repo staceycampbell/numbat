@@ -1,5 +1,9 @@
-#include <stdint.h>
 #include "vchess.h"
+
+void
+vchess_new_board(board_t *board)
+{
+}
 
 static uint32_t
 get_piece(board_t *board, uint32_t row, uint32_t col)

@@ -14,8 +14,7 @@ transfer_data()
 void
 print_app_header()
 {
-	xil_printf("\n\r\n\r-----lwIPv6 TCP echo server ------\n\r");
-	xil_printf("TCP packets sent to port 6001 will be echoed back\n\r");
+	xil_printf("\n\r\n\r-------Starting TCP server-------n\r");
 }
 
 static err_t
@@ -74,7 +73,7 @@ start_application(void)
 {
 	struct tcp_pcb *pcb;
 	err_t err;
-	unsigned port = 7;
+	unsigned port = 7777;
 
 	/* create new TCP PCB structure */
 	pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
@@ -106,7 +105,7 @@ start_application(void)
 	/* specify callback to use for incoming connections */
 	tcp_accept(pcb, accept_callback);
 
-	xil_printf("TCP echo server started @ port %d\n\r", port);
+	xil_printf("TCP interface started at port %d\n\r", port);
 
 	return 0;
 }

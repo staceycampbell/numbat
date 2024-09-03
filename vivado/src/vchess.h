@@ -1,3 +1,6 @@
+#include <stdint.h>
+#include <xparameters.h>
+
 #define EMPTY_POSN 0
 
 #define PIECE_QUEN 1
@@ -54,3 +57,24 @@ extern void platform_enable_interrupts(void);
 
 extern uint32_t move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
 extern void vchess_init_board(board_t *board);
+
+static inline void
+vchess_write(uint32_t reg, uint32_t val)
+{
+	volatile uint32_t *ptr;
+
+	ptr = (volatile uint32_t *)(uint64_t)(XPAR_CTRL0_AXI_BASEADDR + reg * 4);
+	*ptr = val;
+}
+
+static inline uint32_t
+vchess_read(uint32_t reg)
+{
+	volatile uint32_t *ptr;
+	uint32_t val;
+
+	ptr = (volatile uint32_t *)(uint64_t)(XPAR_CTRL0_AXI_BASEADDR + reg * 4);
+	val = *ptr;
+
+	return val;
+}
