@@ -6,6 +6,7 @@
 #include <lwip/priv/tcp_priv.h>
 #include <lwip/init.h>
 #include <xil_cache.h>
+#include <xuartps.h>
 #include "vchess.h"
 
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
@@ -13,7 +14,7 @@
 extern volatile int TcpFastTmrFlag;
 extern volatile int TcpSlowTmrFlag;
 static struct netif server_netif;
-struct netif *echo_netif;
+struct netif *cmd_netif;
 
 static void
 print_ip(char *msg, ip_addr_t * ip)
@@ -30,14 +31,32 @@ print_ip_settings(ip_addr_t * ip, ip_addr_t * mask, ip_addr_t * gw)
 	print_ip("Gateway : ", gw);
 }
 
+static uint32_t
+process_serial_port(uint8_t cmdbuf[512], uint32_t *index)
+{
+	unsigned char c;
+	uint32_t status;
+
+	c = inbyte();
+	status = c == '\r' || c == '\n' || *index == 511;
+	if (status)
+		cmdbuf[*index] = '\0';
+	else
+		cmdbuf[*index] = c;
+
+	return status;
+}
+
 int
 main(void)
 {
 	ip_addr_t ipaddr, netmask, gw;
 	unsigned char mac_ethernet_address[] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x03 };
 	board_t board;
+	uint8_t cmdbuf[512];
+	uint32_t index;
 
-	echo_netif = &server_netif;
+	cmd_netif = &server_netif;
 
 	init_platform();
 
@@ -48,24 +67,27 @@ main(void)
 
 	lwip_init();
 
-	if (!xemac_add(echo_netif, &ipaddr, &netmask, &gw, mac_ethernet_address, PLATFORM_EMAC_BASEADDR))
+	if (!xemac_add(cmd_netif, &ipaddr, &netmask, &gw, mac_ethernet_address, PLATFORM_EMAC_BASEADDR))
 	{
 		xil_printf("Error adding N/W interface\n\r");
 		return -1;
 	}
-	netif_set_default(echo_netif);
+	netif_set_default(cmd_netif);
 
 	platform_enable_interrupts();
-	netif_set_up(echo_netif);
+	netif_set_up(cmd_netif);
 	print_ip_settings(&ipaddr, &netmask, &gw);
 
 	start_application();
 
 	vchess_init_board(&board);
 	vchess_load_board(&board);
+	index = 0;
 
 	while (1)
 	{
+		if (XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR))
+			process_serial_port(cmdbuf, &index);
 		if (TcpFastTmrFlag)
 		{
 			tcp_fasttmr();
@@ -76,8 +98,8 @@ main(void)
 			tcp_slowtmr();
 			TcpSlowTmrFlag = 0;
 		}
-		xemacif_input(echo_netif);
-		transfer_data();
+		xemacif_input(cmd_netif);
+		cmd_transfer_data(cmdbuf, &index);
 	}
 
 	cleanup_platform();

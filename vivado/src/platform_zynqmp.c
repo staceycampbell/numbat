@@ -24,7 +24,7 @@ static u8 Prescaler;
 volatile int TcpFastTmrFlag = 0;
 volatile int TcpSlowTmrFlag = 0;
 
-extern struct netif *echo_netif;
+extern struct netif *cmd_netif;
 
 static void
 platform_clear_interrupt(XTtcPs * TimerInstance)
@@ -54,7 +54,7 @@ timer_callback(XTtcPs * TimerInstance)
 	/* For detecting Ethernet phy link status periodically */
 	if (DetectEthLinkStatus == ETH_LINK_DETECT_INTERVAL)
 	{
-		eth_link_detect(echo_netif);
+		eth_link_detect(cmd_netif);
 		DetectEthLinkStatus = 0;
 	}
 

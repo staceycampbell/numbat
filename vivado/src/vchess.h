@@ -202,14 +202,14 @@ vchess_eval(void)
 	return val;
 }
 
-extern int transfer_data(void);
 extern void print_app_header(void);
 extern int start_application(void);
 extern void init_platform(void);
 extern void cleanup_platform(void);
 extern void platform_enable_interrupts(void);
+extern uint32_t cmd_transfer_data(uint8_t cmdbuf[512], uint32_t *index);
 
-extern uint32_t move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
+extern uint32_t vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
 extern void vchess_init_board(board_t *board);
 extern void vchess_load_board(board_t *board);
 extern void vchess_init_board(board_t *board);

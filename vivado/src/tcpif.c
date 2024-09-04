@@ -5,10 +5,29 @@
 #include <xil_printf.h>
 #include "vchess.h"
 
-int
-transfer_data()
+static char Buffer[TCP_SND_BUF + 1];
+static uint32_t BufLen;
+
+uint32_t
+cmd_transfer_data(uint8_t cmdbuf[512], uint32_t *index)
 {
-	return 0;
+	int i, j;
+	uint32_t status;
+
+	status = 0;
+	if (BufLen > 0)
+	{
+		i = *index;
+		j = 0;
+		while (i < 511 && j < TCP_SND_BUF && ! (status = (Buffer[j] == '\r' || Buffer[j] == '\n' || Buffer[j] == '\0')))
+		{
+			cmdbuf[i] = Buffer[j];
+			++i;
+			++j;
+		}
+		*index = i;
+	}
+	return status;
 }
 
 void
@@ -20,7 +39,6 @@ print_app_header()
 static err_t
 recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
-	char buffer[TCP_SND_BUF + 1];
 	/* do not read the packet if we are not in ESTABLISHED state */
 	if (!p)
 	{
@@ -31,16 +49,13 @@ recv_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 
 	/* indicate that the packet has been received */
 	tcp_recved(tpcb, p->len);
+	memset(Buffer, 0, sizeof(Buffer));
+	memcpy(Buffer, p->payload, p->len);
+	BufLen = p->len;
 
-	/* echo back the payload */
 	/* in this case, we assume that the payload is < TCP_SND_BUF */
 	if (tcp_sndbuf(tpcb) > p->len)
-	{
 		err = tcp_write(tpcb, p->payload, p->len, 1);
-		memset(buffer, 0, sizeof(buffer));
-		memcpy(buffer, p->payload, p->len);
-		xil_printf("payload: %s", buffer);
-	}
 	else
 		xil_printf("no space in tcp_sndbuf\n\r");
 
@@ -106,6 +121,8 @@ start_application(void)
 	tcp_accept(pcb, accept_callback);
 
 	xil_printf("TCP interface started at port %d\n\r", port);
+
+	BufLen = 0;
 
 	return 0;
 }

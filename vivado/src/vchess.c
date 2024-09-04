@@ -26,7 +26,7 @@ place(board_t *board, uint32_t piece, uint32_t row, uint32_t col)
 }
 
 uint32_t
-move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to)
+vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to)
 {
 	uint32_t piece, occupied;
 
