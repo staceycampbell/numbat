@@ -62,6 +62,7 @@ main(void)
 	start_application();
 
 	vchess_init_board(&board);
+	vchess_load_board(&board);
 
 	while (1)
 	{

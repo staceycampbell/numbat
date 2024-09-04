@@ -1,10 +1,5 @@
 #include "vchess.h"
 
-void
-vchess_new_board(board_t *board)
-{
-}
-
 static uint32_t
 get_piece(board_t *board, uint32_t row, uint32_t col)
 {
@@ -41,6 +36,17 @@ move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to
 	place(board, piece, row_to, col_to);
 
 	return occupied;
+}
+
+void
+vchess_load_board(board_t *board)
+{
+	int i;
+
+	for (i = 0; i < 8; ++i)
+		vchess_write_board_row(i, board->board[i]);
+	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
+	vchess_write_control(0, 1, 0, 0);
 }
 
 void

@@ -48,16 +48,6 @@ typedef struct board_t {
 	uint32_t white_to_move;
 } board_t;
 
-extern int transfer_data(void);
-extern void print_app_header(void);
-extern int start_application(void);
-extern void init_platform(void);
-extern void cleanup_platform(void);
-extern void platform_enable_interrupts(void);
-
-extern uint32_t move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
-extern void vchess_init_board(board_t *board);
-
 static inline void
 vchess_write(uint32_t reg, uint32_t val)
 {
@@ -91,6 +81,19 @@ vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t cle
 
 	val = soft_reset | new_board_valid | clear_moves | clear_eval;
 	vchess_write(0, val);
+}
+
+static inline void
+vchess_write_board_misc(uint32_t white_to_move, uint32_t castle_mask, uint32_t en_passant_col)
+{
+	uint32_t val;
+	
+	white_to_move = (white_to_move != 0) << 8;
+	castle_mask = (castle_mask & 0xF) << 4;
+	en_passant_col &= 0xF;
+
+	val = white_to_move | castle_mask | en_passant_col;
+	vchess_write(2, val);
 }
 
 static inline void
@@ -198,3 +201,15 @@ vchess_eval(void)
 
 	return val;
 }
+
+extern int transfer_data(void);
+extern void print_app_header(void);
+extern int start_application(void);
+extern void init_platform(void);
+extern void cleanup_platform(void);
+extern void platform_enable_interrupts(void);
+
+extern uint32_t move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
+extern void vchess_init_board(board_t *board);
+extern void vchess_load_board(board_t *board);
+extern void vchess_init_board(board_t *board);

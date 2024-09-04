@@ -89,6 +89,9 @@ module control #
    wire                 ctrl0_wr_valid;         // From axi4lite_write_ctrl0 of axi4lite_write.v
    // End of automatics
 
+   assign ctrl0_axi_arready = 1; // always ready
+   assign ctrl0_axi_rresp = 2'b0; // always ok
+
    wire [15:0]                                wr_reg_addr = ctrl0_wr_addr[15:2];
    wire [15:0]                                rd_reg_addr = ctrl0_axi_araddr[15:2];
    wire [5:0]                                 board_address = wr_reg_addr - 1;
@@ -104,6 +107,7 @@ module control #
               soft_reset <= ctrl0_wr_data[31];
            end
          4'h1 : move_index <= ctrl0_wr_data;
+         4'h2 : {white_to_move, castle_mask, en_passant_col} <= ctrl0_wr_data;
          4'h8 : new_board[SIDE_WIDTH * 0+:SIDE_WIDTH] <= ctrl0_wr_data[SIDE_WIDTH - 1:0];
          4'h9 : new_board[SIDE_WIDTH * 1+:SIDE_WIDTH] <= ctrl0_wr_data[SIDE_WIDTH - 1:0];
          4'hA : new_board[SIDE_WIDTH * 2+:SIDE_WIDTH] <= ctrl0_wr_data[SIDE_WIDTH - 1:0];
@@ -132,6 +136,7 @@ module control #
                     ctrl0_axi_rdata[5:3] <= {eval_valid, initial_move_ready, initial_moves_ready};
                  end
                4'h1 : ctrl0_axi_rdata <= move_index;
+               4'h2 : ctrl0_axi_rdata <= {white_to_move, castle_mask, en_passant_col};
                4'h8 : ctrl0_axi_rdata[SIDE_WIDTH - 1:0] <= new_board[SIDE_WIDTH * 0+:SIDE_WIDTH];
                4'h9 : ctrl0_axi_rdata[SIDE_WIDTH - 1:0] <= new_board[SIDE_WIDTH * 1+:SIDE_WIDTH];
                4'hA : ctrl0_axi_rdata[SIDE_WIDTH - 1:0] <= new_board[SIDE_WIDTH * 2+:SIDE_WIDTH];
