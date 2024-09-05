@@ -14,7 +14,9 @@
 extern volatile int TcpFastTmrFlag;
 extern volatile int TcpSlowTmrFlag;
 static struct netif server_netif;
+
 struct netif *cmd_netif;
+struct tcp_pcb *cmd_pcb;
 
 static void
 print_ip(char *msg, ip_addr_t * ip)
@@ -43,8 +45,20 @@ process_serial_port(uint8_t cmdbuf[512], uint32_t *index)
 		cmdbuf[*index] = '\0';
 	else
 		cmdbuf[*index] = c;
+	++*index;
 
 	return status;
+}
+
+static void
+process_cmd(uint8_t cmd[512])
+{
+	int len;
+	
+	xil_printf("cmd: %s\n", cmd);
+	len = strlen((char *)cmd);
+	tcp_write(cmd_pcb, cmd, len, TCP_WRITE_FLAG_COPY);
+	tcp_write(cmd_pcb, "\n", 1, TCP_WRITE_FLAG_COPY);
 }
 
 int
@@ -55,6 +69,7 @@ main(void)
 	board_t board;
 	uint8_t cmdbuf[512];
 	uint32_t index;
+	uint32_t ip_status, com_status;
 
 	cmd_netif = &server_netif;
 
@@ -83,11 +98,13 @@ main(void)
 	vchess_init_board(&board);
 	vchess_load_board(&board);
 	index = 0;
+	ip_status = 0;
+	com_status = 0;
 
 	while (1)
 	{
 		if (XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR))
-			process_serial_port(cmdbuf, &index);
+			com_status = process_serial_port(cmdbuf, &index);
 		if (TcpFastTmrFlag)
 		{
 			tcp_fasttmr();
@@ -99,7 +116,14 @@ main(void)
 			TcpSlowTmrFlag = 0;
 		}
 		xemacif_input(cmd_netif);
-		cmd_transfer_data(cmdbuf, &index);
+		ip_status = cmd_transfer_data(cmdbuf, &index);
+		if (ip_status || com_status)
+		{
+			process_cmd(cmdbuf);
+			index = 0;
+			ip_status = 0;
+			com_status = 0;
+		}
 	}
 
 	cleanup_platform();

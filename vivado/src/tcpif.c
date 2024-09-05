@@ -5,6 +5,8 @@
 #include <xil_printf.h>
 #include "vchess.h"
 
+extern struct tcp_pcb *cmd_pcb;
+
 static char Buffer[TCP_SND_BUF + 1];
 static uint32_t BufLen;
 
@@ -19,7 +21,7 @@ cmd_transfer_data(uint8_t cmdbuf[512], uint32_t *index)
 	{
 		i = *index;
 		j = 0;
-		while (i < 511 && j < TCP_SND_BUF && ! (status = (Buffer[j] == '\r' || Buffer[j] == '\n' || Buffer[j] == '\0')))
+		while (i < 511 && j < TCP_SND_BUF && ! (status = (Buffer[j] == '\r' || Buffer[j] == '\n' || i == 510)))
 		{
 			cmdbuf[i] = Buffer[j];
 			++i;
@@ -27,6 +29,8 @@ cmd_transfer_data(uint8_t cmdbuf[512], uint32_t *index)
 		}
 		*index = i;
 	}
+	if (status)
+		BufLen = 0;
 	return status;
 }
 
@@ -86,20 +90,19 @@ accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
 int
 start_application(void)
 {
-	struct tcp_pcb *pcb;
 	err_t err;
 	unsigned port = 7777;
 
 	/* create new TCP PCB structure */
-	pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
-	if (!pcb)
+	cmd_pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
+	if (!cmd_pcb)
 	{
 		xil_printf("Error creating PCB. Out of Memory\n\r");
 		return -1;
 	}
 
 	/* bind to specified @port */
-	err = tcp_bind(pcb, IP_ANY_TYPE, port);
+	err = tcp_bind(cmd_pcb, IP_ANY_TYPE, port);
 	if (err != ERR_OK)
 	{
 		xil_printf("Unable to bind to port %d: err = %d\n\r", port, err);
@@ -107,18 +110,18 @@ start_application(void)
 	}
 
 	/* we do not need any arguments to callback functions */
-	tcp_arg(pcb, NULL);
+	tcp_arg(cmd_pcb, NULL);
 
 	/* listen for connections */
-	pcb = tcp_listen(pcb);
-	if (!pcb)
+	cmd_pcb = tcp_listen(cmd_pcb);
+	if (!cmd_pcb)
 	{
 		xil_printf("Out of memory while tcp_listen\n\r");
 		return -3;
 	}
 
 	/* specify callback to use for incoming connections */
-	tcp_accept(pcb, accept_callback);
+	tcp_accept(cmd_pcb, accept_callback);
 
 	xil_printf("TCP interface started at port %d\n\r", port);
 
