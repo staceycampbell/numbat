@@ -1,4 +1,7 @@
+#include <xil_printf.h>
 #include "vchess.h"
+
+static char piece_char[1 << PIECE_BITS];
 
 static uint32_t
 get_piece(board_t *board, uint32_t row, uint32_t col)
@@ -6,23 +9,23 @@ get_piece(board_t *board, uint32_t row, uint32_t col)
 	uint32_t row_contents, shift, piece;
 
 	row_contents = board->board[row];
-	shift = col * 4;
+	shift = col * PIECE_BITS;
 	piece = (row_contents >> shift) & 0xF;
 
 	return piece;
 }
 
 static void
-place(board_t *board, uint32_t piece, uint32_t row, uint32_t col)
+place(board_t *board, uint32_t row, uint32_t col, uint32_t piece)
 {
 	uint32_t row_contents;
 	uint32_t shift;
 
-	shift = col * 4;
+	shift = col * PIECE_BITS;
 	row_contents = board->board[row];
 	row_contents &= ~(0xF << shift);
 	row_contents |= piece << shift;
-	board->board[row] = piece;
+	board->board[row] = row_contents;
 }
 
 uint32_t
@@ -32,14 +35,37 @@ vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t
 
 	piece = get_piece(board, row_from, col_from);
 	occupied = get_piece(board, row_to, col_to) != EMPTY_POSN;
-	place(board, EMPTY_POSN, row_from, col_from);
-	place(board, piece, row_to, col_to);
+	place(board, row_from, col_from, EMPTY_POSN);
+	place(board, row_to, col_to, piece);
 
 	return occupied;
 }
 
+// uint32_t eval_valid, move_ready, moves_ready;
+// vchess_status(&eval_valid, &move_ready, &moves_ready);
+
 void
-vchess_load_board(board_t *board)
+vchess_print_board(board_t *board)
+{
+	int y, x;
+	uint32_t piece;
+	static const char *to_move[2] = {"Black", "White"};
+
+	for (y = 7; y >= 0; --y)
+	{
+		for (x = 0; x < 8; ++x)
+		{
+			piece = get_piece(board, y, x);
+			xil_printf("%c ", piece_char[piece]);
+		}
+		xil_printf("\n");
+	}
+	xil_printf("%s to move, en passant col: %1X, castle mask: %1X\n", to_move[board->white_to_move],
+		   board->en_passant_col, board->castle_mask);
+}
+
+void
+vchess_write_board(board_t *board)
 {
 	int i;
 
@@ -83,4 +109,26 @@ vchess_init_board(board_t *board)
 	board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
 	board->castle_mask = 0xF;
 	board->white_to_move = 1;
+}
+
+void
+vchess_init(void)
+{
+	int i;
+	
+	for (i = 0; i < (1 << PIECE_BITS); ++i)
+		piece_char[i] = '?';
+	piece_char[EMPTY_POSN] = '.';
+	piece_char[WHITE_PAWN] = 'P';
+	piece_char[WHITE_ROOK] = 'R';
+	piece_char[WHITE_KNIT] = 'N';
+	piece_char[WHITE_BISH] = 'B';
+	piece_char[WHITE_KING] = 'K';
+	piece_char[WHITE_QUEN] = 'Q';
+	piece_char[BLACK_PAWN] = 'p';
+	piece_char[BLACK_ROOK] = 'r';
+	piece_char[BLACK_KNIT] = 'n';
+	piece_char[BLACK_BISH] = 'b';
+	piece_char[BLACK_KING] = 'k';
+	piece_char[BLACK_QUEN] = 'q';
 }

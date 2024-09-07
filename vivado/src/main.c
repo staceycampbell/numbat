@@ -95,8 +95,11 @@ main(void)
 
 	start_application();
 
+	vchess_init();
 	vchess_init_board(&board);
-	vchess_load_board(&board);
+	vchess_write_board(&board);
+	vchess_print_board(&board);
+
 	index = 0;
 	ip_status = 0;
 	com_status = 0;

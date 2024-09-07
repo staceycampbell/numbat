@@ -37,7 +37,7 @@ cmd_transfer_data(uint8_t cmdbuf[512], uint32_t *index)
 void
 print_app_header()
 {
-	xil_printf("\n\r\n\r-------Starting TCP server-------n\r");
+	xil_printf("\n\r\n\r-------Starting TCP server-------\n\r");
 }
 
 static err_t
