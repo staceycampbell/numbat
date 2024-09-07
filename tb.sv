@@ -6,6 +6,7 @@ module tb;
    localparam SIDE_WIDTH = PIECE_WIDTH * 8;
    localparam BOARD_WIDTH = PIECE_WIDTH * 8 * 8;
    localparam EVAL_WIDTH = 22;
+   localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
 
    reg clk = 0;
    reg reset = 1;
@@ -19,8 +20,8 @@ module tb;
    reg                     clear_eval;
    reg [3:0]               castle_mask;
    reg [3:0]               en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 5;
-   reg [($clog2(`MAX_POSITIONS))-1:0] move_index = 0;
-   reg                                display_move = 0;
+   reg [MAX_POSITIONS_LOG2 - 1:0] move_index = 0;
+   reg                            display_move = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -40,7 +41,7 @@ module tb;
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From vchess of vchess.v
-   wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0] move_count;    // From all_moves_initial of all_moves.v
    wire                 move_ready;             // From all_moves_initial of all_moves.v
    wire                 moves_ready;            // From all_moves_initial of all_moves.v
    wire                 white_in_check;         // From vchess of vchess.v
@@ -175,15 +176,14 @@ module tb;
       .PIECE_WIDTH (PIECE_WIDTH),
       .SIDE_WIDTH (SIDE_WIDTH),
       .BOARD_WIDTH (BOARD_WIDTH),
-      .MAX_POSITIONS (`MAX_POSITIONS),
-      .MAX_POSITIONS_LOG2 ($clog2(`MAX_POSITIONS))
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
       )
    all_moves_initial
      (/*AUTOINST*/
       // Outputs
       .moves_ready                      (moves_ready),
       .move_ready                       (move_ready),
-      .move_count                       (move_count[($clog2(`MAX_POSITIONS))-1:0]),
+      .move_count                       (move_count[MAX_POSITIONS_LOG2-1:0]),
       .board_out                        (board_out[BOARD_WIDTH-1:0]),
       .white_to_move_out                (white_to_move_out),
       .castle_mask_out                  (castle_mask_out[3:0]),
@@ -201,7 +201,7 @@ module tb;
       .white_to_move_in                 (white_to_move),         // Templated
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
-      .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
+      .move_index                       (move_index[MAX_POSITIONS_LOG2-1:0]),
       .clear_moves                      (clear_moves));
    
    /* evaluate AUTO_TEMPLATE (
