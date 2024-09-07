@@ -75,6 +75,7 @@ vchess_write_board(board_t *board)
 		vchess_write_board_row(i, board->board[i]);
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
 	vchess_write_control(0, 1, 0, 0); // new board valid bit set
+	vchess_write_control(0, 0, 0, 0); // new board valid bit clear
 }
 
 uint32_t

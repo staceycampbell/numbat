@@ -10,8 +10,8 @@ module vchess_top;
 
    integer i;
 
-   reg [BOARD_WIDTH - 1:0] board;
-   reg                     board_valid = 0;
+(* mark_debug = "true" *)   reg [BOARD_WIDTH - 1:0] board;
+(* mark_debug = "true" *)   reg                     board_valid = 0;
 
    // should be empty
    /*AUTOREGINPUT*/

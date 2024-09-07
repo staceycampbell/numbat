@@ -19,10 +19,10 @@ module all_moves #
     input [MAX_POSITIONS_LOG2 - 1:0]  move_index,
     input                             clear_moves,
 
-    output reg                        moves_ready,
-    output reg                        move_ready,
-    output [MAX_POSITIONS_LOG2 - 1:0] move_count,
-    output [BOARD_WIDTH - 1:0]        board_out,
+(* mark_debug = "true" *)    output reg                        moves_ready,
+(* mark_debug = "true" *)    output reg                        move_ready,
+(* mark_debug = "true" *)    output [MAX_POSITIONS_LOG2 - 1:0] move_count,
+(* mark_debug = "true" *)    output [BOARD_WIDTH - 1:0]        board_out,
     output                            white_to_move_out,
     output [3:0]                      castle_mask_out,
     output [3:0]                      en_passant_col_out,
@@ -52,14 +52,14 @@ module all_moves #
    reg [LEGAL_RAM_WIDTH - 1:0]        legal_ram_rd_data;
    reg [MAX_POSITIONS_LOG2 - 1:0]     legal_ram_wr_addr;
    reg                                legal_ram_wr_addr_init;
-   
+
    reg [BOARD_WIDTH - 1:0]            board_ram_wr;
    reg [3:0]                          en_passant_col_ram_wr;
    reg [3:0]                          castle_mask_ram_wr;
    reg                                white_to_move_ram_wr;
    reg                                capture_ram_wr;
    reg                                ram_wr;
-   
+
    reg [BOARD_WIDTH - 1:0]            legal_board_ram_wr;
    reg [3:0]                          legal_en_passant_col_ram_wr;
    reg [3:0]                          legal_castle_mask_ram_wr;
@@ -98,7 +98,7 @@ module all_moves #
    reg signed [2:0]                   discrete_offset_row[`PIECE_KNIT:`PIECE_KING][0:7];
    reg [3:0]                          discrete_index;
    reg signed [4:0]                   discrete_row, discrete_col;
-   
+
    reg signed [1:0]                   pawn_advance [0:1];
    reg signed [4:0]                   pawn_promote_row [0:1];
    reg signed [4:0]                   pawn_init_row [0:1];
@@ -125,14 +125,14 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
-   wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire                 white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire                               black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
+   wire                               display_attacking_done; // From board_attack of board_attack.v
+   wire                               is_attacking_done;      // From board_attack of board_attack.v
+   wire                               white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
-   
+
    wire signed [4:0]                  pawn_adv1_row [0:2];
    wire signed [4:0]                  pawn_adv1_col [0:2];
    wire signed [4:0]                  pawn_enp_row[0:1];
@@ -240,7 +240,7 @@ module all_moves #
      begin
         move_index_r <= move_index;
         move_ready <= move_index == move_index_r;
-        
+
         legal_ram_rd_data <= legal_move_ram[move_index];
         if (legal_ram_wr_addr_init)
           legal_ram_wr_addr <= 0;
@@ -267,7 +267,7 @@ module all_moves #
    always @(posedge clk)
      begin
         piece <= board[idx[row][col]+:PIECE_WIDTH];
-        
+
         white_to_move_ram_wr <= ~white_to_move;
 
         // free-run these for timing, only valid when used in states
@@ -356,7 +356,7 @@ module all_moves #
    localparam STATE_LEGAL_NEXT = 22;
    localparam STATE_DONE = 255;
 
-   reg [7:0]                          state = STATE_IDLE;
+   (* mark_debug = "true" *) reg [7:0] state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -370,7 +370,7 @@ module all_moves #
               white_to_move <= white_to_move_in;
               castle_mask <= castle_mask_in;
               en_passant_col <= en_passant_col_in;
-              
+
               attack_test <= board_in;
               attack_test_valid <= board_valid;
               if (is_attacking_done)

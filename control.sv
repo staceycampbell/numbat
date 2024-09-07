@@ -13,14 +13,14 @@ module control #
     input                                 clk,
 
     output reg                            soft_reset = 0,
-    output reg [BOARD_WIDTH - 1:0]        new_board,
-    output reg                            new_board_valid,
-    output reg [3:0]                      castle_mask,
-    output reg                            clear_moves,
-    output reg [3:0]                      en_passant_col,
-    output reg                            white_to_move,
-    output reg [MAX_POSITIONS_LOG2 - 1:0] move_index,
-    output reg                            clear_eval,
+(* mark_debug = "true" *)    output reg [BOARD_WIDTH - 1:0]        new_board,
+(* mark_debug = "true" *)    output reg                            new_board_valid,
+(* mark_debug = "true" *)    output reg [3:0]                      castle_mask,
+(* mark_debug = "true" *)    output reg                            clear_moves,
+(* mark_debug = "true" *)    output reg [3:0]                      en_passant_col,
+(* mark_debug = "true" *)    output reg                            white_to_move,
+(* mark_debug = "true" *)    output reg [MAX_POSITIONS_LOG2 - 1:0] move_index,
+(* mark_debug = "true" *)    output reg                            clear_eval,
 
     input                                 eval_valid,
     input signed [EVAL_WIDTH - 1:0]       eval,
@@ -102,7 +102,7 @@ module control #
 
    always @(posedge clk)
      if (ctrl0_wr_valid)
-       case (ctrl0_wr_addr)
+       case (wr_reg_addr)
          4'h0 :
            begin
               new_board_valid <= ctrl0_wr_data[0];

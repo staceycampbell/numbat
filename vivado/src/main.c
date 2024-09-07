@@ -69,6 +69,10 @@ process_cmd(uint8_t cmd[512])
 	{
 		move_index = arg1;
 		vchess_read_board(&board, move_index);
+	} else if (strcmp((char *)str, "init") == 0)
+	{
+		vchess_init_board(&board);
+		vchess_write_board(&board);
 	}
 }
 
@@ -107,9 +111,7 @@ main(void)
 	start_application();
 
 	vchess_init();
-	vchess_init_board(&board);
-	vchess_write_board(&board);
-	vchess_print_board(&board);
+	// vchess_print_board(&board);
 
 	index = 0;
 	ip_status = 0;
