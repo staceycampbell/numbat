@@ -5,8 +5,7 @@ module all_moves #
    parameter PIECE_WIDTH = `PIECE_BITS,
    parameter SIDE_WIDTH = PIECE_WIDTH * 8,
    parameter BOARD_WIDTH = SIDE_WIDTH * 8,
-   parameter MAX_POSITIONS = `MAX_POSITIONS,
-   parameter MAX_POSITIONS_LOG2 = $clog2(MAX_POSITIONS)
+   parameter MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS)
    )
    (
     input                             clk,
@@ -38,7 +37,7 @@ module all_moves #
    localparam RAM_WIDTH = BOARD_WIDTH + 4 + 4 + 1 + 1;
    localparam LEGAL_RAM_WIDTH = 64 + 64 + RAM_WIDTH + 1 + 1; // is-attacking, board, white, black in check
 
-   reg [RAM_WIDTH - 1:0]              move_ram [0:MAX_POSITIONS - 1];
+   reg [RAM_WIDTH - 1:0]              move_ram [0:`MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]              ram_rd_data;
    reg [MAX_POSITIONS_LOG2 - 1:0]     ram_wr_addr, ram_rd_addr;
    reg [MAX_POSITIONS_LOG2 - 1:0]     attack_test_move_count;
@@ -49,7 +48,7 @@ module all_moves #
    reg [3:0]                          castle_mask;
    reg [3:0]                          en_passant_col;
 
-   reg [LEGAL_RAM_WIDTH - 1:0]        legal_move_ram [0:MAX_POSITIONS - 1];
+   reg [LEGAL_RAM_WIDTH - 1:0]        legal_move_ram [0:`MAX_POSITIONS - 1];
    reg [LEGAL_RAM_WIDTH - 1:0]        legal_ram_rd_data;
    reg [MAX_POSITIONS_LOG2 - 1:0]     legal_ram_wr_addr;
    reg                                legal_ram_wr_addr_init;

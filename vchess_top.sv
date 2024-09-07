@@ -6,6 +6,7 @@ module vchess_top;
    localparam SIDE_WIDTH = PIECE_WIDTH * 8;
    localparam BOARD_WIDTH = PIECE_WIDTH * 8 * 8;
    localparam EVAL_WIDTH = 22;
+   localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
 
    integer i;
 
@@ -68,13 +69,13 @@ module vchess_top;
    wire                 initial_capture;        // From all_moves_initial of all_moves.v
    wire [3:0]           initial_castle_mask;    // From all_moves_initial of all_moves.v
    wire [3:0]           initial_en_passant_col; // From all_moves_initial of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0] initial_move_count;// From all_moves_initial of all_moves.v
    wire                 initial_move_ready;     // From all_moves_initial of all_moves.v
    wire                 initial_moves_ready;    // From all_moves_initial of all_moves.v
    wire                 initial_white_in_check; // From all_moves_initial of all_moves.v
    wire [63:0]          initial_white_is_attacking;// From all_moves_initial of all_moves.v
    wire                 initial_white_to_move;  // From all_moves_initial of all_moves.v
-   wire [($clog2(`MAX_POSITIONS))-1:0] move_count;// From all_moves_initial of all_moves.v
-   wire [($clog2(`MAX_POSITIONS))-1:0] move_index;// From control of control.v
+   wire [MAX_POSITIONS_LOG2-1:0] move_index;    // From control of control.v
    wire [BOARD_WIDTH-1:0] new_board;            // From control of control.v
    wire                 new_board_valid;        // From control of control.v
    wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
@@ -123,6 +124,7 @@ module vchess_top;
    
    /* all_moves AUTO_TEMPLATE (
     .reset (soft_reset),
+    .move_count (initial_move_count[]),
     .moves_ready (initial_moves_ready),
     .board_out (initial_board[]),
     .castle_mask_out (initial_castle_mask[]),
@@ -141,15 +143,14 @@ module vchess_top;
       .PIECE_WIDTH (PIECE_WIDTH),
       .SIDE_WIDTH (SIDE_WIDTH),
       .BOARD_WIDTH (BOARD_WIDTH),
-      .MAX_POSITIONS (`MAX_POSITIONS),
-      .MAX_POSITIONS_LOG2 ($clog2(`MAX_POSITIONS))
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
       )
    all_moves_initial
      (/*AUTOINST*/
       // Outputs
       .moves_ready                      (initial_moves_ready),   // Templated
       .move_ready                       (initial_move_ready),    // Templated
-      .move_count                       (move_count[($clog2(`MAX_POSITIONS))-1:0]),
+      .move_count                       (initial_move_count[MAX_POSITIONS_LOG2-1:0]), // Templated
       .board_out                        (initial_board[BOARD_WIDTH-1:0]), // Templated
       .white_to_move_out                (initial_white_to_move), // Templated
       .castle_mask_out                  (initial_castle_mask[3:0]), // Templated
@@ -167,7 +168,7 @@ module vchess_top;
       .white_to_move_in                 (white_to_move),         // Templated
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
-      .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
+      .move_index                       (move_index[MAX_POSITIONS_LOG2-1:0]),
       .clear_moves                      (clear_moves));
 
    /* evaluate AUTO_TEMPLATE (
@@ -203,7 +204,8 @@ module vchess_top;
       .PIECE_WIDTH (PIECE_WIDTH),
       .SIDE_WIDTH (SIDE_WIDTH),
       .BOARD_WIDTH (BOARD_WIDTH),
-      .EVAL_WIDTH (EVAL_WIDTH)
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
       )
    control
      (/*AUTOINST*/
@@ -215,7 +217,7 @@ module vchess_top;
       .clear_moves                      (clear_moves),
       .en_passant_col                   (en_passant_col[3:0]),
       .white_to_move                    (white_to_move),
-      .move_index                       (move_index[($clog2(`MAX_POSITIONS))-1:0]),
+      .move_index                       (move_index[MAX_POSITIONS_LOG2-1:0]),
       .clear_eval                       (clear_eval),
       .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
       .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
@@ -239,6 +241,7 @@ module vchess_top;
       .eval_valid                       (eval_valid),
       .eval                             (eval[EVAL_WIDTH-1:0]),
       .initial_moves_ready              (initial_moves_ready),
+      .initial_move_count               (initial_move_count[MAX_POSITIONS_LOG2-1:0]),
       .initial_move_ready               (initial_move_ready),
       .initial_board                    (initial_board[BOARD_WIDTH-1:0]),
       .initial_castle_mask              (initial_castle_mask[3:0]),

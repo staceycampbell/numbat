@@ -46,6 +46,8 @@ typedef struct board_t {
 	uint32_t en_passant_col;
 	uint32_t castle_mask;
 	uint32_t white_to_move;
+	uint32_t eval_valid;
+	int32_t eval;
 } board_t;
 
 static inline void
@@ -202,6 +204,16 @@ vchess_eval(void)
 	return val;
 }
 
+static inline uint32_t
+vchess_move_count(void)
+{
+	int32_t val;
+
+	val = vchess_read(135);
+
+	return val;
+}
+
 extern void print_app_header(void);
 extern int start_application(void);
 extern void init_platform(void);
@@ -215,3 +227,4 @@ extern void vchess_init_board(board_t *board);
 extern void vchess_write_board(board_t *board);
 extern void vchess_init_board(board_t *board);
 extern void vchess_print_board(board_t *board);
+extern uint32_t vchess_read_board(board_t *board, uint32_t index);

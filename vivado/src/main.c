@@ -40,6 +40,7 @@ process_serial_port(uint8_t cmdbuf[512], uint32_t *index)
 	uint32_t status;
 
 	c = inbyte();
+	xil_printf("%c", c);
 	status = c == '\r' || c == '\n' || *index == 511;
 	if (status)
 		cmdbuf[*index] = '\0';
@@ -53,12 +54,22 @@ process_serial_port(uint8_t cmdbuf[512], uint32_t *index)
 static void
 process_cmd(uint8_t cmd[512])
 {
-	int len;
+	int len, move_index;
+	char str[512];
+	int arg1, arg2, arg3;
+	board_t board;
 	
 	xil_printf("cmd: %s\n", cmd);
 	len = strlen((char *)cmd);
 	tcp_write(cmd_pcb, cmd, len, TCP_WRITE_FLAG_COPY);
 	tcp_write(cmd_pcb, "\n", 1, TCP_WRITE_FLAG_COPY);
+	sscanf((char *)cmd, "%s %d %d %d\n", str, &arg1, &arg2, &arg3);
+
+	if (strcmp((char *)str, "read") == 0)
+	{
+		move_index = arg1;
+		vchess_read_board(&board, move_index);
+	}
 }
 
 int

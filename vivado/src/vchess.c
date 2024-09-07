@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <unistd.h>
 #include <xil_printf.h>
 #include "vchess.h"
 
@@ -41,9 +43,6 @@ vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t
 	return occupied;
 }
 
-// uint32_t eval_valid, move_ready, moves_ready;
-// vchess_status(&eval_valid, &move_ready, &moves_ready);
-
 void
 vchess_print_board(board_t *board)
 {
@@ -60,8 +59,11 @@ vchess_print_board(board_t *board)
 		}
 		xil_printf("\n");
 	}
-	xil_printf("%s to move, en passant col: %1X, castle mask: %1X\n", to_move[board->white_to_move],
+	xil_printf("%s to move, en passant col: %1X, castle mask: %1X", to_move[board->white_to_move],
 		   board->en_passant_col, board->castle_mask);
+	if (board->eval_valid)
+		xil_printf(", eval: %d", board->eval);
+	xil_printf("\n");
 }
 
 void
@@ -72,7 +74,37 @@ vchess_write_board(board_t *board)
 	for (i = 0; i < 8; ++i)
 		vchess_write_board_row(i, board->board[i]);
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
-	vchess_write_control(0, 1, 0, 0);
+	vchess_write_control(0, 1, 0, 0); // new board valid bit set
+}
+
+uint32_t
+vchess_read_board(board_t *board, uint32_t index)
+{
+	uint32_t move_count;
+	uint32_t eval_valid, move_ready, moves_ready;
+
+	move_count = vchess_move_count();
+	if (index >= move_count)
+	{
+		xil_printf("bad index %d, move count is %d\n", index, move_count);
+		return 1;
+	}
+	vchess_status(&eval_valid, &move_ready, &moves_ready);
+	if (! moves_ready)
+	{
+		xil_printf("moves_ready not set\n");
+		return 2;
+	}
+	vchess_move_index(index);
+	usleep(100);
+	vchess_status(&eval_valid, &move_ready, &moves_ready);
+	if (! eval_valid)
+	{
+		xil_printf("eval_valid not set\n");
+		return 3;
+	}
+
+	return 0;
 }
 
 void
@@ -109,6 +141,7 @@ vchess_init_board(board_t *board)
 	board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
 	board->castle_mask = 0xF;
 	board->white_to_move = 1;
+	board->eval_valid = 0;
 }
 
 void
