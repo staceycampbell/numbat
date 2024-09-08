@@ -225,9 +225,6 @@ module tb;
       .reset                            (reset),
       .board_valid                      (display_move),          // Templated
       .board_in                         (board_out[BOARD_WIDTH-1:0]), // Templated
-      .white_to_move_in                 (white_to_move_out),     // Templated
-      .castle_mask_in                   (castle_mask_out[3:0]),  // Templated
-      .en_passant_col_in                (en_passant_col_out[3:0]), // Templated
       .clear_eval                       (clear_eval));
 
    /* vchess AUTO_TEMPLATE (
