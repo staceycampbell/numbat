@@ -71,6 +71,8 @@ vchess_write_board(board_t *board)
 {
 	int i;
 
+	vchess_write_control(1, 0, 1, 1); // soft reset, clear moves, clear eval
+	vchess_write_control(0, 0, 0, 0);
 	for (i = 0; i < 8; ++i)
 		vchess_write_board_row(i, board->board[i]);
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
@@ -83,6 +85,7 @@ vchess_read_board(board_t *board, uint32_t index)
 {
 	uint32_t move_count;
 	uint32_t eval_valid, move_ready, moves_ready;
+	uint32_t y;
 
 	move_count = vchess_move_count();
 	if (index >= move_count)
@@ -104,6 +107,13 @@ vchess_read_board(board_t *board, uint32_t index)
 		xil_printf("eval_valid not set\n");
 		return 3;
 	}
+	xil_printf("move count: %d\n", move_count);
+
+	for (y = 0; y < 8; ++y)
+		board->board[y] = vchess_read_move_row(y);
+	vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
+	board->eval_valid = 1;
+	board->eval = vchess_eval();
 
 	return 0;
 }

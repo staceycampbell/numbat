@@ -10,8 +10,8 @@ module vchess_top;
 
    integer i;
 
-(* mark_debug = "true" *)   reg [BOARD_WIDTH - 1:0] board;
-(* mark_debug = "true" *)   reg                     board_valid = 0;
+   reg [BOARD_WIDTH - 1:0] board;
+   reg                     board_valid = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -83,7 +83,7 @@ module vchess_top;
    wire                 white_to_move;          // From control of control.v
    // End of automatics
    
-   wire                                clk = clk200;
+   wire                          clk = clk200;
 
    initial
      begin

@@ -19,10 +19,10 @@ module all_moves #
     input [MAX_POSITIONS_LOG2 - 1:0]  move_index,
     input                             clear_moves,
 
-(* mark_debug = "true" *)    output reg                        moves_ready,
-(* mark_debug = "true" *)    output reg                        move_ready,
-(* mark_debug = "true" *)    output [MAX_POSITIONS_LOG2 - 1:0] move_count,
-(* mark_debug = "true" *)    output [BOARD_WIDTH - 1:0]        board_out,
+    output reg                        moves_ready,
+    output reg                        move_ready,
+    output [MAX_POSITIONS_LOG2 - 1:0] move_count,
+    output [BOARD_WIDTH - 1:0]        board_out,
     output                            white_to_move_out,
     output [3:0]                      castle_mask_out,
     output [3:0]                      en_passant_col_out,
@@ -39,6 +39,7 @@ module all_moves #
 
    reg [RAM_WIDTH - 1:0]              move_ram [0:`MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]              ram_rd_data;
+   reg                                ram_wr_addr_init;
    reg [MAX_POSITIONS_LOG2 - 1:0]     ram_wr_addr, ram_rd_addr;
    reg [MAX_POSITIONS_LOG2 - 1:0]     attack_test_move_count;
    reg [$clog2(BOARD_WIDTH) - 1:0]    idx [0:7][0:7];
@@ -125,12 +126,12 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                               black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
-   wire                               display_attacking_done; // From board_attack of board_attack.v
-   wire                               is_attacking_done;      // From board_attack of board_attack.v
-   wire                               white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
+   wire                 black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire                 display_attacking_done; // From board_attack of board_attack.v
+   wire                 is_attacking_done;      // From board_attack of board_attack.v
+   wire                 white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
    wire signed [4:0]                  pawn_adv1_row [0:2];
@@ -227,7 +228,7 @@ module all_moves #
    always @(posedge clk)
      begin
         ram_rd_data <= move_ram[ram_rd_addr];
-        if (is_attacking_done)
+        if (ram_wr_addr_init)
           ram_wr_addr <= 0;
         if (ram_wr)
           begin
@@ -356,7 +357,7 @@ module all_moves #
    localparam STATE_LEGAL_NEXT = 22;
    localparam STATE_DONE = 255;
 
-   (* mark_debug = "true" *) reg [7:0] state = STATE_IDLE;
+   reg [7:0] state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -373,12 +374,14 @@ module all_moves #
 
               attack_test <= board_in;
               attack_test_valid <= board_valid;
+              ram_wr_addr_init <= 1;
               if (is_attacking_done)
                 state <= STATE_INIT;
            end
          STATE_INIT :
            begin
               legal_ram_wr_addr_init <= 1;
+              ram_wr_addr_init <= 0;
               row <= 0;
               col <= 0;
               ram_wr <= 0;

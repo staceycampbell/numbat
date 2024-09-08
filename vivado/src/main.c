@@ -69,10 +69,12 @@ process_cmd(uint8_t cmd[512])
 	{
 		move_index = arg1;
 		vchess_read_board(&board, move_index);
+		vchess_print_board(&board);
 	} else if (strcmp((char *)str, "init") == 0)
 	{
 		vchess_init_board(&board);
 		vchess_write_board(&board);
+		vchess_print_board(&board);
 	}
 }
 
@@ -81,7 +83,6 @@ main(void)
 {
 	ip_addr_t ipaddr, netmask, gw;
 	unsigned char mac_ethernet_address[] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x03 };
-	board_t board;
 	uint8_t cmdbuf[512];
 	uint32_t index;
 	uint32_t ip_status, com_status;
@@ -111,7 +112,6 @@ main(void)
 	start_application();
 
 	vchess_init();
-	// vchess_print_board(&board);
 
 	index = 0;
 	ip_status = 0;

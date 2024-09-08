@@ -46,7 +46,7 @@ module evaluate #
    localparam STATE_SUM_1 = 3;
    localparam STATE_DONE = 4;
 
-(* mark_debug = "true" *)   reg [3:0]                                 state = STATE_IDLE;
+   reg [3:0]                                 state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
