@@ -29,18 +29,32 @@ module evaluate #
    reg [BOARD_WIDTH - 1:0]    board;
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] pst [`EMPTY_POSN:`BLACK_KING][0:63];
-   (* use_dsp48 = "true" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
    reg [$clog2(BOARD_WIDTH) - 1:0]           idx [0:7][0:7];
+   
+   (* use_dsp48 = "true" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
    (* use_dsp48 = "true" *) reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
    (* use_dsp48 = "true" *) reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
 
    integer                                   i, ri, y, x;
 
+   always @(posedge clk)
+     begin
+        for (y = 0; y < 8; y = y + 1)
+          for (x = 0; x < 8; x = x + 1)
+            score[y][x] <= value[board[idx[y][x]+:PIECE_WIDTH]] + pst[board[idx[y][x]+:PIECE_WIDTH]][y << 3 | x];
+        for (y = 0; y < 8; y = y + 1)
+          for (x = 0; x < 8; x = x + 4)
+            sum_a[y][x / 4] <= score[y][x + 0] + score[y][x + 1] + score[y][x + 2] + score[y][x + 3];
+        for (y = 0; y < 8; y = y + 2)
+          sum_b[y / 2] <= sum_a[y + 0][0] + sum_a[y + 0][1] + sum_a[y + 1][0] + sum_a[y + 1][1];
+        eval <= sum_b[0] + sum_b[1] + sum_b[2] + sum_b[3];
+     end
+
    localparam STATE_IDLE = 0;
    localparam STATE_SCORE = 1;
-   localparam STATE_SUM_0 = 2;
-   localparam STATE_SUM_1 = 3;
-   localparam STATE_DONE = 4;
+   localparam STATE_SUM_A = 2;
+   localparam STATE_SUM_B = 3;
+   localparam STATE_EVAL = 4;
 
    reg [3:0]                                 state = STATE_IDLE;
 
@@ -60,28 +74,13 @@ module evaluate #
                 state <= STATE_SCORE;
            end
          STATE_SCORE :
+           state <= STATE_SUM_A;
+         STATE_SUM_A :
+           state <= STATE_SUM_B;
+         STATE_SUM_B :
+           state <= STATE_EVAL;
+         STATE_EVAL :
            begin
-              for (y = 0; y < 8; y = y + 1)
-                for (x = 0; x < 8; x = x + 1)
-                  score[y][x] <= value[board[idx[y][x]+:PIECE_WIDTH]] + pst[board[idx[y][x]+:PIECE_WIDTH]][y << 3 | x];
-              state <= STATE_SUM_0;
-           end
-         STATE_SUM_0 :
-           begin
-              for (y = 0; y < 8; y = y + 1)
-                for (x = 0; x < 8; x = x + 4)
-                  sum_a[y][x / 4] <= score[y][x + 0] + score[y][x + 1] + score[y][x + 2] + score[y][x + 3];
-              state <= STATE_SUM_1;
-           end
-         STATE_SUM_1 :
-           begin
-              for (y = 0; y < 8; y = y + 2)
-                sum_b[y / 2] <= sum_a[y + 0][0] + sum_a[y + 0][1] + sum_a[y + 1][0] + sum_a[y + 1][1];
-              state <= STATE_DONE;
-           end
-         STATE_DONE :
-           begin
-              eval <= sum_b[0] + sum_b[1] + sum_b[2] + sum_b[3];
               eval_valid <= 1;
               if (clear_eval)
                 state <= STATE_IDLE;
