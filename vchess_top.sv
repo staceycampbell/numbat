@@ -21,7 +21,6 @@ module vchess_top;
    wire [3:0]           castle_mask;            // From control of control.v
    wire                 clear_eval;             // From control of control.v
    wire                 clear_moves;            // From control of control.v
-   wire                 clk200;                 // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           ctrl0_axi_arready;      // From control of control.v
@@ -41,25 +40,7 @@ module vchess_top;
    wire [0:0]           ctrl0_axi_wready;       // From control of control.v
    wire [3:0]           ctrl0_axi_wstrb;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 ctrl0_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [39:0]          ctrl1_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [2:0]           ctrl1_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl1_axi_arready;      // From control of control.v
-   wire                 ctrl1_axi_arvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [39:0]          ctrl1_axi_awaddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [2:0]           ctrl1_axi_awprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl1_axi_awready;      // From control of control.v
-   wire                 ctrl1_axi_awvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 ctrl1_axi_bready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [1:0]           ctrl1_axi_bresp;        // From control of control.v
-   wire [0:0]           ctrl1_axi_bvalid;       // From control of control.v
-   wire [31:0]          ctrl1_axi_rdata;        // From control of control.v
-   wire                 ctrl1_axi_rready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [1:0]           ctrl1_axi_rresp;        // From control of control.v
-   wire [0:0]           ctrl1_axi_rvalid;       // From control of control.v
-   wire [31:0]          ctrl1_axi_wdata;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl1_axi_wready;       // From control of control.v
-   wire [3:0]           ctrl1_axi_wstrb;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 ctrl1_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 digclk;                 // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [3:0]           en_passant_col;         // From control of control.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
@@ -84,7 +65,7 @@ module vchess_top;
    wire                 white_to_move;          // From control of control.v
    // End of automatics
    
-   wire                          clk = clk200;
+   wire                          clk = digclk;
 
    initial
      begin
@@ -227,14 +208,6 @@ module vchess_top;
       .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
       .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid[0:0]),
       .ctrl0_axi_wready                 (ctrl0_axi_wready[0:0]),
-      .ctrl1_axi_arready                (ctrl1_axi_arready[0:0]),
-      .ctrl1_axi_awready                (ctrl1_axi_awready[0:0]),
-      .ctrl1_axi_bresp                  (ctrl1_axi_bresp[1:0]),
-      .ctrl1_axi_bvalid                 (ctrl1_axi_bvalid[0:0]),
-      .ctrl1_axi_rdata                  (ctrl1_axi_rdata[31:0]),
-      .ctrl1_axi_rresp                  (ctrl1_axi_rresp[1:0]),
-      .ctrl1_axi_rvalid                 (ctrl1_axi_rvalid[0:0]),
-      .ctrl1_axi_wready                 (ctrl1_axi_wready[0:0]),
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
@@ -262,25 +235,13 @@ module vchess_top;
       .ctrl0_axi_rready                 (ctrl0_axi_rready),
       .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
       .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
-      .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
-      .ctrl1_axi_araddr                 (ctrl1_axi_araddr[39:0]),
-      .ctrl1_axi_arprot                 (ctrl1_axi_arprot[2:0]),
-      .ctrl1_axi_arvalid                (ctrl1_axi_arvalid),
-      .ctrl1_axi_awaddr                 (ctrl1_axi_awaddr[39:0]),
-      .ctrl1_axi_awprot                 (ctrl1_axi_awprot[2:0]),
-      .ctrl1_axi_awvalid                (ctrl1_axi_awvalid),
-      .ctrl1_axi_bready                 (ctrl1_axi_bready),
-      .ctrl1_axi_rready                 (ctrl1_axi_rready),
-      .ctrl1_axi_wdata                  (ctrl1_axi_wdata[31:0]),
-      .ctrl1_axi_wstrb                  (ctrl1_axi_wstrb[3:0]),
-      .ctrl1_axi_wvalid                 (ctrl1_axi_wvalid));
+      .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid));
 
    /* mpsoc_preset_wrapper AUTO_TEMPLATE (
     );*/
    mpsoc_preset_wrapper mpsoc_preset_wrapper
      (/*AUTOINST*/
       // Outputs
-      .clk200                           (clk200),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
@@ -292,17 +253,7 @@ module vchess_top;
       .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
       .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
       .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
-      .ctrl1_axi_araddr                 (ctrl1_axi_araddr[39:0]),
-      .ctrl1_axi_arprot                 (ctrl1_axi_arprot[2:0]),
-      .ctrl1_axi_arvalid                (ctrl1_axi_arvalid),
-      .ctrl1_axi_awaddr                 (ctrl1_axi_awaddr[39:0]),
-      .ctrl1_axi_awprot                 (ctrl1_axi_awprot[2:0]),
-      .ctrl1_axi_awvalid                (ctrl1_axi_awvalid),
-      .ctrl1_axi_bready                 (ctrl1_axi_bready),
-      .ctrl1_axi_rready                 (ctrl1_axi_rready),
-      .ctrl1_axi_wdata                  (ctrl1_axi_wdata[31:0]),
-      .ctrl1_axi_wstrb                  (ctrl1_axi_wstrb[3:0]),
-      .ctrl1_axi_wvalid                 (ctrl1_axi_wvalid),
+      .digclk                           (digclk),
       .reset                            (reset[0:0]),
       // Inputs
       .ctrl0_axi_arready                (ctrl0_axi_arready),
@@ -312,15 +263,7 @@ module vchess_top;
       .ctrl0_axi_rdata                  (ctrl0_axi_rdata[31:0]),
       .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
       .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid),
-      .ctrl0_axi_wready                 (ctrl0_axi_wready),
-      .ctrl1_axi_arready                (ctrl1_axi_arready),
-      .ctrl1_axi_awready                (ctrl1_axi_awready),
-      .ctrl1_axi_bresp                  (ctrl1_axi_bresp[1:0]),
-      .ctrl1_axi_bvalid                 (ctrl1_axi_bvalid),
-      .ctrl1_axi_rdata                  (ctrl1_axi_rdata[31:0]),
-      .ctrl1_axi_rresp                  (ctrl1_axi_rresp[1:0]),
-      .ctrl1_axi_rvalid                 (ctrl1_axi_rvalid),
-      .ctrl1_axi_wready                 (ctrl1_axi_wready));
+      .ctrl0_axi_wready                 (ctrl0_axi_wready));
 
 endmodule
 

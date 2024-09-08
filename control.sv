@@ -58,28 +58,7 @@ module control #
     output reg [31:0]                     ctrl0_axi_rdata,
     output [1:0]                          ctrl0_axi_rresp,
     output reg [0:0]                      ctrl0_axi_rvalid,
-    output [0:0]                          ctrl0_axi_wready,
-   
-    input [39:0]                          ctrl1_axi_araddr,
-    input [2:0]                           ctrl1_axi_arprot,
-    input                                 ctrl1_axi_arvalid,
-    input [39:0]                          ctrl1_axi_awaddr,
-    input [2:0]                           ctrl1_axi_awprot,
-    input                                 ctrl1_axi_awvalid,
-    input                                 ctrl1_axi_bready,
-    input                                 ctrl1_axi_rready,
-    input reg [31:0]                      ctrl1_axi_wdata,
-    input [3:0]                           ctrl1_axi_wstrb,
-    input                                 ctrl1_axi_wvalid,
-   
-    output [0:0]                          ctrl1_axi_arready,
-    output [0:0]                          ctrl1_axi_awready,
-    output [1:0]                          ctrl1_axi_bresp,
-    output [0:0]                          ctrl1_axi_bvalid,
-    output [31:0]                         ctrl1_axi_rdata,
-    output [1:0]                          ctrl1_axi_rresp,
-    output [0:0]                          ctrl1_axi_rvalid,
-    output [0:0]                          ctrl1_axi_wready
+    output [0:0]                          ctrl0_axi_wready
     );
 
    reg [$clog2(BOARD_WIDTH) - 1:0]        board_addr;

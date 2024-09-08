@@ -8,15 +8,15 @@ module evaluate #
    parameter EVAL_WIDTH = 22
    )
    (
-    input                                clk,
-    input                                reset,
+    input                     clk,
+    input                     reset,
 
-    input                                board_valid,
-    input [BOARD_WIDTH - 1:0]            board_in,
-    input                                clear_eval,
+    input                     board_valid,
+    input [BOARD_WIDTH - 1:0] board_in,
+    input                     clear_eval,
 
-    output reg signed [EVAL_WIDTH - 1:0] eval,
-    output reg                           eval_valid
+    (* use_dsp48 = "true" *) output reg signed [EVAL_WIDTH - 1:0] eval,
+    output reg                eval_valid
     );
 
    localparam VALUE_PAWN =   100;
@@ -26,13 +26,13 @@ module evaluate #
    localparam VALUE_QUEN =   900;
    localparam VALUE_KING = 10000;
 
-   reg [BOARD_WIDTH - 1:0]               board;
+   reg [BOARD_WIDTH - 1:0]    board;
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] pst [`EMPTY_POSN:`BLACK_KING][0:63];
-   reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
+   (* use_dsp48 = "true" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
    reg [$clog2(BOARD_WIDTH) - 1:0]           idx [0:7][0:7];
-   reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
-   reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
+   (* use_dsp48 = "true" *) reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
+   (* use_dsp48 = "true" *) reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
 
    integer                                   i, ri, y, x;
 
