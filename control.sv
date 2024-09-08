@@ -20,7 +20,8 @@ module control #
     output reg [3:0]                      en_passant_col,
     output reg                            white_to_move,
     output reg [MAX_POSITIONS_LOG2 - 1:0] move_index,
-    output reg                            clear_eval,
+    output reg                            clear_eval = 0,
+    output reg                            force_eval = 0,
 
     input                                 eval_valid,
     input signed [EVAL_WIDTH - 1:0]       eval,
@@ -108,6 +109,7 @@ module control #
               new_board_valid <= ctrl0_wr_data[0];
               clear_moves <= ctrl0_wr_data[1];
               clear_eval <= ctrl0_wr_data[2];
+              force_eval <= ctrl0_wr_data[3];
               soft_reset <= ctrl0_wr_data[31];
            end
          4'h1 : move_index <= ctrl0_wr_data;
@@ -137,7 +139,8 @@ module control #
                     ctrl0_axi_rdata[0] <= new_board_valid;
                     ctrl0_axi_rdata[1] <= clear_moves;
                     ctrl0_axi_rdata[2] <= clear_eval;
-                    ctrl0_axi_rdata[5:3] <= {eval_valid, initial_move_ready, initial_moves_ready};
+                    ctrl0_axi_rdata[3] <= force_eval;
+                    ctrl0_axi_rdata[6:4] <= {eval_valid, initial_move_ready, initial_moves_ready};
                  end
                4'h1 : ctrl0_axi_rdata <= move_index;
                4'h2 : ctrl0_axi_rdata <= {white_to_move, castle_mask, en_passant_col};

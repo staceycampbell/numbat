@@ -72,7 +72,7 @@ vchess_read(uint32_t reg)
 }
 
 static inline void
-vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves, uint32_t clear_eval)
+vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves, uint32_t force_eval, uint32_t clear_eval)
 {
 	uint32_t val;
 	
@@ -80,8 +80,9 @@ vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t cle
 	new_board_valid = (new_board_valid != 0) << 0;
 	clear_moves = (clear_moves != 0) << 1;
 	clear_eval = (clear_eval != 0) << 2;
+	force_eval = (force_eval != 0) << 3;
 
-	val = soft_reset | new_board_valid | clear_moves | clear_eval;
+	val = soft_reset | new_board_valid | clear_moves | clear_eval | force_eval;
 	vchess_write(0, val);
 }
 
@@ -117,13 +118,13 @@ vchess_status(uint32_t *eval_valid, uint32_t *move_ready, uint32_t *moves_ready)
 
 	val = vchess_read(0);
 	if (eval_valid)
-		*eval_valid = (val & (1 << 5)) != 0;
+		*eval_valid = (val & (1 << 6)) != 0;
 	if (move_ready)
-		*move_ready = (val & (1 << 4)) != 0;
+		*move_ready = (val & (1 << 5)) != 0;
 	if (moves_ready)
-		*moves_ready = (val & (1 << 3)) != 0;
+		*moves_ready = (val & (1 << 4)) != 0;
 
-	return val;
+	return val >> 4;
 }
 
 static inline uint32_t

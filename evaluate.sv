@@ -13,10 +13,6 @@ module evaluate #
 
     input                                board_valid,
     input [BOARD_WIDTH - 1:0]            board_in,
-    input                                white_to_move_in,
-    input [3:0]                          castle_mask_in,
-    input [3:0]                          en_passant_col_in,
-
     input                                clear_eval,
 
     output reg signed [EVAL_WIDTH - 1:0] eval,

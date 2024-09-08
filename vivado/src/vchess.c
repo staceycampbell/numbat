@@ -71,13 +71,13 @@ vchess_write_board(board_t *board)
 {
 	int i;
 
-	vchess_write_control(1, 0, 1, 1); // soft reset, clear moves, clear eval
-	vchess_write_control(0, 0, 0, 0);
+	vchess_write_control(1, 0, 1, 0, 1); // soft reset, clear moves, clear eval
+	vchess_write_control(0, 0, 0, 0, 0);
 	for (i = 0; i < 8; ++i)
 		vchess_write_board_row(i, board->board[i]);
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
-	vchess_write_control(0, 1, 0, 0); // new board valid bit set
-	vchess_write_control(0, 0, 0, 0); // new board valid bit clear
+	vchess_write_control(0, 1, 0, 0, 0); // new board valid bit set
+	vchess_write_control(0, 0, 0, 0, 0); // new board valid bit clear
 }
 
 uint32_t
@@ -86,8 +86,10 @@ vchess_read_board(board_t *board, uint32_t index)
 	uint32_t move_count;
 	uint32_t eval_valid, move_ready, moves_ready;
 	uint32_t y;
+	uint32_t status;
 
 	move_count = vchess_move_count();
+	xil_printf("move count: %d\n", move_count);
 	if (index >= move_count)
 	{
 		xil_printf("bad index %d, move count is %d\n", index, move_count);
@@ -100,20 +102,26 @@ vchess_read_board(board_t *board, uint32_t index)
 		return 2;
 	}
 	vchess_move_index(index);
-	usleep(100);
-	vchess_status(&eval_valid, &move_ready, &moves_ready);
-	if (! eval_valid)
+	status = vchess_status(&eval_valid, &move_ready, &moves_ready);
+	vchess_write_control(0, 0, 0, 1, 0); // force eval
+	if (! move_ready)
 	{
-		xil_printf("eval_valid not set\n");
+		xil_printf("move_ready not set: 0x%X\n", status);
 		return 3;
 	}
-	xil_printf("move count: %d\n", move_count);
 
 	for (y = 0; y < 8; ++y)
 		board->board[y] = vchess_read_move_row(y);
 	vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
+	status = vchess_status(&eval_valid, &move_ready, &moves_ready);
+	if (! eval_valid)
+	{
+		xil_printf("eval_valid not set: 0x%X\n", status);
+		return 4;
+	}
 	board->eval_valid = 1;
 	board->eval = vchess_eval();
+	vchess_write_control(0, 0, 0, 0, 1); // clear eval
 
 	return 0;
 }

@@ -58,6 +58,7 @@ process_cmd(uint8_t cmd[512])
 	char str[512];
 	int arg1, arg2, arg3;
 	board_t board;
+	uint32_t status;
 	
 	xil_printf("cmd: %s\n", cmd);
 	len = strlen((char *)cmd);
@@ -68,11 +69,13 @@ process_cmd(uint8_t cmd[512])
 	if (strcmp((char *)str, "read") == 0)
 	{
 		move_index = arg1;
-		vchess_read_board(&board, move_index);
-		vchess_print_board(&board);
+		status = vchess_read_board(&board, move_index);
+		if (status == 0)
+			vchess_print_board(&board);
 	} else if (strcmp((char *)str, "init") == 0)
 	{
 		vchess_init_board(&board);
+		vchess_move_piece(&board, 0, 3, 3, 3);
 		vchess_write_board(&board);
 		vchess_print_board(&board);
 	}
