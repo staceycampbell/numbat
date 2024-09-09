@@ -1,6 +1,6 @@
 CFLAGS := -g -Wall
 
-pgnread:: pgnread.o
+fenconv:: fenconv.o
 
 clean:
-	rm -f pgnread pgnread.o
+	rm -f fenconv fenconv.o
