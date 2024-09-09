@@ -291,10 +291,259 @@ ReadPGN(FILE * input, int option)
 	}
 }
 
+/*
+ *******************************************************************************
+ *                                                                             *
+ *   InputMove() is responsible for converting a move from a text string to    *
+ *   the internal move format.  It allows the so-called "reduced algebraic     *
+ *   move format" which makes the origin square optional unless required for   *
+ *   clarity.  It also accepts as little as required to remove ambiguity from  *
+ *   the move, by using GenerateMoves() to produce a set of legal moves that   *
+ *   the text can be applied against to eliminate those moves not intended.    *
+ *   Hopefully, only one move will remain after the elimination and legality   *
+ *   checks.                                                                   *
+ *                                                                             *
+ *******************************************************************************
+ */
+
+static int promote;
+static int ffile, frank, tfile, trank;
+
+int
+InputMove(int wtm, char *text)
+{
+	int current, i;
+	char *goodchar, *tc;
+	char movetext[128];
+	static const char pro_pieces[15] = { ' ', ' ', 'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q',
+		'K', 'k', '\0'
+	};
+/*
+ ************************************************************
+ *                                                          *
+ *  First, we need to strip off the special characters for  *
+ *  check, mate, bad move, good move, and such that might   *
+ *  come from a PGN input file.                             *
+ *                                                          *
+ ************************************************************
+ */
+	if ((tc = strchr(text, '!')))
+		*tc = 0;
+	if ((tc = strchr(text, '?')))
+		*tc = 0;
+	if (strlen(text) == 0)
+		return 0;
+/*
+ ************************************************************
+ *                                                          *
+ *  Initialize move structure.  If we discover a parsing    *
+ *  error, this will cause us to return a move of "0" to    *
+ *  indicate some sort of error was detected.               *
+ *                                                          *
+ ************************************************************
+ */
+	strcpy(movetext, text);
+	frank = -1;
+	ffile = -1;
+	trank = -1;
+	tfile = -1;
+	goodchar = strchr(movetext, '#');
+	if (goodchar)
+		*goodchar = 0;
+/*
+ ************************************************************
+ *                                                          *
+ *  First we look for castling moves which are a special    *
+ *  case with an unusual syntax compared to normal moves.   *
+ *                                                          *
+ ************************************************************
+ */
+	if (!strcmp(movetext, "o-o") || !strcmp(movetext, "o-o+")
+	    || !strcmp(movetext, "O-O") || !strcmp(movetext, "O-O+") || !strcmp(movetext, "0-0") || !strcmp(movetext, "0-0+"))
+	{
+		if (wtm)
+		{
+			ffile = 4;
+			frank = 0;
+			tfile = 6;
+			trank = 0;
+		}
+		else
+		{
+			ffile = 4;
+			frank = 7;
+			tfile = 6;
+			trank = 7;
+		}
+	}
+	else if (!strcmp(movetext, "o-o-o") || !strcmp(movetext, "o-o-o+")
+		 || !strcmp(movetext, "O-O-O") || !strcmp(movetext, "O-O-O+") || !strcmp(movetext, "0-0-0") || !strcmp(movetext, "0-0-0+"))
+	{
+		if (wtm)
+		{
+			ffile = 4;
+			frank = 0;
+			tfile = 2;
+			trank = 0;
+		}
+		else
+		{
+			ffile = 4;
+			frank = 7;
+			tfile = 2;
+			trank = 7;
+		}
+	}
+	else
+	{
+/*
+ ************************************************************
+ *                                                          *
+ *  OK, it is not a castling move.  Check for two "b"       *
+ *  characters which might be a piece (bishop) and a file   *
+ *  (b-file).  The first "b" should be "B" but we allow     *
+ *  this to make typing input simpler.                      *
+ *                                                          *
+ ************************************************************
+ */
+		if ((movetext[0] == 'b') && (movetext[1] == 'b'))
+			movetext[0] = 'B';
+/*
+ ************************************************************
+ *                                                          *
+ *  Check to see if there is a "+" character which means    *
+ *  that this move is a check.  We can use this to later    *
+ *  eliminate all non-checking moves as possibilities.      *
+ *                                                          *
+ ************************************************************
+ */
+		if (strchr(movetext, '+'))
+		{
+			*strchr(movetext, '+') = 0;
+		}
+/*
+ ************************************************************
+ *                                                          *
+ *  If this is a promotion, indicated by an "=" in the      *
+ *  text, we can pick up the promote-to piece and save it   *
+ *  to use later when eliminating moves.                    *
+ *                                                          *
+ ************************************************************
+ */
+		if (strchr(movetext, '='))
+		{
+			goodchar = strchr(movetext, '=');
+			goodchar++;
+			promote = (strchr(pro_pieces, *goodchar) - pro_pieces) >> 1;
+			*strchr(movetext, '=') = 0;
+		}
+/*
+ ************************************************************
+ *                                                          *
+ *  Now for a kludge.  ChessBase (and others) can't follow  *
+ *  the PGN standard of bxc8=Q for promotion, and instead   *
+ *  will produce "bxc8Q" omitting the PGN-standard "="      *
+ *  character.  We handle that here so that we can read     *
+ *  their non-standard moves.                               *
+ *                                                          *
+ ************************************************************
+ */
+		else
+		{
+			char *prom = strchr(pro_pieces, movetext[strlen(movetext) - 1]);
+
+			if (prom)
+			{
+				promote = (prom - pro_pieces) >> 1;
+				movetext[strlen(movetext) - 1] = 0;
+			}
+		}
+/*
+ ************************************************************
+ *                                                          *
+ *  Next we extract the last rank/file designators from the *
+ *  text, since the destination is required for all valid   *
+ *  non-castling moves.  Note that we might not have both a *
+ *  rank and file but we must have at least one.            *
+ *                                                          *
+ ************************************************************
+ */
+		current = strlen(movetext) - 1;
+		trank = movetext[current] - '1';
+		if ((trank >= 0) && (trank <= 7))
+			movetext[current] = 0;
+		else
+			trank = -1;
+		current = strlen(movetext) - 1;
+		tfile = movetext[current] - 'a';
+		if ((tfile >= 0) && (tfile <= 7))
+			movetext[current] = 0;
+		else
+			tfile = -1;
+		if (strlen(movetext))
+		{
+/*
+ ************************************************************
+ *                                                          *
+ *  The first character is the moving piece, unless it is a *
+ *  pawn.  In this case, the moving piece is omitted and we *
+ *  know what it has to be.                                 *
+ *                                                          *
+ ************************************************************
+ */
+			if (strchr("  PpNnBBRrQqKk", *movetext))
+			{
+				for (i = 0; i < (int)strlen(movetext); i++)
+					movetext[i] = movetext[i + 1];
+			}
+/*
+ ************************************************************
+ *                                                          *
+ *  It is also possible that this move is a capture, which  *
+ *  is indicated by a "x" between either the source and     *
+ *  destination squares, or between the moving piece and    *
+ *  the destination.                                        *
+ *                                                          *
+ ************************************************************
+ */
+			if ((strlen(movetext)) && (movetext[strlen(movetext) - 1] == 'x'))
+			{
+				movetext[strlen(movetext) - 1] = 0;
+			}
+/*
+ ************************************************************
+ *                                                          *
+ *  It is possible to have no source square, but we could   *
+ *  have a complete algebraic square designation, or just   *
+ *  rank or file, needed to disambiguate the move.          *
+ *                                                          *
+ ************************************************************
+ */
+			if (strlen(movetext))
+			{
+				ffile = movetext[0] - 'a';
+				if ((ffile < 0) || (ffile > 7))
+				{
+					ffile = -1;
+					frank = movetext[0] - '1';
+				}
+				else
+				{
+					if (strlen(movetext) == 2)
+					{
+						frank = movetext[1] - '1';
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 int
 main(int argc, char *argv[0])
 {
-        int i, status;
+        int i, status, wtm;
         FILE *fp;
 
         if ((fp = fopen("sample.pgn", "r")) == 0)
@@ -304,11 +553,17 @@ main(int argc, char *argv[0])
         }
 
         i = 0;
-        while ((status = ReadPGN(fp, 0)) > 0)
+	wtm = 1;
+        while ((status = ReadPGN(fp, 0)) >= 0)
         {
-                printf("status=%d\n", status);
-                ++i;
-        }
+		if (status == 0)
+		{
+			InputMove(wtm, buffer);
+			++i;
+			printf("%s (%d %d %d %d)\n", buffer, frank, ffile, trank, tfile);
+			wtm = !wtm;
+		}
+	}
 
         return 0;
 }
