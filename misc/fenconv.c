@@ -119,7 +119,6 @@ fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_ma
 	++i;
 	assert(i < 4096 && (buffer[i] == 'w' || buffer[i] == 'b'));
 	*white_to_move = buffer[i] == 'w';
-// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 	i += 2;
 	*castle_mask = 0;
 	while (i < 4096 && buffer[i] != '\0' && ! (buffer[i] == ' ' || buffer[i] == '\t'))
@@ -147,7 +146,14 @@ fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_ma
 		}
 		++i;
 	}
+	++i;
 	assert(i < 4096);
+// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+	assert(buffer[i] == '-' || (buffer[i] >= 'a' && buffer[i] <= 'h'));
+	if (buffer[i] == '-')
+		*en_passant_col = 0 << EN_PASSANT_VALID_BIT;
+	else
+		*en_passant_col = (1 << EN_PASSANT_VALID_BIT) | (buffer[i] - 'a');
 }
 
 int
