@@ -1,0 +1,21 @@
+[Event "ICS rated blitz game"]
+[Site "freechess.org 23"]
+[Date "2024.09.02"]
+[Time "05:52:00"]
+[Round "-"]
+[White "Suprijatim"]
+[Black "GriffySr"]
+[WhiteElo "1753"]
+[BlackElo "1926"]
+[TimeControl "5+0"]
+[Mode "ICS"]
+[Result "0-1"]
+
+1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 d6 6. Be3 e5 7. Ndb5 a6
+8. Na3 Rb8 9. Qd2 Be7 10. O-O-O O-O 11. f3 Be6 12. g4 b5 13. Nd5 Nxd5
+14. exd5 b4 15. Nc4 Bd7 16. dxc6 Bxc6 17. Bg2 Rb5 18. b3 Bd5 19. Qd3 Qc7
+20. Nd2 Rc8 21. Ne4 Qa5 22. Kb1 Qa3 23. Bc1 Qa5 24. h4 Qc7 25. Rd2 Ra5
+26. Bb2 Qd7 27. c4 bxc3 28. Nxc3 Be6 29. g5 d5 30. Re1 Bf5 31. Ne4 Qe6
+32. Ka1 Bb4 33. Red1 dxe4 34. fxe4 Bg4 35. Qd8+ Rxd8 36. Rxd8+ Bf8 37. R1d5 Qb6
+38. Bxe5 Qg1+ 39. Rd1 Bxd1 40. Bd6 Qd4+ 41. Kb1 Qd3+ 42. Kb2 Qc2+ 43. Ka1 Rxa2#
+{White checkmated} 0-1

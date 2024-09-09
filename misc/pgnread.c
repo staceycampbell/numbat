@@ -1,8 +1,11 @@
+// from Bob Hyatt's crafty
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -215,8 +218,9 @@ ReadPGN(FILE * input, int option)
 								tmove = buffer + strspn(buffer, "0123456789.");
 							else
 								tmove = buffer;
-							if ((tmove[0] >= 'a' && tmove[0] <= 'z') || (tmove[0] >= 'A' &&
-												     tmove[0] <= 'Z') || !strcmp(tmove, "0-0") || !strcmp(tmove, "0-0-0"))
+							if ((tmove[0] >= 'a' && tmove[0] <= 'z') ||
+                                                            (tmove[0] >= 'A' && tmove[0] <= 'Z') ||
+                                                            !strcmp(tmove, "0-0") || !strcmp(tmove, "0-0-0"))
 								strcpy(analysis_move, buffer);
 							else
 								analysis_move[0] = 0;
@@ -288,6 +292,23 @@ ReadPGN(FILE * input, int option)
 }
 
 int
-main(void)
+main(int argc, char *argv[0])
 {
+        int i, status;
+        FILE *fp;
+
+        if ((fp = fopen("sample.pgn", "r")) == 0)
+        {
+                fprintf(stderr, "%s: can't read sample.pgn", argv[0]);
+                exit(1);
+        }
+
+        i = 0;
+        while ((status = ReadPGN(fp, 0)) > 0)
+        {
+                printf("status=%d\n", status);
+                ++i;
+        }
+
+        return 0;
 }
