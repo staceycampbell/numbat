@@ -23,6 +23,8 @@ module all_moves #
     output reg                        move_ready,
     output [MAX_POSITIONS_LOG2 - 1:0] move_count,
     output [BOARD_WIDTH - 1:0]        board_out,
+    output reg                        mate = 0,
+    output reg                        stalemate = 0,
     output                            white_to_move_out,
     output [3:0]                      castle_mask_out,
     output [3:0]                      en_passant_col_out,
@@ -36,6 +38,8 @@ module all_moves #
    // board + castle mask + en_passant_col + color_to_move + capture
    localparam RAM_WIDTH = BOARD_WIDTH + 4 + 4 + 1 + 1;
    localparam LEGAL_RAM_WIDTH = 64 + 64 + RAM_WIDTH + 1 + 1; // is-attacking, board, white, black in check
+
+   reg                                initial_board_check;
 
    reg [RAM_WIDTH - 1:0]              move_ram [0:`MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]              ram_rd_data;
@@ -380,6 +384,7 @@ module all_moves #
            end
          STATE_INIT :
            begin
+              initial_board_check <= (white_to_move && white_in_check) || (black_to_move && black_in_check);
               legal_ram_wr_addr_init <= 1;
               ram_wr_addr_init <= 0;
               row <= 0;
@@ -669,6 +674,16 @@ module all_moves #
            end
          STATE_DONE :
            begin
+              if (move_count == 0)
+                begin
+                   mate <= initial_board_check;
+                   stalemate <= ~initial_board_check;
+                end
+              else
+                begin
+                   mate <= 0;
+                   stalemate <= 0;
+                end
               moves_ready <= 1;
               if (clear_moves)
                 state <= STATE_IDLE;

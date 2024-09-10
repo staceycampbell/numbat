@@ -15,7 +15,7 @@ module tb;
 
    reg [BOARD_WIDTH - 1:0] board;
    reg                     board_valid = 0;
-   reg                     white_to_move = 0;
+   reg                     white_to_move = 1;
    reg                     clear_moves = 1'b0;
    reg                     clear_eval;
    reg [3:0]               castle_mask;
@@ -41,9 +41,11 @@ module tb;
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From vchess of vchess.v
+   wire                 mate;                   // From all_moves_initial of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] move_count;    // From all_moves_initial of all_moves.v
    wire                 move_ready;             // From all_moves_initial of all_moves.v
    wire                 moves_ready;            // From all_moves_initial of all_moves.v
+   wire                 stalemate;              // From all_moves_initial of all_moves.v
    wire                 white_in_check;         // From vchess of vchess.v
    wire                 white_in_check_out;     // From all_moves_initial of all_moves.v
    wire [63:0]          white_is_attacking;     // From vchess of vchess.v
@@ -58,12 +60,10 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
         castle_mask = 4'b0000;
-        board[0 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
-        board[1 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
-        board[2 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
+        board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
         board[7 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
-        board[6 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
-        board[7 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
+        board[1 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
+        board[0 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
         if (0)
           begin
              board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
@@ -131,7 +131,13 @@ module tb;
          end
        STATE_DISP_INIT :
          if (move_count == 0)
-           state <= STATE_DONE_0;
+           begin
+              if (mate)
+                $display("checkmate");
+              else if (stalemate)
+                $display("stalemate");
+              state <= STATE_DONE_0;
+           end
          else
            begin
               display_move <= 1;
@@ -185,6 +191,8 @@ module tb;
       .move_ready                       (move_ready),
       .move_count                       (move_count[MAX_POSITIONS_LOG2-1:0]),
       .board_out                        (board_out[BOARD_WIDTH-1:0]),
+      .mate                             (mate),
+      .stalemate                        (stalemate),
       .white_to_move_out                (white_to_move_out),
       .castle_mask_out                  (castle_mask_out[3:0]),
       .en_passant_col_out               (en_passant_col_out[3:0]),
