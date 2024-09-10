@@ -171,7 +171,7 @@ main(void)
 		for (row = 7; row >= 0; --row)
 		{
 			for (col = 0; col < 8; ++ col)
-				printf("%02X ", board[row][col]);
+				printf("%1X ", board[row][col]);
 			printf("\n");
 		}
 		printf("white_to_move=%d castle_mask=0x%X en_passant_col=0x%X\n", white_to_move, castle_mask, en_passant_col);
