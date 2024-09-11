@@ -193,7 +193,8 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         int len, move_index;
         char str[BUF_SIZE];
         int arg1, arg2, arg3;
-        board_t board;
+        static board_t board;
+	board_t best_board;
         uint32_t status;
 
         xil_printf("cmd: %s\n", cmd);
@@ -228,7 +229,8 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "nm") == 0)
 	{
-		nm_top();
+		best_board = nm_top(&board);
+		vchess_print_board(&best_board);
 	}
 	else
         {

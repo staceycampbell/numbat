@@ -70,6 +70,7 @@ void
 vchess_write_board(board_t *board)
 {
 	int i;
+	uint32_t moves_ready;
 
 	vchess_write_control(1, 0, 1, 0, 1); // soft reset, clear moves, clear eval
 	vchess_write_control(0, 0, 0, 0, 0);
@@ -78,6 +79,14 @@ vchess_write_board(board_t *board)
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
 	vchess_write_control(0, 1, 0, 0, 0); // new board valid bit set
 	vchess_write_control(0, 0, 0, 0, 0); // new board valid bit clear
+	i = 0;
+	do
+	{
+		vchess_status(0, 0, &moves_ready, 0, 0);
+		++i;
+	} while (i < 1000 && ! moves_ready);
+	if (! moves_ready)
+		xil_printf("%s: problems in vchess_write_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 }
 
 uint32_t

@@ -204,7 +204,7 @@ vchess_eval(void)
 {
 	int32_t val;
 
-	val = (int32_t)vchess_read(134); // check this is sign extended
+	val = (int32_t)vchess_read(134);
 
 	return val;
 }
@@ -235,4 +235,4 @@ extern void vchess_print_board(board_t *board);
 extern uint32_t vchess_read_board(board_t *board, uint32_t index);
 extern void vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece);
 
-extern void nm_top(void);
+extern board_t nm_top(board_t *board);
