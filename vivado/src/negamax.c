@@ -1,13 +1,17 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <xil_printf.h>
+#include <xtime_l.h>
+#include <xil_io.h>
 #include "vchess.h"
 
-#define DEPTH_MAX 4
+#define DEPTH_MAX 5
 #define VALUE_KING 10000 // must match evaluate.sv
 
 static board_t board_stack[DEPTH_MAX][MAX_POSITIONS];
 static uint32_t board_count[DEPTH_MAX];
 static board_t root_node_boards[MAX_POSITIONS];
+static uint32_t nodes_searched;
 
 static int32_t
 nm_load_positions(board_t boards[MAX_POSITIONS])
@@ -53,7 +57,8 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 	uint32_t move_count, mate, stalemate, index;
 	int32_t value;
 	uint32_t status;
-	
+
+	++nodes_searched;
 	vchess_write_board(board);
 	move_count = vchess_move_count();
 	if (move_count == 0)
@@ -112,10 +117,14 @@ board_t
 nm_top(board_t *board)
 {
 	int32_t i, status;
-	uint32_t moves_ready, move_count;
+	uint32_t moves_ready, move_count, elapsed_ticks;
+	double elapsed_time, nps;
 	int32_t evaluate_move, best_evaluation;
 	board_t best_board;
+	XTime t_end, t_start;
 
+	nodes_searched = 0;
+	XTime_GetTime(&t_start);
 	vchess_write_board(board);
 	i = 0;
 	do
@@ -150,6 +159,14 @@ nm_top(board_t *board)
 			best_board = root_node_boards[i];
 		}
 	}
+
+	XTime_GetTime(&t_end);
+	elapsed_ticks = t_end - t_start;
+	elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
+	if (elapsed_time == 0.0) // hmm
+		elapsed_time = 1.0;
+	nps = (double)nodes_searched * (1.0 / elapsed_time);
+	printf("best_evaluation=%d, nodes_searched=%u, seconds=%f, nps=%f\n", best_evaluation, nodes_searched, elapsed_time, nps);
 
 	return best_board;
 }
