@@ -226,7 +226,11 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 vchess_write_board(&board);
                 vchess_print_board(&board);
         }
-        else
+        else if (strcmp((char *)str, "nm") == 0)
+	{
+		nm_top();
+	}
+	else
         {
                 fen_board(cmd, &board);
                 vchess_write_board(&board);

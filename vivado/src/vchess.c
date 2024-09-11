@@ -90,7 +90,6 @@ vchess_read_board(board_t *board, uint32_t index)
 
 	move_count = vchess_move_count();
 	status = vchess_status(&eval_valid, &move_ready, &moves_ready, 0, 0);
-	xil_printf("move count: %d\n", move_count);
 	if (! moves_ready)
 	{
 		xil_printf("moves_ready not set\n");
