@@ -17,8 +17,8 @@ get_piece(board_t *board, uint32_t row, uint32_t col)
 	return piece;
 }
 
-static void
-place(board_t *board, uint32_t row, uint32_t col, uint32_t piece)
+void
+vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece)
 {
 	uint32_t row_contents;
 	uint32_t shift;
@@ -37,8 +37,8 @@ vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t
 
 	piece = get_piece(board, row_from, col_from);
 	occupied = get_piece(board, row_to, col_to) != EMPTY_POSN;
-	place(board, row_from, col_from, EMPTY_POSN);
-	place(board, row_to, col_to, piece);
+	vchess_place(board, row_from, col_from, EMPTY_POSN);
+	vchess_place(board, row_to, col_to, piece);
 
 	return occupied;
 }
@@ -133,29 +133,29 @@ vchess_init_board(board_t *board)
 
 	for (i = 2; i <= 5; ++i)
 		for (j = 0; j < 8; ++j)
-			place(board, i, j, EMPTY_POSN);
+			vchess_place(board, i, j, EMPTY_POSN);
 	for (j = 0; j < 8; ++j)
 	{
-		place(board, 1, j, WHITE_PAWN);
-		place(board, 6, j, BLACK_PAWN);
+		vchess_place(board, 1, j, WHITE_PAWN);
+		vchess_place(board, 6, j, BLACK_PAWN);
 	}
-	place(board, 0, 0, WHITE_ROOK);
-	place(board, 0, 1, WHITE_KNIT);
-	place(board, 0, 2, WHITE_BISH);
-	place(board, 0, 3, WHITE_QUEN);
-	place(board, 0, 4, WHITE_KING);
-	place(board, 0, 5, WHITE_BISH);
-	place(board, 0, 6, WHITE_KNIT);
-	place(board, 0, 7, WHITE_ROOK);
+	vchess_place(board, 0, 0, WHITE_ROOK);
+	vchess_place(board, 0, 1, WHITE_KNIT);
+	vchess_place(board, 0, 2, WHITE_BISH);
+	vchess_place(board, 0, 3, WHITE_QUEN);
+	vchess_place(board, 0, 4, WHITE_KING);
+	vchess_place(board, 0, 5, WHITE_BISH);
+	vchess_place(board, 0, 6, WHITE_KNIT);
+	vchess_place(board, 0, 7, WHITE_ROOK);
 
-	place(board, 7, 0, BLACK_ROOK);
-	place(board, 7, 1, BLACK_KNIT);
-	place(board, 7, 2, BLACK_BISH);
-	place(board, 7, 3, BLACK_QUEN);
-	place(board, 7, 4, BLACK_KING);
-	place(board, 7, 5, BLACK_BISH);
-	place(board, 7, 6, BLACK_KNIT);
-	place(board, 7, 7, BLACK_ROOK);
+	vchess_place(board, 7, 0, BLACK_ROOK);
+	vchess_place(board, 7, 1, BLACK_KNIT);
+	vchess_place(board, 7, 2, BLACK_BISH);
+	vchess_place(board, 7, 3, BLACK_QUEN);
+	vchess_place(board, 7, 4, BLACK_KING);
+	vchess_place(board, 7, 5, BLACK_BISH);
+	vchess_place(board, 7, 6, BLACK_KNIT);
+	vchess_place(board, 7, 7, BLACK_ROOK);
 
 	board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
 	board->castle_mask = 0xF;
