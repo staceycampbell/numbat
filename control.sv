@@ -38,6 +38,8 @@ module control #
     input [63:0]                          initial_white_is_attacking,
     input [63:0]                          initial_black_is_attacking,
     input                                 initial_capture,
+    input                                 initial_mate,
+    input                                 initial_stalemate,
    
     input [39:0]                          ctrl0_axi_araddr,
     input [2:0]                           ctrl0_axi_arprot,
@@ -119,7 +121,7 @@ module control #
                     ctrl0_axi_rdata[1] <= clear_moves;
                     ctrl0_axi_rdata[2] <= clear_eval;
                     ctrl0_axi_rdata[3] <= force_eval;
-                    ctrl0_axi_rdata[6:4] <= {eval_valid, initial_move_ready, initial_moves_ready};
+                    ctrl0_axi_rdata[8:4] <= {initial_mate, initial_stalemate, eval_valid, initial_move_ready, initial_moves_ready};
                  end
                4'h1 : ctrl0_axi_rdata <= move_index;
                4'h2 : ctrl0_axi_rdata <= {white_to_move, castle_mask, en_passant_col};

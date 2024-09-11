@@ -112,11 +112,15 @@ vchess_write_board_row(uint32_t row, uint32_t row_pieces)
 }
 
 static inline uint32_t
-vchess_status(uint32_t *eval_valid, uint32_t *move_ready, uint32_t *moves_ready)
+vchess_status(uint32_t *eval_valid, uint32_t *move_ready, uint32_t *moves_ready, uint32_t *mate, uint32_t *stalemate)
 {
 	uint32_t val;
 
 	val = vchess_read(0);
+	if (mate)
+		*mate = (val & (1 << 8)) != 0;
+	if (stalemate)
+		*stalemate = (val & (1 << 7)) != 0;
 	if (eval_valid)
 		*eval_valid = (val & (1 << 6)) != 0;
 	if (move_ready)

@@ -51,9 +51,11 @@ module vchess_top;
    wire                 initial_capture;        // From all_moves_initial of all_moves.v
    wire [3:0]           initial_castle_mask;    // From all_moves_initial of all_moves.v
    wire [3:0]           initial_en_passant_col; // From all_moves_initial of all_moves.v
+   wire                 initial_mate;           // From all_moves_initial of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] initial_move_count;// From all_moves_initial of all_moves.v
    wire                 initial_move_ready;     // From all_moves_initial of all_moves.v
    wire                 initial_moves_ready;    // From all_moves_initial of all_moves.v
+   wire                 initial_stalemate;      // From all_moves_initial of all_moves.v
    wire                 initial_white_in_check; // From all_moves_initial of all_moves.v
    wire [63:0]          initial_white_is_attacking;// From all_moves_initial of all_moves.v
    wire                 initial_white_to_move;  // From all_moves_initial of all_moves.v
@@ -118,6 +120,8 @@ module vchess_top;
     .black_is_attacking_out (initial_black_is_attacking[]),
     .capture_out (initial_capture),
     .move_ready (initial_move_ready),
+    .mate (initial_mate),
+    .stalemate (initial_stalemate),
     .\(.*\)_in (\1[]),
     );*/
    all_moves #
@@ -134,6 +138,8 @@ module vchess_top;
       .move_ready                       (initial_move_ready),    // Templated
       .move_count                       (initial_move_count[MAX_POSITIONS_LOG2-1:0]), // Templated
       .board_out                        (initial_board[BOARD_WIDTH-1:0]), // Templated
+      .mate                             (initial_mate),          // Templated
+      .stalemate                        (initial_stalemate),     // Templated
       .white_to_move_out                (initial_white_to_move), // Templated
       .castle_mask_out                  (initial_castle_mask[3:0]), // Templated
       .en_passant_col_out               (initial_en_passant_col[3:0]), // Templated
@@ -225,6 +231,8 @@ module vchess_top;
       .initial_white_is_attacking       (initial_white_is_attacking[63:0]),
       .initial_black_is_attacking       (initial_black_is_attacking[63:0]),
       .initial_capture                  (initial_capture),
+      .initial_mate                     (initial_mate),
+      .initial_stalemate                (initial_stalemate),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),

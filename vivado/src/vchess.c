@@ -89,20 +89,20 @@ vchess_read_board(board_t *board, uint32_t index)
 	uint32_t status;
 
 	move_count = vchess_move_count();
+	status = vchess_status(&eval_valid, &move_ready, &moves_ready, 0, 0);
 	xil_printf("move count: %d\n", move_count);
-	if (index >= move_count)
-	{
-		xil_printf("bad index %d, move count is %d\n", index, move_count);
-		return 1;
-	}
-	vchess_status(&eval_valid, &move_ready, &moves_ready);
 	if (! moves_ready)
 	{
 		xil_printf("moves_ready not set\n");
 		return 2;
 	}
+	if (index >= move_count)
+	{
+		xil_printf("bad index %d, move count is %d\n", index, move_count);
+		return 1;
+	}
 	vchess_move_index(index);
-	status = vchess_status(&eval_valid, &move_ready, &moves_ready);
+	status = vchess_status(0, &move_ready, 0, 0, 0);
 	vchess_write_control(0, 0, 0, 1, 0); // force eval
 	if (! move_ready)
 	{
@@ -113,7 +113,7 @@ vchess_read_board(board_t *board, uint32_t index)
 	for (y = 0; y < 8; ++y)
 		board->board[y] = vchess_read_move_row(y);
 	vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
-	status = vchess_status(&eval_valid, &move_ready, &moves_ready);
+	status = vchess_status(&eval_valid, 0, 0, 0, 0);
 	if (! eval_valid)
 	{
 		xil_printf("eval_valid not set: 0x%X\n", status);

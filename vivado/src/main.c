@@ -66,13 +66,24 @@ process_cmd(uint8_t cmd[512])
 	tcp_write(cmd_pcb, "\n", 1, TCP_WRITE_FLAG_COPY);
 	sscanf((char *)cmd, "%s %d %d %d\n", str, &arg1, &arg2, &arg3);
 
-	if (strcmp((char *)str, "read") == 0)
+	if (strcmp((char *)str, "status") == 0)
+	{
+		uint32_t eval_valid, move_ready, moves_ready, mate, stalemate;
+
+		status = vchess_status(&eval_valid, &move_ready, &moves_ready, &mate, &stalemate);
+		xil_printf("moves_ready=%d, mate=%d, stalemate=%d", moves_ready, mate, stalemate);
+		if (moves_ready)
+			xil_printf(", moves=%d", vchess_move_count());
+		xil_printf("\n");
+	}
+	else if (strcmp((char *)str, "read") == 0)
 	{
 		move_index = arg1;
 		status = vchess_read_board(&board, move_index);
 		if (status == 0)
 			vchess_print_board(&board);
-	} else if (strcmp((char *)str, "init") == 0)
+	}
+	else if (strcmp((char *)str, "init") == 0)
 	{
 		vchess_init_board(&board);
 		vchess_move_piece(&board, 0, 3, 3, 3);
