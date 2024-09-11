@@ -39,6 +39,7 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
 {
         int row, col, i, stop_col;
 
+	board->eval_valid = 0;
         row = 7;
         col = 0;
         i = 0;
