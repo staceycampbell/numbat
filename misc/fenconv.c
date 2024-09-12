@@ -159,21 +159,39 @@ fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_ma
 int
 main(void)
 {
-	int row, col;
+	int i, row, col;
 	int board[8][8];
 	char buffer[4096];
 	int white_to_move, castle_mask, en_passant_col;
+        char *defines[1 << PIECE_BITS];
+
+        for (i = 0; i < (1 << PIECE_BITS); ++i)
+                defines[i] = "EMPTY_POSN";
+        defines[EMPTY_POSN] = "EMPTY_POSN";
+        defines[WHITE_PAWN] = "WHITE_PAWN";
+        defines[WHITE_ROOK] = "WHITE_ROOK";
+        defines[WHITE_KNIT] = "WHITE_KNIT";
+        defines[WHITE_BISH] = "WHITE_BISH";
+        defines[WHITE_KING] = "WHITE_KING";
+        defines[WHITE_QUEN] = "WHITE_QUEN";
+        defines[BLACK_PAWN] = "BLACK_PAWN";
+        defines[BLACK_ROOK] = "BLACK_ROOK";
+        defines[BLACK_KNIT] = "BLACK_KNIT";
+        defines[BLACK_BISH] = "BLACK_BISH";
+        defines[BLACK_KING] = "BLACK_KING";
+        defines[BLACK_QUEN] = "BLACK_QUEN";
+
+        // board[7 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
 
 	printf("FEN: ");
 	while (fgets(buffer, sizeof(buffer), stdin))
 	{
 		fen_board(buffer, board, &white_to_move, &castle_mask, &en_passant_col);
 		for (row = 7; row >= 0; --row)
-		{
-			for (col = 0; col < 8; ++ col)
-				printf("%1X ", board[row][col]);
-			printf("\n");
-		}
+                        for (col = 0; col < 8; ++col)
+                                if (board[row][col] != EMPTY_POSN)
+                                        printf("board[%d * SIDE_WIDTH + %d * PIECE_WIDTH+:PIECE_WIDTH] = `%s;\n",
+                                               row, col, defines[board[row][col]]);
 		printf("white_to_move=%d castle_mask=0x%X en_passant_col=0x%X\n", white_to_move, castle_mask, en_passant_col);
 		printf("FEN: ");
 	}
