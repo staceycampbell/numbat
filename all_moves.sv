@@ -120,6 +120,9 @@ module all_moves #
    reg                                pawn_en_passant_count;
    reg [1:0]                          pawn_move_count;
    reg [1:0]                          pawn_promotion_count;
+   reg                                pawn_do_init;
+   reg                                pawn_do_en_passant;
+   reg                                pawn_do_promote;
 
    reg [1:0]                          castle_short_legal;
    reg [1:0]                          castle_long_legal;
@@ -305,6 +308,9 @@ module all_moves #
         pawn_en_passant_mask[1] <= en_passant_col[`EN_PASSANT_VALID_BIT] &&
                                    pawn_col_cap_right <= 7 &&
                                    en_passant_col[2:0] == pawn_col_cap_right[2:0];
+        pawn_do_init <= row == pawn_init_row[white_to_move];
+        pawn_do_en_passant <= row == pawn_en_passant_row[white_to_move];
+        pawn_do_promote <= row == pawn_promote_row[white_to_move];
 
         // black to move
         castle_short_legal[0] <= castle_mask[`CASTLE_BLACK_SHORT] &&
@@ -485,11 +491,11 @@ module all_moves #
               pawn_en_passant_count <= 0;
               pawn_move_count <= 0;
               pawn_promotion_count <= 0;
-              if (row == pawn_init_row[white_to_move])
+              if (pawn_do_init)
                 state <= STATE_PAWN_ROW_1;
-              else if (row == pawn_en_passant_row[white_to_move])
+              else if (pawn_do_en_passant)
                 state <= STATE_PAWN_ROW_4;
-              else if (row == pawn_promote_row[white_to_move])
+              else if (pawn_do_promote)
                 state <= STATE_PAWN_ROW_6;
               else
                 state <= STATE_PAWN_ADVANCE;
