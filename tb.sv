@@ -157,6 +157,7 @@ module tb;
            end
          else
            begin
+              $display("move index: %d", move_index);
               display_move <= 1;
               state <= STATE_DISP_BOARD_0;
            end
