@@ -71,10 +71,10 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 			xil_printf("%s: problem, no moves but no mate or stalemate (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 			return 0;
 		}
-		value = VALUE_KING + depth;
+		value = VALUE_KING + DEPTH_MAX - depth;
 		if (board->white_to_move)
-			return value;
-		return -value;
+			value = -value;
+		return value;
 	}
 	if (depth == 0)
 	{
@@ -152,7 +152,7 @@ nm_top(board_t *board)
 	best_evaluation = INT32_MIN;
 	for (i = 0; i < move_count; ++i)
 	{
-		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1, INT32_MIN, INT32_MAX);
+		evaluate_move = negamax(&root_node_boards[i], DEPTH_MAX - 1, INT32_MIN, INT32_MAX);
 		if (evaluate_move > best_evaluation)
 		{
 			best_evaluation = evaluate_move;
