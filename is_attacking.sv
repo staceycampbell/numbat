@@ -46,8 +46,10 @@ module is_attacking #
    reg [ATTACK_COUNT - 1:0]   attack_list_t1;
    reg                        attacking_valid_t1;
    reg                        board_valid_t1;
-   reg                        opponent_king_t1, opponent_king_t2;
-   reg                        attacking_t2, attacking_valid_t2;
+   reg                        opponent_king_t1;
+   reg                        attacking_t2;
+   reg                        attacking_valid_t2;
+   reg                        opponent_in_check_t2;
 
    integer                    idx, i, j, ai, aj, f, fi, fj;
    genvar                     gen_i;
@@ -69,7 +71,7 @@ module is_attacking #
 
    assign attacking = attacking_t2;
    assign attacking_valid = attacking_valid_t2;
-   assign opponent_in_check = attacking_t2 && opponent_king_t2;
+   assign opponent_in_check = opponent_in_check_t2;
 
    always @(posedge clk)
      begin
@@ -83,7 +85,7 @@ module is_attacking #
         
         attacking_t2 <= attack_list_t1 != 0;
         attacking_valid_t2 <= board_valid_t1;
-        opponent_king_t2 <= opponent_king_t1;
+        opponent_in_check_t2 <= attack_list_t1 != 0 && opponent_king_t1;
      end
    
    initial

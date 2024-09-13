@@ -27,8 +27,8 @@ module board_attack #
    
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                       black_is_attacking_display_done;// From display_is_black_is_attacking of display_is_attacking.v
-   wire                       white_is_attacking_display_done;// From display_is_white_is_attacking of display_is_attacking.v
+   wire                 black_is_attacking_display_done;// From display_is_black_is_attacking of display_is_attacking.v
+   wire                 white_is_attacking_display_done;// From display_is_white_is_attacking of display_is_attacking.v
    // End of automatics
    
    wire [63:0]                white_is_attacking_valid, black_is_attacking_valid;
