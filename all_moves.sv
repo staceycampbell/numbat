@@ -403,10 +403,21 @@ module all_moves #
               castle_mask_ram_wr <= castle_mask;
               en_passant_col_ram_wr <= 4'b0;
               slider_index <= 0;
-              if (board[idx[row][col]+:PIECE_WIDTH] == `EMPTY_POSN) // empty square, nothing to move
-                state <= STATE_NEXT;
-              else if (board[idx[row][col] + `BLACK_BIT] != black_to_move) // not color-to-move's piece
-                state <= STATE_NEXT;
+              if (board[idx[row][col]+:PIECE_WIDTH] == `EMPTY_POSN || // empty square or
+                  board[idx[row][col] + `BLACK_BIT] != black_to_move) // opponent's piece, nothing to move
+                begin
+                   ram_wr <= 0;
+                   col <= col + 1;
+                   if (col == 7)
+                     begin
+                        row <= row + 1;
+                        col <= 0;
+                     end
+                   if (col == 7 && row == 7)
+                     state <= STATE_CASTLE_SHORT;
+                   else
+                     state <= STATE_DO_SQUARE;
+                end
               else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_QUEN ||
                        board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_ROOK ||
                        board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_BISH)
@@ -414,10 +425,8 @@ module all_moves #
               else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_KNIT ||
                        board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_KING)
                 state <= STATE_DISCRETE_INIT;
-              else if (board[idx[row][col]+:PIECE_WIDTH - 1] == `PIECE_PAWN)
-                state <= STATE_PAWN_INIT_0;
               else
-                state <= STATE_NEXT;
+                state <= STATE_PAWN_INIT_0; // must be a pawn
            end
          STATE_SLIDER_INIT :
            begin
