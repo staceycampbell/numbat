@@ -48,6 +48,9 @@ typedef struct board_t {
 	uint32_t white_to_move;
 	uint32_t eval_valid;
 	int32_t eval;
+	uint32_t black_in_check;
+	uint32_t white_in_check;
+	uint32_t capture;
 } board_t;
 
 static inline void

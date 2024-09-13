@@ -59,11 +59,14 @@ vchess_print_board(board_t *board)
 		}
 		xil_printf("\n");
 	}
-	xil_printf("%s to move, en passant col: %1X, castle mask: %1X", to_move[board->white_to_move],
-		   board->en_passant_col, board->castle_mask);
+	xil_printf("%s to move, en passant col: %1X, castle mask: %1X", to_move[board->white_to_move], board->en_passant_col, board->castle_mask);
 	if (board->eval_valid)
-		xil_printf(", eval: %d", board->eval);
+		xil_printf(", eval: %d, capture: %d", board->eval, board->capture);
 	xil_printf("\n");
+	if (board->black_in_check)
+		xil_printf("Black in check\n");
+	if (board->white_in_check)
+		xil_printf("White in check\n");
 }
 
 void
@@ -120,6 +123,7 @@ vchess_read_board(board_t *board, uint32_t index)
 
 	for (y = 0; y < 8; ++y)
 		board->board[y] = vchess_read_move_row(y);
+	vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture);
 	vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
 	status = vchess_status(&eval_valid, 0, 0, 0, 0);
 	if (! eval_valid)

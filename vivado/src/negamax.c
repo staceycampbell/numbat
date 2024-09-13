@@ -5,7 +5,7 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-#define DEPTH_MAX 5
+#define DEPTH_MAX 6
 #define VALUE_KING 10000 // must match evaluate.sv
 
 static board_t board_stack[DEPTH_MAX][MAX_POSITIONS];
@@ -59,6 +59,16 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 	uint32_t status;
 
 	++nodes_searched;
+	if (depth == 0)
+	{
+		if (! board->eval_valid)
+		{
+			xil_printf("%s: problem, no evaluation for board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+			return 0;
+		}
+		value = board->eval;
+		return value;
+	}
 	vchess_write_board(board);
 	move_count = vchess_move_count();
 	if (move_count == 0)
@@ -73,17 +83,7 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 		}
 		value = VALUE_KING + DEPTH_MAX - depth;
 		if (board->white_to_move)
-			value = -value;
-		return value;
-	}
-	if (depth == 0)
-	{
-		if (! board->eval_valid)
-		{
-			xil_printf("%s: problem, no evaluation for board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-			return 0;
-		}
-		value = board->eval;
+			return -value;
 		return value;
 	}
 	if (depth < 0 || depth >= DEPTH_MAX)
@@ -108,7 +108,7 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 		value = valmax(value, -negamax(&board_stack[depth][index], depth - 1, -b, -a));
 		a = valmax(a, value);
 		++index;
-	} while (index < board_count[depth] && a < b);
+	} while (index < move_count && a < b);
 
 	return value;
 }
