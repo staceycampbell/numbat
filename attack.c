@@ -19,7 +19,9 @@ main(void)
         uint16_t attack_quen[2];
         uint16_t attack_king[2];
         uint16_t attack_pawn[2];
+        char *attacker[2];
 
+        attacker[WHITE_ATTACK] = "`WHITE_ATTACK";
         attack_rook[WHITE_ATTACK] = 1 << WHITE_ROOK;
         attack_knit[WHITE_ATTACK] = 1 << WHITE_KNIT;
         attack_bish[WHITE_ATTACK] = 1 << WHITE_BISH;
@@ -27,6 +29,7 @@ main(void)
         attack_king[WHITE_ATTACK] = 1 << WHITE_KING;
         attack_pawn[WHITE_ATTACK] = 1 << WHITE_PAWN;
 
+        attacker[BLACK_ATTACK] = "`BLACK_ATTACK";
         attack_rook[BLACK_ATTACK] = 1 << BLACK_ROOK;
         attack_knit[BLACK_ATTACK] = 1 << BLACK_KNIT;
         attack_bish[BLACK_ATTACK] = 1 << BLACK_BISH;
@@ -35,15 +38,14 @@ main(void)
         attack_pawn[BLACK_ATTACK] = 1 << BLACK_PAWN;
 
         for (color = 0; color <= 1; ++color)
-        {
-                for (idx = 0; idx < ATTACK_COUNT; ++idx)
-                        for (row = 0; row < 8; ++row)
-                                for (col = 0; col < 8; ++col)
-                                        attack_array[idx][row][col] = 0; // default is "don't care"
-
                 for (row = 0; row < 8; ++row)
                         for (col = 0; col < 8; ++col)
                         {
+                                for (idx = 0; idx < ATTACK_COUNT; ++idx)
+                                        for (fi = 0; fi < 8; ++fi)
+                                                for (fj = 0; fj < 8; ++fj)
+                                                        attack_array[idx][fi][fj] = 0; // default is "don't care"
+                                idx = 0;
                                 for (j = col - 1; j >= 0; j = j - 1)
                                 {
                                         attack_array[idx][row][j] = attack_rook[color];
@@ -322,8 +324,22 @@ main(void)
                                         }
                                 }
                                 assert(idx < ATTACK_COUNT);
+                                printf("if (ATTACKER == %s && ROW = %d && COL == %d)\nbegin\n", attacker[color], row, col);
+                                for (idx = 0; idx < ATTACK_COUNT; ++idx)
+                                {
+                                        printf("attack_mask[%2d] = {\n", idx);
+                                        for (fi = 7; fi >= 0; --fi)
+                                                for (fj = 7; fj >= 0; --fj)
+                                                {
+                                                        printf("%d'h%04X", PIECE_MASK_BITS, attack_array[idx][fi][fj]);
+                                                        if (fi == 0 && fj == 0)
+                                                                printf("\n");
+                                                        else
+                                                                printf(", ");
+                                                }
+                                        printf("};\n");
+                                }
+                                printf("end\n");
                         }
-        }
-
         return 0;
 }
