@@ -44,10 +44,11 @@ vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t
 }
 
 void
-vchess_print_board(board_t *board)
+vchess_print_board(board_t *board, uint32_t initial_board)
 {
 	int y, x;
 	uint32_t piece;
+	int32_t eval;
 	static const char *to_move[2] = {"Black", "White"};
 
 	for (y = 7; y >= 0; --y)
@@ -59,9 +60,17 @@ vchess_print_board(board_t *board)
 		}
 		xil_printf("\n");
 	}
-	xil_printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d, capture: %d\n",
-		   to_move[board->white_to_move], board->en_passant_col, board->castle_mask,
-		   board->eval, board->capture);
+	if (initial_board)
+		eval = vchess_initial_eval();
+	else
+		eval = board->eval;
+	xil_printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move],
+		   board->en_passant_col, board->castle_mask, eval);
+	if (! initial_board)
+		xil_printf(", capture: %d", board->capture);
+	else
+		xil_printf(", legal moves: %d", vchess_move_count());
+	xil_printf("\n");
 	if (board->black_in_check)
 		xil_printf("Black in check\n");
 	if (board->white_in_check)

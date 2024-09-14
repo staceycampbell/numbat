@@ -217,25 +217,25 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 move_index = arg1;
                 status = vchess_read_board(&board, move_index);
                 if (status == 0)
-                        vchess_print_board(&board);
+                        vchess_print_board(&board, 0);
         }
         else if (strcmp((char *)str, "init") == 0)
         {
                 vchess_init_board(&board);
                 vchess_move_piece(&board, 0, 3, 3, 3);
                 vchess_write_board(&board);
-                vchess_print_board(&board);
+                vchess_print_board(&board, 1);
         }
         else if (strcmp((char *)str, "nm") == 0)
 	{
 		best_board = nm_top(&board);
-		vchess_print_board(&best_board);
+		vchess_print_board(&best_board, 0);
 	}
 	else
         {
                 fen_board(cmd, &board);
                 vchess_write_board(&board);
-                vchess_print_board(&board);
+                vchess_print_board(&board, 1);
         }
 }
 
