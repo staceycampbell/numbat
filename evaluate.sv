@@ -2,21 +2,18 @@
 
 module evaluate #
   (
-   parameter PIECE_WIDTH = `PIECE_BITS,
-   parameter SIDE_WIDTH = PIECE_WIDTH * 8,
-   parameter BOARD_WIDTH = SIDE_WIDTH * 8,
    parameter EVAL_WIDTH = 22
    )
    (
-    input                     clk,
-    input                     reset,
+    input                      clk,
+    input                      reset,
 
-    input                     board_valid,
-    input [BOARD_WIDTH - 1:0] board_in,
-    input                     clear_eval,
+    input                      board_valid,
+    input [`BOARD_WIDTH - 1:0] board_in,
+    input                      clear_eval,
 
     (* use_dsp48 = "true" *) output reg signed [EVAL_WIDTH - 1:0] eval,
-    output reg                eval_valid
+    output reg                 eval_valid
     );
 
    localparam VALUE_PAWN =   100;
@@ -26,10 +23,10 @@ module evaluate #
    localparam VALUE_QUEN =   900;
    localparam VALUE_KING = 10000;
 
-   reg [BOARD_WIDTH - 1:0]    board;
+   reg [`BOARD_WIDTH - 1:0]    board;
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] pst [`EMPTY_POSN:`BLACK_KING][0:63];
-   reg [$clog2(BOARD_WIDTH) - 1:0]           idx [0:7][0:7];
+   reg [$clog2(`BOARD_WIDTH) - 1:0]          idx [0:7][0:7];
    
    (* use_dsp48 = "true" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
    (* use_dsp48 = "true" *) reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
@@ -41,7 +38,7 @@ module evaluate #
      begin
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)
-            score[y][x] <= value[board[idx[y][x]+:PIECE_WIDTH]] + pst[board[idx[y][x]+:PIECE_WIDTH]][y << 3 | x];
+            score[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 4)
             sum_a[y][x / 4] <= score[y][x + 0] + score[y][x + 1] + score[y][x + 2] + score[y][x + 3];
@@ -93,9 +90,9 @@ module evaluate #
      begin
         for (y = 0; y < 8; y = y + 1)
           begin
-             ri = y * SIDE_WIDTH;
+             ri = y * `SIDE_WIDTH;
              for (x = 0; x < 8; x = x + 1)
-               idx[y][x] = ri + x * PIECE_WIDTH;
+               idx[y][x] = ri + x * `PIECE_WIDTH;
           end
         
         for (ri = `EMPTY_POSN; ri <= `BLACK_KING; ri = ri + 1)

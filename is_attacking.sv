@@ -2,9 +2,6 @@
 
 module is_attacking #
   (
-   parameter PIECE_WIDTH = 0,
-   parameter SIDE_WIDTH = 0,
-   parameter BOARD_WIDTH = 0,
    parameter ATTACKER = `WHITE_ATTACK,
    parameter ROW = 0,
    parameter COL = 0
@@ -13,7 +10,7 @@ module is_attacking #
     input                     clk,
     input                     reset,
    
-    input [BOARD_WIDTH - 1:0] board,
+    input [`BOARD_WIDTH - 1:0] board,
     input                     board_valid,
 
     output                    attacking,
@@ -63,7 +60,7 @@ module is_attacking #
    generate
       for (gen_i = 0; gen_i < 64; gen_i = gen_i + 1)
         begin : bitmap_assign_blk
-           assign board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] = 1 << (board[gen_i * PIECE_WIDTH+:PIECE_WIDTH]);
+           assign board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] = 1 << (board[gen_i * `PIECE_WIDTH+:`PIECE_WIDTH]);
            assign my_piece_t0[gen_i] = (board2_t0[gen_i * PIECE_WIDTH2+:PIECE_WIDTH2] & PIECE_MASK) != 0;
         end
    endgenerate

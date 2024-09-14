@@ -2,24 +2,22 @@
 
 module board_attack #
   (
-   parameter PIECE_WIDTH = 0,
-   parameter SIDE_WIDTH = 0,
-   parameter BOARD_WIDTH = 0,
    parameter DO_DISPLAY = 0
    )
    (
-    input                     reset,
-    input                     clk,
+    input                      reset,
+    input                      clk,
    
-    input [BOARD_WIDTH - 1:0] board,
-    input                     board_valid,
+    input [`BOARD_WIDTH - 1:0] board,
+    input                      board_valid,
+    input                      clear_attack,
 
-    output [63:0]             white_is_attacking,
-    output [63:0]             black_is_attacking,
-    output                    white_in_check,
-    output                    black_in_check,
-    output                    is_attacking_done,
-    output                    display_attacking_done
+    output reg                 is_attacking_done = 0,
+    output [63:0]              white_is_attacking,
+    output [63:0]              black_is_attacking,
+    output                     white_in_check,
+    output                     black_in_check,
+    output                     display_attacking_done
     );
 
    // should be empty
@@ -27,19 +25,48 @@ module board_attack #
    
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_is_attacking_display_done;// From display_is_black_is_attacking of display_is_attacking.v
-   wire                 white_is_attacking_display_done;// From display_is_white_is_attacking of display_is_attacking.v
+   wire                        black_is_attacking_display_done;// From display_is_black_is_attacking of display_is_attacking.v
+   wire                        white_is_attacking_display_done;// From display_is_white_is_attacking of display_is_attacking.v
    // End of automatics
    
-   wire [63:0]                white_is_attacking_valid, black_is_attacking_valid;
-   wire [63:0]                white_in_check_list, black_in_check_list;
+   wire [63:0]                 white_is_attacking_valid, black_is_attacking_valid;
+   wire [63:0]                 white_in_check_list, black_in_check_list;
 
-   genvar                     row, col;
+   genvar                      row, col;
 
    assign white_in_check = white_in_check_list != 0;
    assign black_in_check = black_in_check_list != 0;
-   assign is_attacking_done = white_is_attacking_valid != 0;
    assign display_attacking_done = black_is_attacking_display_done;
+
+   localparam STATE_IDLE = 0;
+   localparam STATE_RUN = 1;
+   localparam STATE_WAIT = 2;
+
+   reg [1:0]                   state = STATE_IDLE;
+
+   always @(posedge clk)
+     if (reset)
+       state <= STATE_IDLE;
+     else
+       case (state)
+         STATE_IDLE :
+           begin
+              is_attacking_done <= 0;
+              if (board_valid)
+                state <= STATE_RUN;
+           end
+         STATE_RUN :
+           if (white_is_attacking_valid != 0)
+             state <= STATE_WAIT;
+         STATE_WAIT :
+           begin
+              is_attacking_done <= 1;
+              if (clear_attack)
+                state <= STATE_IDLE;
+           end
+         default :
+           state <= STATE_IDLE;
+       endcase
 
    generate
       for (row = 0; row < 8; row = row + 1)
@@ -54,9 +81,6 @@ module board_attack #
                  );*/
                 is_attacking #
                       (
-                       .PIECE_WIDTH (PIECE_WIDTH),
-                       .SIDE_WIDTH (SIDE_WIDTH),
-                       .BOARD_WIDTH (BOARD_WIDTH),
                        .ATTACKER (`WHITE_ATTACK),
                        .ROW (row),
                        .COL (col)
@@ -70,7 +94,7 @@ module board_attack #
                        // Inputs
                        .clk             (clk),
                        .reset           (reset),
-                       .board           (board[BOARD_WIDTH-1:0]),
+                       .board           (board[`BOARD_WIDTH-1:0]),
                        .board_valid     (board_valid));
                 
                 /* is_attacking AUTO_TEMPLATE (
@@ -80,9 +104,6 @@ module board_attack #
                  );*/
                 is_attacking #
                   (
-                   .PIECE_WIDTH (PIECE_WIDTH),
-                   .SIDE_WIDTH (SIDE_WIDTH),
-                   .BOARD_WIDTH (BOARD_WIDTH),
                    .ATTACKER (`BLACK_ATTACK),
                    .ROW (row),
                    .COL (col)
@@ -96,7 +117,7 @@ module board_attack #
                    // Inputs
                    .clk                 (clk),
                    .reset               (reset),
-                   .board               (board[BOARD_WIDTH-1:0]),
+                   .board               (board[`BOARD_WIDTH-1:0]),
                    .board_valid         (board_valid));
              end
         end

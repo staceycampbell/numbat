@@ -2,9 +2,6 @@
 
 module tb;
 
-   localparam PIECE_WIDTH = `PIECE_BITS;
-   localparam SIDE_WIDTH = PIECE_WIDTH * 8;
-   localparam BOARD_WIDTH = PIECE_WIDTH * 8 * 8;
    localparam EVAL_WIDTH = 22;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
 
@@ -13,13 +10,12 @@ module tb;
    integer t = 0;
    integer i;
 
-   reg [BOARD_WIDTH - 1:0] board;
-   reg                     board_valid = 0;
-   reg                     white_to_move = 0;
-   reg                     clear_moves = 1'b0;
-   reg                     clear_eval;
-   reg [3:0]               castle_mask;
-   reg [3:0]               en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 5;
+   reg [`BOARD_WIDTH - 1:0] board;
+   reg                      board_valid = 0;
+   reg                      white_to_move = 0;
+   reg                      clear_moves = 1'b0;
+   reg [3:0]                castle_mask;
+   reg [3:0]                en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 5;
    reg [MAX_POSITIONS_LOG2 - 1:0] move_index = 0;
    reg                            display_move = 0;
 
@@ -28,27 +24,21 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From vchess of vchess.v
    wire                 black_in_check_out;     // From all_moves_initial of all_moves.v
-   wire [63:0]          black_is_attacking;     // From vchess of vchess.v
    wire [63:0]          black_is_attacking_out; // From all_moves_initial of all_moves.v
-   wire [BOARD_WIDTH-1:0] board_out;            // From all_moves_initial of all_moves.v
+   wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves_initial of all_moves.v
    wire                 capture_out;            // From all_moves_initial of all_moves.v
    wire [3:0]           castle_mask_out;        // From all_moves_initial of all_moves.v
-   wire                 display_attacking_done; // From vchess of vchess.v
    wire                 display_done;           // From display_board of display_board.v
    wire [3:0]           en_passant_col_out;     // From all_moves_initial of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
-   wire                 eval_valid;             // From evaluate of evaluate.v
-   wire                 is_attacking_done;      // From vchess of vchess.v
-   wire                 mate;                   // From all_moves_initial of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves_initial of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves_initial of all_moves.v
+   wire                 initial_mate;           // From all_moves_initial of all_moves.v
+   wire                 initial_stalemate;      // From all_moves_initial of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] move_count;    // From all_moves_initial of all_moves.v
    wire                 move_ready;             // From all_moves_initial of all_moves.v
    wire                 moves_ready;            // From all_moves_initial of all_moves.v
-   wire                 stalemate;              // From all_moves_initial of all_moves.v
-   wire                 white_in_check;         // From vchess of vchess.v
    wire                 white_in_check_out;     // From all_moves_initial of all_moves.v
-   wire [63:0]          white_is_attacking;     // From vchess of vchess.v
    wire [63:0]          white_is_attacking_out; // From all_moves_initial of all_moves.v
    wire                 white_to_move_out;      // From all_moves_initial of all_moves.v
    // End of automatics
@@ -58,35 +48,35 @@ module tb;
         $dumpfile("wave.vcd");
         $dumpvars(0, tb);
         for (i = 0; i < 64; i = i + 1)
-          board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
+          board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
         castle_mask = 4'b0000;
-        board[6 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
-        board[5 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
-        board[4 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
-        board[0 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
+        board[6 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        board[5 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
+        board[4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
+        board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
         if (0)
           begin
-             board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
-             board[0 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KNIT;
-             board[0 * SIDE_WIDTH + 2 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_BISH;
-             board[0 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_QUEN;
-             board[0 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
-             board[0 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_BISH;
-             board[0 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KNIT;
-             board[0 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
+             board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
+             board[0 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
+             board[0 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+             board[0 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_QUEN;
+             board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+             board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+             board[0 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
+             board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
              for (i = 0; i < 8; i = i + 1)
-               board[1 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
+               board[1 * `SIDE_WIDTH + i * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
 
-             board[7 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
-             board[7 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
-             board[7 * SIDE_WIDTH + 2 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
-             board[7 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
-             board[7 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
-             board[7 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
-             board[7 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
-             board[7 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
+             board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
+             board[7 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+             board[7 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+             board[7 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_QUEN;
+             board[7 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+             board[7 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+             board[7 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+             board[7 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
              for (i = 0; i < 8; i = i + 1)
-               board[6 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
+               board[6 * `SIDE_WIDTH + i * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
           end
         forever
           #1 clk = ~clk;
@@ -120,21 +110,20 @@ module tb;
             move_index <= 0;
             display_move <= 0;
             clear_moves <= 0;
-            clear_eval <= 0;
             if (clear_moves)
               $finish; // fixme hack
             if (moves_ready)
               begin
-                 $display("move_count: %d", move_count);
+                 $display("inital_eval: %d, move_count: %d", initial_eval, move_count);
                  state <= STATE_DISP_INIT;
               end
          end
        STATE_DISP_INIT :
          if (move_count == 0)
            begin
-              if (mate)
+              if (initial_mate)
                 $display("checkmate");
-              else if (stalemate)
+              else if (initial_stalemate)
                 $display("stalemate");
               state <= STATE_DONE_0;
            end
@@ -152,9 +141,7 @@ module tb;
          end
        STATE_DISP_BOARD_1 :
          begin
-            $display("eval: %d", eval);
             $display("");
-            clear_eval <= 1;
             move_index <= move_index + 1;
             if (move_index + 1 < move_count)
               state <= STATE_DISP_BOARD_2;
@@ -162,10 +149,7 @@ module tb;
               state <= STATE_DONE_0;
          end
        STATE_DISP_BOARD_2 : // wait state for move RAM
-         begin
-            clear_eval <= 0;
-            state <= STATE_DISP_INIT;
-         end
+         state <= STATE_DISP_INIT;
        STATE_DONE_0 :
          begin
             clear_moves <= 1;
@@ -180,20 +164,19 @@ module tb;
     );*/
    all_moves #
      (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH),
-      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
+      .EVAL_WIDTH (EVAL_WIDTH)
       )
    all_moves_initial
      (/*AUTOINST*/
       // Outputs
+      .initial_mate                     (initial_mate),
+      .initial_stalemate                (initial_stalemate),
+      .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .moves_ready                      (moves_ready),
       .move_ready                       (move_ready),
       .move_count                       (move_count[MAX_POSITIONS_LOG2-1:0]),
-      .board_out                        (board_out[BOARD_WIDTH-1:0]),
-      .mate                             (mate),
-      .stalemate                        (stalemate),
+      .board_out                        (board_out[`BOARD_WIDTH-1:0]),
       .white_to_move_out                (white_to_move_out),
       .castle_mask_out                  (castle_mask_out[3:0]),
       .en_passant_col_out               (en_passant_col_out[3:0]),
@@ -202,64 +185,18 @@ module tb;
       .black_in_check_out               (black_in_check_out),
       .white_is_attacking_out           (white_is_attacking_out[63:0]),
       .black_is_attacking_out           (black_is_attacking_out[63:0]),
+      .eval_out                         (eval_out[EVAL_WIDTH-1:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (board_valid),
-      .board_in                         (board[BOARD_WIDTH-1:0]), // Templated
+      .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
       .move_index                       (move_index[MAX_POSITIONS_LOG2-1:0]),
       .clear_moves                      (clear_moves));
    
-   /* evaluate AUTO_TEMPLATE (
-    .board_valid (display_move),
-    .\(.*\)_in (\1_out[]),
-    );*/
-   evaluate #
-     (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH),
-      .EVAL_WIDTH (EVAL_WIDTH)
-      )
-   evaluate
-     (/*AUTOINST*/
-      // Outputs
-      .eval                             (eval[EVAL_WIDTH-1:0]),
-      .eval_valid                       (eval_valid),
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .board_valid                      (display_move),          // Templated
-      .board_in                         (board_out[BOARD_WIDTH-1:0]), // Templated
-      .clear_eval                       (clear_eval));
-
-   /* vchess AUTO_TEMPLATE (
-    );*/
-   vchess #
-     (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH)
-      )
-   vchess
-     (/*AUTOINST*/
-      // Outputs
-      .white_is_attacking               (white_is_attacking[63:0]),
-      .black_is_attacking               (black_is_attacking[63:0]),
-      .black_in_check                   (black_in_check),
-      .white_in_check                   (white_in_check),
-      .is_attacking_done                (is_attacking_done),
-      .display_attacking_done           (display_attacking_done),
-      // Inputs
-      .reset                            (reset),
-      .clk                              (clk),
-      .board                            (board[BOARD_WIDTH-1:0]),
-      .board_valid                      (board_valid),
-      .white_to_move                    (white_to_move));
-
    /* display_board AUTO_TEMPLATE (
     .display (display_move),
     .board (board_out[]),
@@ -268,12 +205,11 @@ module tb;
     .en_passant_col (en_passant_col_out[]),
     .white_in_check (white_in_check_out),
     .black_in_check (black_in_check_out),
+    .eval (eval_out[]),
     );*/
    display_board #
      (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH)
+      .EVAL_WIDTH (EVAL_WIDTH)
       )
    display_board
      (/*AUTOINST*/
@@ -282,12 +218,13 @@ module tb;
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
-      .board                            (board_out[BOARD_WIDTH-1:0]), // Templated
+      .board                            (board_out[`BOARD_WIDTH-1:0]), // Templated
       .castle_mask                      (castle_mask_out[3:0]),  // Templated
       .en_passant_col                   (en_passant_col_out[3:0]), // Templated
       .capture                          (capture_out),           // Templated
       .white_in_check                   (white_in_check_out),    // Templated
       .black_in_check                   (black_in_check_out),    // Templated
+      .eval                             (eval_out[EVAL_WIDTH-1:0]), // Templated
       .display                          (display_move));          // Templated
 
 endmodule

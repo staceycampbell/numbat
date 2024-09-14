@@ -27,6 +27,11 @@
 `define BLACK_MASK (1 << `BLACK_PAWN | 1 << `BLACK_ROOK | 1 << `BLACK_KNIT | 1 << `BLACK_BISH | 1 << `BLACK_KING | 1 << `BLACK_QUEN)
 
 `define PIECE_BITS 4
+`define PIECE_WIDTH (`PIECE_BITS)
+`define SIDE_WIDTH (`PIECE_WIDTH * 8)
+`define BOARD_WIDTH (`SIDE_WIDTH * 8)
+
+
 `define PIECE_MASK_BITS 15
 
 `define WHITE_ATTACK 0

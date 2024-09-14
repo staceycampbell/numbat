@@ -190,7 +190,7 @@ main(void)
 		for (row = 7; row >= 0; --row)
                         for (col = 0; col < 8; ++col)
                                 if (board[row][col] != EMPTY_POSN)
-                                        printf("board[%d * SIDE_WIDTH + %d * PIECE_WIDTH+:PIECE_WIDTH] = `%s;\n",
+                                        printf("board[%d * `SIDE_WIDTH + %d * `PIECE_WIDTH+:`PIECE_WIDTH] = `%s;\n",
                                                row, col, defines[board[row][col]]);
 		printf("white_to_move=%d castle_mask=0x%X en_passant_col=0x%X\n", white_to_move, castle_mask, en_passant_col);
 		printf("FEN: ");
