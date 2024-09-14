@@ -5,6 +5,7 @@
 #include <xil_printf.h>
 #include "vchess.h"
 
+#if 0
 extern struct tcp_pcb *cmd_pcb;
 
 static char Buffer[TCP_SND_BUF + 1];
@@ -129,3 +130,4 @@ start_application(void)
 
 	return 0;
 }
+#endif

@@ -59,32 +59,22 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 	uint32_t status;
 
 	++nodes_searched;
-	if (depth == 0)
-	{
-		value = board->eval;
-		return value;
-	}
 	vchess_write_board(board);
 	move_count = vchess_move_count();
-	if (move_count == 0)
+	if (depth == 0 || move_count == 0)
 	{
 		vchess_status(0, 0, &mate, &stalemate);
 		if (stalemate)
 			return 0;
-		if (! mate)
+		if (mate)
 		{
-			xil_printf("%s: problem, no moves but no mate or stalemate (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-			return 0;
+			value = VALUE_KING + DEPTH_MAX - depth;
+			if (board->white_to_move)
+				return -value;
+			return value;
 		}
-		value = VALUE_KING + DEPTH_MAX - depth;
-		if (board->white_to_move)
-			return -value;
+		value = vchess_initial_eval();
 		return value;
-	}
-	if (depth < 0 || depth >= DEPTH_MAX)
-	{
-		xil_printf("%s: bad recursion (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-		return 0;
 	}
 	for (index = 0; index < move_count; ++index)
 	{

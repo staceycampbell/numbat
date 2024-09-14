@@ -17,6 +17,8 @@
 #define ETH_LINK_DETECT_INTERVAL 4
 #define PLATFORM_TIMER_INTR_RATE_HZ (4)
 
+#if 0
+
 static XTtcPs TimerInstance;
 static XInterval Interval;
 static u8 Prescaler;
@@ -120,12 +122,15 @@ platform_enable_interrupts()
 	XTtcPs_Start(&TimerInstance);
 	return;
 }
+#endif
 
 void
 init_platform()
 {
+#if 0
 	platform_setup_timer();
 	platform_setup_interrupts();
+#endif
 
 	return;
 }

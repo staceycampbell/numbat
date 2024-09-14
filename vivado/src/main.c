@@ -12,6 +12,7 @@
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
 #define BUF_SIZE 1024
 
+#if 0
 extern volatile int TcpFastTmrFlag;
 extern volatile int TcpSlowTmrFlag;
 static struct netif server_netif;
@@ -33,6 +34,7 @@ print_ip_settings(ip_addr_t * ip, ip_addr_t * mask, ip_addr_t * gw)
         print_ip("Netmask : ", mask);
         print_ip("Gateway : ", gw);
 }
+#endif
 
 static int
 fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
@@ -198,8 +200,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 
         xil_printf("cmd: %s\n", cmd);
         len = strlen((char *)cmd);
+	#if 0
         tcp_write(cmd_pcb, cmd, len, TCP_WRITE_FLAG_COPY);
         tcp_write(cmd_pcb, "\n", 1, TCP_WRITE_FLAG_COPY);
+	#endif
         sscanf((char *)cmd, "%s %d %d %d\n", str, &arg1, &arg2, &arg3);
 
         if (strcmp((char *)str, "status") == 0)
@@ -248,15 +252,17 @@ main(void)
         uint32_t index;
         uint32_t ip_status, com_status;
 
+	#if 0
         cmd_netif = &server_netif;
+	#endif
 
         init_platform();
 
+#if 0
         IP4_ADDR(&ipaddr, 192, 168, 0, 90);
         IP4_ADDR(&netmask, 255, 255, 255, 0);
         IP4_ADDR(&gw, 192, 168, 0, 1);
         print_app_header();
-
         lwip_init();
 
         if (!xemac_add(cmd_netif, &ipaddr, &netmask, &gw, mac_ethernet_address, PLATFORM_EMAC_BASEADDR))
@@ -271,6 +277,7 @@ main(void)
         print_ip_settings(&ipaddr, &netmask, &gw);
 
         start_application();
+#endif
 
         vchess_init();
 
@@ -282,6 +289,7 @@ main(void)
         {
                 if (XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR))
                         com_status = process_serial_port(cmdbuf, &index);
+#if 0
                 if (TcpFastTmrFlag)
                 {
                         tcp_fasttmr();
@@ -294,7 +302,8 @@ main(void)
                 }
                 xemacif_input(cmd_netif);
                 ip_status = cmd_transfer_data(cmdbuf, &index);
-                if (ip_status || com_status)
+#endif
+                if (/* ip_status || */ com_status)
                 {
                         process_cmd(cmdbuf);
                         index = 0;
