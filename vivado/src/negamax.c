@@ -19,7 +19,7 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
 	int32_t i;
 	uint32_t moves_ready, status, move_count;
 
-	vchess_status(0, 0, &moves_ready, 0, 0);
+	vchess_status(0, &moves_ready, 0, 0);
 	if (! moves_ready)
 	{
 		xil_printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -61,11 +61,6 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 	++nodes_searched;
 	if (depth == 0)
 	{
-		if (! board->eval_valid)
-		{
-			xil_printf("%s: problem, no evaluation for board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-			return 0;
-		}
 		value = board->eval;
 		return value;
 	}
@@ -73,7 +68,7 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 	move_count = vchess_move_count();
 	if (move_count == 0)
 	{
-		vchess_status(0, 0, 0, &mate, &stalemate);
+		vchess_status(0, 0, &mate, &stalemate);
 		if (stalemate)
 			return 0;
 		if (! mate)
@@ -129,7 +124,7 @@ nm_top(board_t *board)
 	i = 0;
 	do
 	{
-		vchess_status(0, 0, &moves_ready, 0, 0);
+		vchess_status(0, &moves_ready, 0, 0);
 		++i;
 	} while (i < 1000 && ! moves_ready);
 	if (! moves_ready)

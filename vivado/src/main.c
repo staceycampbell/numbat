@@ -39,7 +39,6 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
 {
         int row, col, i, stop_col;
 
-	board->eval_valid = 0;
         row = 7;
         col = 0;
         i = 0;
@@ -205,12 +204,12 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 
         if (strcmp((char *)str, "status") == 0)
         {
-                uint32_t eval_valid, move_ready, moves_ready, mate, stalemate;
+                uint32_t move_ready, moves_ready, mate, stalemate;
 
-                status = vchess_status(&eval_valid, &move_ready, &moves_ready, &mate, &stalemate);
+                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate);
                 xil_printf("moves_ready=%d, mate=%d, stalemate=%d", moves_ready, mate, stalemate);
                 if (moves_ready)
-                        xil_printf(", moves=%d", vchess_move_count());
+                        xil_printf(", moves=%d, eval=%d", vchess_move_count(), vchess_initial_eval());
                 xil_printf("\n");
         }
         else if (strcmp((char *)str, "read") == 0)

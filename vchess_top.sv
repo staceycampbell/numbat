@@ -2,69 +2,64 @@
 
 module vchess_top;
 
-   localparam PIECE_WIDTH = `PIECE_BITS;
-   localparam SIDE_WIDTH = PIECE_WIDTH * 8;
-   localparam BOARD_WIDTH = PIECE_WIDTH * 8 * 8;
    localparam EVAL_WIDTH = 22;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
 
    integer i;
 
-   reg [BOARD_WIDTH - 1:0] board;
-   reg                     board_valid = 0;
+   reg [`BOARD_WIDTH - 1:0] board;
+   reg                      board_valid = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [3:0]           castle_mask;            // From control of control.v
-   wire                 clear_eval;             // From control of control.v
-   wire                 clear_moves;            // From control of control.v
-   wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl0_axi_arready;      // From control of control.v
-   wire                 ctrl0_axi_arvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [39:0]          ctrl0_axi_awaddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [2:0]           ctrl0_axi_awprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl0_axi_awready;      // From control of control.v
-   wire                 ctrl0_axi_awvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 ctrl0_axi_bready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [1:0]           ctrl0_axi_bresp;        // From control of control.v
-   wire [0:0]           ctrl0_axi_bvalid;       // From control of control.v
-   wire [31:0]          ctrl0_axi_rdata;        // From control of control.v
-   wire                 ctrl0_axi_rready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [1:0]           ctrl0_axi_rresp;        // From control of control.v
-   wire [0:0]           ctrl0_axi_rvalid;       // From control of control.v
-   wire [31:0]          ctrl0_axi_wdata;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [0:0]           ctrl0_axi_wready;       // From control of control.v
-   wire [3:0]           ctrl0_axi_wstrb;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 ctrl0_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 digclk;                 // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [3:0]           en_passant_col;         // From control of control.v
-   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
-   wire                 eval_valid;             // From evaluate of evaluate.v
-   wire                 force_eval;             // From control of control.v
-   wire                 initial_black_in_check; // From all_moves_initial of all_moves.v
-   wire [63:0]          initial_black_is_attacking;// From all_moves_initial of all_moves.v
-   wire [BOARD_WIDTH-1:0] initial_board;        // From all_moves_initial of all_moves.v
-   wire                 initial_capture;        // From all_moves_initial of all_moves.v
-   wire [3:0]           initial_castle_mask;    // From all_moves_initial of all_moves.v
-   wire [3:0]           initial_en_passant_col; // From all_moves_initial of all_moves.v
-   wire                 initial_mate;           // From all_moves_initial of all_moves.v
+   wire [3:0]               castle_mask;            // From control of control.v
+   wire                     clear_moves;            // From control of control.v
+   wire [39:0]              ctrl0_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [2:0]               ctrl0_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [0:0]               ctrl0_axi_arready;      // From control of control.v
+   wire                     ctrl0_axi_arvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [39:0]              ctrl0_axi_awaddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [2:0]               ctrl0_axi_awprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [0:0]               ctrl0_axi_awready;      // From control of control.v
+   wire                     ctrl0_axi_awvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                     ctrl0_axi_bready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [1:0]               ctrl0_axi_bresp;        // From control of control.v
+   wire [0:0]               ctrl0_axi_bvalid;       // From control of control.v
+   wire [31:0]              ctrl0_axi_rdata;        // From control of control.v
+   wire                     ctrl0_axi_rready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [1:0]               ctrl0_axi_rresp;        // From control of control.v
+   wire [0:0]               ctrl0_axi_rvalid;       // From control of control.v
+   wire [31:0]              ctrl0_axi_wdata;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [0:0]               ctrl0_axi_wready;       // From control of control.v
+   wire [3:0]               ctrl0_axi_wstrb;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                     ctrl0_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                     digclk;                 // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [3:0]               en_passant_col;         // From control of control.v
+   wire                     initial_black_in_check; // From all_moves_initial of all_moves.v
+   wire [63:0]              initial_black_is_attacking;// From all_moves_initial of all_moves.v
+   wire [`BOARD_WIDTH-1:0]  initial_board;       // From all_moves_initial of all_moves.v
+   wire                     initial_capture;        // From all_moves_initial of all_moves.v
+   wire [3:0]               initial_castle_mask;    // From all_moves_initial of all_moves.v
+   wire [3:0]               initial_en_passant_col; // From all_moves_initial of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves_initial of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] initial_eval_out;// From all_moves_initial of all_moves.v
+   wire                         initial_mate;           // From all_moves_initial of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] initial_move_count;// From all_moves_initial of all_moves.v
-   wire                 initial_move_ready;     // From all_moves_initial of all_moves.v
-   wire                 initial_moves_ready;    // From all_moves_initial of all_moves.v
-   wire                 initial_stalemate;      // From all_moves_initial of all_moves.v
-   wire                 initial_white_in_check; // From all_moves_initial of all_moves.v
-   wire [63:0]          initial_white_is_attacking;// From all_moves_initial of all_moves.v
-   wire                 initial_white_to_move;  // From all_moves_initial of all_moves.v
+   wire                          initial_move_ready;     // From all_moves_initial of all_moves.v
+   wire                          initial_moves_ready;    // From all_moves_initial of all_moves.v
+   wire                          initial_stalemate;      // From all_moves_initial of all_moves.v
+   wire                          initial_white_in_check; // From all_moves_initial of all_moves.v
+   wire [63:0]                   initial_white_is_attacking;// From all_moves_initial of all_moves.v
+   wire                          initial_white_to_move;  // From all_moves_initial of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] move_index;    // From control of control.v
-   wire [BOARD_WIDTH-1:0] new_board;            // From control of control.v
-   wire                 new_board_valid;        // From control of control.v
-   wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 soft_reset;             // From control of control.v
-   wire                 white_to_move;          // From control of control.v
+   wire [`BOARD_WIDTH-1:0]       new_board;           // From control of control.v
+   wire                          new_board_valid;        // From control of control.v
+   wire [0:0]                    reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                          soft_reset;             // From control of control.v
+   wire                          white_to_move;          // From control of control.v
    // End of automatics
    
    wire                          clk = digclk;
@@ -72,28 +67,28 @@ module vchess_top;
    initial
      begin
         for (i = 0; i < 64; i = i + 1)
-          board[i * PIECE_WIDTH+:PIECE_WIDTH] = `EMPTY_POSN;
-        board[0 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
-        board[0 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KNIT;
-        board[0 * SIDE_WIDTH + 2 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_BISH;
-        board[0 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_QUEN;
-        board[0 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KING;
-        board[0 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_BISH;
-        board[0 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_KNIT;
-        board[0 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_ROOK;
+          board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
+        board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
+        board[0 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
+        board[0 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        board[0 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_QUEN;
+        board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        board[0 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
+        board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
         for (i = 0; i < 8; i = i + 1)
-          board[1 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `WHITE_PAWN;
+          board[1 * `SIDE_WIDTH + i * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
 
-        board[7 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
-        board[7 * SIDE_WIDTH + 1 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
-        board[7 * SIDE_WIDTH + 2 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
-        board[7 * SIDE_WIDTH + 3 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_QUEN;
-        board[7 * SIDE_WIDTH + 4 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KING;
-        board[7 * SIDE_WIDTH + 5 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_BISH;
-        board[7 * SIDE_WIDTH + 6 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_KNIT;
-        board[7 * SIDE_WIDTH + 7 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
+        board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
+        board[7 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+        board[7 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        board[7 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_QUEN;
+        board[7 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        board[7 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        board[7 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+        board[7 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
         for (i = 0; i < 8; i = i + 1)
-          board[6 * SIDE_WIDTH + i * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_PAWN;
+          board[6 * `SIDE_WIDTH + i * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
      end
 
    always @(posedge clk)
@@ -120,26 +115,24 @@ module vchess_top;
     .black_is_attacking_out (initial_black_is_attacking[]),
     .capture_out (initial_capture),
     .move_ready (initial_move_ready),
-    .mate (initial_mate),
-    .stalemate (initial_stalemate),
+    .eval_out (initial_eval_out[]),
     .\(.*\)_in (\1[]),
     );*/
    all_moves #
      (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH),
-      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
+      .EVAL_WIDTH (EVAL_WIDTH)
       )
    all_moves_initial
      (/*AUTOINST*/
       // Outputs
+      .initial_mate                     (initial_mate),
+      .initial_stalemate                (initial_stalemate),
+      .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .moves_ready                      (initial_moves_ready),   // Templated
       .move_ready                       (initial_move_ready),    // Templated
       .move_count                       (initial_move_count[MAX_POSITIONS_LOG2-1:0]), // Templated
-      .board_out                        (initial_board[BOARD_WIDTH-1:0]), // Templated
-      .mate                             (initial_mate),          // Templated
-      .stalemate                        (initial_stalemate),     // Templated
+      .board_out                        (initial_board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_out                (initial_white_to_move), // Templated
       .castle_mask_out                  (initial_castle_mask[3:0]), // Templated
       .en_passant_col_out               (initial_en_passant_col[3:0]), // Templated
@@ -148,48 +141,23 @@ module vchess_top;
       .black_in_check_out               (initial_black_in_check), // Templated
       .white_is_attacking_out           (initial_white_is_attacking[63:0]), // Templated
       .black_is_attacking_out           (initial_black_is_attacking[63:0]), // Templated
+      .eval_out                         (initial_eval_out[EVAL_WIDTH-1:0]), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (soft_reset),            // Templated
       .board_valid                      (board_valid),
-      .board_in                         (board[BOARD_WIDTH-1:0]), // Templated
+      .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
       .move_index                       (move_index[MAX_POSITIONS_LOG2-1:0]),
       .clear_moves                      (clear_moves));
 
-   /* evaluate AUTO_TEMPLATE (
-    .reset (soft_reset),
-    .board_in (initial_board[]),
-    .board_valid (force_eval),
-    );*/
-   evaluate #
-     (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH),
-      .EVAL_WIDTH (EVAL_WIDTH)
-      )
-   evaluate
-     (/*AUTOINST*/
-      // Outputs
-      .eval                             (eval[EVAL_WIDTH-1:0]),
-      .eval_valid                       (eval_valid),
-      // Inputs
-      .clk                              (clk),
-      .reset                            (soft_reset),            // Templated
-      .board_valid                      (force_eval),            // Templated
-      .board_in                         (initial_board[BOARD_WIDTH-1:0]), // Templated
-      .clear_eval                       (clear_eval));
-
    /* control AUTO_TEMPLATE (
+    .initial_move_eval (initial_eval_out[]),
     );*/
    control #
      (
-      .PIECE_WIDTH (PIECE_WIDTH),
-      .SIDE_WIDTH (SIDE_WIDTH),
-      .BOARD_WIDTH (BOARD_WIDTH),
       .EVAL_WIDTH (EVAL_WIDTH),
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
       )
@@ -197,15 +165,13 @@ module vchess_top;
      (/*AUTOINST*/
       // Outputs
       .soft_reset                       (soft_reset),
-      .new_board                        (new_board[BOARD_WIDTH-1:0]),
+      .new_board                        (new_board[`BOARD_WIDTH-1:0]),
       .new_board_valid                  (new_board_valid),
       .castle_mask                      (castle_mask[3:0]),
       .clear_moves                      (clear_moves),
       .en_passant_col                   (en_passant_col[3:0]),
       .white_to_move                    (white_to_move),
       .move_index                       (move_index[MAX_POSITIONS_LOG2-1:0]),
-      .clear_eval                       (clear_eval),
-      .force_eval                       (force_eval),
       .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
       .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
       .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),
@@ -217,12 +183,10 @@ module vchess_top;
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
-      .eval_valid                       (eval_valid),
-      .eval                             (eval[EVAL_WIDTH-1:0]),
       .initial_moves_ready              (initial_moves_ready),
       .initial_move_count               (initial_move_count[MAX_POSITIONS_LOG2-1:0]),
       .initial_move_ready               (initial_move_ready),
-      .initial_board                    (initial_board[BOARD_WIDTH-1:0]),
+      .initial_board                    (initial_board[`BOARD_WIDTH-1:0]),
       .initial_castle_mask              (initial_castle_mask[3:0]),
       .initial_en_passant_col           (initial_en_passant_col[3:0]),
       .initial_white_to_move            (initial_white_to_move),
@@ -231,8 +195,10 @@ module vchess_top;
       .initial_white_is_attacking       (initial_white_is_attacking[63:0]),
       .initial_black_is_attacking       (initial_black_is_attacking[63:0]),
       .initial_capture                  (initial_capture),
+      .initial_move_eval                (initial_eval_out[EVAL_WIDTH-1:0]), // Templated
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
+      .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),

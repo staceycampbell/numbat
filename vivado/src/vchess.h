@@ -51,7 +51,6 @@ typedef struct board_t {
 	uint32_t en_passant_col;
 	uint32_t castle_mask;
 	uint32_t white_to_move;
-	uint32_t eval_valid;
 	int32_t eval;
 	uint32_t black_in_check;
 	uint32_t white_in_check;
@@ -80,17 +79,15 @@ vchess_read(uint32_t reg)
 }
 
 static inline void
-vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves, uint32_t force_eval, uint32_t clear_eval)
+vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves)
 {
 	uint32_t val;
 	
 	soft_reset = (soft_reset != 0) << 31;
 	new_board_valid = (new_board_valid != 0) << 0;
 	clear_moves = (clear_moves != 0) << 1;
-	clear_eval = (clear_eval != 0) << 2;
-	force_eval = (force_eval != 0) << 3;
 
-	val = soft_reset | new_board_valid | clear_moves | clear_eval | force_eval;
+	val = soft_reset | new_board_valid | clear_moves;
 	vchess_write(0, val);
 }
 
@@ -120,21 +117,19 @@ vchess_write_board_row(uint32_t row, uint32_t row_pieces)
 }
 
 static inline uint32_t
-vchess_status(uint32_t *eval_valid, uint32_t *move_ready, uint32_t *moves_ready, uint32_t *mate, uint32_t *stalemate)
+vchess_status(uint32_t *move_ready, uint32_t *moves_ready, uint32_t *mate, uint32_t *stalemate)
 {
 	uint32_t val;
 
 	val = vchess_read(0);
 	if (mate)
-		*mate = (val & (1 << 8)) != 0;
+		*mate = (val & (1 << 5)) != 0;
 	if (stalemate)
-		*stalemate = (val & (1 << 7)) != 0;
-	if (eval_valid)
-		*eval_valid = (val & (1 << 6)) != 0;
+		*stalemate = (val & (1 << 4)) != 0;
 	if (move_ready)
-		*move_ready = (val & (1 << 5)) != 0;
+		*move_ready = (val & (1 << 3)) != 0;
 	if (moves_ready)
-		*moves_ready = (val & (1 << 4)) != 0;
+		*moves_ready = (val & (1 << 2)) != 0;
 
 	return val >> 4;
 }
@@ -208,11 +203,21 @@ vchess_board_status1(uint32_t *white_to_move, uint32_t *castle_mask, uint32_t *e
 }
 
 static inline int32_t
-vchess_eval(void)
+vchess_move_eval(void)
 {
 	int32_t val;
 
 	val = (int32_t)vchess_read(134);
+
+	return val;
+}
+
+static inline int32_t
+vchess_initial_eval(void)
+{
+	int32_t val;
+
+	val = (int32_t)vchess_read(3);
 
 	return val;
 }

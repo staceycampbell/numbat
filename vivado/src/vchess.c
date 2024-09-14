@@ -59,10 +59,9 @@ vchess_print_board(board_t *board)
 		}
 		xil_printf("\n");
 	}
-	xil_printf("%s to move, en passant col: %1X, castle mask: %1X", to_move[board->white_to_move], board->en_passant_col, board->castle_mask);
-	if (board->eval_valid)
-		xil_printf(", eval: %d, capture: %d", board->eval, board->capture);
-	xil_printf("\n");
+	xil_printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d, capture: %d\n",
+		   to_move[board->white_to_move], board->en_passant_col, board->castle_mask,
+		   board->eval, board->capture);
 	if (board->black_in_check)
 		xil_printf("Black in check\n");
 	if (board->white_in_check)
@@ -75,17 +74,17 @@ vchess_write_board(board_t *board)
 	int i;
 	uint32_t moves_ready;
 
-	vchess_write_control(1, 0, 1, 0, 1); // soft reset, clear moves, clear eval
-	vchess_write_control(0, 0, 0, 0, 0);
+	vchess_write_control(1, 0, 1); // soft reset, new board valid, clear moves
+	vchess_write_control(0, 0, 0);
 	for (i = 0; i < 8; ++i)
 		vchess_write_board_row(i, board->board[i]);
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
-	vchess_write_control(0, 1, 0, 0, 0); // new board valid bit set
-	vchess_write_control(0, 0, 0, 0, 0); // new board valid bit clear
+	vchess_write_control(0, 1, 0); // new board valid bit set
+	vchess_write_control(0, 0, 0); // new board valid bit clear
 	i = 0;
 	do
 	{
-		vchess_status(0, 0, &moves_ready, 0, 0);
+		vchess_status(0, &moves_ready, 0, 0);
 		++i;
 	} while (i < 1000 && ! moves_ready);
 	if (! moves_ready)
@@ -96,12 +95,12 @@ uint32_t
 vchess_read_board(board_t *board, uint32_t index)
 {
 	uint32_t move_count;
-	uint32_t eval_valid, move_ready, moves_ready;
+	uint32_t move_ready, moves_ready;
 	uint32_t y;
 	uint32_t status;
 
 	move_count = vchess_move_count();
-	status = vchess_status(&eval_valid, &move_ready, &moves_ready, 0, 0);
+	status = vchess_status(&move_ready, &moves_ready, 0, 0);
 	if (! moves_ready)
 	{
 		xil_printf("moves_ready not set\n");
@@ -113,8 +112,7 @@ vchess_read_board(board_t *board, uint32_t index)
 		return 1;
 	}
 	vchess_move_index(index);
-	status = vchess_status(0, &move_ready, 0, 0, 0);
-	vchess_write_control(0, 0, 0, 1, 0); // force eval
+	status = vchess_status(&move_ready, 0, 0, 0);
 	if (! move_ready)
 	{
 		xil_printf("move_ready not set: 0x%X\n", status);
@@ -125,15 +123,7 @@ vchess_read_board(board_t *board, uint32_t index)
 		board->board[y] = vchess_read_move_row(y);
 	vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture);
 	vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
-	status = vchess_status(&eval_valid, 0, 0, 0, 0);
-	if (! eval_valid)
-	{
-		xil_printf("eval_valid not set: 0x%X\n", status);
-		return 4;
-	}
-	board->eval_valid = 1;
-	board->eval = vchess_eval();
-	vchess_write_control(0, 0, 0, 0, 1); // clear eval
+	board->eval = vchess_move_eval();
 
 	return 0;
 }
@@ -172,7 +162,6 @@ vchess_init_board(board_t *board)
 	board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
 	board->castle_mask = 0xF;
 	board->white_to_move = 1;
-	board->eval_valid = 0;
 }
 
 void
