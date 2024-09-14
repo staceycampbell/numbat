@@ -133,12 +133,12 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
-   wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire                 white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire                               black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        black_is_attacking;     // From board_attack of board_attack.v
+   wire                               display_attacking_done; // From board_attack of board_attack.v
+   wire                               is_attacking_done;      // From board_attack of board_attack.v
+   wire                               white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                        white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
    wire signed [4:0]                  pawn_adv1_row [0:2];
@@ -365,9 +365,9 @@ module all_moves #
    localparam STATE_ATTACK_WAIT = 20;
    localparam STATE_LEGAL_MOVE = 21;
    localparam STATE_LEGAL_NEXT = 22;
-   localparam STATE_DONE = 255;
+   localparam STATE_DONE = 23;
 
-   reg [7:0] state = STATE_IDLE;
+   reg [4:0] state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -390,6 +390,7 @@ module all_moves #
            end
          STATE_INIT :
            begin
+              attack_test_valid <= 0;
               initial_board_check <= (white_to_move && white_in_check) || (black_to_move && black_in_check);
               legal_ram_wr_addr_init <= 1;
               ram_wr_addr_init <= 0;
@@ -647,7 +648,7 @@ module all_moves #
                 attack_test_castle_mask[`CASTLE_BLACK_LONG] <= 1'b0;
               if (attack_test_board[idx[7][7]+:PIECE_WIDTH] != `BLACK_ROOK || attack_test_board[idx[7][4]+:PIECE_WIDTH] != `BLACK_KING)
                 attack_test_castle_mask[`CASTLE_BLACK_SHORT] <= 1'b0;
-              attack_test <= {attack_test_capture, attack_test_en_passant_col, attack_test_castle_mask, attack_test_white_to_move, attack_test_board};
+              attack_test <= attack_test_board;
               attack_test_valid <= 1;
               ram_rd_addr <= ram_rd_addr + 1;
               state <= STATE_ATTACK_WAIT;
