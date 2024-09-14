@@ -1,5 +1,10 @@
 #include <stdint.h>
+
+#if ! defined(EXCLUDE_VITIS)
 #include <xparameters.h>
+#else
+#define XPAR_CTRL0_AXI_BASEADDR 0
+#endif
 
 #define EMPTY_POSN 0
 
