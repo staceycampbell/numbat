@@ -4,8 +4,14 @@ all:
 	@echo clean - remove software generated files
 	@echo distclean - remove hardware and software generated files
 
-create_hardware:
+create_hardware: ../attack_mask.vh
 	vivado -mode batch -source scripts/create_hardware.tcl
+
+../attack_mask.vh: ../attack
+	../attack > ../attack_mask.vh
+
+../attack: ../attack.c
+	(cd ..; $(MAKE) attack)
 
 create_software:
 	xsct scripts/create_software.tcl

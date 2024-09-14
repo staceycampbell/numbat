@@ -324,7 +324,7 @@ main(void)
                                         }
                                 }
                                 assert(idx < ATTACK_COUNT);
-                                printf("if (ATTACKER == %s && ROW = %d && COL == %d)\nbegin\n", attacker[color], row, col);
+                                printf("if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker[color], row, col);
                                 for (idx = 0; idx < ATTACK_COUNT; ++idx)
                                 {
                                         printf("attack_mask[%2d] = {\n", idx);
