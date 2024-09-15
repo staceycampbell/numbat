@@ -36,6 +36,83 @@ print_ip_settings(ip_addr_t * ip, ip_addr_t * mask, ip_addr_t * gw)
 }
 #endif
 
+static void
+fen_print(board_t *board)
+{
+	int row, col, empty, i;
+	uint32_t piece;
+	char en_passant_col;
+	char piece_char[1 << PIECE_BITS];
+
+	for (i = 0; i < (1 << PIECE_BITS); ++i)
+		piece_char[i] = '?';
+	piece_char[WHITE_PAWN] = 'P';
+	piece_char[WHITE_ROOK] = 'R';
+	piece_char[WHITE_KNIT] = 'N';
+	piece_char[WHITE_BISH] = 'B';
+	piece_char[WHITE_KING] = 'K';
+	piece_char[WHITE_QUEN] = 'Q';
+	piece_char[BLACK_PAWN] = 'p';
+	piece_char[BLACK_ROOK] = 'r';
+	piece_char[BLACK_KNIT] = 'n';
+	piece_char[BLACK_BISH] = 'b';
+	piece_char[BLACK_KING] = 'k';
+	piece_char[BLACK_QUEN] = 'q';
+
+	for (row = 7; row >= 0; --row)
+	{
+		empty = 0;
+		for (col = 0; col < 8; ++col)
+		{
+			piece = vchess_get_piece(board, row, col);
+			if (piece == EMPTY_POSN)
+				++empty;
+			else
+			{
+				if (empty > 0)
+				{
+					xil_printf("%d", empty);
+					empty = 0;
+				}
+				xil_printf("%c", piece_char[piece]);
+			}
+		}
+		if (empty > 0)
+			xil_printf("%d", empty);
+		if (row > 0)
+			xil_printf("/");
+	}
+	xil_printf(" ");
+// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+	if (board->white_to_move)
+		xil_printf("w");
+	else
+		xil_printf("b");
+	xil_printf(" ");
+	if (board->castle_mask == 0)
+		xil_printf("-");
+	if ((board->castle_mask & CASTLE_WHITE_SHORT) != 0)
+		xil_printf("K");
+	if ((board->castle_mask & CASTLE_WHITE_LONG) != 0)
+		xil_printf("Q");
+	if ((board->castle_mask & CASTLE_BLACK_SHORT) != 0)
+		xil_printf("k");
+	if ((board->castle_mask & CASTLE_BLACK_LONG) != 0)
+		xil_printf("q");
+	xil_printf(" ");
+	if ((board->en_passant_col & (1 << EN_PASSANT_VALID_BIT)) == 0)
+		xil_printf("-");
+	else
+	{
+		en_passant_col = 'a' + (board->en_passant_col & 0x7);
+		if (board->white_to_move)
+			xil_printf("%c6", en_passant_col);
+		else
+			xil_printf("%c3", en_passant_col);
+	}
+	xil_printf(" 0 0\n"); // tbd
+}
+
 static int
 fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
 {
@@ -234,6 +311,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 best_board = nm_top(&board);
                 vchess_print_board(&best_board, 0);
+		fen_print(&best_board);
         }
         else
         {

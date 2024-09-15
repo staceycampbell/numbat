@@ -247,5 +247,6 @@ extern void vchess_init_board(board_t *board);
 extern void vchess_print_board(board_t *board, uint32_t initial_board);
 extern uint32_t vchess_read_board(board_t *board, uint32_t index);
 extern void vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece);
+extern uint32_t vchess_get_piece(board_t *board, uint32_t row, uint32_t col);
 
 extern board_t nm_top(board_t *board);

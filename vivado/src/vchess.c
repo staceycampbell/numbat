@@ -5,8 +5,8 @@
 
 static char piece_char[1 << PIECE_BITS];
 
-static uint32_t
-get_piece(board_t *board, uint32_t row, uint32_t col)
+uint32_t
+vchess_get_piece(board_t *board, uint32_t row, uint32_t col)
 {
 	uint32_t row_contents, shift, piece;
 
@@ -35,8 +35,8 @@ vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t
 {
 	uint32_t piece, occupied;
 
-	piece = get_piece(board, row_from, col_from);
-	occupied = get_piece(board, row_to, col_to) != EMPTY_POSN;
+	piece = vchess_get_piece(board, row_from, col_from);
+	occupied = vchess_get_piece(board, row_to, col_to) != EMPTY_POSN;
 	vchess_place(board, row_from, col_from, EMPTY_POSN);
 	vchess_place(board, row_to, col_to, piece);
 
@@ -55,7 +55,7 @@ vchess_print_board(board_t *board, uint32_t initial_board)
 	{
 		for (x = 0; x < 8; ++x)
 		{
-			piece = get_piece(board, y, x);
+			piece = vchess_get_piece(board, y, x);
 			xil_printf("%c ", piece_char[piece]);
 		}
 		xil_printf("\n");
