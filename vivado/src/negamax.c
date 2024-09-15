@@ -7,7 +7,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define DEPTH_MAX 4
+#define DEPTH_MAX 5
 #define LARGE_EVAL (1 << 15)
 
 static board_t root_node_boards[MAX_POSITIONS];
@@ -43,6 +43,34 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
 	return move_count;
 }
 
+void
+nm_sort(board_t **board_ptr, uint32_t move_count, uint32_t white_to_move)
+{
+	int i, j;
+	board_t *tmp_board_ptr;
+
+	if (white_to_move)
+	{
+		for (i = 0; i < move_count - 1; ++i)
+			for (j = i + 1; j < move_count; ++j)
+				if (board_ptr[i]->eval < board_ptr[j]->eval)
+				{
+					tmp_board_ptr = board_ptr[i];
+					board_ptr[i] = board_ptr[j];
+					board_ptr[j] = tmp_board_ptr;
+				}
+	}
+	else
+		for (i = 0; i < move_count - 1; ++i)
+			for (j = i + 1; j < move_count; ++j)
+				if (board_ptr[i]->eval > board_ptr[j]->eval)
+				{
+					tmp_board_ptr = board_ptr[i];
+					board_ptr[i] = board_ptr[j];
+					board_ptr[j] = tmp_board_ptr;
+				}
+}
+
 static inline int32_t
 valmax(int32_t a, int32_t b)
 {
@@ -58,6 +86,7 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta)
 	int32_t value;
 	uint32_t status;
 	board_t board_list[MAX_POSITIONS];
+	board_t *board_ptr[MAX_POSITIONS];
 
 	++nodes_searched;
 	vchess_write_board(board);
@@ -87,12 +116,15 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta)
 			xil_printf("%s: problem reading boards (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 			return 0;
 		}
+		board_ptr[index] = &board_list[index];
 	}
+	nm_sort(board_ptr, move_count, board->white_to_move);
+
 	value = -LARGE_EVAL;
 	index = 0;
 	do
 	{
-		value = valmax(value, -negamax(&board_list[index], depth - 1, -beta, -alpha));
+		value = valmax(value, -negamax(board_ptr[index], depth - 1, -beta, -alpha));
 		alpha = valmax(alpha, value);
 		++index;
 	} while (index < move_count && alpha < beta);
