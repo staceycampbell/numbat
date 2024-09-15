@@ -5,7 +5,10 @@
 #include <xil_io.h>
 #include "vchess.h"
 
+#pragma GCC optimize ("O3")
+
 #define DEPTH_MAX 4
+#define LARGE_EVAL (1 << 15)
 
 static board_t root_node_boards[MAX_POSITIONS];
 static uint32_t nodes_searched;
@@ -40,11 +43,19 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
 	return move_count;
 }
 
+static inline int32_t
+valmax(int32_t a, int32_t b)
+{
+	if (a > b)
+		return a;
+	return b;
+}
+
 static int32_t
-negamax(board_t *board, int32_t depth)
+negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta)
 {
 	uint32_t move_count, index;
-	int32_t value, best_score;
+	int32_t value;
 	uint32_t status;
 	board_t board_list[MAX_POSITIONS];
 
@@ -77,17 +88,16 @@ negamax(board_t *board, int32_t depth)
 			return 0;
 		}
 	}
-	best_score = INT32_MIN;
+	value = -LARGE_EVAL;
 	index = 0;
 	do
 	{
-		value = -negamax(&board_list[index], depth - 1);
-		if (value > best_score)
-			best_score = value;
+		value = valmax(value, -negamax(&board_list[index], depth - 1, -beta, -alpha));
+		alpha = valmax(alpha, value);
 		++index;
-	} while (index < move_count);
+	} while (index < move_count && alpha < beta);
 
-	return best_score;
+	return value;
 }
 
 board_t
@@ -126,10 +136,10 @@ nm_top(board_t *board)
 		xil_printf("%s: bad call to nm_load_positions (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 		return *board;
 	}
-	best_evaluation = INT32_MIN;
+	best_evaluation = -LARGE_EVAL;
 	for (i = 0; i < move_count; ++i)
 	{
-		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1);
+		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL);
 		if (evaluate_move > best_evaluation)
 		{
 			best_evaluation = evaluate_move;
