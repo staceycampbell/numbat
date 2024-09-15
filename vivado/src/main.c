@@ -266,6 +266,26 @@ process_serial_port(uint8_t cmdbuf[BUF_SIZE], uint32_t * index)
 }
 
 static void
+do_both(board_t *board)
+{
+	uint32_t move_count;
+	board_t best_board;
+
+	best_board = *board;
+	do
+	{
+                vchess_write_board(&best_board);
+		move_count = vchess_move_count();
+		if (move_count > 0)
+		{
+			best_board = nm_top(&best_board);
+			move_count = vchess_move_count();
+			vchess_print_board(&best_board, 1);
+		}
+	} while (move_count > 0);
+}
+
+static void
 process_cmd(uint8_t cmd[BUF_SIZE])
 {
         int /* len, */ move_index;
@@ -313,6 +333,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 vchess_print_board(&best_board, 0);
 		fen_print(&best_board);
         }
+	else if (strcmp((char *)str, "both") == 0)
+	{
+		do_both(&board);
+	}
         else
         {
                 fen_board(cmd, &board);
