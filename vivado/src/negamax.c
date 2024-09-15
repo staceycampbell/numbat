@@ -41,12 +41,12 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
 }
 
 static int32_t
-negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
+negamax(board_t *board, int32_t depth)
 {
 	uint32_t move_count, index;
 	int32_t value, best_score;
 	uint32_t status;
-	board_t board_stack[MAX_POSITIONS];
+	board_t board_list[MAX_POSITIONS];
 
 	++nodes_searched;
 	vchess_write_board(board);
@@ -54,11 +54,20 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 	if (depth == 0 || move_count == 0)
 	{
 		value = vchess_initial_eval();
+		if (value < -3000 || value > 3000)
+		{
+			if (value < -3000)
+				value += DEPTH_MAX - depth;
+			else
+				value -= DEPTH_MAX - depth;
+		}
+		if (! board->white_to_move)
+			value = -value;
 		return value;
 	}
 	for (index = 0; index < move_count; ++index)
 	{
-		status = vchess_read_board(&board_stack[index], index);
+		status = vchess_read_board(&board_list[index], index);
 		if (status)
 		{
 			xil_printf("%s: problem reading boards (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -69,13 +78,9 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 	index = 0;
 	do
 	{
-		value = -negamax(&board_stack[index], depth - 1, -b, -a);
-		if (value >= b)
-			return value;
+		value = -negamax(&board_list[index], depth - 1);
 		if (value > best_score)
 			best_score = value;
-		if (value > a)
-			a = value;
 		++index;
 	} while (index < move_count);
 
@@ -121,7 +126,7 @@ nm_top(board_t *board)
 	best_evaluation = INT32_MIN;
 	for (i = 0; i < move_count; ++i)
 	{
-		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1, INT32_MIN, INT32_MAX);
+		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1);
 		if (evaluate_move > best_evaluation)
 		{
 			best_evaluation = evaluate_move;
