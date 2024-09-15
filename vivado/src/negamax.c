@@ -51,16 +51,19 @@ negamax(board_t *board, int32_t depth)
 	++nodes_searched;
 	vchess_write_board(board);
 	move_count = vchess_move_count();
-	if (depth == 0 || move_count == 0)
+	value = vchess_initial_eval();
+	if (move_count == 0) // mate or stalemate
 	{
-		value = vchess_initial_eval();
-		if (value < -3000 || value > 3000)
-		{
-			if (value < -3000)
-				value += DEPTH_MAX - depth;
-			else
-				value -= DEPTH_MAX - depth;
-		}
+		if (value < 0) // white mated
+			value += DEPTH_MAX - depth; // fastest path to black win, slowest for white loss
+		else if (value > 0) // black mated
+			value -= DEPTH_MAX - depth; // fastest path to white win, slowest for black loss
+		if (! board->white_to_move)
+			value = -value;
+		return value;
+	}
+	if (depth == 0)
+	{
 		if (! board->white_to_move)
 			value = -value;
 		return value;
