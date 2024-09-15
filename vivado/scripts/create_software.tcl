@@ -18,6 +18,7 @@ set sw_src_path [file normalize ../src]
 set sw_include_path [file normalize ../src]
 app create -name $sw_app_name -platform vchess_standalone -domain standalone_domain -template {Empty Application(C)}
 importsources -name $sw_app_name -path $sw_src_path -soft-link
+file link -symbolic $sw_app_name/src/lscript.ld $sw_src_path/lscript.ld
 app config -name $sw_app_name include-path $sw_include_path
 app config -name $sw_app_name -add libraries m
 app build -name $sw_app_name
