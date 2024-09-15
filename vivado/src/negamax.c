@@ -7,7 +7,6 @@
 
 #define DEPTH_MAX 4
 
-static uint32_t board_count[DEPTH_MAX];
 static board_t root_node_boards[MAX_POSITIONS];
 static uint32_t nodes_searched;
 
@@ -66,7 +65,6 @@ negamax(board_t *board, int32_t depth, int32_t a, int32_t b)
 			return 0;
 		}
 	}
-	board_count[depth] = move_count;
 	best_score = INT32_MIN;
 	index = 0;
 	do
