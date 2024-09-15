@@ -16,12 +16,12 @@ module evaluate #
     output reg                 eval_valid
     );
 
-   localparam VALUE_PAWN =   100;
-   localparam VALUE_KNIT =   310;
-   localparam VALUE_BISH =   320;
-   localparam VALUE_ROOK =   500;
-   localparam VALUE_QUEN =   900;
-   localparam VALUE_KING = 10000;
+   localparam VALUE_PAWN = 100;
+   localparam VALUE_KNIT = 310;
+   localparam VALUE_BISH = 320;
+   localparam VALUE_ROOK = 500;
+   localparam VALUE_QUEN = 900;
+   localparam VALUE_KING = `GLOBAL_VALUE_KING;
 
    reg [`BOARD_WIDTH - 1:0]    board;
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];

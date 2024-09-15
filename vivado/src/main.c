@@ -191,19 +191,19 @@ process_serial_port(uint8_t cmdbuf[BUF_SIZE], uint32_t * index)
 static void
 process_cmd(uint8_t cmd[BUF_SIZE])
 {
-        int len, move_index;
+        int /* len, */ move_index;
         char str[BUF_SIZE];
         int arg1, arg2, arg3;
         static board_t board;
-	board_t best_board;
+        board_t best_board;
         uint32_t status;
 
         xil_printf("cmd: %s\n", cmd);
+#if 0
         len = strlen((char *)cmd);
-	#if 0
         tcp_write(cmd_pcb, cmd, len, TCP_WRITE_FLAG_COPY);
         tcp_write(cmd_pcb, "\n", 1, TCP_WRITE_FLAG_COPY);
-	#endif
+#endif
         sscanf((char *)cmd, "%s %d %d %d\n", str, &arg1, &arg2, &arg3);
 
         if (strcmp((char *)str, "status") == 0)
@@ -231,11 +231,11 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 vchess_print_board(&board, 1);
         }
         else if (strcmp((char *)str, "nm") == 0)
-	{
-		best_board = nm_top(&board);
-		vchess_print_board(&best_board, 0);
-	}
-	else
+        {
+                best_board = nm_top(&board);
+                vchess_print_board(&best_board, 0);
+        }
+        else
         {
                 fen_board(cmd, &board);
                 vchess_write_board(&board);
@@ -246,15 +246,15 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 int
 main(void)
 {
-        ip_addr_t ipaddr, netmask, gw;
-        unsigned char mac_ethernet_address[] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x03 };
+        // ip_addr_t ipaddr, netmask, gw;
+        // unsigned char mac_ethernet_address[] = { 0x00, 0x0a, 0x35, 0x00, 0x01, 0x03 };
         uint8_t cmdbuf[BUF_SIZE];
         uint32_t index;
-        uint32_t ip_status, com_status;
+        uint32_t /* ip_status, */ com_status;
 
-	#if 0
+#if 0
         cmd_netif = &server_netif;
-	#endif
+#endif
 
         init_platform();
 
@@ -282,8 +282,10 @@ main(void)
         vchess_init();
 
         index = 0;
-        ip_status = 0;
+        // ip_status = 0;
         com_status = 0;
+
+        xil_printf("ready\n");
 
         while (1)
         {
@@ -303,11 +305,11 @@ main(void)
                 xemacif_input(cmd_netif);
                 ip_status = cmd_transfer_data(cmdbuf, &index);
 #endif
-                if (/* ip_status || */ com_status)
+                if ( /* ip_status || */ com_status)
                 {
                         process_cmd(cmdbuf);
                         index = 0;
-                        ip_status = 0;
+                        // ip_status = 0;
                         com_status = 0;
                 }
         }

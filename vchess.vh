@@ -31,6 +31,7 @@
 `define SIDE_WIDTH (`PIECE_WIDTH * 8)
 `define BOARD_WIDTH (`SIDE_WIDTH * 8)
 
+`define GLOBAL_VALUE_KING 10000
 
 `define PIECE_MASK_BITS 15
 

@@ -140,14 +140,14 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
-   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
-   wire                 eval_valid;             // From evaluate of evaluate.v
-   wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire                 white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire                                  black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                           black_is_attacking;     // From board_attack of board_attack.v
+   wire                                  display_attacking_done; // From board_attack of board_attack.v
+   wire signed [EVAL_WIDTH-1:0]          eval;           // From evaluate of evaluate.v
+   wire                                  eval_valid;             // From evaluate of evaluate.v
+   wire                                  is_attacking_done;      // From board_attack of board_attack.v
+   wire                                  white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                           white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
    wire signed [4:0]                     pawn_adv1_row [0:2];
@@ -718,6 +718,13 @@ module all_moves #
               clear_attack <= 0;
               if (move_count == 0)
                 begin
+                   if (initial_board_check)
+                     if (white_to_move)
+                       initial_eval <= -(`GLOBAL_VALUE_KING); // white mated
+                     else
+                       initial_eval <= `GLOBAL_VALUE_KING; // black mated
+                   else
+                     initial_eval <= 0; // stalemate
                    initial_mate <= initial_board_check;
                    initial_stalemate <= ~initial_board_check;
                 end
