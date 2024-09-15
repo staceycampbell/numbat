@@ -91,13 +91,13 @@ fen_print(board_t *board)
 	xil_printf(" ");
 	if (board->castle_mask == 0)
 		xil_printf("-");
-	if ((board->castle_mask & CASTLE_WHITE_SHORT) != 0)
+	if ((board->castle_mask & (1 << CASTLE_WHITE_SHORT)) != 0)
 		xil_printf("K");
-	if ((board->castle_mask & CASTLE_WHITE_LONG) != 0)
+	if ((board->castle_mask & (1 << CASTLE_WHITE_LONG)) != 0)
 		xil_printf("Q");
-	if ((board->castle_mask & CASTLE_BLACK_SHORT) != 0)
+	if ((board->castle_mask & (1 << CASTLE_BLACK_SHORT)) != 0)
 		xil_printf("k");
-	if ((board->castle_mask & CASTLE_BLACK_LONG) != 0)
+	if ((board->castle_mask & (1 << CASTLE_BLACK_LONG)) != 0)
 		xil_printf("q");
 	xil_printf(" ");
 	if ((board->en_passant_col & (1 << EN_PASSANT_VALID_BIT)) == 0)
