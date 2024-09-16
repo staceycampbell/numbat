@@ -279,10 +279,13 @@ do_both(board_t *board)
 		if (move_count > 0)
 		{
 			best_board = nm_top(&best_board);
+			vchess_write_board(&best_board);
 			move_count = vchess_move_count();
-			vchess_print_board(&best_board, 1);
 		}
+		vchess_print_board(&best_board, 1);
+		fen_print(&best_board);
 	} while (move_count > 0);
+	xil_printf("both done\n");
 }
 
 static void
