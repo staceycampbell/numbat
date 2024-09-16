@@ -12,6 +12,7 @@
 
 static board_t root_node_boards[MAX_POSITIONS];
 static uint32_t nodes_searched;
+static board_t board_stack[DEPTH_MAX][MAX_POSITIONS];
 
 static int32_t
 nm_load_positions(board_t boards[MAX_POSITIONS])
@@ -80,12 +81,11 @@ valmax(int32_t a, int32_t b)
 }
 
 static int32_t
-negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta)
+negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply)
 {
 	uint32_t move_count, index;
 	int32_t value;
 	uint32_t status;
-	board_t board_list[MAX_POSITIONS];
 	board_t *board_ptr[MAX_POSITIONS];
 
 	++nodes_searched;
@@ -108,23 +108,29 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta)
 			value = -value;
 		return value;
 	}
+	if (ply >= DEPTH_MAX)
+	{
+		xil_printf("%s: ply >= DEPTH_MAX\n", __PRETTY_FUNCTION__);
+		return 0;
+	}
 	for (index = 0; index < move_count; ++index)
 	{
-		status = vchess_read_board(&board_list[index], index);
+		status = vchess_read_board(&board_stack[ply][index], index);
 		if (status)
 		{
 			xil_printf("%s: problem reading boards (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 			return 0;
 		}
-		board_ptr[index] = &board_list[index];
+		board_ptr[index] = &board_stack[ply][index];
 	}
 	nm_sort(board_ptr, move_count, board->white_to_move);
 
 	value = -LARGE_EVAL;
 	index = 0;
+	++ply;
 	do
 	{
-		value = valmax(value, -negamax(board_ptr[index], depth - 1, -beta, -alpha));
+		value = valmax(value, -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply));
 		alpha = valmax(alpha, value);
 		++index;
 	} while (index < move_count && alpha < beta);
@@ -135,7 +141,7 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta)
 board_t
 nm_top(board_t *board)
 {
-	int32_t i, status;
+	int32_t i, status, ply;
 	uint32_t moves_ready, move_count, elapsed_ticks;
 	double elapsed_time, nps;
 	int32_t evaluate_move, best_evaluation;
@@ -168,10 +174,11 @@ nm_top(board_t *board)
 		xil_printf("%s: bad call to nm_load_positions (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 		return *board;
 	}
+	ply = 0;
 	best_evaluation = -LARGE_EVAL;
 	for (i = 0; i < move_count; ++i)
 	{
-		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL);
+		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply);
 		if (evaluate_move > best_evaluation)
 		{
 			best_evaluation = evaluate_move;
