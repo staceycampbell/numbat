@@ -78,7 +78,7 @@ module all_moves #
    reg [63:0]                            legal_white_is_attacking_ram_wr;
    reg [63:0]                            legal_black_is_attacking_ram_wr;
    reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
-   reg                                   legal_ram_wr;
+   reg                                   legal_ram_wr = 0;
 
    reg [MAX_POSITIONS_LOG2 - 1:0]        move_index_r;
 
