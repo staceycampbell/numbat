@@ -1,6 +1,6 @@
 CFLAGS := -Wall -O2
 SRC := tb.sv display_board.sv is_attacking.sv display_is_attacking.sv board_attack.sv all_moves.sv \
-	evaluate.sv
+	evaluate.sv rep_det.sv rep_det_sub.sv
 
 all: tb
 
