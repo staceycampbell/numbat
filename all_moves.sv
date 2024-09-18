@@ -15,7 +15,6 @@ module all_moves #
     input                                white_to_move_in,
     input [3:0]                          castle_mask_in,
     input [3:0]                          en_passant_col_in,
-
    
     input [`BOARD_WIDTH-1:0]             repdet_board_in,
     input [3:0]                          repdet_castle_mask_in,
@@ -29,6 +28,7 @@ module all_moves #
     output reg                           initial_mate = 0,
     output reg                           initial_stalemate = 0,
     output reg signed [EVAL_WIDTH - 1:0] initial_eval,
+    output reg                           initial_thrice_rep = 0,
 
     output reg                           moves_ready,
     output reg                           move_ready,
@@ -143,15 +143,17 @@ module all_moves #
    reg [1:0]                             castle_long_legal;
    reg [2:0]                             castle_row [0:1];
    
-   reg [`BOARD_WIDTH - 1:0]              rd_board_0_in;
-   reg                                   rd_board_0_valid = 0;
-   reg [`BOARD_WIDTH - 1:0]              rd_board_1_in;
-   reg                                   rd_board_1_valid = 0;
-   reg [3:0]                             rd_castle_mask_0_in;
-   reg [3:0]                             rd_castle_mask_1_in;
-   reg                                   rd_clear_repdet_0 = 0;
-   reg                                   rd_clear_repdet_1 = 0;
-
+   reg [`BOARD_WIDTH - 1:0]              rd_ram_board_in;
+   reg [3:0]                             rd_ram_castle_mask_in;
+   reg [REPDET_WIDTH - 1:0]              rd_ram_depth_in;
+   reg [REPDET_WIDTH - 1:0]              rd_ram_wr_addr_in;
+   reg                                   rd_ram_wr_en;
+   
+   reg [`BOARD_WIDTH - 1:0]              rd_board_in;
+   reg                                   rd_board_valid;
+   reg [3:0]                             rd_castle_mask_in;
+   reg                                   rd_clear_sample;
+   
    // should be empty
    /*AUTOREGINPUT*/
 
@@ -163,10 +165,8 @@ module all_moves #
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire                 rd_board_0_three_move_rep;// From rep_det of rep_det.v
-   wire                 rd_board_0_three_move_rep_valid;// From rep_det of rep_det.v
-   wire                 rd_board_1_three_move_rep;// From rep_det of rep_det.v
-   wire                 rd_board_1_three_move_rep_valid;// From rep_det of rep_det.v
+   wire                 rd_thrice_rep;          // From rep_det of rep_det.v
+   wire                 rd_thrice_rep_valid;    // From rep_det of rep_det.v
    wire                 white_in_check;         // From board_attack of board_attack.v
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
@@ -415,6 +415,22 @@ module all_moves #
 
               attack_test <= board_in;
               attack_test_valid <= board_valid;
+
+              // upstream populates thrice repetition ram while idle and
+              // before asserting board valid
+              rd_ram_board_in <= repdet_board_in;
+              rd_ram_castle_mask_in <= repdet_castle_mask_in;
+              rd_ram_wr_addr_in <= repdet_wr_addr_in;
+              rd_ram_wr_en <= repdet_wr_en;
+              rd_ram_depth_in <= repdet_depth_in;
+              
+              rd_board_in <= board_in;
+              rd_board_valid <= board_valid;
+              rd_castle_mask_in <= castle_mask_in;
+              rd_clear_sample <= 0;
+
+              initial_thrice_rep <= 0;
+              
               ram_wr_addr_init <= 1;
               clear_eval <= 0;
               clear_attack <= 0;
@@ -658,11 +674,21 @@ module all_moves #
            begin
               ram_wr <= 0;
               capture_ram_wr <= 0;
-              if (ram_wr_addr == 0)
-                state <= STATE_DONE; // no moves
               legal_ram_wr_addr_init <= 1;
               ram_rd_addr <= 0;
-              state <= STATE_LEGAL_INIT;
+              
+              if (ram_wr_addr == 0)
+                state <= STATE_DONE; // no moves, mate or stalemate
+              
+              // wait for initial board threefold repetition test to complete
+              if (rd_thrice_rep_valid)
+                if (rd_thrice_rep)
+                  begin
+                     initial_thrice_rep <= 1;
+                     state <= STATE_DONE; // threefold repetition
+                  end
+                else
+                  state <= STATE_LEGAL_INIT;
            end
          STATE_LEGAL_INIT :
            begin
@@ -809,7 +835,6 @@ module all_moves #
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),
     .reset (reset),
-    .repdet_\(.*\) (repdet_\1[]),
     .\(.*\) (rd_\1[]),
     );*/
    rep_det #
@@ -819,26 +844,20 @@ module all_moves #
    rep_det
      (/*AUTOINST*/
       // Outputs
-      .board_0_three_move_rep           (rd_board_0_three_move_rep), // Templated
-      .board_0_three_move_rep_valid     (rd_board_0_three_move_rep_valid), // Templated
-      .board_1_three_move_rep           (rd_board_1_three_move_rep), // Templated
-      .board_1_three_move_rep_valid     (rd_board_1_three_move_rep_valid), // Templated
+      .thrice_rep                       (rd_thrice_rep),         // Templated
+      .thrice_rep_valid                 (rd_thrice_rep_valid),   // Templated
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (reset),                 // Templated
-      .board_0_in                       (rd_board_0_in[`BOARD_WIDTH-1:0]), // Templated
-      .castle_mask_0_in                 (rd_castle_mask_0_in[3:0]), // Templated
-      .board_0_valid                    (rd_board_0_valid),      // Templated
-      .clear_repdet_0                   (rd_clear_repdet_0),     // Templated
-      .board_1_in                       (rd_board_1_in[`BOARD_WIDTH-1:0]), // Templated
-      .castle_mask_1_in                 (rd_castle_mask_1_in[3:0]), // Templated
-      .board_1_valid                    (rd_board_1_valid),      // Templated
-      .clear_repdet_1                   (rd_clear_repdet_1),     // Templated
-      .repdet_board_in                  (repdet_board_in[`BOARD_WIDTH-1:0]), // Templated
-      .repdet_castle_mask_in            (repdet_castle_mask_in[3:0]), // Templated
-      .repdet_wr_addr_in                (repdet_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
-      .repdet_wr_en                     (repdet_wr_en),          // Templated
-      .repdet_depth_in                  (repdet_depth_in[REPDET_WIDTH-1:0])); // Templated
+      .board_in                         (rd_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .castle_mask_in                   (rd_castle_mask_in[3:0]), // Templated
+      .board_valid                      (rd_board_valid),        // Templated
+      .clear_sample                     (rd_clear_sample),       // Templated
+      .ram_board_in                     (rd_ram_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .ram_castle_mask_in               (rd_ram_castle_mask_in[3:0]), // Templated
+      .ram_wr_addr_in                   (rd_ram_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
+      .ram_wr_en                        (rd_ram_wr_en),          // Templated
+      .ram_depth_in                     (rd_ram_depth_in[REPDET_WIDTH-1:0])); // Templated
 
 endmodule
 

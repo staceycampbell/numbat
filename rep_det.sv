@@ -8,109 +8,107 @@ module rep_det #
     input                      clk,
     input                      reset,
 
-    input [`BOARD_WIDTH - 1:0] board_0_in,
-    input [3:0]                castle_mask_0_in,
-    input                      board_0_valid,
+    input [`BOARD_WIDTH - 1:0] board_in,
+    input [3:0]                castle_mask_in,
+    input                      board_valid,
 
-    input                      clear_repdet_0,
+    input                      clear_sample,
 
-    input [`BOARD_WIDTH - 1:0] board_1_in,
-    input [3:0]                castle_mask_1_in,
-    input                      board_1_valid,
+    input [`BOARD_WIDTH - 1:0] ram_board_in,
+    input [3:0]                ram_castle_mask_in,
+    input [REPDET_WIDTH - 1:0] ram_wr_addr_in,
+    input                      ram_wr_en,
+    input [REPDET_WIDTH - 1:0] ram_depth_in,
 
-    input                      clear_repdet_1,
-
-    input [`BOARD_WIDTH - 1:0] repdet_board_in,
-    input [3:0]                repdet_castle_mask_in,
-    input [REPDET_WIDTH - 1:0] repdet_wr_addr_in,
-    input                      repdet_wr_en,
-    input [REPDET_WIDTH - 1:0] repdet_depth_in,
-
-    output                     board_0_three_move_rep,
-    output                     board_0_three_move_rep_valid,
-   
-    output                     board_1_three_move_rep,
-    output                     board_1_three_move_rep_valid
+    output reg                 thrice_rep,
+    output reg                 thrice_rep_valid
     );
 
    localparam RAM_WIDTH = `BOARD_WIDTH + 4;
    localparam RAM_COUNT = 1 << REPDET_WIDTH;
    
-   reg [RAM_WIDTH - 1:0]       repdet_0_read;
-   reg [RAM_WIDTH - 1:0]       repdet_1_read;
+   reg [RAM_WIDTH - 1:0]       board_and_castle_mask;
+   reg [REPDET_WIDTH - 1:0]    counter;
+   reg [REPDET_WIDTH - 1:0]    ram_depth_te;
+   reg [RAM_WIDTH - 1:0]       ram_read;
+   reg [REPDET_WIDTH - 1:0]    ram_rd_addr;
    
-   reg [RAM_WIDTH - 1:0]       repdet_table [0:RAM_COUNT - 1]; // infer dual port, ultraram compatible
+   reg [RAM_WIDTH - 1:0]       ram_table [0:RAM_COUNT - 1];
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
-   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [REPDET_WIDTH-1:0] repdet_0_rd_addr;    // From rep_det_sub_0 of rep_det_sub.v
-   wire [REPDET_WIDTH-1:0] repdet_1_rd_addr;    // From rep_det_sub_1 of rep_det_sub.v
-   // End of automatics
 
    always @(posedge clk)
      begin
-        repdet_0_read <= repdet_table[repdet_0_rd_addr];
-        repdet_1_read <= repdet_table[repdet_1_rd_addr];
+        ram_read <= ram_table[ram_rd_addr];
 
-        if (repdet_wr_en)
-          repdet_table[repdet_wr_addr_in] <= {repdet_castle_mask_in, repdet_board_in};
+        if (ram_wr_en)
+          ram_table[ram_wr_addr_in] <= {ram_castle_mask_in, ram_board_in};
      end
 
-   /* rep_det_sub AUTO_TEMPLATE (
-    .repdet_read (repdet_@_read[]),
-    .board_in (board_@_in[]),
-    .castle_mask_in (castle_mask_@_in[]),
-    .board_valid (board_@_valid),
-    .clear_repdet (clear_repdet_@),
-    .repdet_rd_addr (repdet_@_rd_addr[]),
-    .board_three_move_rep (board_@_three_move_rep[]),
-    .board_three_move_rep_valid (board_@_three_move_rep_valid),
-    );*/
-   rep_det_sub #
-     (
-      .REPDET_WIDTH (REPDET_WIDTH),
-      .RAM_WIDTH (RAM_WIDTH)
-      )
-   rep_det_sub_0
-     (/*AUTOINST*/
-      // Outputs
-      .repdet_rd_addr                   (repdet_0_rd_addr[REPDET_WIDTH-1:0]), // Templated
-      .board_three_move_rep             (board_0_three_move_rep), // Templated
-      .board_three_move_rep_valid       (board_0_three_move_rep_valid), // Templated
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .board_in                         (board_0_in[`BOARD_WIDTH-1:0]), // Templated
-      .castle_mask_in                   (castle_mask_0_in[3:0]), // Templated
-      .board_valid                      (board_0_valid),         // Templated
-      .repdet_depth_in                  (repdet_depth_in[REPDET_WIDTH-1:0]),
-      .clear_repdet                     (clear_repdet_0),        // Templated
-      .repdet_read                      (repdet_0_read[RAM_WIDTH-1:0])); // Templated
-   
-   rep_det_sub #
-     (
-      .REPDET_WIDTH (REPDET_WIDTH),
-      .RAM_WIDTH (RAM_WIDTH)
-      )
-   rep_det_sub_1
-     (/*AUTOINST*/
-      // Outputs
-      .repdet_rd_addr                   (repdet_1_rd_addr[REPDET_WIDTH-1:0]), // Templated
-      .board_three_move_rep             (board_1_three_move_rep), // Templated
-      .board_three_move_rep_valid       (board_1_three_move_rep_valid), // Templated
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .board_in                         (board_1_in[`BOARD_WIDTH-1:0]), // Templated
-      .castle_mask_in                   (castle_mask_1_in[3:0]), // Templated
-      .board_valid                      (board_1_valid),         // Templated
-      .repdet_depth_in                  (repdet_depth_in[REPDET_WIDTH-1:0]),
-      .clear_repdet                     (clear_repdet_1),        // Templated
-      .repdet_read                      (repdet_1_read[RAM_WIDTH-1:0])); // Templated
-   
+   localparam STATE_IDLE = 0;
+   localparam STATE_COUNT = 1;
+   localparam STATE_WS = 2;
+   localparam STATE_NO_REP_DET = 3;
+   localparam STATE_REP_DET = 4;
+
+   reg [2:0]                        state = STATE_IDLE;
+
+   always @(posedge clk)
+     if (reset)
+       state <= STATE_IDLE;
+     else
+       case (state)
+         STATE_IDLE :
+           begin
+              ram_rd_addr <= 0;
+              board_and_castle_mask <= {castle_mask_in, board_in};
+              counter <= 0;
+              ram_depth_te <= ram_depth_in - 1;
+              thrice_rep_valid <= 0;
+              if (board_valid)
+                if (ram_depth_in < 3)
+                  state <= STATE_NO_REP_DET;
+                else
+                  state <= STATE_COUNT;
+           end
+         STATE_COUNT :
+           if (board_and_castle_mask == ram_read)
+             begin
+                counter <= counter + 1;
+                if (counter == 2)
+                  state <= STATE_REP_DET;
+             end
+           else
+             begin
+                ram_rd_addr <= ram_rd_addr + 1;
+                if (ram_rd_addr == ram_depth_te)
+                  state <= STATE_NO_REP_DET;
+                else
+                  state <= STATE_WS;
+             end
+         STATE_WS : // wait state for ram read
+           state <= STATE_COUNT;
+         STATE_NO_REP_DET :
+           begin
+              thrice_rep <= 0;
+              thrice_rep_valid <= 1;
+              if (clear_sample)
+                state <= STATE_IDLE;
+           end
+         STATE_REP_DET :
+           begin
+              thrice_rep <= 1;
+              thrice_rep_valid <= 1;
+              if (clear_sample)
+                state <= STATE_IDLE;
+           end
+         default :
+           state <= STATE_IDLE;
+       endcase
+
 endmodule
 
 // Local Variables:
