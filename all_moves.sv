@@ -15,7 +15,7 @@ module all_moves #
     input                                white_to_move_in,
     input [3:0]                          castle_mask_in,
     input [3:0]                          en_passant_col_in,
-   
+
     input [`BOARD_WIDTH-1:0]             repdet_board_in,
     input [3:0]                          repdet_castle_mask_in,
     input [REPDET_WIDTH-1:0]             repdet_depth_in,
@@ -43,12 +43,13 @@ module all_moves #
     output                               black_in_check_out,
     output [63:0]                        white_is_attacking_out,
     output [63:0]                        black_is_attacking_out,
-    output signed [EVAL_WIDTH - 1:0]     eval_out
+    output signed [EVAL_WIDTH - 1:0]     eval_out,
+    output                               thrice_rep
     );
 
    // board + castle mask + en_passant_col + color_to_move + capture
    localparam RAM_WIDTH = `BOARD_WIDTH + 4 + 4 + 1 + 1;
-   localparam LEGAL_RAM_WIDTH = EVAL_WIDTH + 64 + 64 + RAM_WIDTH + 1 + 1; // eval, is-attacking, board, white, black in check
+   localparam LEGAL_RAM_WIDTH = 1 + EVAL_WIDTH + 64 + 64 + RAM_WIDTH + 1 + 1; // thrice rep, eval, is-attacking, board, white, black in check
 
    reg                                   initial_board_check;
 
@@ -86,6 +87,7 @@ module all_moves #
    reg [63:0]                            legal_white_is_attacking_ram_wr;
    reg [63:0]                            legal_black_is_attacking_ram_wr;
    reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
+   reg                                   legal_thrice_rep;
    reg                                   legal_ram_wr = 0;
 
    reg [MAX_POSITIONS_LOG2 - 1:0]        move_index_r;
@@ -142,18 +144,18 @@ module all_moves #
    reg [1:0]                             castle_short_legal;
    reg [1:0]                             castle_long_legal;
    reg [2:0]                             castle_row [0:1];
-   
+
    reg [`BOARD_WIDTH - 1:0]              rd_ram_board_in;
    reg [3:0]                             rd_ram_castle_mask_in;
    reg [REPDET_WIDTH - 1:0]              rd_ram_depth_in;
    reg [REPDET_WIDTH - 1:0]              rd_ram_wr_addr_in;
    reg                                   rd_ram_wr_en;
-   
+
    reg [`BOARD_WIDTH - 1:0]              rd_board_in;
    reg                                   rd_board_valid;
    reg [3:0]                             rd_castle_mask_in;
    reg                                   rd_clear_sample;
-   
+
    // should be empty
    /*AUTOREGINPUT*/
 
@@ -180,7 +182,7 @@ module all_moves #
    wire                                  black_to_move = ~white_to_move;
 
    assign move_count = legal_ram_wr_addr;
-   assign {eval_out, white_is_attacking_out, black_is_attacking_out,
+   assign {thrice_rep, eval_out, white_is_attacking_out, black_is_attacking_out,
            white_in_check_out, black_in_check_out,
            capture_out, en_passant_col_out, castle_mask_out, white_to_move_out,
            board_out} = legal_ram_rd_data;
@@ -284,7 +286,7 @@ module all_moves #
           legal_ram_wr_addr <= 0;
         if (legal_ram_wr)
           begin
-             legal_move_ram[legal_ram_wr_addr] <= {legal_eval_ram_wr,
+             legal_move_ram[legal_ram_wr_addr] <= {legal_thrice_rep, legal_eval_ram_wr,
                                                    legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
                                                    legal_white_in_check_ram_wr, legal_black_in_check_ram_wr,
                                                    legal_capture_ram_wr, legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
@@ -423,14 +425,14 @@ module all_moves #
               rd_ram_wr_addr_in <= repdet_wr_addr_in;
               rd_ram_wr_en <= repdet_wr_en;
               rd_ram_depth_in <= repdet_depth_in;
-              
+
               rd_board_in <= board_in;
               rd_board_valid <= board_valid;
               rd_castle_mask_in <= castle_mask_in;
               rd_clear_sample <= 0;
 
               initial_thrice_rep <= 0;
-              
+
               ram_wr_addr_init <= 1;
               clear_eval <= 0;
               clear_attack <= 0;
@@ -439,6 +441,13 @@ module all_moves #
            end
          STATE_INIT :
            begin
+              // append the initial board to the thrice rep ram, but don't advance rd_ram_depth_in yet
+              // as rep_det is still processing the initial board
+              rd_ram_board_in <= board;
+              rd_ram_castle_mask_in <= castle_mask;
+              rd_ram_wr_addr_in <= rd_ram_depth_in;
+              rd_ram_wr_en <= 1;
+
               initial_eval <= eval;
               clear_eval <= 1;
               clear_attack <= 1;
@@ -453,6 +462,8 @@ module all_moves #
            end
          STATE_DO_SQUARE :
            begin
+              rd_ram_wr_en <= 0;
+
               clear_eval <= 0;
               clear_attack <= 0;
               castle_mask_ram_wr <= castle_mask;
@@ -676,14 +687,15 @@ module all_moves #
               capture_ram_wr <= 0;
               legal_ram_wr_addr_init <= 1;
               ram_rd_addr <= 0;
-              
+
               if (ram_wr_addr == 0)
                 state <= STATE_DONE; // no moves, mate or stalemate
-              
+
               // wait for initial board threefold repetition test to complete
               if (rd_thrice_rep_valid)
                 if (rd_thrice_rep)
                   begin
+                     rd_clear_sample <= 1;
                      initial_thrice_rep <= 1;
                      state <= STATE_DONE; // threefold repetition
                   end
@@ -692,6 +704,7 @@ module all_moves #
            end
          STATE_LEGAL_INIT :
            begin
+              rd_ram_depth_in <= rd_ram_depth_in + 1; // advance thrice rep search to include initial board
               legal_ram_wr_addr_init <= 0;
               attack_test_move_count <= ram_wr_addr;
               state <= STATE_LEGAL_LOAD;
@@ -702,31 +715,53 @@ module all_moves #
               attack_test_valid <= 0;
               clear_eval <= 0;
               clear_attack <= 0;
+              rd_clear_sample <= 0;
               state <= STATE_LEGAL_KING_POS;
            end
          STATE_LEGAL_KING_POS :
            begin
+              rd_castle_mask_in <= attack_test_castle_mask; // default, overridden below
               if (attack_test_board[idx[0][0]+:`PIECE_WIDTH] != `WHITE_ROOK || attack_test_board[idx[0][4]+:`PIECE_WIDTH] != `WHITE_KING)
-                attack_test_castle_mask[`CASTLE_WHITE_LONG] <= 1'b0;
+                begin
+                   attack_test_castle_mask[`CASTLE_WHITE_LONG] <= 1'b0;
+                   rd_castle_mask_in[`CASTLE_WHITE_LONG] <= 1'b0;
+                end
               if (attack_test_board[idx[0][7]+:`PIECE_WIDTH] != `WHITE_ROOK || attack_test_board[idx[0][4]+:`PIECE_WIDTH] != `WHITE_KING)
-                attack_test_castle_mask[`CASTLE_WHITE_SHORT] <= 1'b0;
+                begin
+                   attack_test_castle_mask[`CASTLE_WHITE_SHORT] <= 1'b0;
+                   rd_castle_mask_in[`CASTLE_WHITE_SHORT] <= 1'b0;
+                end
               if (attack_test_board[idx[7][0]+:`PIECE_WIDTH] != `BLACK_ROOK || attack_test_board[idx[7][4]+:`PIECE_WIDTH] != `BLACK_KING)
-                attack_test_castle_mask[`CASTLE_BLACK_LONG] <= 1'b0;
+                begin
+                   attack_test_castle_mask[`CASTLE_BLACK_LONG] <= 1'b0;
+                   rd_castle_mask_in[`CASTLE_BLACK_LONG] <= 1'b0;
+                end
               if (attack_test_board[idx[7][7]+:`PIECE_WIDTH] != `BLACK_ROOK || attack_test_board[idx[7][4]+:`PIECE_WIDTH] != `BLACK_KING)
-                attack_test_castle_mask[`CASTLE_BLACK_SHORT] <= 1'b0;
+                begin
+                   attack_test_castle_mask[`CASTLE_BLACK_SHORT] <= 1'b0;
+                   rd_castle_mask_in[`CASTLE_BLACK_SHORT] <= 1'b0;
+                end
+
+              rd_board_in <= attack_test_board;
+              rd_board_valid <= 1;
+              rd_castle_mask_in <= castle_mask_in;
+
               attack_test <= attack_test_board;
               attack_test_valid <= 1;
+
               ram_rd_addr <= ram_rd_addr + 1;
               state <= STATE_ATTACK_WAIT;
            end
          STATE_ATTACK_WAIT :
            begin
+              rd_board_valid <= 0;
+
               attack_test_valid <= 0;
               attack_test_white_in_check <= white_in_check;
               attack_test_black_in_check <= black_in_check;
               attack_test_white_is_attacking <= white_is_attacking;
               attack_test_black_is_attacking <= black_is_attacking;
-              if (is_attacking_done && eval_valid)
+              if (is_attacking_done && eval_valid && rd_thrice_rep_valid)
                 if ((white_to_move && white_in_check) || (black_to_move && black_in_check))
                   state <= STATE_LEGAL_NEXT;
                 else
@@ -743,10 +778,15 @@ module all_moves #
               legal_black_in_check_ram_wr <= attack_test_black_in_check;
               legal_white_is_attacking_ram_wr <= attack_test_white_is_attacking;
               legal_black_is_attacking_ram_wr <= attack_test_black_is_attacking;
-              legal_eval_ram_wr <= eval;
+              if (rd_thrice_rep)
+                legal_eval_ram_wr <= 0;
+              else
+                legal_eval_ram_wr <= eval;
+              legal_thrice_rep <= rd_thrice_rep;
               legal_ram_wr <= 1;
               clear_eval <= 1;
               clear_attack <= 1;
+              rd_clear_sample <= 1;
               state <= STATE_LEGAL_NEXT;
            end
          STATE_LEGAL_NEXT :
@@ -754,6 +794,7 @@ module all_moves #
               legal_ram_wr <= 0;
               clear_eval <= 1;
               clear_attack <= 1;
+              rd_clear_sample <= 1;
               if (ram_rd_addr == attack_test_move_count)
                 state <= STATE_DONE;
               else
@@ -763,6 +804,7 @@ module all_moves #
            begin
               clear_eval <= 0;
               clear_attack <= 0;
+              rd_clear_sample <= 0;
               if (move_count == 0)
                 begin
                    if (initial_board_check)
