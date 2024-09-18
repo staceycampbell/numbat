@@ -4,6 +4,7 @@ module tb;
 
    localparam EVAL_WIDTH = 22;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
+   localparam REPDET_WIDTH = 7;
 
    reg clk = 0;
    reg reset = 1;
@@ -18,6 +19,11 @@ module tb;
    reg [3:0]                en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 5;
    reg [MAX_POSITIONS_LOG2 - 1:0] move_index = 0;
    reg                            display_move = 0;
+   reg [`BOARD_WIDTH - 1:0]       repdet_board;
+   reg [3:0]                      repdet_castle_mask;
+   reg [REPDET_WIDTH - 1:0]       repdet_depth;
+   reg [REPDET_WIDTH - 1:0]       repdet_wr_addr;
+   reg                            repdet_wr_en = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -199,6 +205,11 @@ module tb;
       .white_to_move_in                 (white_to_move),         // Templated
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
+      .repdet_board_in                  (repdet_board[`BOARD_WIDTH-1:0]), // Templated
+      .repdet_castle_mask_in            (repdet_castle_mask[3:0]), // Templated
+      .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated
+      .repdet_wr_addr_in                (repdet_wr_addr[REPDET_WIDTH-1:0]), // Templated
+      .repdet_wr_en                     (repdet_wr_en),
       .move_index                       (move_index[MAX_POSITIONS_LOG2-1:0]),
       .clear_moves                      (clear_moves));
    

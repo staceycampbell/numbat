@@ -3,7 +3,8 @@
 module all_moves #
   (
    parameter MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS),
-   parameter EVAL_WIDTH = 0
+   parameter EVAL_WIDTH = 0,
+   parameter REPDET_WIDTH = 7
    )
    (
     input                                clk,
@@ -14,6 +15,13 @@ module all_moves #
     input                                white_to_move_in,
     input [3:0]                          castle_mask_in,
     input [3:0]                          en_passant_col_in,
+
+   
+    input [`BOARD_WIDTH-1:0]             repdet_board_in,
+    input [3:0]                          repdet_castle_mask_in,
+    input [REPDET_WIDTH-1:0]             repdet_depth_in,
+    input [REPDET_WIDTH-1:0]             repdet_wr_addr_in,
+    input                                repdet_wr_en,
 
     input [MAX_POSITIONS_LOG2 - 1:0]     move_index,
     input                                clear_moves,
@@ -134,20 +142,33 @@ module all_moves #
    reg [1:0]                             castle_short_legal;
    reg [1:0]                             castle_long_legal;
    reg [2:0]                             castle_row [0:1];
+   
+   reg [`BOARD_WIDTH - 1:0]              rd_board_0_in;
+   reg                                   rd_board_0_valid = 0;
+   reg [`BOARD_WIDTH - 1:0]              rd_board_1_in;
+   reg                                   rd_board_1_valid = 0;
+   reg [3:0]                             rd_castle_mask_0_in;
+   reg [3:0]                             rd_castle_mask_1_in;
+   reg                                   rd_clear_repdet_0 = 0;
+   reg                                   rd_clear_repdet_1 = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                                  black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                           black_is_attacking;     // From board_attack of board_attack.v
-   wire                                  display_attacking_done; // From board_attack of board_attack.v
-   wire signed [EVAL_WIDTH-1:0]          eval;           // From evaluate of evaluate.v
-   wire                                  eval_valid;             // From evaluate of evaluate.v
-   wire                                  is_attacking_done;      // From board_attack of board_attack.v
-   wire                                  white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                           white_is_attacking;     // From board_attack of board_attack.v
+   wire                 black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire                 display_attacking_done; // From board_attack of board_attack.v
+   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
+   wire                 eval_valid;             // From evaluate of evaluate.v
+   wire                 is_attacking_done;      // From board_attack of board_attack.v
+   wire                 rd_board_0_three_move_rep;// From rep_det of rep_det.v
+   wire                 rd_board_0_three_move_rep_valid;// From rep_det of rep_det.v
+   wire                 rd_board_1_three_move_rep;// From rep_det of rep_det.v
+   wire                 rd_board_1_three_move_rep_valid;// From rep_det of rep_det.v
+   wire                 white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
    wire signed [4:0]                     pawn_adv1_row [0:2];
@@ -784,6 +805,40 @@ module all_moves #
       .board_valid                      (attack_test_valid),     // Templated
       .board_in                         (attack_test[`BOARD_WIDTH-1:0]), // Templated
       .clear_eval                       (clear_eval));
+
+   /* rep_det AUTO_TEMPLATE (
+    .clk (clk),
+    .reset (reset),
+    .repdet_\(.*\) (repdet_\1[]),
+    .\(.*\) (rd_\1[]),
+    );*/
+   rep_det #
+     (
+      .REPDET_WIDTH (REPDET_WIDTH)
+      )
+   rep_det
+     (/*AUTOINST*/
+      // Outputs
+      .board_0_three_move_rep           (rd_board_0_three_move_rep), // Templated
+      .board_0_three_move_rep_valid     (rd_board_0_three_move_rep_valid), // Templated
+      .board_1_three_move_rep           (rd_board_1_three_move_rep), // Templated
+      .board_1_three_move_rep_valid     (rd_board_1_three_move_rep_valid), // Templated
+      // Inputs
+      .clk                              (clk),                   // Templated
+      .reset                            (reset),                 // Templated
+      .board_0_in                       (rd_board_0_in[`BOARD_WIDTH-1:0]), // Templated
+      .castle_mask_0_in                 (rd_castle_mask_0_in[3:0]), // Templated
+      .board_0_valid                    (rd_board_0_valid),      // Templated
+      .clear_repdet_0                   (rd_clear_repdet_0),     // Templated
+      .board_1_in                       (rd_board_1_in[`BOARD_WIDTH-1:0]), // Templated
+      .castle_mask_1_in                 (rd_castle_mask_1_in[3:0]), // Templated
+      .board_1_valid                    (rd_board_1_valid),      // Templated
+      .clear_repdet_1                   (rd_clear_repdet_1),     // Templated
+      .repdet_board_in                  (repdet_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .repdet_castle_mask_in            (repdet_castle_mask_in[3:0]), // Templated
+      .repdet_wr_addr_in                (repdet_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
+      .repdet_wr_en                     (repdet_wr_en),          // Templated
+      .repdet_depth_in                  (repdet_depth_in[REPDET_WIDTH-1:0])); // Templated
 
 endmodule
 
