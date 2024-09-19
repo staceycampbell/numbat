@@ -181,8 +181,6 @@ main(void)
         defines[BLACK_KING] = "BLACK_KING";
         defines[BLACK_QUEN] = "BLACK_QUEN";
 
-        // board[7 * SIDE_WIDTH + 0 * PIECE_WIDTH+:PIECE_WIDTH] = `BLACK_ROOK;
-
 	printf("FEN: ");
 	while (fgets(buffer, sizeof(buffer), stdin))
 	{

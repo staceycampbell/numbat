@@ -5,11 +5,12 @@ module tb;
    localparam EVAL_WIDTH = 22;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
    localparam REPDET_WIDTH = 7;
+   localparam TB_REP_HISTORY = 9;
 
    reg clk = 0;
    reg reset = 1;
    integer t = 0;
-   integer i;
+   integer i, j;
 
    reg [`BOARD_WIDTH - 1:0] board;
    reg                      board_valid = 0;
@@ -19,11 +20,13 @@ module tb;
    reg [3:0]                en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 5;
    reg [MAX_POSITIONS_LOG2 - 1:0] move_index = 0;
    reg                            display_move = 0;
-   reg [`BOARD_WIDTH - 1:0]       repdet_board;
-   reg [3:0]                      repdet_castle_mask;
-   reg [REPDET_WIDTH - 1:0]       repdet_depth;
-   reg [REPDET_WIDTH - 1:0]       repdet_wr_addr;
+   reg [`BOARD_WIDTH - 1:0]       repdet_board = 0;
+   reg [3:0]                      repdet_castle_mask = 0;
+   reg [REPDET_WIDTH - 1:0]       repdet_depth = 0;
+   reg [REPDET_WIDTH - 1:0]       repdet_wr_addr = 0;
    reg                            repdet_wr_en = 0;
+   reg [`BOARD_WIDTH - 1:0]       tb_rep_history [0:TB_REP_HISTORY - 1];
+   reg [$clog2(TB_REP_HISTORY) - 1:0] tb_rep_index;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -41,9 +44,11 @@ module tb;
    wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves_initial of all_moves.v
    wire                 initial_mate;           // From all_moves_initial of all_moves.v
    wire                 initial_stalemate;      // From all_moves_initial of all_moves.v
+   wire                 initial_thrice_rep;     // From all_moves_initial of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] move_count;    // From all_moves_initial of all_moves.v
    wire                 move_ready;             // From all_moves_initial of all_moves.v
    wire                 moves_ready;            // From all_moves_initial of all_moves.v
+   wire                 thrice_rep;             // From all_moves_initial of all_moves.v
    wire                 white_in_check_out;     // From all_moves_initial of all_moves.v
    wire [63:0]          white_is_attacking_out; // From all_moves_initial of all_moves.v
    wire                 white_to_move_out;      // From all_moves_initial of all_moves.v
@@ -56,15 +61,16 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
         castle_mask = 4'b0000;
-        board[5 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        board[4 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[4 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-        board[4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[4 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[4 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[3 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[2 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[2 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        board[6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        board[5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        board[3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        board[2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
         if (0)
           begin
              board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
@@ -91,7 +97,53 @@ module tb;
           end
         forever
           #1 clk = ~clk;
-     end
+     end // initial begin
+
+   localparam LOADST_IDLE = 0;
+   localparam LOADST_REP = 1;
+   localparam LOADST_BOARD = 2;
+   localparam LOADST_BOARD_WAIT = 3;
+
+   reg [1:0] loadst = LOADST_IDLE;
+
+   always @(posedge clk)
+     if (reset)
+       begin
+          board_valid <= 0;
+          repdet_wr_en <= 0;
+          loadst <= LOADST_IDLE;
+       end
+     else
+       case (loadst)
+         LOADST_IDLE :
+           begin
+              board_valid <= 0;
+              tb_rep_index <= 0;
+              repdet_wr_en <= 0;
+              repdet_depth <= TB_REP_HISTORY - 7;
+              loadst <= LOADST_REP;
+           end
+         LOADST_REP :
+           begin
+              if (tb_rep_index == TB_REP_HISTORY - 7)
+                loadst <= LOADST_BOARD;
+              repdet_wr_addr <= tb_rep_index;
+              repdet_wr_en <= 1;
+              repdet_board <= tb_rep_history[tb_rep_index];
+              repdet_castle_mask <= 4'b0;
+              tb_rep_index <= tb_rep_index + 1;
+           end
+         LOADST_BOARD :
+           begin
+              repdet_wr_en <= 0;
+              board_valid <= 1;
+              loadst <= LOADST_BOARD_WAIT;
+           end
+         LOADST_BOARD_WAIT :
+           if (clear_moves)
+             loadst <= LOADST_IDLE;
+       endcase
+   
 
    always @(posedge clk)
      begin
@@ -136,6 +188,8 @@ module tb;
                 $display("checkmate");
               else if (initial_stalemate)
                 $display("stalemate");
+              if (initial_thrice_rep)
+                $display("repetition");
               state <= STATE_DONE_0;
            end
          else
@@ -184,6 +238,7 @@ module tb;
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
+      .initial_thrice_rep               (initial_thrice_rep),
       .moves_ready                      (moves_ready),
       .move_ready                       (move_ready),
       .move_count                       (move_count[MAX_POSITIONS_LOG2-1:0]),
@@ -197,6 +252,7 @@ module tb;
       .white_is_attacking_out           (white_is_attacking_out[63:0]),
       .black_is_attacking_out           (black_is_attacking_out[63:0]),
       .eval_out                         (eval_out[EVAL_WIDTH-1:0]),
+      .thrice_rep                       (thrice_rep),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -241,7 +297,113 @@ module tb;
       .white_in_check                   (white_in_check_out),    // Templated
       .black_in_check                   (black_in_check_out),    // Templated
       .eval                             (eval_out[EVAL_WIDTH-1:0]), // Templated
+      .thrice_rep                       (thrice_rep),
       .display                          (display_move));          // Templated
+
+   initial
+     begin
+        for (j = 0; j < TB_REP_HISTORY; j = j + 1)
+          for (i = 0; i < 64; i = i + 1)
+            tb_rep_history[j][i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
+        tb_rep_history[0][6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[0][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[0][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[0][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[0][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[0][4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[0][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[0][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[0][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[0][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+
+        tb_rep_history[1][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[1][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[1][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[1][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[1][4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[1][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[1][3 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[1][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[1][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[1][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+
+        tb_rep_history[2][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[2][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[2][5 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[2][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[2][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[2][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[2][3 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[2][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[2][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[2][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+
+        tb_rep_history[3][6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[3][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[3][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[3][5 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[3][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[3][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[3][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[3][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[3][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[3][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+
+        tb_rep_history[4][6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[4][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[4][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[4][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[4][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[4][4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[4][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[4][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[4][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[4][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+
+        tb_rep_history[5][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[5][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[5][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[5][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[5][4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[5][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[5][3 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[5][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[5][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[5][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+
+        tb_rep_history[6][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[6][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[6][5 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[6][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[6][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[6][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[6][3 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[6][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[6][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[6][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+
+        tb_rep_history[7][6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[7][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[7][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[7][5 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[7][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[7][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[7][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[7][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[7][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[7][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+
+        tb_rep_history[8][6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        tb_rep_history[8][6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[8][5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        tb_rep_history[8][5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[8][4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[8][4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        tb_rep_history[8][3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        tb_rep_history[8][3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        tb_rep_history[8][2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        tb_rep_history[8][2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+     end
 
 endmodule
 

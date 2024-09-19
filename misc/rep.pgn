@@ -1,0 +1,45 @@
+[Event "ICS rated blitz game"]
+[Site "freechess.org 23"]
+[Date "2023.03.05"]
+[Time "07:34:00"]
+[Round "-"]
+[White "GriffySr"]
+[Black "gleangleam"]
+[WhiteElo "1909"]
+[BlackElo "1724"]
+[TimeControl "5+12"]
+[Mode "ICS"]
+[Result "1/2-1/2"]
+
+1. d4 d5 2. Nf3 c6 3. c4 Nf6 4. e3 e6 5. Nc3 Bd6 6. c5 Bc7 7. Bd3 Nbd7
+8. O-O e5 9. dxe5 Nxe5 10. Nxe5 Bxe5 11. Qb3 O-O 12. f4 Bxc3 13. Qxc3 Ne4
+14. Bxe4 dxe4 15. Bd2 Qe7 16. f5 Re8 17. f6 Qe5 18. Qxe5 Rxe5 19. Bc3 Rxc5
+20. fxg7 Be6 21. Bf6 Re8 22. b3 Rf5 23. Rad1 Rxf1+ 24. Kxf1 Bd5 25. Ke2 a5
+26. g4 b5 27. g5 Ra8 28. Kd2 a4 29. Kc3 axb3 30. axb3 Ra2 31. h4 Ra3
+32. Rb1 Ra8 33. Kd4 Ra3 34. Kc5 Ra6 35. b4 Ra4 36. Ra1 Rxa1 37. Bxa1 Bc4
+38. Kxc6 Bd3 39. Bd4 Bc4 40. Ba1 Bd3 41. Bd4 Bc4 42. Kd6 Bd3 43. Kd5 Bc2
+44. Kc6 Bd3 45. Kd5 Bc2 46. Kc6 Bd3 47. Kd6 Bc2 48. Kd5 Bd3 49. Be5 Bc2
+50. Bd4 Bd3 51. Be5 Bc2 52. Kc6 Bd3 53. Kd6 Bc2 54. Kd5 Bd3 55. Bf6 Bc2
+56. Be5 Bd3 57. Bf6 Bc2 58. Kd6 Bd3 59. Ke5 Bc2 60. Kf5 Bd3 61. Bd4 Bc2
+62. Be5 Bd3 63. Kf6 Bc2 64. Bd4 Bd3 65. Be5 Bc4 66. Bd4 Bd3 67. h5 Bc2
+68. h6 Bd3 69. Be5 Bc2 70. Bf4 Bd3 71. Bd6 Bc2 72. Be5 Bd3 73. Bd4 Bc2
+74. Be5 Bd3 75. Bf4 Bc2 76. Bd6 Bd3 77. Bc5 Bc2 78. Be7 Bd3 79. Bf8 Bc2
+80. Bc5 Bd3 81. Be7 Bc2 82. Bf8 Bd3 83. Ke7 Bc2 84. Ke8 Bd3 85. Bc5 Bc2
+86. Ke7 Bd3 87. Bd4 Bc2 88. Be5 Bd3 89. Bd4 Bc2 90. Bf6 Bd3 91. Be5 Bc2
+92. Bd4 Bd3 93. Bf6 Bc2 94. Bc3 Bd3 95. Bf6 Bc2 96. Bb2 Bd3 97. Ke8 Bc2
+98. Bd4 Bd3 99. Be5 Bc2 100. Bf4 Bd3 101. Ke7 Bc2 102. Bd6 Bd3 103. Bc5 Bc2
+104. Bb6 Bd3 105. Bc5 Bc2 106. Ke8 Bd3 107. Ba7 Bc2 108. Ke7 Bd3 109. Bb8 Bc2
+110. Ba7 Bd3 111. Kf6 Bc2 112. Bb6 Bd3 113. Ba7 Bc2 114. Bb6 Bd3 115. Ke7 Bc2
+116. Kd6 Bd3 117. g6 fxg6 118. Ke6 Bc2 119. Kf6 Bd3 120. Bd8 Bc2 121. Bc7 Bd3
+122. Bd8 Bc2 123. Be7 Bd3 124. Bc5 Bc2 125. Bf8 Bd3 126. Bd6 Bc2 127. Bb8 Bb1
+128. Be5 Bd3 129. Bc3 Bb1 130. Bb2 Bc2 131. Bd4 Bb1 132. Ba7 Bc2 133. Bc5 Bb1
+134. Bd4 Bc2 135. Bb2 Bb1 136. Ke5 Kf7 137. Bc3 Bc2 138. Bd4 Bb1 139. Bc5 Bd3
+140. Kd5 Bc2 141. Bd4 Bd3 142. Bb2 Bc2 143. Be5 Bd3 144. Bc3 Bc2 145. Bb2 Bd3
+146. Bd4 Bc2 147. Kd6 Bd3 148. Be5 Bc4 149. Bc3 Bd3 150. Bd4 Bc2 151. Be5 Bb3
+152. Bc3 Bc4 153. Ke5 Bd3 154. Bd2 Bb1 155. Kd6 Bd3 156. Kd5 Bb1 157. Ke5 Bd3
+158. Kd6 Bc4 159. Be1 Bd3 160. Bg3 Bc2 161. Kc6 Bd3 162. Bf4 Bc4 163. Kd6 Bd3
+164. Kd5 Bc2 165. Kd6 Bd3 166. Ke5 Bc2 167. g8=Q+ Kxg8 168. Kf6 Bd3
+169. Be5 Bc4 170. Bd4 Bd3 171. Bc5 Bf1 172. Ke5 Bd3 173. Kf6 Bf1 174. Bd4 Bd3
+175. Ke5 Kf7 176. Bc5 g5 177. Kf5 g4 178. Kxg4 Kg6 179. Bf8 Be2+ 180. Kf4 Bd3
+181. Bg7 Kh5 182. Kf5 Bc2 183. Bf8 Bb1 184. Ke5 Kg5 185. Bg7 Bd3 186. Kd6 Kf5
+187. Bd4 Kg6 188. Bg7 Kf5 189. Bd4 Kg6 190. Bg7 Kf5 {Game drawn by repetition} 1/2-1/2

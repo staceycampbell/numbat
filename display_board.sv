@@ -15,6 +15,7 @@ module display_board #
     input                           white_in_check,
     input                           black_in_check,
     input signed [EVAL_WIDTH - 1:0] eval,
+    input                           thrice_rep,
     input                           display,
 
     output reg                      display_done = 0
@@ -87,7 +88,7 @@ module display_board #
               else
                 if (black_in_check)
                   $display("Black in check.");
-              $display("castle=%04b en_passant=%04b capture=%1b, eval=%d", castle_mask, en_passant_col, capture, eval);
+              $display("castle=%04b en_passant=%04b capture=%1b, eval=%d thrice: %d", castle_mask, en_passant_col, capture, eval, thrice_rep);
               display_done <= 1;
               state <= STATE_INIT;
            end
