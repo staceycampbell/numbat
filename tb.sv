@@ -63,7 +63,7 @@ module tb;
         castle_mask = 4'b0000;
         board[6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
         board[6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        board[6 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
         board[5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
         board[4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
         board[4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
@@ -120,12 +120,12 @@ module tb;
               board_valid <= 0;
               tb_rep_index <= 0;
               repdet_wr_en <= 0;
-              repdet_depth <= TB_REP_HISTORY - 7;
+              repdet_depth <= TB_REP_HISTORY - 2;
               loadst <= LOADST_REP;
            end
          LOADST_REP :
            begin
-              if (tb_rep_index == TB_REP_HISTORY - 7)
+              if (tb_rep_index == TB_REP_HISTORY - 2)
                 loadst <= LOADST_BOARD;
               repdet_wr_addr <= tb_rep_index;
               repdet_wr_en <= 1;
