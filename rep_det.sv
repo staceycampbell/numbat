@@ -2,7 +2,7 @@
 
 module rep_det #
   (
-   parameter REPDET_WIDTH = 7
+   parameter REPDET_WIDTH = 0
    )
    (
     input                      clk,

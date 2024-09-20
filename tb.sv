@@ -4,7 +4,8 @@ module tb;
 
    localparam EVAL_WIDTH = 22;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
-   localparam REPDET_WIDTH = 7;
+   localparam REPDET_WIDTH = 8;
+   localparam HALF_MOVE_WIDTH = 10;
    localparam TB_REP_HISTORY = 9;
 
    reg clk = 0;
@@ -12,12 +13,15 @@ module tb;
    integer t = 0;
    integer i, j;
 
+   reg     clear_moves = 1'b0;
+   reg     board_valid = 0;
+
    reg [`BOARD_WIDTH - 1:0] board;
-   reg                      board_valid = 0;
-   reg                      white_to_move = 1;
-   reg                      clear_moves = 1'b0;
+   reg                      white_to_move;
    reg [3:0]                castle_mask;
-   reg [3:0]                en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 5;
+   reg [3:0]                en_passant_col;
+   reg [HALF_MOVE_WIDTH - 1:0] half_move;
+
    reg [MAX_POSITIONS_LOG2 - 1:0] move_index = 0;
    reg                            display_move = 0;
    reg [`BOARD_WIDTH - 1:0]       repdet_board = 0;
@@ -33,25 +37,26 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check_out;     // From all_moves_initial of all_moves.v
-   wire [63:0]          black_is_attacking_out; // From all_moves_initial of all_moves.v
-   wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves_initial of all_moves.v
-   wire                 capture_out;            // From all_moves_initial of all_moves.v
-   wire [3:0]           castle_mask_out;        // From all_moves_initial of all_moves.v
-   wire                 display_done;           // From display_board of display_board.v
-   wire [3:0]           en_passant_col_out;     // From all_moves_initial of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves_initial of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves_initial of all_moves.v
-   wire                 initial_mate;           // From all_moves_initial of all_moves.v
-   wire                 initial_stalemate;      // From all_moves_initial of all_moves.v
-   wire                 initial_thrice_rep;     // From all_moves_initial of all_moves.v
-   wire [MAX_POSITIONS_LOG2-1:0] move_count;    // From all_moves_initial of all_moves.v
-   wire                 move_ready;             // From all_moves_initial of all_moves.v
-   wire                 moves_ready;            // From all_moves_initial of all_moves.v
-   wire                 thrice_rep;             // From all_moves_initial of all_moves.v
-   wire                 white_in_check_out;     // From all_moves_initial of all_moves.v
-   wire [63:0]          white_is_attacking_out; // From all_moves_initial of all_moves.v
-   wire                 white_to_move_out;      // From all_moves_initial of all_moves.v
+   wire                               black_in_check_out;     // From all_moves_initial of all_moves.v
+   wire [63:0]                        black_is_attacking_out; // From all_moves_initial of all_moves.v
+   wire [`BOARD_WIDTH-1:0]            board_out;           // From all_moves_initial of all_moves.v
+   wire                               capture_out;            // From all_moves_initial of all_moves.v
+   wire [3:0]                         castle_mask_out;        // From all_moves_initial of all_moves.v
+   wire                               display_done;           // From display_board of display_board.v
+   wire [3:0]                         en_passant_col_out;     // From all_moves_initial of all_moves.v
+   wire signed [EVAL_WIDTH-1:0]       eval_out;       // From all_moves_initial of all_moves.v
+   wire [HALF_MOVE_WIDTH-1:0]         half_move_out;    // From all_moves_initial of all_moves.v
+   wire signed [EVAL_WIDTH-1:0]       initial_eval;   // From all_moves_initial of all_moves.v
+   wire                               initial_mate;           // From all_moves_initial of all_moves.v
+   wire                               initial_stalemate;      // From all_moves_initial of all_moves.v
+   wire                               initial_thrice_rep;     // From all_moves_initial of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0]      move_count;    // From all_moves_initial of all_moves.v
+   wire                               move_ready;             // From all_moves_initial of all_moves.v
+   wire                               moves_ready;            // From all_moves_initial of all_moves.v
+   wire                               thrice_rep_out;         // From all_moves_initial of all_moves.v
+   wire                               white_in_check_out;     // From all_moves_initial of all_moves.v
+   wire [63:0]                        white_is_attacking_out; // From all_moves_initial of all_moves.v
+   wire                               white_to_move_out;      // From all_moves_initial of all_moves.v
    // End of automatics
 
    initial
@@ -60,18 +65,23 @@ module tb;
         $dumpvars(0, tb);
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
+
         castle_mask = 4'b0000;
-        board[6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
-        board[6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[6 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-        board[5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        board[3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
-        board[2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        if (0)
+        white_to_move = 0;
+        en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 0;
+        half_move = 10;
+
+        //        board[6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        //        board[6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        //        board[6 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        //        board[5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        //        board[4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        //        board[4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        //        board[3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        //        board[3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        //        board[2 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        //        board[2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        if (1)
           begin
              board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
              board[0 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
@@ -97,7 +107,7 @@ module tb;
           end
         forever
           #1 clk = ~clk;
-     end // initial begin
+     end
 
    localparam LOADST_IDLE = 0;
    localparam LOADST_REP = 1;
@@ -143,7 +153,6 @@ module tb;
            if (clear_moves)
              loadst <= LOADST_IDLE;
        endcase
-   
 
    always @(posedge clk)
      begin
@@ -163,7 +172,7 @@ module tb;
    localparam STATE_DISP_BOARD_2 = 4;
    localparam STATE_DONE_0 = 5;
    localparam STATE_DONE_1 = 6;
-   
+
    reg [4:0] state = STATE_IDLE;
 
    always @(posedge clk)
@@ -223,14 +232,16 @@ module tb;
        STATE_DONE_1 : // wait state for moves state machine to reset
          state <= STATE_IDLE;
      endcase
-   
+
    /* all_moves AUTO_TEMPLATE (
     .\(.*\)_in (\1[]),
     );*/
    all_moves #
      (
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
-      .EVAL_WIDTH (EVAL_WIDTH)
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .REPDET_WIDTH (REPDET_WIDTH),
+      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH)
       )
    all_moves_initial
      (/*AUTOINST*/
@@ -252,7 +263,8 @@ module tb;
       .white_is_attacking_out           (white_is_attacking_out[63:0]),
       .black_is_attacking_out           (black_is_attacking_out[63:0]),
       .eval_out                         (eval_out[EVAL_WIDTH-1:0]),
-      .thrice_rep                       (thrice_rep),
+      .thrice_rep_out                   (thrice_rep_out),
+      .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -261,6 +273,7 @@ module tb;
       .white_to_move_in                 (white_to_move),         // Templated
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
+      .half_move_in                     (half_move[HALF_MOVE_WIDTH-1:0]), // Templated
       .repdet_board_in                  (repdet_board[`BOARD_WIDTH-1:0]), // Templated
       .repdet_castle_mask_in            (repdet_castle_mask[3:0]), // Templated
       .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated
@@ -268,7 +281,7 @@ module tb;
       .repdet_wr_en                     (repdet_wr_en),
       .move_index                       (move_index[MAX_POSITIONS_LOG2-1:0]),
       .clear_moves                      (clear_moves));
-   
+
    /* display_board AUTO_TEMPLATE (
     .display (display_move),
     .board (board_out[]),
@@ -278,10 +291,13 @@ module tb;
     .white_in_check (white_in_check_out),
     .black_in_check (black_in_check_out),
     .eval (eval_out[]),
+    .thrice_rep (thrice_rep_out),
+    .half_move (half_move_out[]),
     );*/
    display_board #
      (
-      .EVAL_WIDTH (EVAL_WIDTH)
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH)
       )
    display_board
      (/*AUTOINST*/
@@ -297,7 +313,8 @@ module tb;
       .white_in_check                   (white_in_check_out),    // Templated
       .black_in_check                   (black_in_check_out),    // Templated
       .eval                             (eval_out[EVAL_WIDTH-1:0]), // Templated
-      .thrice_rep                       (thrice_rep),
+      .thrice_rep                       (thrice_rep_out),        // Templated
+      .half_move                        (half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .display                          (display_move));          // Templated
 
    initial

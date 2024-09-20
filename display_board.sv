@@ -2,7 +2,8 @@
 
 module display_board #
   (
-   parameter EVAL_WIDTH = 0
+   parameter EVAL_WIDTH = 0,
+   parameter HALF_MOVE_WIDTH = 0
    )
    (
     input                           reset,
@@ -16,6 +17,7 @@ module display_board #
     input                           black_in_check,
     input signed [EVAL_WIDTH - 1:0] eval,
     input                           thrice_rep,
+    input [HALF_MOVE_WIDTH - 1:0]   half_move,
     input                           display,
 
     output reg                      display_done = 0
@@ -88,7 +90,8 @@ module display_board #
               else
                 if (black_in_check)
                   $display("Black in check.");
-              $display("castle=%04b en_passant=%04b capture=%1b, eval=%d thrice: %d", castle_mask, en_passant_col, capture, eval, thrice_rep);
+              $display("castle=%04b en_passant=%04b capture=%1b, eval=%2d thrice: %d, half_move: %2d",
+                       castle_mask, en_passant_col, capture, eval, thrice_rep, half_move);
               display_done <= 1;
               state <= STATE_INIT;
            end
