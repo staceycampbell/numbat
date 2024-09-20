@@ -50,10 +50,12 @@ module all_moves #
     output [HALF_MOVE_WIDTH - 1:0]       half_move_out
     );
 
-   // board + castle mask + en_passant_col + color_to_move + capture + pawn adv (zero-out half move)
-   localparam RAM_WIDTH = `BOARD_WIDTH + 4 + 4 + 1 + 1 + 1;
-   // half move, thrice rep, eval, is-attacking, board, white, black in check, remove pawn adv from ram width
-   localparam LEGAL_RAM_WIDTH = HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + RAM_WIDTH + 1 + 1 - 1;
+   // board + castle mask + en passant col + color to move
+   localparam INITIAL_WIDTH = `BOARD_WIDTH + 4 + 4 + 1;
+   // initial width + capture + pawn adv (to zero-out half move)
+   localparam RAM_WIDTH = INITIAL_WIDTH + 1 + 1;
+   // half move, thrice rep, eval, is-attacking white/black, white in check, black in check, capture, initial width
+   localparam LEGAL_RAM_WIDTH = HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
 
    reg                                   initial_board_check;
 
