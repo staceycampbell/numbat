@@ -217,7 +217,7 @@ vchess_initial_eval(void)
 {
 	int32_t val;
 
-	val = (int32_t)vchess_read(3);
+	val = (int32_t)vchess_read(136);
 
 	return val;
 }

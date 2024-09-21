@@ -3,7 +3,9 @@
 module control #
   (
    parameter EVAL_WIDTH = 0,
-   parameter MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS)
+   parameter MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS),
+   parameter REPDET_WIDTH = 0,
+   parameter HALF_MOVE_WIDTH = 0
    )
    (
     input                                 reset,
@@ -16,6 +18,13 @@ module control #
     output reg                            clear_moves,
     output reg [3:0]                      en_passant_col,
     output reg                            white_to_move,
+    output reg [HALF_MOVE_WIDTH-1:0]      half_move,
+    output reg [`BOARD_WIDTH-1:0]         repdet_board,
+    output reg [3:0]                      repdet_castle_mask,
+    output reg [REPDET_WIDTH-1:0]         repdet_depth,
+    output reg [REPDET_WIDTH-1:0]         repdet_wr_addr,
+    output reg                            repdet_wr_en,
+   
     output reg [MAX_POSITIONS_LOG2 - 1:0] move_index,
 
     input                                 initial_moves_ready, // all moves now calculated
@@ -31,10 +40,13 @@ module control #
     input [63:0]                          initial_black_is_attacking,
     input                                 initial_capture,
     input signed [EVAL_WIDTH - 1:0]       initial_move_eval, // user indexed move eval
+    input                                 initial_move_thrice_rep, // user indexed thrice rep
+    input [HALF_MOVE_WIDTH - 1:0]         initial_half_move,
    
     input                                 initial_mate,
     input                                 initial_stalemate,
     input signed [EVAL_WIDTH - 1:0]       initial_eval, // root node eval
+    input                                 initial_thrice_rep, // root node thrice rep
    
     input [39:0]                          ctrl0_axi_araddr,
     input [2:0]                           ctrl0_axi_arprot,
@@ -80,22 +92,35 @@ module control #
    always @(posedge clk)
      if (ctrl0_wr_valid)
        case (wr_reg_addr)
-         4'h0 :
+         5'h0 :
            begin
               new_board_valid <= ctrl0_wr_data[0];
               clear_moves <= ctrl0_wr_data[1];
               soft_reset <= ctrl0_wr_data[31];
            end
-         4'h1 : move_index <= ctrl0_wr_data;
-         4'h2 : {white_to_move, castle_mask, en_passant_col} <= ctrl0_wr_data;
-         4'h8 : new_board[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         4'h9 : new_board[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         4'hA : new_board[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         4'hB : new_board[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         4'hC : new_board[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         4'hD : new_board[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         4'hE : new_board[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         4'hF : new_board[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h01 : move_index <= ctrl0_wr_data;
+         5'h02 : {white_to_move, castle_mask, en_passant_col} <= ctrl0_wr_data;
+         5'h03 : half_move <= ctrl0_wr_data;
+         5'h08 : new_board[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h09 : new_board[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h0A : new_board[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h0B : new_board[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h0C : new_board[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h0D : new_board[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h0E : new_board[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h0F : new_board[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         
+         5'h10 : repdet_depth <= ctrl0_wr_data;
+         5'h11 : repdet_castle_mask <= ctrl0_wr_data;
+         5'h12 : {repdet_wr_en, repdet_wr_addr} <= {ctrl0_wr_data[31], ctrl0_wr_data[REPDET_WIDTH - 1:0]};
+         5'h18 : repdet_board[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h19 : repdet_board[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h1A : repdet_board[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h1B : repdet_board[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h1C : repdet_board[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h1D : repdet_board[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h1E : repdet_board[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         5'h1F : repdet_board[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          default :
            begin
            end
@@ -116,19 +141,32 @@ module control #
                     ctrl0_axi_rdata[3] <= initial_move_ready;
                     ctrl0_axi_rdata[4] <= initial_stalemate;
                     ctrl0_axi_rdata[5] <= initial_mate;
+                    ctrl0_axi_rdata[6] <= initial_thrice_rep;
                     ctrl0_axi_rdata[31] <= soft_reset;
                  end
-               4'h1 : ctrl0_axi_rdata <= move_index;
-               4'h2 : ctrl0_axi_rdata <= {white_to_move, castle_mask, en_passant_col};
-               4'h3 : ctrl0_axi_rdata <= initial_eval;
-               4'h8 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= new_board[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
-               4'h9 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= new_board[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
-               4'hA : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= new_board[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
-               4'hB : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= new_board[`SIDE_WIDTH * 3+:`SIDE_WIDTH];
-               4'hC : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= new_board[`SIDE_WIDTH * 4+:`SIDE_WIDTH];
-               4'hD : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= new_board[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
-               4'hE : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= new_board[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
-               4'hF : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= new_board[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
+               5'h01 : ctrl0_axi_rdata <= move_index;
+               5'h02 : ctrl0_axi_rdata <= {white_to_move, castle_mask, en_passant_col};
+               5'h03 : ctrl0_axi_rdata <= half_move;
+               5'h08 : ctrl0_axi_rdata <= new_board[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
+               5'h09 : ctrl0_axi_rdata <= new_board[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
+               5'h0A : ctrl0_axi_rdata <= new_board[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
+               5'h0B : ctrl0_axi_rdata <= new_board[`SIDE_WIDTH * 3+:`SIDE_WIDTH];
+               5'h0C : ctrl0_axi_rdata <= new_board[`SIDE_WIDTH * 4+:`SIDE_WIDTH];
+               5'h0D : ctrl0_axi_rdata <= new_board[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
+               5'h0E : ctrl0_axi_rdata <= new_board[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
+               5'h0F : ctrl0_axi_rdata <= new_board[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
+               
+               5'h10 : ctrl0_axi_rdata <= repdet_depth;
+               5'h11 : ctrl0_axi_rdata <= repdet_castle_mask;
+               5'h12 : ctrl0_axi_rdata <= {repdet_wr_en, repdet_wr_addr};
+               5'h18 : ctrl0_axi_rdata <= repdet_board[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
+               5'h19 : ctrl0_axi_rdata <= repdet_board[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
+               5'h1A : ctrl0_axi_rdata <= repdet_board[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
+               5'h1B : ctrl0_axi_rdata <= repdet_board[`SIDE_WIDTH * 3+:`SIDE_WIDTH];
+               5'h1C : ctrl0_axi_rdata <= repdet_board[`SIDE_WIDTH * 4+:`SIDE_WIDTH];
+               5'h1D : ctrl0_axi_rdata <= repdet_board[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
+               5'h1E : ctrl0_axi_rdata <= repdet_board[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
+               5'h1F : ctrl0_axi_rdata <= repdet_board[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
                
                128 : ctrl0_axi_rdata <= initial_white_is_attacking[31:0];
                129 : ctrl0_axi_rdata <= initial_white_is_attacking[63:32];
@@ -138,6 +176,8 @@ module control #
                133 : ctrl0_axi_rdata <= {initial_white_to_move, initial_castle_mask, initial_en_passant_col};
                134 : ctrl0_axi_rdata <= initial_move_eval;
                135 : ctrl0_axi_rdata <= initial_move_count;
+               136 : ctrl0_axi_rdata <= initial_eval;
+               138 : ctrl0_axi_rdata <= initial_half_move;
                
                172 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= initial_board[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
                173 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= initial_board[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
