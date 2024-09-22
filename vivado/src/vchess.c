@@ -67,7 +67,7 @@ vchess_print_board(board_t *board, uint32_t initial_board)
 	xil_printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move],
 		   board->en_passant_col, board->castle_mask, eval);
 	if (! initial_board)
-		xil_printf(", capture: %d", board->capture);
+		xil_printf(", capture: %d, half move: %d", board->capture, board->half_move_clock);
 	else
 		xil_printf(", legal moves: %d", vchess_move_count());
 	xil_printf("\n");
@@ -88,6 +88,7 @@ vchess_write_board(board_t *board)
 	for (i = 0; i < 8; ++i)
 		vchess_write_board_row(i, board->board[i]);
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
+	vchess_write_half_move(board->half_move_clock);
 	vchess_write_control(0, 1, 0); // new board valid bit set
 	vchess_write_control(0, 0, 0); // new board valid bit clear
 	i = 0;
@@ -109,6 +110,11 @@ vchess_read_board(board_t *board, uint32_t index)
 	uint32_t status;
 
 	move_count = vchess_move_count();
+	if (move_count >= MAX_POSITIONS)
+	{
+		xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+		while (1);
+	}
 	status = vchess_status(&move_ready, &moves_ready, 0, 0);
 	if (! moves_ready)
 	{
@@ -133,6 +139,7 @@ vchess_read_board(board_t *board, uint32_t index)
 	vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture);
 	vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
 	board->eval = vchess_move_eval();
+	board->half_move_clock = vchess_read_half_move();
 
 	return 0;
 }
@@ -171,6 +178,14 @@ vchess_init_board(board_t *board)
 	board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
 	board->castle_mask = 0xF;
 	board->white_to_move = 1;
+}
+
+void
+vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask)
+{
+	vchess_repdet_board(board);
+	vchess_repdet_castle_mask(castle_mask);
+	vchess_repdet_write(index);
 }
 
 void

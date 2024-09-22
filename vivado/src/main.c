@@ -12,6 +12,12 @@
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
 #define BUF_SIZE 1024
 
+#define GAME_MAX 2048
+
+static board_t game[GAME_MAX];
+static uint32_t game_moves;
+static uint32_t position;
+
 #if 0
 extern volatile int TcpFastTmrFlag;
 extern volatile int TcpSlowTmrFlag;
@@ -110,7 +116,7 @@ fen_print(board_t *board)
 		else
 			xil_printf("%c3", en_passant_col);
 	}
-	xil_printf(" 0 0\n"); // tbd
+	xil_printf(" %d 0\n", board->half_move_clock); // tbd
 }
 
 static int
@@ -240,9 +246,25 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
                 return 1;
         }
         if (buffer[i] == '-')
+	{
                 board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
+		++i;
+	}
         else
+	{
                 board->en_passant_col = (1 << EN_PASSANT_VALID_BIT) | (buffer[i] - 'a');
+		i += 2;
+	}
+        if (!(i < BUF_SIZE))
+        {
+                xil_printf("%s: bad FEN data %s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
+                return 1;
+        }
+	if (sscanf((char *)&buffer[i], "%d %d", &board->half_move_clock, &board->full_move_number) != 2)
+	{
+                xil_printf("%s: bad FEN half move clock or ful move number%s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
+                return 1;
+	}
 
         return 0;
 }
@@ -340,9 +362,31 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 	{
 		do_both(&board);
 	}
+	else if (strcmp((char *)str, "game") == 0)
+	{
+		game_moves = 0;
+		position = 0;
+	}
+	else if (strcmp((char *)str, "position") == 0)
+	{
+		position = 1;
+		game_moves = 0;
+	}
         else
         {
                 fen_board(cmd, &board);
+		if (position)
+			game_moves = 0;
+		else
+		{
+			game_moves = board.full_move_number * 2;
+			if (! board.white_to_move)
+				++game_moves;
+		}
+		if (game_moves >= GAME_MAX)
+			xil_printf("%s: game_moves %d >= GAME_MAX %d!\n", __PRETTY_FUNCTION__, game_moves, GAME_MAX);
+		else
+			game[game_moves] = board;
                 vchess_write_board(&board);
                 vchess_print_board(&board, 1);
         }
@@ -389,6 +433,7 @@ main(void)
         index = 0;
         // ip_status = 0;
         com_status = 0;
+	position = 0;
 
         xil_printf("ready\n");
 

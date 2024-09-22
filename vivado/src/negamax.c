@@ -32,6 +32,11 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
 		xil_printf("%s: no moves available (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 		return -2;
 	}
+	if (move_count >= MAX_POSITIONS)
+	{
+		xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+		while (1);
+	}
 	for (i = 0; i < move_count; ++i)
 	{
 		status = vchess_read_board(&boards[i], i);
@@ -101,6 +106,11 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply
 		if (! board->white_to_move)
 			value = -value;
 		return value;
+	}
+	if (move_count >= MAX_POSITIONS)
+	{
+		xil_printf("%s: stopping here, move_count=%d, %s %d\n", __PRETTY_FUNCTION__, move_count, __FILE__, __LINE__);
+		while (1);
 	}
 	if (depth == 0)
 	{

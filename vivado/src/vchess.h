@@ -44,7 +44,7 @@
 
 #define EN_PASSANT_VALID_BIT 3
 
-#define MAX_POSITIONS 218
+#define MAX_POSITIONS 300
 
 typedef struct board_t {
 	uint32_t board[8];
@@ -55,6 +55,8 @@ typedef struct board_t {
 	uint32_t black_in_check;
 	uint32_t white_in_check;
 	uint32_t capture;
+	uint32_t half_move_clock;
+	uint32_t full_move_number;
 } board_t;
 
 static inline void
@@ -232,6 +234,50 @@ vchess_move_count(void)
 	return val;
 }
 
+static inline void
+vchess_repdet_write(uint32_t addr)
+{
+	vchess_write(0x12, 1 << 31 | addr); // toggle write enable
+	vchess_write(0x12, addr);
+}
+
+static inline void
+vchess_repdet_depth(uint32_t depth)
+{
+	vchess_write(0x10, depth);
+}
+
+static inline void
+vchess_repdet_castle_mask(uint32_t castle_mask)
+{
+	vchess_write(0x11, castle_mask);
+}
+
+static inline void
+vchess_repdet_board(uint32_t board[8])
+{
+	uint32_t i;
+	
+	for (i = 0; i < 8; ++i)
+		vchess_write(0x18 + i, board[i]);
+}
+
+static inline void
+vchess_write_half_move(uint32_t half_move)
+{
+	vchess_write(0x3, half_move);
+}
+
+static inline uint32_t
+vchess_read_half_move(void)
+{
+	uint32_t half_move;
+
+	half_move = vchess_read(138);
+
+	return half_move;
+}
+
 extern void print_app_header(void);
 extern int start_application(void);
 extern void init_platform(void);
@@ -248,5 +294,6 @@ extern void vchess_print_board(board_t *board, uint32_t initial_board);
 extern uint32_t vchess_read_board(board_t *board, uint32_t index);
 extern void vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece);
 extern uint32_t vchess_get_piece(board_t *board, uint32_t row, uint32_t col);
+extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask);
 
 extern board_t nm_top(board_t *board);
