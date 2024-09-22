@@ -11,7 +11,7 @@ module all_moves #
     input                                clk,
     input                                reset,
 
-    input                                board_valid,
+    input                                board_valid_in,
     input [`BOARD_WIDTH - 1:0]           board_in,
     input                                white_to_move_in,
     input [3:0]                          castle_mask_in,
@@ -22,19 +22,19 @@ module all_moves #
     input [3:0]                          repdet_castle_mask_in,
     input [REPDET_WIDTH-1:0]             repdet_depth_in,
     input [REPDET_WIDTH-1:0]             repdet_wr_addr_in,
-    input                                repdet_wr_en,
+    input                                repdet_wr_en_in,
 
-    input [MAX_POSITIONS_LOG2 - 1:0]     move_index,
-    input                                clear_moves,
+    input [MAX_POSITIONS_LOG2 - 1:0]     am_move_index,
+    input                                am_clear_moves,
 
     output reg                           initial_mate = 0,
     output reg                           initial_stalemate = 0,
     output reg signed [EVAL_WIDTH - 1:0] initial_eval,
     output reg                           initial_thrice_rep = 0,
 
-    output reg                           moves_ready,
-    output reg                           move_ready,
-    output [MAX_POSITIONS_LOG2 - 1:0]    move_count,
+    output reg                           am_moves_ready,
+    output reg                           am_move_ready,
+    output [MAX_POSITIONS_LOG2 - 1:0]    am_move_count,
 
     output [`BOARD_WIDTH - 1:0]          board_out,
     output                               white_to_move_out,
@@ -99,7 +99,7 @@ module all_moves #
    reg                                   legal_thrice_rep_ram_wr;
    reg                                   legal_ram_wr = 0;
 
-   reg [MAX_POSITIONS_LOG2 - 1:0]        move_index_r;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        am_move_index_r;
 
    reg [`BOARD_WIDTH - 1:0]              attack_test_board;
    reg [3:0]                             attack_test_en_passant_col;
@@ -191,7 +191,7 @@ module all_moves #
 
    wire                                  black_to_move = ~white_to_move;
 
-   assign move_count = legal_ram_wr_addr;
+   assign am_move_count = legal_ram_wr_addr;
    assign {half_move_out, thrice_rep_out, eval_out, white_is_attacking_out, black_is_attacking_out,
            white_in_check_out, black_in_check_out,
            capture_out, en_passant_col_out, castle_mask_out, white_to_move_out,
@@ -289,10 +289,10 @@ module all_moves #
 
    always @(posedge clk)
      begin
-        move_index_r <= move_index;
-        move_ready <= move_index == move_index_r;
+        am_move_index_r <= am_move_index;
+        am_move_ready <= am_move_index == am_move_index_r;
 
-        legal_ram_rd_data <= legal_move_ram[move_index];
+        legal_ram_rd_data <= legal_move_ram[am_move_index];
         if (legal_ram_wr_addr_init)
           legal_ram_wr_addr <= 0;
         if (legal_ram_wr)
@@ -420,7 +420,7 @@ module all_moves #
        case (state)
          STATE_IDLE :
            begin
-              moves_ready <= 0;
+              am_moves_ready <= 0;
               board <= board_in;
               white_to_move <= white_to_move_in;
               castle_mask <= castle_mask_in;
@@ -428,18 +428,18 @@ module all_moves #
               half_move <= half_move_in;
 
               attack_test <= board_in;
-              attack_test_valid <= board_valid;
+              attack_test_valid <= board_valid_in;
 
               // upstream populates thrice repetition ram while idle and
               // before asserting board valid
               rd_ram_board_in <= repdet_board_in;
               rd_ram_castle_mask_in <= repdet_castle_mask_in;
               rd_ram_wr_addr_in <= repdet_wr_addr_in;
-              rd_ram_wr_en <= repdet_wr_en;
+              rd_ram_wr_en <= repdet_wr_en_in;
               rd_ram_depth_in <= repdet_depth_in;
 
               rd_board_in <= board_in;
-              rd_board_valid <= board_valid;
+              rd_board_valid <= board_valid_in;
               rd_castle_mask_in <= castle_mask_in;
               rd_clear_sample <= 0;
 
@@ -833,7 +833,7 @@ module all_moves #
               clear_eval <= 0;
               clear_attack <= 0;
               rd_clear_sample <= 0;
-              if (move_count == 0)
+              if (am_move_count == 0)
                 begin
                    if (initial_board_check)
                      if (white_to_move)
@@ -850,8 +850,8 @@ module all_moves #
                    initial_mate <= 0;
                    initial_stalemate <= 0;
                 end
-              moves_ready <= 1;
-              if (clear_moves)
+              am_moves_ready <= 1;
+              if (am_clear_moves)
                 state <= STATE_IDLE;
            end
          default :
