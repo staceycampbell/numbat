@@ -311,7 +311,7 @@ main(void)
                                 if (fi >= 0 && fi < 8)
                                 {
                                         fj = col - 1;
-                                        if (fj > 0)
+                                        if (fj >= 0)
                                         {
                                                 attack_array[idx][fi][fj] = attack_pawn[color];
                                                 idx = idx + 1;
