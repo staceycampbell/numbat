@@ -297,3 +297,5 @@ extern uint32_t vchess_get_piece(board_t *board, uint32_t row, uint32_t col);
 extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask);
 
 extern board_t nm_top(board_t *board);
+
+extern void fen_print(board_t *board);

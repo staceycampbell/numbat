@@ -45,4 +45,4 @@
 
 `define EN_PASSANT_VALID_BIT 3
 
-`define MAX_POSITIONS 218
+`define MAX_POSITIONS 300

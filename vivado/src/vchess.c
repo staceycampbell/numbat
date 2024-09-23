@@ -81,7 +81,7 @@ void
 vchess_write_board(board_t *board)
 {
 	int i;
-	uint32_t moves_ready;
+	uint32_t moves_ready, move_count;
 
 	vchess_write_control(1, 0, 1); // soft reset, new board valid, clear moves
 	vchess_write_control(0, 0, 0);
@@ -99,6 +99,14 @@ vchess_write_board(board_t *board)
 	} while (i < 1000 && ! moves_ready);
 	if (! moves_ready)
 		xil_printf("%s: problems in vchess_write_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+	move_count = vchess_move_count();
+	if (move_count >= MAX_POSITIONS)
+	{
+		vchess_print_board(board, 1);
+		fen_print(board);
+		xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+		while (1);
+	}
 }
 
 uint32_t
