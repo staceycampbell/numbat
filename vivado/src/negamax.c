@@ -13,6 +13,7 @@
 static board_t root_node_boards[MAX_POSITIONS];
 static uint32_t nodes_searched;
 static board_t board_stack[DEPTH_MAX][MAX_POSITIONS];
+static board_t *board_debug[DEPTH_MAX];
 
 static int32_t
 nm_load_positions(board_t boards[MAX_POSITIONS])
@@ -96,6 +97,19 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply
 	++nodes_searched;
 	vchess_write_board(board);
 	move_count = vchess_move_count();
+	if (move_count >= 218)
+	{
+		int i;
+
+		for (i = 0; i <= ply; ++i)
+		{
+			xil_printf("debug ply %d:\n", i);
+			vchess_print_board(board_debug[i], 1);
+			fen_print(board_debug[i]);
+		}
+		xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+		while (1);
+	}
 	value = vchess_initial_eval();
 	if (move_count == 0) // mate or stalemate
 	{
@@ -140,6 +154,7 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply
 	++ply;
 	do
 	{
+		board_debug[ply] = board_ptr[index];
 		value = valmax(value, -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply));
 		alpha = valmax(alpha, value);
 		++index;
@@ -188,6 +203,7 @@ nm_top(board_t *board)
 	best_evaluation = -LARGE_EVAL;
 	for (i = 0; i < move_count; ++i)
 	{
+		board_debug[ply] = &root_node_boards[i];
 		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply);
 		if (evaluate_move > best_evaluation)
 		{

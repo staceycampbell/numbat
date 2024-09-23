@@ -44,7 +44,7 @@
 
 #define EN_PASSANT_VALID_BIT 3
 
-#define MAX_POSITIONS 300
+#define MAX_POSITIONS 219
 
 typedef struct board_t {
 	uint32_t board[8];

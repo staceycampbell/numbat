@@ -83,24 +83,26 @@ vchess_write_board(board_t *board)
 	int i;
 	uint32_t moves_ready, move_count;
 
-	vchess_write_control(1, 0, 1); // soft reset, new board valid, clear moves
-	vchess_write_control(0, 0, 0);
+	vchess_write_control(0, 0, 1);	// soft reset, new board valid, clear moves
+	vchess_write_control(1, 0, 0);	// soft reset, new board valid, clear moves
+	vchess_write_control(0, 0, 0);	// soft reset, new board valid, clear moves
 	for (i = 0; i < 8; ++i)
 		vchess_write_board_row(i, board->board[i]);
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
 	vchess_write_half_move(board->half_move_clock);
-	vchess_write_control(0, 1, 0); // new board valid bit set
-	vchess_write_control(0, 0, 0); // new board valid bit clear
+	vchess_write_control(0, 1, 0);	// new board valid bit set
+	vchess_write_control(0, 0, 0);	// new board valid bit clear
 	i = 0;
 	do
 	{
 		vchess_status(0, &moves_ready, 0, 0);
 		++i;
-	} while (i < 1000 && ! moves_ready);
-	if (! moves_ready)
+	}
+	while (i < 1000 && !moves_ready);
+	if (!moves_ready)
 		xil_printf("%s: problems in vchess_write_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 	move_count = vchess_move_count();
-	if (move_count >= MAX_POSITIONS)
+	if (move_count >= 218)
 	{
 		vchess_print_board(board, 1);
 		fen_print(board);
