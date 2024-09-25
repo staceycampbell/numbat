@@ -95,7 +95,7 @@ vchess_write_board(board_t *board)
 	i = 0;
 	do
 	{
-		vchess_status(0, &moves_ready, 0, 0);
+		vchess_status(0, &moves_ready, 0, 0, 0);
 		++i;
 	}
 	while (i < 1000 && !moves_ready);
@@ -125,7 +125,7 @@ vchess_read_board(board_t *board, uint32_t index)
 		xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 		while (1);
 	}
-	status = vchess_status(&move_ready, &moves_ready, 0, 0);
+	status = vchess_status(&move_ready, &moves_ready, 0, 0, 0);
 	if (! moves_ready)
 	{
 		xil_printf("moves_ready not set\n");
@@ -137,7 +137,7 @@ vchess_read_board(board_t *board, uint32_t index)
 		return 1;
 	}
 	vchess_move_index(index);
-	status = vchess_status(&move_ready, 0, 0, 0);
+	status = vchess_status(&move_ready, 0, 0, 0, 0);
 	if (! move_ready)
 	{
 		xil_printf("move_ready not set: 0x%X\n", status);

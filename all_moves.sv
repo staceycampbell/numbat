@@ -32,6 +32,7 @@ module all_moves #
     output reg signed [EVAL_WIDTH - 1:0] initial_eval,
     output reg                           initial_thrice_rep = 0,
 
+    output reg                           am_idle,
     output reg                           am_moves_ready,
     output reg                           am_move_ready,
     output [MAX_POSITIONS_LOG2 - 1:0]    am_move_count,
@@ -411,7 +412,7 @@ module all_moves #
    localparam STATE_LEGAL_NEXT = 22;
    localparam STATE_DONE = 23;
 
-   reg [4:0] state = STATE_IDLE;
+(* mark_debug = "true" *)   reg [4:0] state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -420,6 +421,8 @@ module all_moves #
        case (state)
          STATE_IDLE :
            begin
+              am_idle <= 1;
+              
               am_moves_ready <= 0;
               board <= board_in;
               white_to_move <= white_to_move_in;
@@ -453,6 +456,8 @@ module all_moves #
            end
          STATE_INIT :
            begin
+              am_idle <= 0;
+              
               // append the initial board to the thrice rep ram, but don't advance rd_ram_depth_in yet
               // as rep_det is still processing the initial board
               rd_ram_board_in <= board;

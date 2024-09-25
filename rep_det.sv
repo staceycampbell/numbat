@@ -10,28 +10,28 @@ module rep_det #
 
     input [`BOARD_WIDTH - 1:0] board_in,
     input [3:0]                castle_mask_in,
-    input                      board_valid,
+(* mark_debug = "true" *)    input                      board_valid,
 
-    input                      clear_sample,
+(* mark_debug = "true" *)    input                      clear_sample,
 
     input [`BOARD_WIDTH - 1:0] ram_board_in,
     input [3:0]                ram_castle_mask_in,
-    input [REPDET_WIDTH - 1:0] ram_wr_addr_in,
-    input                      ram_wr_en,
-    input [REPDET_WIDTH - 1:0] ram_depth_in,
+(* mark_debug = "true" *)    input [REPDET_WIDTH - 1:0] ram_wr_addr_in,
+(* mark_debug = "true" *)    input                      ram_wr_en,
+(* mark_debug = "true" *)    input [REPDET_WIDTH - 1:0] ram_depth_in,
 
-    output reg                 thrice_rep,
-    output reg                 thrice_rep_valid
+(* mark_debug = "true" *)    output reg                 thrice_rep,
+(* mark_debug = "true" *)    output reg                 thrice_rep_valid
     );
 
    localparam RAM_WIDTH = `BOARD_WIDTH + 4;
    localparam RAM_COUNT = 1 << REPDET_WIDTH;
    
    reg [RAM_WIDTH - 1:0]       board_and_castle_mask;
-   reg [REPDET_WIDTH - 1:0]    counter;
-   reg [REPDET_WIDTH - 1:0]    ram_depth_te;
+(* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    counter;
+(* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    ram_depth_te;
    reg [RAM_WIDTH - 1:0]       ram_read;
-   reg [REPDET_WIDTH - 1:0]    ram_rd_addr;
+(* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    ram_rd_addr;
    
    reg [RAM_WIDTH - 1:0]       ram_table [0:RAM_COUNT - 1];
 
@@ -54,7 +54,7 @@ module rep_det #
    localparam STATE_NO_REP_DET = 3;
    localparam STATE_REP_DET = 4;
 
-   reg [2:0]                        state = STATE_IDLE;
+(* mark_debug = "true" *)   reg [2:0]                        state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)

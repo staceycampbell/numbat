@@ -32,7 +32,8 @@ module control #
     input                                 initial_stalemate,
     input signed [EVAL_WIDTH - 1:0]       initial_eval, // root node eval
     input                                 initial_thrice_rep, // root node thrice rep
-   
+
+    input                                 am_idle,
     input                                 am_moves_ready, // all moves now calculated
     input                                 am_move_ready, // move index by am_move_index now valid
     input [MAX_POSITIONS_LOG2 - 1:0]      am_move_count,
@@ -145,6 +146,7 @@ module control #
                     ctrl0_axi_rdata[4] <= initial_stalemate;
                     ctrl0_axi_rdata[5] <= initial_mate;
                     ctrl0_axi_rdata[6] <= initial_thrice_rep;
+                    ctrl0_axi_rdata[7] <= am_idle;
                     ctrl0_axi_rdata[31] <= soft_reset;
                  end
                5'h01 : ctrl0_axi_rdata <= am_move_index;

@@ -12,11 +12,9 @@
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
 #define BUF_SIZE 1024
 
-#define GAME_MAX 2048
-
-static board_t game[GAME_MAX];
-static uint32_t game_moves;
-static uint32_t position;
+board_t game[GAME_MAX];
+uint32_t game_move_index, game_moves;
+uint32_t position;
 
 #if 0
 extern volatile int TcpFastTmrFlag;
@@ -300,6 +298,15 @@ do_both(board_t *board)
 		move_count = vchess_move_count();
 		if (move_count > 0)
 		{
+			game[game_move_index] = best_board;
+			++game_move_index;
+			++game_moves;
+			if (game_move_index >= GAME_MAX)
+			{
+				xil_printf("%s: game_move_index (%d) >= GAME_MAX (%d), stopping here %s %d\n",
+					   __PRETTY_FUNCTION__, game_move_index, GAME_MAX, __FILE__, __LINE__);
+				while (1);
+			}
 			best_board = nm_top(&best_board);
 			vchess_write_board(&best_board);
 			move_count = vchess_move_count();
@@ -330,10 +337,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 
         if (strcmp((char *)str, "status") == 0)
         {
-                uint32_t move_ready, moves_ready, mate, stalemate;
+                uint32_t move_ready, moves_ready, mate, stalemate, thrice_rep;
 
-                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate);
-                xil_printf("moves_ready=%d, mate=%d, stalemate=%d", moves_ready, mate, stalemate);
+                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep);
+                xil_printf("moves_ready=%d, mate=%d, stalemate=%d, thrice_rep=%d", moves_ready, mate, stalemate, thrice_rep);
                 if (moves_ready)
                         xil_printf(", moves=%d, eval=%d", vchess_move_count(), vchess_initial_eval());
                 xil_printf("\n");
@@ -364,31 +371,38 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 	}
 	else if (strcmp((char *)str, "game") == 0)
 	{
+		for (game_move_index = 0; game_move_index < GAME_MAX; ++game_move_index)
+			game[game_move_index].half_move_clock = 0;
+		game_move_index = 0;
 		game_moves = 0;
 		position = 0;
 	}
 	else if (strcmp((char *)str, "position") == 0)
 	{
+		for (game_move_index = 0; game_move_index < GAME_MAX; ++game_move_index)
+			game[game_move_index].half_move_clock = 0;
 		position = 1;
 		game_moves = 0;
+		game_move_index = 0;
 	}
         else
         {
                 fen_board(cmd, &board);
 		if (position)
-			game_moves = 0;
+			game_move_index = 0;
 		else
 		{
-			game_moves = board.full_move_number * 2;
+			game_move_index = board.full_move_number * 2;
 			if (! board.white_to_move)
-				++game_moves;
+				++game_move_index;
 		}
-		if (game_moves >= GAME_MAX)
-			xil_printf("%s: game_moves %d >= GAME_MAX %d!\n", __PRETTY_FUNCTION__, game_moves, GAME_MAX);
+		if (game_move_index >= GAME_MAX)
+			xil_printf("%s: game_move_index %d >= GAME_MAX %d!\n", __PRETTY_FUNCTION__, game_move_index, GAME_MAX);
 		else
-			game[game_moves] = board;
+			game[game_move_index] = board;
                 vchess_write_board(&board);
                 vchess_print_board(&board, 1);
+		game_moves = game_move_index + 1;
         }
 }
 

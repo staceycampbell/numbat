@@ -29,6 +29,7 @@ module vchess_top;
    wire signed [EVAL_WIDTH-1:0] am_eval_out;    // From all_moves of all_moves.v
    wire [HALF_MOVE_WIDTH-1:0] am_half_move_in;  // From control of control.v
    wire [HALF_MOVE_WIDTH-1:0] am_half_move_out; // From all_moves of all_moves.v
+   wire                 am_idle;                // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_index; // From control of control.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -132,6 +133,7 @@ module vchess_top;
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .initial_thrice_rep               (initial_thrice_rep),
+      .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
       .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),
@@ -207,6 +209,7 @@ module vchess_top;
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .initial_thrice_rep               (initial_thrice_rep),
+      .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
       .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),

@@ -5,15 +5,50 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-#pragma GCC optimize ("O3")
+// #pragma GCC optimize ("O3")
 
 #define DEPTH_MAX 5
 #define LARGE_EVAL (1 << 15)
 
+extern board_t game[GAME_MAX];
+extern uint32_t game_move_index, game_moves;
+extern uint32_t position;
+
 static board_t root_node_boards[MAX_POSITIONS];
 static uint32_t nodes_searched;
 static board_t board_stack[DEPTH_MAX][MAX_POSITIONS];
-static board_t *board_debug[DEPTH_MAX];
+static board_t *board_vert[DEPTH_MAX];
+
+static void
+nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t *board_vert[DEPTH_MAX], uint32_t ply)
+{
+	int32_t i, entry, status;
+
+	i = (int32_t)ply - 1;
+	entry = 0;
+	status = 0;
+	while (i >= 0 && (status = board_vert[i]->half_move_clock > 0) != 0)
+	{
+		vchess_repdet_board(board_vert[i]->board);
+		vchess_repdet_castle_mask(board_vert[i]->castle_mask);
+		vchess_repdet_write(entry);
+		--i;
+		++entry;
+	}
+	if (status)
+	{
+		i = (int32_t)game_moves - 1;
+		while (i >= 0 && game[i].half_move_clock > 0)
+		{
+			vchess_repdet_board(game[i].board);
+			vchess_repdet_castle_mask(game[i].castle_mask);
+			vchess_repdet_write(entry);
+			--i;
+			++entry;
+		}
+	}
+	vchess_repdet_depth(entry);
+}
 
 static int32_t
 nm_load_positions(board_t boards[MAX_POSITIONS])
@@ -21,7 +56,7 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
 	int32_t i;
 	uint32_t moves_ready, status, move_count;
 
-	vchess_status(0, &moves_ready, 0, 0);
+	vchess_status(0, &moves_ready, 0, 0, 0);
 	if (! moves_ready)
 	{
 		xil_printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -95,6 +130,7 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply
 	board_t *board_ptr[MAX_POSITIONS];
 
 	++nodes_searched;
+	nm_load_rep_table(game, game_moves, board_vert, ply);
 	vchess_write_board(board);
 	move_count = vchess_move_count();
 	if (move_count >= 218)
@@ -104,14 +140,14 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply
 		for (i = 0; i <= ply; ++i)
 		{
 			xil_printf("debug ply %d:\n", i);
-			vchess_print_board(board_debug[i], 1);
-			fen_print(board_debug[i]);
+			vchess_print_board(board_vert[i], 1);
+			fen_print(board_vert[i]);
 		}
 		xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 		while (1);
 	}
 	value = vchess_initial_eval();
-	if (move_count == 0) // mate or stalemate
+	if (move_count == 0) // mate, stalemate, or thrice repetition
 	{
 		if (value < 0) // white mated
 			value += DEPTH_MAX - depth; // fastest path to black win, slowest for white loss
@@ -154,7 +190,7 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply
 	++ply;
 	do
 	{
-		board_debug[ply] = board_ptr[index];
+		board_vert[ply] = board_ptr[index];
 		value = valmax(value, -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply));
 		alpha = valmax(alpha, value);
 		++index;
@@ -166,7 +202,8 @@ negamax(board_t *board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply
 board_t
 nm_top(board_t *board)
 {
-	int32_t i, status, ply;
+	int32_t i, status;
+	uint32_t ply;
 	uint32_t moves_ready, move_count, elapsed_ticks;
 	double elapsed_time, nps;
 	int32_t evaluate_move, best_evaluation;
@@ -179,7 +216,7 @@ nm_top(board_t *board)
 	i = 0;
 	do
 	{
-		vchess_status(0, &moves_ready, 0, 0);
+		vchess_status(0, &moves_ready, 0, 0, 0);
 		++i;
 	} while (i < 1000 && ! moves_ready);
 	if (! moves_ready)
@@ -203,7 +240,7 @@ nm_top(board_t *board)
 	best_evaluation = -LARGE_EVAL;
 	for (i = 0; i < move_count; ++i)
 	{
-		board_debug[ply] = &root_node_boards[i];
+		board_vert[ply] = &root_node_boards[i];
 		evaluate_move = -negamax(&root_node_boards[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply);
 		if (evaluate_move > best_evaluation)
 		{

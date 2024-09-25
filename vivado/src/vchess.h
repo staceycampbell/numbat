@@ -45,6 +45,7 @@
 #define EN_PASSANT_VALID_BIT 3
 
 #define MAX_POSITIONS 219
+#define GAME_MAX 2048 // maximum half moves
 
 typedef struct board_t {
 	uint32_t board[8];
@@ -119,11 +120,13 @@ vchess_write_board_row(uint32_t row, uint32_t row_pieces)
 }
 
 static inline uint32_t
-vchess_status(uint32_t *move_ready, uint32_t *moves_ready, uint32_t *mate, uint32_t *stalemate)
+vchess_status(uint32_t *move_ready, uint32_t *moves_ready, uint32_t *mate, uint32_t *stalemate, uint32_t *thrice_rep)
 {
 	uint32_t val;
 
 	val = vchess_read(0);
+	if (thrice_rep)
+		*thrice_rep = (val & (1 << 6)) != 0;
 	if (mate)
 		*mate = (val & (1 << 5)) != 0;
 	if (stalemate)
