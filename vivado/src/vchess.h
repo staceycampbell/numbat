@@ -46,6 +46,7 @@
 
 #define MAX_POSITIONS 219
 #define GAME_MAX 2048 // maximum half moves
+#define BUF_SIZE 1024
 
 typedef struct board_t {
 	uint32_t board[8];
@@ -56,6 +57,7 @@ typedef struct board_t {
 	uint32_t black_in_check;
 	uint32_t white_in_check;
 	uint32_t capture;
+	uint32_t thrice_rep;
 	uint32_t half_move_clock;
 	uint32_t full_move_number;
 } board_t;
@@ -176,7 +178,7 @@ vchess_read_black_is_attacking(void)
 }
 
 static inline uint32_t
-vchess_board_status0(uint32_t *black_in_check, uint32_t *white_in_check, uint32_t *capture)
+vchess_board_status0(uint32_t *black_in_check, uint32_t *white_in_check, uint32_t *capture, uint32_t *thrice_rep)
 {
 	uint32_t val;
 
@@ -187,6 +189,8 @@ vchess_board_status0(uint32_t *black_in_check, uint32_t *white_in_check, uint32_
 		*white_in_check = (val & (1 << 1)) != 0;
 	if (black_in_check)
 		*black_in_check = (val & (1 << 2)) != 0;
+	if (thrice_rep)
+		*thrice_rep = (val & (1 << 3)) != 0;
 
 	return val;
 }
@@ -299,6 +303,9 @@ extern void vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t pi
 extern uint32_t vchess_get_piece(board_t *board, uint32_t row, uint32_t col);
 extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask);
 
-extern board_t nm_top(board_t *board);
+extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves);
 
 extern void fen_print(board_t *board);
+extern int fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
+
+extern uint32_t sample_game(board_t game[GAME_MAX]);

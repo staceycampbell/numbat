@@ -10,11 +10,10 @@
 #include "vchess.h"
 
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
-#define BUF_SIZE 1024
 
-board_t game[GAME_MAX];
-uint32_t game_move_index, game_moves;
-uint32_t position;
+static board_t game[GAME_MAX];
+static uint32_t game_moves;
+static uint32_t position;
 
 #if 0
 extern volatile int TcpFastTmrFlag;
@@ -117,7 +116,7 @@ fen_print(board_t *board)
 	xil_printf(" %d 0\n", board->half_move_clock); // tbd
 }
 
-static int
+int
 fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
 {
         int row, col, i, stop_col;
@@ -286,34 +285,29 @@ process_serial_port(uint8_t cmdbuf[BUF_SIZE], uint32_t * index)
 }
 
 static void
-do_both(board_t *board)
+do_both(void)
 {
 	uint32_t move_count;
 	board_t best_board;
+	uint32_t mate, stalemate, thrice_rep;
 
-	best_board = *board;
 	do
 	{
-                vchess_write_board(&best_board);
+		best_board = nm_top(game, game_moves);
+		vchess_write_board(&best_board);
 		move_count = vchess_move_count();
-		if (move_count > 0)
+		vchess_status(0, 0, &mate, &stalemate, &thrice_rep);
+		game[game_moves] = best_board;
+		++game_moves;
+		if (game_moves >= GAME_MAX)
 		{
-			game[game_move_index] = best_board;
-			++game_move_index;
-			++game_moves;
-			if (game_move_index >= GAME_MAX)
-			{
-				xil_printf("%s: game_move_index (%d) >= GAME_MAX (%d), stopping here %s %d\n",
-					   __PRETTY_FUNCTION__, game_move_index, GAME_MAX, __FILE__, __LINE__);
-				while (1);
-			}
-			best_board = nm_top(&best_board);
-			vchess_write_board(&best_board);
-			move_count = vchess_move_count();
+			xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
+				   game_moves, GAME_MAX, __FILE__, __LINE__);
+			while (1);
 		}
 		vchess_print_board(&best_board, 1);
 		fen_print(&best_board);
-	} while (move_count > 0);
+	} while (move_count > 0 && ! (mate || stalemate || thrice_rep));
 	xil_printf("both done\n");
 }
 
@@ -361,48 +355,60 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "nm") == 0)
         {
-                best_board = nm_top(&board);
-                vchess_print_board(&best_board, 0);
-		fen_print(&best_board);
+		if (game_moves > 0)
+		{
+			best_board = nm_top(game, game_moves);
+			vchess_write_board(&best_board);
+			vchess_print_board(&best_board, 1);
+			fen_print(&best_board);
+			game[game_moves] = best_board;
+			++game_moves;
+		}
+		else
+			xil_printf("%s: ignored, no game sequence to analyze (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
         }
 	else if (strcmp((char *)str, "both") == 0)
 	{
-		do_both(&board);
+		do_both();
 	}
 	else if (strcmp((char *)str, "game") == 0)
 	{
-		for (game_move_index = 0; game_move_index < GAME_MAX; ++game_move_index)
-			game[game_move_index].half_move_clock = 0;
-		game_move_index = 0;
 		game_moves = 0;
 		position = 0;
 	}
 	else if (strcmp((char *)str, "position") == 0)
 	{
-		for (game_move_index = 0; game_move_index < GAME_MAX; ++game_move_index)
-			game[game_move_index].half_move_clock = 0;
 		position = 1;
 		game_moves = 0;
-		game_move_index = 0;
 	}
-        else
+        else if (strcmp((char *)str, "sample") == 0)
+	{
+		game_moves = sample_game(game);
+	}
+	else
         {
                 fen_board(cmd, &board);
 		if (position)
-			game_move_index = 0;
+		{
+			game_moves = 1;
+			board.half_move_clock = 0;
+			board.full_move_number = 0;
+			game[0] = board;
+		}
 		else
 		{
+			uint32_t game_move_index;
+			
 			game_move_index = board.full_move_number * 2;
 			if (! board.white_to_move)
 				++game_move_index;
-		}
-		if (game_move_index >= GAME_MAX)
-			xil_printf("%s: game_move_index %d >= GAME_MAX %d!\n", __PRETTY_FUNCTION__, game_move_index, GAME_MAX);
-		else
 			game[game_move_index] = board;
+			game_moves = game_move_index;
+			if (game_move_index >= GAME_MAX)
+				xil_printf("%s: game_move_index %d >= GAME_MAX %d!\n", __PRETTY_FUNCTION__, game_move_index, GAME_MAX);
+		}
                 vchess_write_board(&board);
                 vchess_print_board(&board, 1);
-		game_moves = game_move_index + 1;
         }
 }
 
