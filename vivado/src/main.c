@@ -40,80 +40,80 @@ print_ip_settings(ip_addr_t * ip, ip_addr_t * mask, ip_addr_t * gw)
 #endif
 
 void
-fen_print(board_t *board)
+fen_print(board_t * board)
 {
-	int row, col, empty, i;
-	uint32_t piece;
-	char en_passant_col;
-	char piece_char[1 << PIECE_BITS];
+        int row, col, empty, i;
+        uint32_t piece;
+        char en_passant_col;
+        char piece_char[1 << PIECE_BITS];
 
-	for (i = 0; i < (1 << PIECE_BITS); ++i)
-		piece_char[i] = '?';
-	piece_char[WHITE_PAWN] = 'P';
-	piece_char[WHITE_ROOK] = 'R';
-	piece_char[WHITE_KNIT] = 'N';
-	piece_char[WHITE_BISH] = 'B';
-	piece_char[WHITE_KING] = 'K';
-	piece_char[WHITE_QUEN] = 'Q';
-	piece_char[BLACK_PAWN] = 'p';
-	piece_char[BLACK_ROOK] = 'r';
-	piece_char[BLACK_KNIT] = 'n';
-	piece_char[BLACK_BISH] = 'b';
-	piece_char[BLACK_KING] = 'k';
-	piece_char[BLACK_QUEN] = 'q';
+        for (i = 0; i < (1 << PIECE_BITS); ++i)
+                piece_char[i] = '?';
+        piece_char[WHITE_PAWN] = 'P';
+        piece_char[WHITE_ROOK] = 'R';
+        piece_char[WHITE_KNIT] = 'N';
+        piece_char[WHITE_BISH] = 'B';
+        piece_char[WHITE_KING] = 'K';
+        piece_char[WHITE_QUEN] = 'Q';
+        piece_char[BLACK_PAWN] = 'p';
+        piece_char[BLACK_ROOK] = 'r';
+        piece_char[BLACK_KNIT] = 'n';
+        piece_char[BLACK_BISH] = 'b';
+        piece_char[BLACK_KING] = 'k';
+        piece_char[BLACK_QUEN] = 'q';
 
-	for (row = 7; row >= 0; --row)
-	{
-		empty = 0;
-		for (col = 0; col < 8; ++col)
-		{
-			piece = vchess_get_piece(board, row, col);
-			if (piece == EMPTY_POSN)
-				++empty;
-			else
-			{
-				if (empty > 0)
-				{
-					xil_printf("%d", empty);
-					empty = 0;
-				}
-				xil_printf("%c", piece_char[piece]);
-			}
-		}
-		if (empty > 0)
-			xil_printf("%d", empty);
-		if (row > 0)
-			xil_printf("/");
-	}
-	xil_printf(" ");
+        for (row = 7; row >= 0; --row)
+        {
+                empty = 0;
+                for (col = 0; col < 8; ++col)
+                {
+                        piece = vchess_get_piece(board, row, col);
+                        if (piece == EMPTY_POSN)
+                                ++empty;
+                        else
+                        {
+                                if (empty > 0)
+                                {
+                                        xil_printf("%d", empty);
+                                        empty = 0;
+                                }
+                                xil_printf("%c", piece_char[piece]);
+                        }
+                }
+                if (empty > 0)
+                        xil_printf("%d", empty);
+                if (row > 0)
+                        xil_printf("/");
+        }
+        xil_printf(" ");
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-	if (board->white_to_move)
-		xil_printf("w");
-	else
-		xil_printf("b");
-	xil_printf(" ");
-	if (board->castle_mask == 0)
-		xil_printf("-");
-	if ((board->castle_mask & (1 << CASTLE_WHITE_SHORT)) != 0)
-		xil_printf("K");
-	if ((board->castle_mask & (1 << CASTLE_WHITE_LONG)) != 0)
-		xil_printf("Q");
-	if ((board->castle_mask & (1 << CASTLE_BLACK_SHORT)) != 0)
-		xil_printf("k");
-	if ((board->castle_mask & (1 << CASTLE_BLACK_LONG)) != 0)
-		xil_printf("q");
-	xil_printf(" ");
-	if ((board->en_passant_col & (1 << EN_PASSANT_VALID_BIT)) == 0)
-		xil_printf("-");
-	else
-	{
-		en_passant_col = 'a' + (board->en_passant_col & 0x7);
-		if (board->white_to_move)
-			xil_printf("%c6", en_passant_col);
-		else
-			xil_printf("%c3", en_passant_col);
-	}
-	xil_printf(" %d %d\n", board->half_move_clock, board->full_move_number);
+        if (board->white_to_move)
+                xil_printf("w");
+        else
+                xil_printf("b");
+        xil_printf(" ");
+        if (board->castle_mask == 0)
+                xil_printf("-");
+        if ((board->castle_mask & (1 << CASTLE_WHITE_SHORT)) != 0)
+                xil_printf("K");
+        if ((board->castle_mask & (1 << CASTLE_WHITE_LONG)) != 0)
+                xil_printf("Q");
+        if ((board->castle_mask & (1 << CASTLE_BLACK_SHORT)) != 0)
+                xil_printf("k");
+        if ((board->castle_mask & (1 << CASTLE_BLACK_LONG)) != 0)
+                xil_printf("q");
+        xil_printf(" ");
+        if ((board->en_passant_col & (1 << EN_PASSANT_VALID_BIT)) == 0)
+                xil_printf("-");
+        else
+        {
+                en_passant_col = 'a' + (board->en_passant_col & 0x7);
+                if (board->white_to_move)
+                        xil_printf("%c6", en_passant_col);
+                else
+                        xil_printf("%c3", en_passant_col);
+        }
+        xil_printf(" %d %d\n", board->half_move_clock, board->full_move_number);
 }
 
 int
@@ -243,25 +243,25 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
                 return 1;
         }
         if (buffer[i] == '-')
-	{
+        {
                 board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
-		++i;
-	}
+                ++i;
+        }
         else
-	{
+        {
                 board->en_passant_col = (1 << EN_PASSANT_VALID_BIT) | (buffer[i] - 'a');
-		i += 2;
-	}
+                i += 2;
+        }
         if (!(i < BUF_SIZE))
         {
                 xil_printf("%s: bad FEN data %s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
                 return 1;
         }
-	if (sscanf((char *)&buffer[i], "%d %d", &board->half_move_clock, &board->full_move_number) != 2)
-	{
+        if (sscanf((char *)&buffer[i], "%d %d", &board->half_move_clock, &board->full_move_number) != 2)
+        {
                 xil_printf("%s: bad FEN half move clock or ful move number%s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
                 return 1;
-	}
+        }
 
         return 0;
 }
@@ -287,28 +287,29 @@ process_serial_port(uint8_t cmdbuf[BUF_SIZE], uint32_t * index)
 static void
 do_both(void)
 {
-	uint32_t move_count;
-	board_t best_board;
-	uint32_t mate, stalemate, thrice_rep;
+        uint32_t move_count;
+        board_t best_board;
+        uint32_t mate, stalemate, thrice_rep;
 
-	do
-	{
-		best_board = nm_top(game, game_moves);
-		vchess_write_board(&best_board);
-		move_count = vchess_move_count();
-		vchess_status(0, 0, &mate, &stalemate, &thrice_rep);
-		game[game_moves] = best_board;
-		++game_moves;
-		if (game_moves >= GAME_MAX)
-		{
-			xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
-				   game_moves, GAME_MAX, __FILE__, __LINE__);
-			while (1);
-		}
-		vchess_print_board(&best_board, 1);
-		fen_print(&best_board);
-	} while (move_count > 0 && ! (mate || stalemate || thrice_rep));
-	xil_printf("both done\n");
+        do
+        {
+                best_board = nm_top(game, game_moves);
+                vchess_write_board(&best_board);
+                move_count = vchess_move_count();
+                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0);
+                vchess_reset_all_moves();
+                game[game_moves] = best_board;
+                ++game_moves;
+                if (game_moves >= GAME_MAX)
+                {
+                        xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__, game_moves, GAME_MAX, __FILE__, __LINE__);
+                        while (1);
+                }
+                vchess_print_board(&best_board, 1);
+                fen_print(&best_board);
+        }
+        while (move_count > 0 && !(mate || stalemate || thrice_rep));
+        xil_printf("both done\n");
 }
 
 static void
@@ -333,7 +334,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 uint32_t move_ready, moves_ready, mate, stalemate, thrice_rep;
 
-                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep);
+                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep, 0);
                 xil_printf("moves_ready=%d, mate=%d, stalemate=%d, thrice_rep=%d", moves_ready, mate, stalemate, thrice_rep);
                 if (moves_ready)
                         xil_printf(", moves=%d, eval=%d", vchess_move_count(), vchess_initial_eval());
@@ -346,78 +347,74 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 if (status == 0)
                         vchess_print_board(&board, 0);
         }
-        else if (strcmp((char *)str, "init") == 0)
-        {
-                vchess_init_board(&board);
-                vchess_move_piece(&board, 0, 3, 3, 3);
-                vchess_write_board(&board);
-                vchess_print_board(&board, 1);
-        }
         else if (strcmp((char *)str, "nm") == 0)
         {
-		if (game_moves > 0)
-		{
-			best_board = nm_top(game, game_moves);
-			vchess_write_board(&best_board);
-			vchess_print_board(&best_board, 1);
-			fen_print(&best_board);
-			game[game_moves] = best_board;
-			++game_moves;
-		}
-		else
-			xil_printf("%s: ignored, no game sequence to analyze (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                if (game_moves > 0)
+                {
+                        best_board = nm_top(game, game_moves);
+                        vchess_write_board(&best_board);
+                        vchess_print_board(&best_board, 1);
+                        fen_print(&best_board);
+                        vchess_reset_all_moves();
+                        game[game_moves] = best_board;
+                        ++game_moves;
+                }
+                else
+                        xil_printf("%s: ignored, no game sequence to analyze (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
         }
-	else if (strcmp((char *)str, "both") == 0)
-	{
-		do_both();
-	}
-	else if (strcmp((char *)str, "game") == 0)
-	{
-		game_moves = 0;
-		position = 0;
-	}
-	else if (strcmp((char *)str, "position") == 0)
-	{
-		position = 1;
-		game_moves = 0;
-	}
+        else if (strcmp((char *)str, "both") == 0)
+        {
+                do_both();
+        }
+        else if (strcmp((char *)str, "game") == 0)
+        {
+                game_moves = 0;
+                position = 0;
+        }
+        else if (strcmp((char *)str, "position") == 0)
+        {
+                position = 1;
+                game_moves = 0;
+        }
         else if (strcmp((char *)str, "sample") == 0)
-	{
-		game_moves = sample_game(game);
-		if (game_moves > 0)
-		{
-			xil_printf("last move in sample game:\n");
-			vchess_write_board(&game[game_moves - 1]);
-			vchess_print_board(&game[game_moves - 1], 1);
-			fen_print(&game[game_moves - 1]);
-		}
-		else
-			xil_printf("%s: no moves found in sample\n", __PRETTY_FUNCTION__);
-	}
-	else
+        {
+                game_moves = sample_game(game);
+                if (game_moves > 0)
+                {
+                        xil_printf("last move in sample game:\n");
+                        vchess_write_board(&game[game_moves - 1]);
+                        vchess_print_board(&game[game_moves - 1], 1);
+                        fen_print(&game[game_moves - 1]);
+                        vchess_reset_all_moves();
+                }
+                else
+                        xil_printf("%s: no moves found in sample\n", __PRETTY_FUNCTION__);
+        }
+        else
         {
                 fen_board(cmd, &board);
-		if (position)
-		{
-			game_moves = 1;
-			board.half_move_clock = 0;
-			board.full_move_number = 0;
-			game[0] = board;
-		}
-		else
-		{
-			uint32_t game_move_index;
-			
-			game_move_index = board.full_move_number * 2;
-			if (! board.white_to_move)
-				++game_move_index;
-			game[game_move_index] = board;
-			game_moves = game_move_index;
-			if (game_move_index >= GAME_MAX)
-				xil_printf("%s: game_move_index %d >= GAME_MAX %d!\n", __PRETTY_FUNCTION__, game_move_index, GAME_MAX);
-		}
+                if (position)
+                {
+                        game_moves = 1;
+                        board.half_move_clock = 0;
+                        board.full_move_number = 0;
+                        game[0] = board;
+                }
+                else
+                {
+                        uint32_t game_move_index;
+
+                        game_move_index = board.full_move_number * 2;
+                        if (!board.white_to_move)
+                                ++game_move_index;
+                        game[game_move_index] = board;
+                        game_moves = game_move_index;
+                        if (game_move_index >= GAME_MAX)
+                                xil_printf("%s: game_move_index %d >= GAME_MAX %d!\n", __PRETTY_FUNCTION__, game_move_index, GAME_MAX);
+                }
                 vchess_write_board(&board);
                 vchess_print_board(&board, 1);
+                vchess_reset_all_moves();
         }
 }
 
@@ -462,7 +459,7 @@ main(void)
         index = 0;
         // ip_status = 0;
         com_status = 0;
-	position = 0;
+        position = 0;
 
         xil_printf("ready\n");
 

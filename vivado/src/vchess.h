@@ -122,11 +122,13 @@ vchess_write_board_row(uint32_t row, uint32_t row_pieces)
 }
 
 static inline uint32_t
-vchess_status(uint32_t *move_ready, uint32_t *moves_ready, uint32_t *mate, uint32_t *stalemate, uint32_t *thrice_rep)
+vchess_status(uint32_t *move_ready, uint32_t *moves_ready, uint32_t *mate, uint32_t *stalemate, uint32_t *thrice_rep, uint32_t *am_idle)
 {
 	uint32_t val;
 
 	val = vchess_read(0);
+	if (*am_idle)
+		*am_idle = (val & (1 << 7)) != 0;
 	if (thrice_rep)
 		*thrice_rep = (val & (1 << 6)) != 0;
 	if (mate)
@@ -283,6 +285,13 @@ vchess_read_half_move(void)
 	half_move = vchess_read(138);
 
 	return half_move;
+}
+
+static inline void
+vchess_reset_all_moves(void)
+{
+	vchess_write_control(1, 0, 0);	// soft reset, new board valid, clear moves
+	vchess_write_control(0, 0, 0);
 }
 
 extern void print_app_header(void);

@@ -10,28 +10,28 @@ module rep_det #
 
     input [`BOARD_WIDTH - 1:0] board_in,
     input [3:0]                castle_mask_in,
-(* mark_debug = "true" *)    input                      board_valid,
+    (* mark_debug = "true" *)    input board_valid,
 
-(* mark_debug = "true" *)    input                      clear_sample,
+    (* mark_debug = "true" *)    input clear_sample,
 
     input [`BOARD_WIDTH - 1:0] ram_board_in,
     input [3:0]                ram_castle_mask_in,
-(* mark_debug = "true" *)    input [REPDET_WIDTH - 1:0] ram_wr_addr_in,
-(* mark_debug = "true" *)    input                      ram_wr_en,
-(* mark_debug = "true" *)    input [REPDET_WIDTH - 1:0] ram_depth_in,
+    (* mark_debug = "true" *)    input [REPDET_WIDTH - 1:0] ram_wr_addr_in,
+    (* mark_debug = "true" *)    input ram_wr_en,
+    (* mark_debug = "true" *)    input [REPDET_WIDTH - 1:0] ram_depth_in,
 
-(* mark_debug = "true" *)    output reg                 thrice_rep,
-(* mark_debug = "true" *)    output reg                 thrice_rep_valid
+    (* mark_debug = "true" *)    output reg thrice_rep,
+    (* mark_debug = "true" *)    output reg thrice_rep_valid
     );
 
    localparam RAM_WIDTH = `BOARD_WIDTH + 4;
    localparam RAM_COUNT = 1 << REPDET_WIDTH;
    
    reg [RAM_WIDTH - 1:0]       board_and_castle_mask;
-(* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    counter;
-(* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    ram_depth_te;
+   (* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    counter;
+   (* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    ram_depth_te;
    reg [RAM_WIDTH - 1:0]       ram_read;
-(* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    ram_rd_addr;
+   (* mark_debug = "true" *)   reg [REPDET_WIDTH - 1:0]    ram_rd_addr;
    
    reg [RAM_WIDTH - 1:0]       ram_table [0:RAM_COUNT - 1];
 
@@ -51,10 +51,9 @@ module rep_det #
    localparam STATE_IDLE = 0;
    localparam STATE_COUNT = 1;
    localparam STATE_WS = 2;
-   localparam STATE_NO_REP_DET = 3;
-   localparam STATE_REP_DET = 4;
+   localparam STATE_REP_DET = 3;
 
-(* mark_debug = "true" *)   reg [2:0]                        state = STATE_IDLE;
+   (* mark_debug = "true" *)   reg [1:0]                        state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -67,40 +66,29 @@ module rep_det #
               board_and_castle_mask <= {castle_mask_in, board_in};
               counter <= 0;
               ram_depth_te <= ram_depth_in - 1;
+              thrice_rep <= 0;
               thrice_rep_valid <= 0;
               if (board_valid)
-                if (ram_depth_in < 3)
-                  state <= STATE_NO_REP_DET;
-                else
-                  state <= STATE_COUNT;
-           end
-         STATE_COUNT :
-           if (board_and_castle_mask == ram_read)
-             begin
-                counter <= counter + 1;
-                if (counter == 2)
+                if (ram_depth_in < 2)
                   state <= STATE_REP_DET;
-             end
-           else
-             begin
-                ram_rd_addr <= ram_rd_addr + 1;
-                if (ram_rd_addr == ram_depth_te)
-                  state <= STATE_NO_REP_DET;
                 else
                   state <= STATE_WS;
-             end
+           end
+         STATE_COUNT :
+           begin
+              ram_rd_addr <= ram_rd_addr + 1;
+              if (board_and_castle_mask == ram_read)
+                counter <= counter + 1;
+              if (ram_rd_addr == ram_depth_te)
+                state <= STATE_REP_DET;
+              else
+                state <= STATE_WS;
+           end
          STATE_WS : // wait state for ram read
            state <= STATE_COUNT;
-         STATE_NO_REP_DET :
-           begin
-              thrice_rep <= 0;
-              thrice_rep_valid <= 1;
-              if (clear_sample)
-                state <= STATE_IDLE;
-           end
          STATE_REP_DET :
            begin
-              thrice_rep <= 1;
+              thrice_rep <= counter >= 2;
               thrice_rep_valid <= 1;
               if (clear_sample)
                 state <= STATE_IDLE;

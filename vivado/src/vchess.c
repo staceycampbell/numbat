@@ -64,7 +64,7 @@ vchess_print_board(board_t *board, uint32_t initial_board)
 	if (initial_board)
 	{
 		eval = vchess_initial_eval();
-		vchess_status(0, 0, &mate, &stalemate, &thrice_rep);
+		vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0);
 	}
 	else
 		eval = board->eval;
@@ -88,9 +88,7 @@ vchess_write_board(board_t *board)
 	int i;
 	uint32_t moves_ready, move_count;
 
-	vchess_write_control(0, 0, 1);	// soft reset, new board valid, clear moves
-	vchess_write_control(1, 0, 0);	// soft reset, new board valid, clear moves
-	vchess_write_control(0, 0, 0);	// soft reset, new board valid, clear moves
+	vchess_reset_all_moves();
 	for (i = 0; i < 8; ++i)
 		vchess_write_board_row(i, board->board[i]);
 	vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
@@ -100,7 +98,7 @@ vchess_write_board(board_t *board)
 	i = 0;
 	do
 	{
-		vchess_status(0, &moves_ready, 0, 0, 0);
+		vchess_status(0, &moves_ready, 0, 0, 0, 0);
 		++i;
 	}
 	while (i < 1000 && !moves_ready);
@@ -130,7 +128,7 @@ vchess_read_board(board_t *board, uint32_t index)
 		xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 		while (1);
 	}
-	status = vchess_status(&move_ready, &moves_ready, 0, 0, 0);
+	status = vchess_status(&move_ready, &moves_ready, 0, 0, 0, 0);
 	if (! moves_ready)
 	{
 		xil_printf("moves_ready not set\n");
@@ -142,7 +140,7 @@ vchess_read_board(board_t *board, uint32_t index)
 		return 1;
 	}
 	vchess_move_index(index);
-	status = vchess_status(&move_ready, 0, 0, 0, 0);
+	status = vchess_status(&move_ready, 0, 0, 0, 0, 0);
 	if (! move_ready)
 	{
 		xil_printf("move_ready not set: 0x%X\n", status);
