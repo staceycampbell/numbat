@@ -398,7 +398,7 @@ sample_game(board_t game[GAME_MAX])
 			xil_printf("%s: sample game load error, stopping here\n", __PRETTY_FUNCTION__);
 			return 0;
 		}
-	xil_printf("%s: loaded %d half moves\n", half_moves);
+	xil_printf("%s: loaded %d half moves\n", __PRETTY_FUNCTION__, half_moves);
 
 	return half_moves;
 }

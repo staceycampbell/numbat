@@ -113,7 +113,7 @@ fen_print(board_t *board)
 		else
 			xil_printf("%c3", en_passant_col);
 	}
-	xil_printf(" %d 0\n", board->half_move_clock); // tbd
+	xil_printf(" %d %d\n", board->half_move_clock, board->full_move_number);
 }
 
 int
@@ -384,6 +384,15 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         else if (strcmp((char *)str, "sample") == 0)
 	{
 		game_moves = sample_game(game);
+		if (game_moves > 0)
+		{
+			xil_printf("last move in sample game:\n");
+			vchess_write_board(&game[game_moves - 1]);
+			vchess_print_board(&game[game_moves - 1], 1);
+			fen_print(&game[game_moves - 1]);
+		}
+		else
+			xil_printf("%s: no moves found in sample\n", __PRETTY_FUNCTION__);
 	}
 	else
         {
