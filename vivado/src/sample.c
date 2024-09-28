@@ -16,6 +16,7 @@ static char *sample[] = {
         "rnbqk2r/pp3ppp/2pbpn2/3p4/2PP4/2N1PN2/PP3PPP/R1BQKB1R w KQkq - 2 6",
         "rnbqk2r/pp3ppp/2pbpn2/2Pp4/3P4/2N1PN2/PP3PPP/R1BQKB1R b KQkq - 0 6",
         "rnbqk2r/ppb2ppp/2p1pn2/2Pp4/3P4/2N1PN2/PP3PPP/R1BQKB1R w KQkq - 1 7",
+#if 0
         "rnbqk2r/ppb2ppp/2p1pn2/2Pp4/3P4/2NBPN2/PP3PPP/R1BQK2R b KQkq - 2 7",
         "r1bqk2r/ppbn1ppp/2p1pn2/2Pp4/3P4/2NBPN2/PP3PPP/R1BQK2R w KQkq - 3 8",
         "r1bqk2r/ppbn1ppp/2p1pn2/2Pp4/3P4/2NBPN2/PP3PPP/R1BQ1RK1 b kq - 4 8",
@@ -82,7 +83,6 @@ static char *sample[] = {
         "6k1/5pPp/2K5/1p4P1/1P2p2P/3bP3/8/B7 w - - 1 39",
         "6k1/5pPp/2K5/1p4P1/1P1Bp2P/3bP3/8/8 b - - 2 39",
         "6k1/5pPp/2K5/1p4P1/1PbBp2P/4P3/8/8 w - - 3 40",
-#if 0
         "6k1/5pPp/2K5/1p4P1/1Pb1p2P/4P3/8/B7 b - - 4 40",
         "6k1/5pPp/2K5/1p4P1/1P2p2P/3bP3/8/B7 w - - 5 41",
         "6k1/5pPp/2K5/1p4P1/1P1Bp2P/3bP3/8/8 b - - 6 41",

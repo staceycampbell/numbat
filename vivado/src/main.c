@@ -287,29 +287,33 @@ process_serial_port(uint8_t cmdbuf[BUF_SIZE], uint32_t * index)
 static void
 do_both(void)
 {
-        uint32_t move_count;
+        uint32_t move_count, key_hit;
         board_t best_board;
-        uint32_t mate, stalemate, thrice_rep;
+        uint32_t mate, stalemate, thrice_rep, fifty_move;
 
         do
         {
                 best_board = nm_top(game, game_moves);
                 vchess_write_board(&best_board);
                 move_count = vchess_move_count();
-                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0);
+                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
                 vchess_reset_all_moves();
                 game[game_moves] = best_board;
                 ++game_moves;
                 if (game_moves >= GAME_MAX)
                 {
-                        xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__, game_moves, GAME_MAX, __FILE__, __LINE__);
+                        xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
+				   game_moves, GAME_MAX, __FILE__, __LINE__);
                         while (1);
                 }
-                vchess_print_board(&best_board, 1);
+                vchess_print_board(&best_board, 0);
                 fen_print(&best_board);
-        }
-        while (move_count > 0 && !(mate || stalemate || thrice_rep));
-        xil_printf("both done\n");
+                key_hit = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
+        } while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move) && !key_hit);
+        if (key_hit)
+                xil_printf("Abort\n");
+        else
+                xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
 }
 
 static void
@@ -332,10 +336,11 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 
         if (strcmp((char *)str, "status") == 0)
         {
-                uint32_t move_ready, moves_ready, mate, stalemate, thrice_rep;
+                uint32_t move_ready, moves_ready, mate, stalemate, thrice_rep, fifty_move;
 
-                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep, 0);
-                xil_printf("moves_ready=%d, mate=%d, stalemate=%d, thrice_rep=%d", moves_ready, mate, stalemate, thrice_rep);
+                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
+                xil_printf("moves_ready=%d, mate=%d, stalemate=%d, thrice_rep=%d, fifty_move=%d",
+                                moves_ready, mate, stalemate, thrice_rep, fifty_move);
                 if (moves_ready)
                         xil_printf(", moves=%d, eval=%d", vchess_move_count(), vchess_initial_eval());
                 xil_printf("\n");

@@ -19,14 +19,19 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
 {
         uint32_t entries;
         int32_t sel, index;
-	uint32_t am_idle;
+        uint32_t am_idle;
 
-	vchess_status(0, 0, 0, 0, 0, &am_idle);
-	if (! am_idle)
+        vchess_status(0, 0, 0, 0, 0, &am_idle, 0);
+        if (! am_idle)
+        {
+                xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__,
+                                __FILE__, __LINE__);
+                while (1);
+        }
+	if (game_moves == 0)
 	{
-		xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__,
-				__FILE__, __LINE__);
-		while (1);
+		vchess_repdet_write(0);
+		return;
 	}
         if (board_vert) // if there's a search tree load half-moves in search tree
         {
@@ -43,7 +48,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                 }
         }
         // if there's no search tree, or if the search tree half-move move clock is non-zero at ply 0
-	// then load game moves,
+        // then load game moves,
         if (index > 0 || !board_vert)
         {
                 sel = game_moves - 1;
@@ -77,7 +82,7 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
         int32_t i;
         uint32_t moves_ready, status, move_count;
 
-        vchess_status(0, &moves_ready, 0, 0, 0, 0);
+        vchess_status(0, &moves_ready, 0, 0, 0, 0, 0);
         if (!moves_ready)
         {
                 xil_printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -152,7 +157,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         ++nodes_visited;
 
-	vchess_reset_all_moves();
+        vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, board_vert, ply);
         vchess_write_board(board);
 
@@ -173,7 +178,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         value = vchess_initial_eval();
         if (move_count == 0)    // mate, stalemate, or thrice repetition
         {
-		++leaf_nodes;
+                ++leaf_nodes;
                 if (value < 0)  // white mated
                         value += DEPTH_MAX - depth;     // fastest path to black win, slowest for white loss
                 else if (value > 0)     // black mated
@@ -244,12 +249,12 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         }
         XTime_GetTime(&t_start);
         game_index = game_moves - 1;
-	best_board = game[game_index];
+        best_board = game[game_index];
         nodes_visited = 0;
-	leaf_nodes = 0;
+        leaf_nodes = 0;
 
-	vchess_reset_all_moves();
-	nm_load_rep_table(game, game_index, 0, 0);
+        vchess_reset_all_moves();
+        nm_load_rep_table(game, game_index, 0, 0);
         vchess_write_board(&game[game_index]);
 
         move_count = vchess_move_count();
@@ -277,7 +282,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                         best_board = root_node_boards[i];
                 }
         }
-	best_board.full_move_number = 1 + game_index / 2;
+        best_board.full_move_number = 1 + game_moves / 2;
 
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
@@ -286,7 +291,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 elapsed_time = 1.0;
         nps = (double)nodes_visited *(1.0 / elapsed_time);
         printf("best_evaluation=%d, nodes_visited=%u, leaf_nodes=%u, seconds=%f, nps=%f\n",
-	       best_evaluation, nodes_visited, leaf_nodes, elapsed_time, nps);
+               best_evaluation, nodes_visited, leaf_nodes, elapsed_time, nps);
 
         return best_board;
 }

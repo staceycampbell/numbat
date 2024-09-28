@@ -37,6 +37,7 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire                 am_idle;                // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
    wire                 am_moves_ready;         // From all_moves of all_moves.v
@@ -48,8 +49,10 @@ module tb;
    wire                 display_done;           // From display_board of display_board.v
    wire [3:0]           en_passant_col_out;     // From all_moves of all_moves.v
    wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves of all_moves.v
+   wire                 fifty_move_out;         // From all_moves of all_moves.v
    wire [HALF_MOVE_WIDTH-1:0] half_move_out;    // From all_moves of all_moves.v
    wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
+   wire                 initial_fifty_move;     // From all_moves of all_moves.v
    wire                 initial_mate;           // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
@@ -67,7 +70,7 @@ module tb;
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
         castle_mask = 4'b0000;
-        white_to_move = 0;
+        white_to_move = 1;
         en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 0;
         half_move = 0;
 
@@ -253,6 +256,8 @@ module tb;
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .initial_thrice_rep               (initial_thrice_rep),
+      .initial_fifty_move               (initial_fifty_move),
+      .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
       .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),
@@ -268,6 +273,7 @@ module tb;
       .eval_out                         (eval_out[EVAL_WIDTH-1:0]),
       .thrice_rep_out                   (thrice_rep_out),
       .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
+      .fifty_move_out                   (fifty_move_out),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
