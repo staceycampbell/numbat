@@ -7,6 +7,7 @@ module tb;
    localparam REPDET_WIDTH = 8;
    localparam HALF_MOVE_WIDTH = 10;
    localparam TB_REP_HISTORY = 9;
+   localparam UCI_WIDTH = 4 + 6 + 6; // promotion, to, from
 
    reg clk = 0;
    reg reset = 1;
@@ -57,6 +58,7 @@ module tb;
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
    wire                 thrice_rep_out;         // From all_moves of all_moves.v
+   wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
    wire                 white_in_check_out;     // From all_moves of all_moves.v
    wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
    wire                 white_to_move_out;      // From all_moves of all_moves.v
@@ -247,7 +249,8 @@ module tb;
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
       .EVAL_WIDTH (EVAL_WIDTH),
       .REPDET_WIDTH (REPDET_WIDTH),
-      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH)
+      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
+      .UCI_WIDTH (UCI_WIDTH)
       )
    all_moves
      (/*AUTOINST*/
@@ -274,6 +277,7 @@ module tb;
       .thrice_rep_out                   (thrice_rep_out),
       .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
       .fifty_move_out                   (fifty_move_out),
+      .uci_out                          (uci_out[UCI_WIDTH-1:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

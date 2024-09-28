@@ -5,170 +5,177 @@ module all_moves #
    parameter MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS),
    parameter EVAL_WIDTH = 0,
    parameter REPDET_WIDTH = 0,
-   parameter HALF_MOVE_WIDTH = 0
+   parameter HALF_MOVE_WIDTH = 0,
+   parameter UCI_WIDTH = 4 + 6 + 6
    )
    (
-    input                             clk,
-    input                             reset,
+    input                                clk,
+    input                                reset,
 
-    input                             board_valid_in,
-    input [`BOARD_WIDTH - 1:0]        board_in,
-    input                             white_to_move_in,
-    input [3:0]                       castle_mask_in,
-    input [3:0]                       en_passant_col_in,
-    input [HALF_MOVE_WIDTH - 1:0]     half_move_in,
+    input                                board_valid_in,
+    input [`BOARD_WIDTH - 1:0]           board_in,
+    input                                white_to_move_in,
+    input [3:0]                          castle_mask_in,
+    input [3:0]                          en_passant_col_in,
+    input [HALF_MOVE_WIDTH - 1:0]        half_move_in,
 
-    input [`BOARD_WIDTH-1:0]          repdet_board_in,
-    input [3:0]                       repdet_castle_mask_in,
-    input [REPDET_WIDTH-1:0]          repdet_depth_in,
-    input [REPDET_WIDTH-1:0]          repdet_wr_addr_in,
-    input                             repdet_wr_en_in,
+    input [`BOARD_WIDTH-1:0]             repdet_board_in,
+    input [3:0]                          repdet_castle_mask_in,
+    input [REPDET_WIDTH-1:0]             repdet_depth_in,
+    input [REPDET_WIDTH-1:0]             repdet_wr_addr_in,
+    input                                repdet_wr_en_in,
 
-    input [MAX_POSITIONS_LOG2 - 1:0]  am_move_index,
-    input                             am_clear_moves,
+    input [MAX_POSITIONS_LOG2 - 1:0]     am_move_index,
+    input                                am_clear_moves,
 
-    output reg                        initial_mate = 0,
-    output reg                        initial_stalemate = 0,
-    (* mark_debug = "true" *) output reg signed [EVAL_WIDTH - 1:0] initial_eval,
-    output reg                        initial_thrice_rep = 0,
-    output reg                        initial_fifty_move = 0,
+    output reg                           initial_mate = 0,
+    output reg                           initial_stalemate = 0,
+    output reg signed [EVAL_WIDTH - 1:0] initial_eval,
+    output reg                           initial_thrice_rep = 0,
+    output reg                           initial_fifty_move = 0,
 
-    output reg                        am_idle,
-    output reg                        am_moves_ready,
-    output reg                        am_move_ready,
-    output [MAX_POSITIONS_LOG2 - 1:0] am_move_count,
+    output reg                           am_idle,
+    output reg                           am_moves_ready,
+    output reg                           am_move_ready,
+    output [MAX_POSITIONS_LOG2 - 1:0]    am_move_count,
 
-    output [`BOARD_WIDTH - 1:0]       board_out,
-    output                            white_to_move_out,
-    output [3:0]                      castle_mask_out,
-    output [3:0]                      en_passant_col_out,
-    output                            capture_out,
-    output                            white_in_check_out,
-    output                            black_in_check_out,
-    output [63:0]                     white_is_attacking_out,
-    output [63:0]                     black_is_attacking_out,
-    (* mark_debug = "true" *) output signed [EVAL_WIDTH - 1:0] eval_out,
-    output                            thrice_rep_out,
-    output [HALF_MOVE_WIDTH - 1:0]    half_move_out,
-    (* mark_debug = "true" *) output  fifty_move_out
+    output [`BOARD_WIDTH - 1:0]          board_out,
+    output                               white_to_move_out,
+    output [3:0]                         castle_mask_out,
+    output [3:0]                         en_passant_col_out,
+    output                               capture_out,
+    output                               white_in_check_out,
+    output                               black_in_check_out,
+    output [63:0]                        white_is_attacking_out,
+    output [63:0]                        black_is_attacking_out,
+    output signed [EVAL_WIDTH - 1:0]     eval_out,
+    output                               thrice_rep_out,
+    output [HALF_MOVE_WIDTH - 1:0]       half_move_out,
+    output                               fifty_move_out,
+    output [UCI_WIDTH - 1:0]             uci_out
     );
 
    // board + castle mask + en passant col + color to move
    localparam INITIAL_WIDTH = `BOARD_WIDTH + 4 + 4 + 1;
-   // initial width + capture + pawn adv (to zero-out half move)
-   localparam RAM_WIDTH = INITIAL_WIDTH + 1 + 1;
-   // fifty move, half move, thrice rep, eval, is-attacking white/black, white in check, black in check, capture, initial width
-   localparam LEGAL_RAM_WIDTH = 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
+   // UCI, initial width + capture + pawn adv (to zero-out half move)
+   localparam RAM_WIDTH = UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
+   // UCI, fifty move, half move, thrice rep, eval, is-attacking white/black, white in check, black in check, capture, initial width
+   localparam LEGAL_RAM_WIDTH = UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
 
-   reg                                initial_board_check;
+   reg                                   initial_board_check;
 
-   reg [RAM_WIDTH - 1:0]              move_ram [0:`MAX_POSITIONS - 1];
-   reg [RAM_WIDTH - 1:0]              ram_rd_data;
-   reg                                ram_wr_addr_init;
-   reg [MAX_POSITIONS_LOG2 - 1:0]     ram_wr_addr, ram_rd_addr;
-   reg [MAX_POSITIONS_LOG2 - 1:0]     attack_test_move_count;
-   reg [$clog2(`BOARD_WIDTH) - 1:0]   idx [0:7][0:7];
-   reg [`PIECE_WIDTH - 1:0]           piece;
-   reg [`BOARD_WIDTH - 1:0]           board;
-   reg                                white_to_move;
-   reg [3:0]                          castle_mask;
-   reg [3:0]                          en_passant_col;
-   reg [HALF_MOVE_WIDTH - 1:0]        half_move;
+   reg [RAM_WIDTH - 1:0]                 move_ram [0:`MAX_POSITIONS - 1];
+   reg [RAM_WIDTH - 1:0]                 ram_rd_data;
+   reg                                   ram_wr_addr_init;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        ram_wr_addr, ram_rd_addr;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        attack_test_move_count;
+   reg [$clog2(`BOARD_WIDTH) - 1:0]      idx [0:7][0:7];
+   reg [`PIECE_WIDTH - 1:0]              piece;
+   reg [`BOARD_WIDTH - 1:0]              board;
+   reg                                   white_to_move;
+   reg [3:0]                             castle_mask;
+   reg [3:0]                             en_passant_col;
+   reg [HALF_MOVE_WIDTH - 1:0]           half_move;
 
-   reg [LEGAL_RAM_WIDTH - 1:0]        legal_move_ram [0:`MAX_POSITIONS - 1];
-   reg [LEGAL_RAM_WIDTH - 1:0]        legal_ram_rd_data;
-   reg [MAX_POSITIONS_LOG2 - 1:0]     legal_ram_wr_addr;
-   reg                                legal_ram_wr_addr_init;
+   reg [LEGAL_RAM_WIDTH - 1:0]           legal_move_ram [0:`MAX_POSITIONS - 1];
+   reg [LEGAL_RAM_WIDTH - 1:0]           legal_ram_rd_data;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        legal_ram_wr_addr;
+   reg                                   legal_ram_wr_addr_init;
 
-   reg [`BOARD_WIDTH - 1:0]           board_ram_wr;
-   reg [3:0]                          en_passant_col_ram_wr;
-   reg [3:0]                          castle_mask_ram_wr;
-   reg                                white_to_move_ram_wr;
-   reg                                capture_ram_wr;
-   reg                                pawn_zero_half_move_ram_wr;
-   reg                                ram_wr;
+   reg [`BOARD_WIDTH - 1:0]              board_ram_wr;
+   reg [3:0]                             en_passant_col_ram_wr;
+   reg [3:0]                             castle_mask_ram_wr;
+   reg                                   white_to_move_ram_wr;
+   reg                                   capture_ram_wr;
+   reg                                   pawn_zero_half_move_ram_wr;
+   reg [3:0]                             uci_promotion_ram_wr;
+   reg [2:0]                             uci_from_row_ram_wr, uci_from_col_ram_wr;
+   reg [2:0]                             uci_to_row_ram_wr, uci_to_col_ram_wr;
+   reg                                   ram_wr;
 
-   reg [`BOARD_WIDTH - 1:0]           legal_board_ram_wr;
-   reg [3:0]                          legal_en_passant_col_ram_wr;
-   reg [3:0]                          legal_castle_mask_ram_wr;
-   reg                                legal_white_to_move_ram_wr;
-   reg                                legal_capture_ram_wr;
-   reg [HALF_MOVE_WIDTH - 1:0]        legal_half_move_ram_wr;
-   reg                                legal_fifty_move_ram_wr;
-   reg                                legal_white_in_check_ram_wr;
-   reg                                legal_black_in_check_ram_wr;
-   reg [63:0]                         legal_white_is_attacking_ram_wr;
-   reg [63:0]                         legal_black_is_attacking_ram_wr;
-   reg signed [EVAL_WIDTH - 1:0]      legal_eval_ram_wr;
-   reg                                legal_thrice_rep_ram_wr;
-   reg                                legal_ram_wr = 0;
+   reg [`BOARD_WIDTH - 1:0]              legal_board_ram_wr;
+   reg [3:0]                             legal_en_passant_col_ram_wr;
+   reg [3:0]                             legal_castle_mask_ram_wr;
+   reg                                   legal_white_to_move_ram_wr;
+   reg                                   legal_capture_ram_wr;
+   reg [HALF_MOVE_WIDTH - 1:0]           legal_half_move_ram_wr;
+   reg                                   legal_fifty_move_ram_wr;
+   reg                                   legal_white_in_check_ram_wr;
+   reg                                   legal_black_in_check_ram_wr;
+   reg [63:0]                            legal_white_is_attacking_ram_wr;
+   reg [63:0]                            legal_black_is_attacking_ram_wr;
+   reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
+   reg                                   legal_thrice_rep_ram_wr;
+   reg [UCI_WIDTH - 1:0]                 legal_uci_ram_wr;
+   reg                                   legal_ram_wr = 0;
 
-   reg [MAX_POSITIONS_LOG2 - 1:0]     am_move_index_r;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        am_move_index_r;
 
-   reg [`BOARD_WIDTH - 1:0]           attack_test_board;
-   reg [3:0]                          attack_test_en_passant_col;
-   reg [3:0]                          attack_test_castle_mask;
-   reg                                attack_test_white_to_move;
-   reg                                attack_test_capture;
-   reg                                attack_test_white_in_check;
-   reg                                attack_test_black_in_check;
-   reg [63:0]                         attack_test_white_is_attacking;
-   reg [63:0]                         attack_test_black_is_attacking;
-   reg                                attack_pawn_zero_half_move_ram_wr;
+   reg [`BOARD_WIDTH - 1:0]              attack_test_board;
+   reg [3:0]                             attack_test_en_passant_col;
+   reg [3:0]                             attack_test_castle_mask;
+   reg                                   attack_test_white_to_move;
+   reg                                   attack_test_capture;
+   reg                                   attack_test_white_in_check;
+   reg                                   attack_test_black_in_check;
+   reg [63:0]                            attack_test_white_is_attacking;
+   reg [63:0]                            attack_test_black_is_attacking;
+   reg                                   attack_pawn_zero_half_move;
+   reg [UCI_WIDTH - 1:0]                 attack_uci;
 
-   reg [`BOARD_WIDTH - 1:0]           attack_test;
-   reg                                attack_test_valid;
+   reg [`BOARD_WIDTH - 1:0]              attack_test;
+   reg                                   attack_test_valid;
 
-   reg                                clear_eval = 0;
-   reg                                clear_attack = 0;
+   reg                                   clear_eval = 0;
+   reg                                   clear_attack = 0;
 
-   reg signed [4:0]                   row, col;
+   reg signed [4:0]                      row, col;
 
-   reg signed [1:0]                   slider_offset_col [`PIECE_QUEN:`PIECE_BISH][0:7];
-   reg signed [1:0]                   slider_offset_row [`PIECE_QUEN:`PIECE_BISH][0:7];
-   reg [3:0]                          slider_offset_count [`PIECE_QUEN:`PIECE_BISH];
-   reg [3:0]                          slider_index;
-   reg signed [4:0]                   slider_row, slider_col;
+   reg signed [1:0]                      slider_offset_col [`PIECE_QUEN:`PIECE_BISH][0:7];
+   reg signed [1:0]                      slider_offset_row [`PIECE_QUEN:`PIECE_BISH][0:7];
+   reg [3:0]                             slider_offset_count [`PIECE_QUEN:`PIECE_BISH];
+   reg [3:0]                             slider_index;
+   reg signed [4:0]                      slider_row, slider_col;
 
-   reg signed [2:0]                   discrete_offset_col[`PIECE_KNIT:`PIECE_KING][0:7];
-   reg signed [2:0]                   discrete_offset_row[`PIECE_KNIT:`PIECE_KING][0:7];
-   reg [3:0]                          discrete_index;
-   reg signed [4:0]                   discrete_row, discrete_col;
+   reg signed [2:0]                      discrete_offset_col[`PIECE_KNIT:`PIECE_KING][0:7];
+   reg signed [2:0]                      discrete_offset_row[`PIECE_KNIT:`PIECE_KING][0:7];
+   reg [3:0]                             discrete_index;
+   reg signed [4:0]                      discrete_row, discrete_col;
 
-   reg signed [1:0]                   pawn_advance [0:1];
-   reg signed [4:0]                   pawn_promote_row [0:1];
-   reg signed [4:0]                   pawn_init_row [0:1];
-   reg signed [4:0]                   pawn_row_adv1, pawn_col_adv1;
-   reg signed [4:0]                   pawn_row_adv2, pawn_col_adv2;
-   reg signed [4:0]                   pawn_row_cap_left, pawn_col_cap_left;
-   reg signed [4:0]                   pawn_row_cap_right, pawn_col_cap_right;
-   reg [`PIECE_WIDTH - 1:0]           pawn_promotions [0:3];
-   reg [2:0]                          pawn_adv1_mask;
-   reg [2:0]                          pawn_promote_mask;
-   reg                                pawn_adv2;
-   reg [1:0]                          pawn_en_passant_mask;
-   reg signed [4:0]                   pawn_en_passant_row [0:1];
-   reg                                pawn_en_passant_count;
-   reg [1:0]                          pawn_move_count;
-   reg [1:0]                          pawn_promotion_count;
-   reg                                pawn_do_init;
-   reg                                pawn_do_en_passant;
-   reg                                pawn_do_promote;
+   reg signed [1:0]                      pawn_advance [0:1];
+   reg signed [4:0]                      pawn_promote_row [0:1];
+   reg signed [4:0]                      pawn_init_row [0:1];
+   reg signed [4:0]                      pawn_row_adv1, pawn_col_adv1;
+   reg signed [4:0]                      pawn_row_adv2, pawn_col_adv2;
+   reg signed [4:0]                      pawn_row_cap_left, pawn_col_cap_left;
+   reg signed [4:0]                      pawn_row_cap_right, pawn_col_cap_right;
+   reg [`PIECE_WIDTH - 1:0]              pawn_promotions [0:3];
+   reg [2:0]                             pawn_adv1_mask;
+   reg [2:0]                             pawn_promote_mask;
+   reg                                   pawn_adv2;
+   reg [1:0]                             pawn_en_passant_mask;
+   reg signed [4:0]                      pawn_en_passant_row [0:1];
+   reg                                   pawn_en_passant_count;
+   reg [1:0]                             pawn_move_count;
+   reg [1:0]                             pawn_promotion_count;
+   reg                                   pawn_do_init;
+   reg                                   pawn_do_en_passant;
+   reg                                   pawn_do_promote;
 
-   reg [1:0]                          castle_short_legal;
-   reg [1:0]                          castle_long_legal;
-   reg [2:0]                          castle_row [0:1];
+   reg [1:0]                             castle_short_legal;
+   reg [1:0]                             castle_long_legal;
+   reg [2:0]                             castle_row [0:1];
 
-   reg [`BOARD_WIDTH - 1:0]           rd_ram_board_in;
-   reg [3:0]                          rd_ram_castle_mask_in;
-   reg [REPDET_WIDTH - 1:0]           rd_ram_depth_in;
-   reg [REPDET_WIDTH - 1:0]           rd_ram_wr_addr_in;
-   reg                                rd_ram_wr_en;
+   reg [`BOARD_WIDTH - 1:0]              rd_ram_board_in;
+   reg [3:0]                             rd_ram_castle_mask_in;
+   reg [REPDET_WIDTH - 1:0]              rd_ram_depth_in;
+   reg [REPDET_WIDTH - 1:0]              rd_ram_wr_addr_in;
+   reg                                   rd_ram_wr_en;
 
-   reg [`BOARD_WIDTH - 1:0]           rd_board_in;
-   reg                                rd_board_valid;
-   reg [3:0]                          rd_castle_mask_in;
-   reg                                rd_clear_sample;
+   reg [`BOARD_WIDTH - 1:0]              rd_board_in;
+   reg                                   rd_board_valid;
+   reg [3:0]                             rd_castle_mask_in;
+   reg                                   rd_clear_sample;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -187,16 +194,17 @@ module all_moves #
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
-   wire signed [4:0]                  pawn_adv1_row [0:2];
-   wire signed [4:0]                  pawn_adv1_col [0:2];
-   wire signed [4:0]                  pawn_enp_row[0:1];
+   wire signed [4:0]                     pawn_adv1_row [0:2];
+   wire signed [4:0]                     pawn_adv1_col [0:2];
+   wire signed [4:0]                     pawn_enp_row[0:1];
 
-   integer                            i, x, y, ri;
+   integer                               i, x, y, ri;
 
-   wire                               black_to_move = ~white_to_move;
+   wire                                  black_to_move = ~white_to_move;
 
    assign am_move_count = legal_ram_wr_addr;
-   assign {fifty_move_out, half_move_out, thrice_rep_out, eval_out, white_is_attacking_out, black_is_attacking_out,
+   assign {uci_out, fifty_move_out, half_move_out, thrice_rep_out, eval_out,
+           white_is_attacking_out, black_is_attacking_out,
            white_in_check_out, black_in_check_out,
            capture_out, en_passant_col_out, castle_mask_out, white_to_move_out,
            board_out} = legal_ram_rd_data;
@@ -285,7 +293,9 @@ module all_moves #
           ram_wr_addr <= 0;
         if (ram_wr)
           begin
-             move_ram[ram_wr_addr] <= {pawn_zero_half_move_ram_wr, capture_ram_wr, en_passant_col_ram_wr,
+             move_ram[ram_wr_addr] <= {uci_promotion_ram_wr,
+                                       uci_to_row_ram_wr, uci_to_col_ram_wr, uci_from_row_ram_wr, uci_from_col_ram_wr,
+                                       pawn_zero_half_move_ram_wr, capture_ram_wr, en_passant_col_ram_wr,
                                        castle_mask_ram_wr, white_to_move_ram_wr, board_ram_wr};
              ram_wr_addr <= ram_wr_addr + 1;
           end
@@ -301,7 +311,8 @@ module all_moves #
           legal_ram_wr_addr <= 0;
         if (legal_ram_wr)
           begin
-             legal_move_ram[legal_ram_wr_addr] <= {legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
+             legal_move_ram[legal_ram_wr_addr] <= {legal_uci_ram_wr,
+                                                   legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
                                                    legal_eval_ram_wr, legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
                                                    legal_white_in_check_ram_wr, legal_black_in_check_ram_wr,
                                                    legal_capture_ram_wr, legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
@@ -416,7 +427,7 @@ module all_moves #
    localparam STATE_LEGAL_NEXT = 23;
    localparam STATE_DONE = 24;
 
-   (* mark_debug = "true" *)   reg [4:0] state = STATE_IDLE;
+   reg [4:0] state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -497,6 +508,9 @@ module all_moves #
               en_passant_col_ram_wr <= 4'b0;
               pawn_zero_half_move_ram_wr <= 0;
               slider_index <= 0;
+              uci_from_row_ram_wr <= row;
+              uci_from_col_ram_wr <= col;
+              uci_promotion_ram_wr <= `EMPTY_POSN;
               if (board[idx[row][col]+:`PIECE_WIDTH] == `EMPTY_POSN || // empty square or
                   board[idx[row][col] + `BLACK_BIT] != black_to_move) // opponent's piece, nothing to move
                 begin
@@ -541,6 +555,8 @@ module all_moves #
               board_ram_wr[idx[slider_row[2:0]][slider_col[2:0]]+:`PIECE_WIDTH] <= piece;
               capture_ram_wr <= board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move &&
                                 ! board[idx[slider_row[2:0]][slider_col[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN;
+              uci_to_row_ram_wr <= slider_row[2:0];
+              uci_to_col_ram_wr <= slider_col[2:0];
               if ((slider_row >= 0 && slider_row <= 7 && slider_col >= 0 && slider_col <= 7) &&
                   (board[idx[slider_row[2:0]][slider_col[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN || // empty square
                    board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move)) // opponent's piece
@@ -575,6 +591,8 @@ module all_moves #
               board_ram_wr[idx[discrete_row[2:0]][discrete_col[2:0]]+:`PIECE_WIDTH] <= piece;
               capture_ram_wr <= board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move &&
                                 ! board[idx[discrete_row[2:0]][discrete_col[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN;
+              uci_to_row_ram_wr <= discrete_row[2:0];
+              uci_to_col_ram_wr <= discrete_col[2:0];
               if (discrete_row >= 0 && discrete_row <= 7 && discrete_col >= 0 && discrete_col <= 7 &&
                   (board[idx[discrete_row[2:0]][discrete_col[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN || // empty square
                    board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move)) // opponent's piece
@@ -610,6 +628,8 @@ module all_moves #
               board_ram_wr[idx[row[2:0]][col[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:`PIECE_WIDTH] <= piece;
               capture_ram_wr <= 0;
+              uci_to_row_ram_wr <= pawn_row_adv2[2:0];
+              uci_to_col_ram_wr <= pawn_col_adv2[2:0];
               if (pawn_adv2)
                 begin
                    pawn_zero_half_move_ram_wr <= 1;
@@ -623,6 +643,8 @@ module all_moves #
               board_ram_wr[idx[row[2:0]][col[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[row[2:0]][en_passant_col[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[pawn_enp_row[pawn_en_passant_count][2:0]][en_passant_col[2:0]]+:`PIECE_WIDTH] <= piece;
+              uci_to_row_ram_wr <= pawn_enp_row[pawn_en_passant_count][2:0];
+              uci_to_col_ram_wr <= en_passant_col[2:0];
               if (pawn_en_passant_mask[pawn_en_passant_count])
                 begin
                    capture_ram_wr <= 1;
@@ -643,6 +665,9 @@ module all_moves #
               board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:`PIECE_WIDTH]
                 <= pawn_promotions[pawn_promotion_count];
               capture_ram_wr <= pawn_move_count != 1;
+              uci_to_row_ram_wr <= pawn_adv1_row[pawn_move_count][2:0];
+              uci_to_col_ram_wr <= pawn_adv1_col[pawn_move_count][2:0];
+              uci_promotion_ram_wr <= pawn_promotions[pawn_promotion_count];
               if (pawn_promote_mask[pawn_move_count])
                 begin
                    pawn_zero_half_move_ram_wr <= 1;
@@ -667,6 +692,8 @@ module all_moves #
               board_ram_wr[idx[row[2:0]][col[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:`PIECE_WIDTH] <= piece;
               capture_ram_wr <= pawn_move_count != 1;
+              uci_to_row_ram_wr <= pawn_adv1_row[pawn_move_count][2:0];
+              uci_to_col_ram_wr <= pawn_adv1_col[pawn_move_count][2:0];
               if (pawn_adv1_mask[pawn_move_count])
                 begin
                    pawn_zero_half_move_ram_wr <= 1;
@@ -696,12 +723,17 @@ module all_moves #
            begin
               pawn_zero_half_move_ram_wr <= 0; // no pawn moves possible
               capture_ram_wr <= 0; // no captures possible
+              uci_promotion_ram_wr <= `EMPTY_POSN; // no promotion possible
 
               board_ram_wr <= board;
               board_ram_wr[idx[castle_row[white_to_move]][4]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[castle_row[white_to_move]][7]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[castle_row[white_to_move]][5]+:`PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_ROOK;
               board_ram_wr[idx[castle_row[white_to_move]][6]+:`PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_KING;
+              uci_from_row_ram_wr <= castle_row[white_to_move];
+              uci_from_col_ram_wr <= 4;
+              uci_to_row_ram_wr <= castle_row[white_to_move];
+              uci_to_col_ram_wr <= 6;
               if (castle_short_legal[white_to_move])
                 ram_wr <= 1;
               state <= STATE_CASTLE_LONG;
@@ -714,6 +746,10 @@ module all_moves #
               board_ram_wr[idx[castle_row[white_to_move]][4]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[castle_row[white_to_move]][3]+:`PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_ROOK;
               board_ram_wr[idx[castle_row[white_to_move]][2]+:`PIECE_WIDTH] <= (black_to_move << `BLACK_BIT) | `PIECE_KING;
+              uci_from_row_ram_wr <= castle_row[white_to_move];
+              uci_from_col_ram_wr <= 4;
+              uci_to_row_ram_wr <= castle_row[white_to_move];
+              uci_to_col_ram_wr <= 2;
               if (castle_long_legal[white_to_move])
                 ram_wr <= 1;
               else
@@ -750,7 +786,7 @@ module all_moves #
            end
          STATE_LEGAL_LOAD :
            begin
-              {attack_pawn_zero_half_move_ram_wr, attack_test_capture, attack_test_en_passant_col,
+              {attack_uci, attack_pawn_zero_half_move, attack_test_capture, attack_test_en_passant_col,
                attack_test_castle_mask, attack_test_white_to_move, attack_test_board} <= ram_rd_data;
               attack_test_valid <= 0;
               clear_eval <= 0;
@@ -818,12 +854,13 @@ module all_moves #
               legal_black_in_check_ram_wr <= attack_test_black_in_check;
               legal_white_is_attacking_ram_wr <= attack_test_white_is_attacking;
               legal_black_is_attacking_ram_wr <= attack_test_black_is_attacking;
+              legal_uci_ram_wr <= attack_uci;
               if (rd_thrice_rep)
                 legal_eval_ram_wr <= 0;
               else
                 legal_eval_ram_wr <= eval;
               legal_thrice_rep_ram_wr <= rd_thrice_rep;
-              if (attack_pawn_zero_half_move_ram_wr || attack_test_capture)
+              if (attack_pawn_zero_half_move || attack_test_capture)
                 begin
                    legal_half_move_ram_wr <= 0;
                    legal_fifty_move_ram_wr <= 0;

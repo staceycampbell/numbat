@@ -6,6 +6,7 @@ module vchess_top;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
    localparam REPDET_WIDTH = 8;
    localparam HALF_MOVE_WIDTH = 10;
+   localparam UCI_WIDTH = 4 + 6 + 6; // promotion, row/col to, row/col from
 
    integer i;
 
@@ -44,6 +45,7 @@ module vchess_top;
    wire [REPDET_WIDTH-1:0] am_repdet_wr_addr_in;// From control of control.v
    wire                 am_repdet_wr_en_in;     // From control of control.v
    wire                 am_thrice_rep_out;      // From all_moves of all_moves.v
+   wire [UCI_WIDTH-1:0] am_uci_out;             // From all_moves of all_moves.v
    wire                 am_white_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_white_is_attacking_out;// From all_moves of all_moves.v
    wire                 am_white_to_move_in;    // From control of control.v
@@ -129,7 +131,8 @@ module vchess_top;
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
       .EVAL_WIDTH (EVAL_WIDTH),
       .REPDET_WIDTH (REPDET_WIDTH),
-      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH)
+      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
+      .UCI_WIDTH (UCI_WIDTH)
       )
    all_moves
      (/*AUTOINST*/
@@ -156,6 +159,7 @@ module vchess_top;
       .thrice_rep_out                   (am_thrice_rep_out),     // Templated
       .half_move_out                    (am_half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .fifty_move_out                   (am_fifty_move_out),     // Templated
+      .uci_out                          (am_uci_out[UCI_WIDTH-1:0]), // Templated
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (soft_reset),            // Templated
@@ -182,7 +186,8 @@ module vchess_top;
       .EVAL_WIDTH (EVAL_WIDTH),
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
       .REPDET_WIDTH (REPDET_WIDTH),
-      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH)
+      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
+      .UCI_WIDTH (UCI_WIDTH)
       )
    control
      (/*AUTOINST*/
@@ -234,6 +239,7 @@ module vchess_top;
       .am_thrice_rep_in                 (am_thrice_rep_out),     // Templated
       .am_half_move_in                  (am_half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .am_fifty_move_in                 (am_fifty_move_out),     // Templated
+      .am_uci_in                        (am_uci_out[UCI_WIDTH-1:0]), // Templated
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),

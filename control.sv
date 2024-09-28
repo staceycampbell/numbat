@@ -5,7 +5,8 @@ module control #
    parameter EVAL_WIDTH = 0,
    parameter MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS),
    parameter REPDET_WIDTH = 0,
-   parameter HALF_MOVE_WIDTH = 0
+   parameter HALF_MOVE_WIDTH = 0,
+   parameter UCI_WIDTH = 4 + 6 + 6
    )
    (
     input                                 reset,
@@ -52,6 +53,7 @@ module control #
     input                                 am_thrice_rep_in, // user indexed thrice rep
     input [HALF_MOVE_WIDTH - 1:0]         am_half_move_in,
     input                                 am_fifty_move_in,
+    input [UCI_WIDTH - 1:0]               am_uci_in,
    
     input [39:0]                          ctrl0_axi_araddr,
     input [2:0]                           ctrl0_axi_arprot,
@@ -185,6 +187,7 @@ module control #
                135 : ctrl0_axi_rdata <= am_move_count;
                136 : ctrl0_axi_rdata <= initial_eval;
                138 : ctrl0_axi_rdata <= am_half_move_in;
+               139 : ctrl0_axi_rdata <= am_uci_in;
                
                172 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
                173 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
