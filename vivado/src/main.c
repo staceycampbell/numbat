@@ -116,7 +116,7 @@ fen_print(board_t * board)
         xil_printf(" %d %d\n", board->half_move_clock, board->full_move_number);
 }
 
-int
+uint32_t
 fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
 {
         int row, col, i, stop_col;
@@ -303,7 +303,7 @@ do_both(void)
                 if (game_moves >= GAME_MAX)
                 {
                         xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
-				   game_moves, GAME_MAX, __FILE__, __LINE__);
+                                   game_moves, GAME_MAX, __FILE__, __LINE__);
                         while (1);
                 }
                 vchess_print_board(&best_board, 0);
@@ -395,9 +395,18 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 else
                         xil_printf("%s: no moves found in sample\n", __PRETTY_FUNCTION__);
         }
+	else if (strcmp((char *)str, "dump") == 0)
+	{
+		uint32_t i;
+
+		for (i = 0; i < game_moves; ++i)
+			fen_print(&game[i]);
+	}
         else
         {
-                fen_board(cmd, &board);
+                status = fen_board(cmd, &board);
+		if (status)
+			return;
                 if (position)
                 {
                         game_moves = 1;

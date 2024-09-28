@@ -322,6 +322,6 @@ extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t cast
 extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves);
 
 extern void fen_print(board_t *board);
-extern int fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
+extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);

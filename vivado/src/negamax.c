@@ -194,6 +194,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         if (depth == 0)
         {
+                ++leaf_nodes;
                 if (!board->white_to_move)
                         value = -value;
                 return value;
