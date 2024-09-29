@@ -48,19 +48,28 @@
 #define GAME_MAX 2048 // maximum half moves
 #define BUF_SIZE 1024
 
+typedef struct uci_t {
+	uint8_t row_from;
+	uint8_t col_from;
+	uint8_t row_to;
+	uint8_t col_to;
+	uint8_t promotion;
+} uci_t;
+
 typedef struct board_t {
         uint32_t board[8];
+        int32_t eval;
+        uint32_t half_move_clock;
+        uint32_t full_move_number;
         uint32_t en_passant_col;
         uint32_t castle_mask;
         uint32_t white_to_move;
-        int32_t eval;
         uint32_t black_in_check;
         uint32_t white_in_check;
         uint32_t capture;
         uint32_t thrice_rep;
         uint32_t fifty_move;
-        uint32_t half_move_clock;
-        uint32_t full_move_number;
+	uci_t uci;
 } board_t;
 
 static inline void
@@ -318,6 +327,8 @@ extern uint32_t vchess_read_board(board_t *board, uint32_t index);
 extern void vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece);
 extern uint32_t vchess_get_piece(board_t *board, uint32_t row, uint32_t col);
 extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask);
+extern void vchess_read_uci(uci_t *uci);
+extern void vchess_uci_string(uci_t *uci, char *str);
 
 extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves);
 

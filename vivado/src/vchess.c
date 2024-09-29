@@ -46,13 +46,64 @@ vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t
 }
 
 void
+vchess_read_uci(uci_t *uci)
+{
+        uint32_t val;
+
+        val = vchess_read(139);
+	uci->col_from =  (val >>  0) & 0x7;
+	uci->row_from =  (val >>  4) & 0x7;
+	uci->col_to =    (val >>  8) & 0x7;
+	uci->row_to =    (val >> 12) & 0x7;
+	uci->promotion = (val >> 16) & 0xF;
+}
+
+void
+vchess_uci_string(uci_t *uci, char *str)
+{
+        char ch;
+
+        str[0] = uci->col_from + 'a';
+        str[1] = uci->row_from + '1';
+        str[2] = uci->col_to + 'a';
+        str[3] = uci->row_to + '1';
+
+        if (uci->promotion != EMPTY_POSN)
+        {
+                switch (uci->promotion)
+                {
+                case PIECE_QUEN:
+                        ch = 'q';
+                        break;
+                case PIECE_ROOK:
+                        ch = 'r';
+                        break;
+                case PIECE_BISH:
+                        ch = 'b';
+                        break;
+                case PIECE_KNIT:
+                        ch = 'n';
+                        break;
+                default:
+                        ch = '?';
+                        break;
+                }
+                str[4] = ch;
+                str[5] = '\0';
+        }
+        else
+                str[4] = '\0';
+}
+
+void
 vchess_print_board(board_t *board, uint32_t initial_board)
 {
         int y, x;
+        char uci_str[6];
         uint32_t piece;
         int32_t eval;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
-        static const char *to_move[2] = {"Black", "White"};
+        static const char *to_move[2] = { "Black", "White" };
 
         for (y = 7; y >= 0; --y)
         {
@@ -70,13 +121,16 @@ vchess_print_board(board_t *board, uint32_t initial_board)
         }
         else
                 eval = board->eval;
-        xil_printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move],
-                   board->en_passant_col, board->castle_mask, eval);
-        if (! initial_board)
-                xil_printf(", capture: %d, thrice rep: %d, half move: %d", board->capture, board->thrice_rep, board->half_move_clock);
+        xil_printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move], board->en_passant_col,
+                        board->castle_mask, eval);
+        if (!initial_board)
+        {
+                vchess_uci_string(&board->uci, uci_str);
+                xil_printf(", capture: %d, thrice rep: %d, half move: %d, uci: %s", board->capture, board->thrice_rep, board->half_move_clock, uci_str);
+        }
         else
-                xil_printf(", legal moves: %d, mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d", vchess_move_count(),
-                           mate, stalemate, thrice_rep, fifty_move);
+                xil_printf(", legal moves: %d, mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d", vchess_move_count(), mate, stalemate,
+                                thrice_rep, fifty_move);
         xil_printf("\n");
         if (board->black_in_check)
                 xil_printf("Black in check\n");
@@ -155,6 +209,7 @@ vchess_read_board(board_t *board, uint32_t index)
         vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
         board->eval = vchess_move_eval();
         board->half_move_clock = vchess_read_half_move();
+        vchess_read_uci(&board->uci);
 
         return 0;
 }

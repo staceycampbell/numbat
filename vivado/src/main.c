@@ -398,9 +398,17 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 	else if (strcmp((char *)str, "dump") == 0)
 	{
 		uint32_t i;
+		char uci_str[6];
 
-		for (i = 0; i < game_moves; ++i)
-			fen_print(&game[i]);
+		for (i = 1; i < game_moves; ++i)
+		{
+			vchess_uci_string(&game[i].uci, uci_str);
+			xil_printf("%s ", uci_str);
+			if (i % 16 == 0)
+				xil_printf("\n");
+		}
+		xil_printf("\n");
+
 	}
         else
         {
