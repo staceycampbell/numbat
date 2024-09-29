@@ -5,9 +5,9 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-// #pragma GCC optimize ("O3")
+#pragma GCC optimize ("O3")
 
-#define DEPTH_MAX 5
+#define DEPTH_MAX 6
 #define LARGE_EVAL (1 << 15)
 
 static uint32_t nodes_visited, leaf_nodes;
@@ -284,6 +284,10 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 }
         }
         best_board.full_move_number = 1 + game_moves / 2;
+
+        vchess_reset_all_moves();
+        nm_load_rep_table(game, game_moves, 0, 0);
+        vchess_write_board(&best_board);
 
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
