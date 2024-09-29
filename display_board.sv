@@ -3,7 +3,8 @@
 module display_board #
   (
    parameter EVAL_WIDTH = 0,
-   parameter HALF_MOVE_WIDTH = 0
+   parameter HALF_MOVE_WIDTH = 0,
+   parameter UCI_WIDTH = 0
    )
    (
     input                           reset,
@@ -19,6 +20,7 @@ module display_board #
     input                           thrice_rep,
     input [HALF_MOVE_WIDTH - 1:0]   half_move,
     input                           display,
+    input [UCI_WIDTH - 1:0]         uci,
 
     output reg                      display_done = 0
     );
@@ -26,6 +28,12 @@ module display_board #
    reg [7:0]                        piece_char [0:(1 << `PIECE_WIDTH) - 1];
    reg [$clog2(`BOARD_WIDTH) - 1:0] index, row_start;
    reg [2:0]                        col;
+
+
+   wire [3:0]                       uci_promotion;
+   wire [2:0]                       uci_to_row, uci_to_col, uci_from_row, uci_from_col;
+   
+   assign {uci_promotion, uci_to_row, uci_to_col, uci_from_row, uci_from_col} = uci;
 
    initial
      begin
@@ -92,6 +100,8 @@ module display_board #
                   $display("Black in check.");
               $display("castle=%04b en_passant=%04b capture=%1b, eval=%2d thrice: %d, half_move: %2d",
                        castle_mask, en_passant_col, capture, eval, thrice_rep, half_move);
+              $display("uci_promotion=%1d uci_to_row=%1d uci_to_col=%1d uci_from_row=%1d uci_from_col=%1d",
+                       uci_promotion, uci_to_row, uci_to_col, uci_from_row, uci_from_col);
               display_done <= 1;
               state <= STATE_INIT;
            end

@@ -306,11 +306,13 @@ module tb;
     .eval (eval_out[]),
     .thrice_rep (thrice_rep_out),
     .half_move (half_move_out[]),
+    .uci (uci_out[]),
     );*/
    display_board #
      (
       .EVAL_WIDTH (EVAL_WIDTH),
-      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH)
+      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
+      .UCI_WIDTH (UCI_WIDTH)
       )
    display_board
      (/*AUTOINST*/
@@ -328,7 +330,8 @@ module tb;
       .eval                             (eval_out[EVAL_WIDTH-1:0]), // Templated
       .thrice_rep                       (thrice_rep_out),        // Templated
       .half_move                        (half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
-      .display                          (display_move));          // Templated
+      .display                          (display_move),          // Templated
+      .uci                              (uci_out[UCI_WIDTH-1:0])); // Templated
 
    initial
      begin
