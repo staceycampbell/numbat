@@ -1,0 +1,5 @@
+- quiescence search
+- negamax/eval sort in Verilog
+- UCI input
+- improved evaluation
+- communication with FICS
