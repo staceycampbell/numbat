@@ -11,9 +11,9 @@ module control #
    (
     input                                 reset,
     input                                 clk,
-   
+
     output reg                            soft_reset = 0,
-   
+
     output reg                            am_new_board_valid_out,
     output reg [`BOARD_WIDTH - 1:0]       am_new_board_out,
     output reg [3:0]                      am_castle_mask_out,
@@ -25,10 +25,10 @@ module control #
     output reg [REPDET_WIDTH-1:0]         am_repdet_depth_out,
     output reg [REPDET_WIDTH-1:0]         am_repdet_wr_addr_out,
     output reg                            am_repdet_wr_en_out,
-   
+
     output reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index,
     output reg                            am_clear_moves,
-   
+
     input                                 initial_mate,
     input                                 initial_stalemate,
     input signed [EVAL_WIDTH - 1:0]       initial_eval, // root node eval
@@ -39,7 +39,7 @@ module control #
     input                                 am_moves_ready, // all moves now calculated
     input                                 am_move_ready, // move index by am_move_index now valid
     input [MAX_POSITIONS_LOG2 - 1:0]      am_move_count,
-   
+
     input [`BOARD_WIDTH-1:0]              am_board_in,
     input [3:0]                           am_castle_mask_in,
     input [3:0]                           am_en_passant_col_in,
@@ -54,7 +54,7 @@ module control #
     input [HALF_MOVE_WIDTH - 1:0]         am_half_move_in,
     input                                 am_fifty_move_in,
     input [UCI_WIDTH - 1:0]               am_uci_in,
-   
+
     input [39:0]                          ctrl0_axi_araddr,
     input [2:0]                           ctrl0_axi_arprot,
     input                                 ctrl0_axi_arvalid,
@@ -66,7 +66,7 @@ module control #
     input [31:0]                          ctrl0_axi_wdata,
     input [3:0]                           ctrl0_axi_wstrb,
     input                                 ctrl0_axi_wvalid,
-   
+
     output [0:0]                          ctrl0_axi_arready,
     output [0:0]                          ctrl0_axi_awready,
     output [1:0]                          ctrl0_axi_bresp,
@@ -116,7 +116,7 @@ module control #
          5'h0D : am_new_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          5'h0E : am_new_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          5'h0F : am_new_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         
+
          5'h10 : am_repdet_depth_out <= ctrl0_wr_data;
          5'h11 : am_repdet_castle_mask_out <= ctrl0_wr_data;
          5'h12 : {am_repdet_wr_en_out, am_repdet_wr_addr_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[REPDET_WIDTH - 1:0]};
@@ -164,7 +164,7 @@ module control #
                5'h0D : ctrl0_axi_rdata <= am_new_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
                5'h0E : ctrl0_axi_rdata <= am_new_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
                5'h0F : ctrl0_axi_rdata <= am_new_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
-               
+
                5'h10 : ctrl0_axi_rdata <= am_repdet_depth_out;
                5'h11 : ctrl0_axi_rdata <= am_repdet_castle_mask_out;
                5'h12 : ctrl0_axi_rdata <= {am_repdet_wr_en_out, am_repdet_wr_addr_out};
@@ -176,7 +176,7 @@ module control #
                5'h1D : ctrl0_axi_rdata <= am_repdet_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
                5'h1E : ctrl0_axi_rdata <= am_repdet_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
                5'h1F : ctrl0_axi_rdata <= am_repdet_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
-               
+
                128 : ctrl0_axi_rdata <= am_white_is_attacking_in[31:0];
                129 : ctrl0_axi_rdata <= am_white_is_attacking_in[63:32];
                130 : ctrl0_axi_rdata <= am_black_is_attacking_in[31:0];
@@ -187,8 +187,8 @@ module control #
                135 : ctrl0_axi_rdata <= am_move_count;
                136 : ctrl0_axi_rdata <= initial_eval;
                138 : ctrl0_axi_rdata <= am_half_move_in;
-               139 : ctrl0_axi_rdata <= am_uci_in;
-               
+               139 : ctrl0_axi_rdata <= {am_uci_in[15:12], 1'b0, am_uci_in[11:9], 1'b0, am_uci_in[8:6], 1'b0, am_uci_in[5:3], 1'b0, am_uci_in[2:0]};
+
                172 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
                173 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
                174 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
@@ -230,6 +230,5 @@ module control #
       .axi_wdata                        (ctrl0_axi_wdata[31:0]), // Templated
       .axi_wstrb                        (ctrl0_axi_wstrb[3:0]),  // Templated
       .axi_wvalid                       (ctrl0_axi_wvalid));      // Templated
-   
 
 endmodule
