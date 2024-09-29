@@ -236,7 +236,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
 {
         int32_t i, status, game_index;
         uint32_t ply;
-        uint32_t  move_count, elapsed_ticks;
+        uint32_t  move_count;
+	uint64_t elapsed_ticks;
         double elapsed_time, nps;
         int32_t evaluate_move, best_evaluation;
         board_t best_board = { 0 };
@@ -288,15 +289,14 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, 0, 0);
         vchess_write_board(&best_board);
+        move_count = vchess_move_count();
 
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
-        if (elapsed_time == 0.0)        // hmm
-                elapsed_time = 1.0;
-        nps = (double)nodes_visited *(1.0 / elapsed_time);
-        printf("best_evaluation=%d, nodes_visited=%u, leaf_nodes=%u, seconds=%f, nps=%f\n",
-               best_evaluation, nodes_visited, leaf_nodes, elapsed_time, nps);
+        nps = (double)nodes_visited / elapsed_time;
+        printf("best_evaluation=%d, nodes_visited=%u, leaf_nodes=%u, seconds=%f, nps=%f, move_count=%u\n",
+               best_evaluation, nodes_visited, leaf_nodes, elapsed_time, nps, move_count);
 
         return best_board;
 }

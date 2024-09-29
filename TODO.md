@@ -3,3 +3,4 @@
 - UCI input
 - improved evaluation
 - communication with FICS
+- fix en-passant and three-fold repetition
