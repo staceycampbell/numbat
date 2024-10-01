@@ -1,6 +1,6 @@
 CFLAGS := -g -Wall
 
-fenconv:: fenconv.o
+all:: fenconv ucitoboard
 
 clean:
-	rm -f fenconv fenconv.o
+	rm -f fenconv fenconv.o ucitoboard ucitoboard.o

@@ -1,0 +1,22 @@
+[Event "ICS rated standard game"]
+[Site "freechess.org 23"]
+[Date "2022.08.31"]
+[Time "03:08:00"]
+[Round "-"]
+[White "GriffySr"]
+[Black "loinsaxena"]
+[WhiteElo "2231"]
+[BlackElo "2034"]
+[TimeControl "15+0"]
+[Mode "ICS"]
+[Result "0-1"]
+
+1. e4 c6 2. Nf3 d5 3. Nc3 dxe4 4. Nxe4 Nf6 5. Nxf6+ exf6 6. d4 Bg4 7. Bc4 Qe7+
+8. Be2 Bxf3 9. gxf3 Nd7 10. O-O O-O-O 11. Bf4 Qe6 12. Bd3 Nb6 13. Re1 Qd5
+14. Be4 Qh5 15. Qd3 g6 16. Bxc6 Bd6 17. Bxd6 Rxd6 18. Be8 Nd5 19. Bxf7 Nf4
+20. Qc4+ Rc6 21. Qf1 Qxf3 22. Re3 Qg4+ 23. Kh1 Rxc2 24. Rc1 Rxc1 25. Qxc1+ Kb8
+26. Qf1 Rc8 27. d5 Rc1 28. Re8+ Rc8 29. Re3 a6 30. h3 Qf5 31. Be6 Nxe6
+32. dxe6 Re8 33. Qe2 Qb1+ 34. Kg2 Qxa2 35. e7 Qd5+ 36. Qf3 Qxf3+ 37. Kxf3 Kc7
+38. Re6 f5 39. Kf4 Kd7 40. Rb6 Rxe7 41. Rxb7+ Ke8 42. Rxe7+ Kxe7 43. Ke5 a5
+44. h4 h5 45. b3 Kf7 46. Kd5 Kf6 47. f3 g5 48. hxg5+ Kxg5 49. Ke5 h4
+50. Kd4 Kf4 51. Kd3 h3 52. Ke2 h2 53. Kd3 h1=Q 54. Kc2 Qxf3 {White resigns} 0-1

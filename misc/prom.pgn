@@ -1,0 +1,24 @@
+[Event "ICS rated standard game"]
+[Site "freechess.org 23"]
+[Date "2022.10.05"]
+[Time "14:07:00"]
+[Round "-"]
+[White "OracaPig"]
+[Black "GriffySr"]
+[WhiteElo "2257"]
+[BlackElo "2116"]
+[TimeControl "15+0"]
+[Mode "ICS"]
+[Result "0-1"]
+
+1. d4 Nc6 2. Nf3 Nf6 3. d5 Nb4 4. Nc3 e6 5. dxe6 dxe6 6. Qxd8+ Kxd8 7. Kd1 Bd6
+8. Bg5 h6 9. Bxf6+ gxf6 10. a3 Nc6 11. Ke1 Bd7 12. Rd1 Ne5 13. Ne4 Ke7
+14. Nxd6 cxd6 15. Nxe5 fxe5 16. h4 Rac8 17. c3 Rhg8 18. Rh3 Ba4 19. Rd2 Bc6
+20. g3 Bd5 21. h5 f5 22. Rh4 Kf6 23. Ra4 a6 24. Bh3 e4 25. Rb4 Ke5 26. Bg2 f4
+27. gxf4+ Kxf4 28. Kf1 Ke5 29. Rdd4 Rg4 30. f3 Rf4 31. e3 Rxf3+ 32. Bxf3 exf3
+33. Rb6 Rg8 34. c4 Bc6 35. b4 Rg5 36. Rh4 Rg2 37. b5 axb5 38. cxb5 Be4
+39. Rxe4+ Kxe4 40. Rxd6 Ke5 41. Rd7 b6 42. Rf7 Ke4 43. Rf6 e5 44. Rxh6 Kxe3
+45. Re6 Rg5 46. Rxb6 Rxh5 47. Rg6 e4 48. a4 Rd5 49. Kg1 Rd1+ 50. Kh2 f2
+51. Rf6 f1=Q 52. Rxf1 Rxf1 53. b6 Kd3 54. Kg2 Rb1 55. a5 Rb5 56. Kg3 Rxa5
+57. b7 Rb5 58. b8=N Rxb8 59. Kg4 e3 60. Kf3 Rf8+ 61. Kg3 e2 62. Kh4 e1=Q+
+63. Kh3 Rg8 64. Kh2 Qh4# {White checkmated} 0-1
