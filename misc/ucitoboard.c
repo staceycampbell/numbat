@@ -124,6 +124,8 @@ move_string(char *p)
         next_board.white_to_move = ! previous_board->white_to_move;
         if (next_board.white_to_move)
                 ++next_board.full_move_number;
+	++next_board.half_move_clock;
+	next_board.en_passant_col = 0 << EN_PASSANT_VALID_BIT;
         
         col_from = p[0] - 'a';
         row_from = p[1] - '1';
@@ -193,7 +195,6 @@ move_string(char *p)
                 vchess_place(&next_board, row_from, 7, EMPTY_POSN);
                 vchess_place(&next_board, row_from, 5, WHITE_ROOK);
                 vchess_place(&next_board, row_from, 6, WHITE_KING);
-                next_board.half_move_clock = 0;
         }
         else if (piece == WHITE_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 2)
         {
@@ -201,14 +202,12 @@ move_string(char *p)
                 vchess_place(&next_board, row_from, 1, EMPTY_POSN);
                 vchess_place(&next_board, row_from, 3, WHITE_ROOK);
                 vchess_place(&next_board, row_from, 2, WHITE_KING);
-                next_board.half_move_clock = 0;
         }
         else if (piece == BLACK_KING && row_from == 7 && row_to == 7 && col_from == 4 && col_to == 6)
         {
                 vchess_place(&next_board, row_from, 7, EMPTY_POSN);
                 vchess_place(&next_board, row_from, 5, BLACK_ROOK);
                 vchess_place(&next_board, row_from, 6, BLACK_KING);
-                next_board.half_move_clock = 0;
         }
         else if (piece == BLACK_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 2)
         {
@@ -216,9 +215,21 @@ move_string(char *p)
                 vchess_place(&next_board, row_from, 1, EMPTY_POSN);
                 vchess_place(&next_board, row_from, 3, WHITE_ROOK);
                 vchess_place(&next_board, row_from, 2, WHITE_KING);
-                next_board.half_move_clock = 0;
         }
-        // en-passant
+	// en-passant target
+	else if (piece == WHITE_PAWN && row_from == 1 && row_to == 3)
+	{
+		vchess_place(&next_board, row_to, col_to, WHITE_PAWN);
+		next_board.half_move_clock = 0;
+		next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
+	}
+	else if (piece == BLACK_PAWN && row_from == 6 && row_to == 4)
+	{
+		vchess_place(&next_board, row_to, col_to, BLACK_PAWN);
+		next_board.half_move_clock = 0;
+		next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
+	}
+        // en-passant capture
         else if (piece == WHITE_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
         {
                 vchess_place(&next_board, row_to, col_to, WHITE_PAWN);
@@ -251,8 +262,8 @@ move_string(char *p)
         {
                 vchess_place(&next_board, row_to, col_to, piece);
                 next_board.capture = vchess_get_piece(previous_board, row_to, col_to) != EMPTY_POSN;
-                if (! next_board.capture && ! (piece_type == PIECE_PAWN))
-                        ++next_board.half_move_clock;
+                if (next_board.capture || piece_type == PIECE_PAWN)
+                        next_board.half_move_clock = 0;
         }
 	game[game_moves] = next_board;
 	++game_moves;
