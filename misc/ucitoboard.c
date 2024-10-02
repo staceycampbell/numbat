@@ -10,6 +10,83 @@ static board_t game[GAME_MAX];
 static uint32_t game_moves;
 
 void
+fen_print(board_t * board)
+{
+        int row, col, empty, i;
+        uint32_t piece;
+        char en_passant_col;
+        char piece_char[1 << PIECE_BITS];
+
+        for (i = 0; i < (1 << PIECE_BITS); ++i)
+                piece_char[i] = '?';
+        piece_char[WHITE_PAWN] = 'P';
+        piece_char[WHITE_ROOK] = 'R';
+        piece_char[WHITE_KNIT] = 'N';
+        piece_char[WHITE_BISH] = 'B';
+        piece_char[WHITE_KING] = 'K';
+        piece_char[WHITE_QUEN] = 'Q';
+        piece_char[BLACK_PAWN] = 'p';
+        piece_char[BLACK_ROOK] = 'r';
+        piece_char[BLACK_KNIT] = 'n';
+        piece_char[BLACK_BISH] = 'b';
+        piece_char[BLACK_KING] = 'k';
+        piece_char[BLACK_QUEN] = 'q';
+
+        for (row = 7; row >= 0; --row)
+        {
+                empty = 0;
+                for (col = 0; col < 8; ++col)
+                {
+                        piece = vchess_get_piece(board, row, col);
+                        if (piece == EMPTY_POSN)
+                                ++empty;
+                        else
+                        {
+                                if (empty > 0)
+                                {
+                                        printf("%d", empty);
+                                        empty = 0;
+                                }
+                                printf("%c", piece_char[piece]);
+                        }
+                }
+                if (empty > 0)
+                        printf("%d", empty);
+                if (row > 0)
+                        printf("/");
+        }
+        printf(" ");
+// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+        if (board->white_to_move)
+                printf("w");
+        else
+                printf("b");
+        printf(" ");
+        if (board->castle_mask == 0)
+                printf("-");
+        if ((board->castle_mask & (1 << CASTLE_WHITE_SHORT)) != 0)
+                printf("K");
+        if ((board->castle_mask & (1 << CASTLE_WHITE_LONG)) != 0)
+                printf("Q");
+        if ((board->castle_mask & (1 << CASTLE_BLACK_SHORT)) != 0)
+                printf("k");
+        if ((board->castle_mask & (1 << CASTLE_BLACK_LONG)) != 0)
+                printf("q");
+        printf(" ");
+        if ((board->en_passant_col & (1 << EN_PASSANT_VALID_BIT)) == 0)
+                printf("-");
+        else
+        {
+                en_passant_col = 'a' + (board->en_passant_col & 0x7);
+                if (board->white_to_move)
+                        printf("%c6", en_passant_col);
+                else
+                        printf("%c3", en_passant_col);
+        }
+        printf(" %d %d\n", board->half_move_clock, board->full_move_number);
+}
+
+void
 vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece)
 {
         uint32_t row_contents;
@@ -33,30 +110,6 @@ vchess_get_piece(board_t *board, uint32_t row, uint32_t col)
 
         return piece;
 }
-
-//typedef struct uci_t {
-//	uint8_t row_from;
-//	uint8_t col_from;
-//	uint8_t row_to;
-//	uint8_t col_to;
-//	uint8_t promotion;
-//} uci_t;
-//
-//typedef struct board_t {
-//        uint32_t board[8];
-//        int32_t eval;
-//        uint32_t half_move_clock;
-//        uint32_t full_move_number;
-//        uint32_t en_passant_col;
-//        uint32_t castle_mask;
-//        uint32_t white_to_move;
-//        uint32_t black_in_check;
-//        uint32_t white_in_check;
-//        uint32_t capture;
-//        uint32_t thrice_rep;
-//        uint32_t fifty_move;
-//	uci_t uci;
-//} board_t;
 
 void
 move_string(char *p)
@@ -102,6 +155,11 @@ move_string(char *p)
                         promotion |= 0 << BLACK_BIT;
                 else
                         promotion |= 1 << BLACK_BIT;
+        next_board.uci.row_from = row_from;
+        next_board.uci.col_from = col_from;
+        next_board.uci.row_to = row_to;
+        next_board.uci.col_to = col_to;
+        next_board.uci.promotion = promotion;
         
         piece = vchess_get_piece(previous_board, row_from, col_from);
         piece_type = piece & ~(1 << BLACK_BIT);
@@ -196,6 +254,8 @@ move_string(char *p)
                 if (! next_board.capture && ! (piece_type == PIECE_PAWN))
                         ++next_board.half_move_clock;
         }
+	game[game_moves] = next_board;
+	++game_moves;
 }
 
 int
@@ -267,14 +327,16 @@ main(int argc, char *argv[])
         {
                 next = p;
                 p = strsep(&next, " \n\t\r");
-                if (p)
+                if (p && ! (*p == '0' || *p == '1'))
                 {
                         if (strlen(p) > 1)
                                 move_string(p);
                         p = next;
                 }
         } while (next);
-        printf("\n");
+
+	for (i = 0; i < game_moves; ++i)
+		fen_print(&game[i]);
 
         return 0;
 }
