@@ -21,10 +21,10 @@ module amt;
    reg                      white_to_move;
    reg [3:0]                castle_mask;
    reg [3:0]                en_passant_col;
+   reg [HALF_MOVE_WIDTH - 1:0] full_move_number;
    reg [HALF_MOVE_WIDTH - 1:0] half_move;
 
    reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index = 0;
-   reg                            display_move = 0;
    reg [`BOARD_WIDTH - 1:0]       repdet_board = 0;
    reg [3:0]                      repdet_castle_mask = 0;
    reg [REPDET_WIDTH - 1:0]       repdet_depth = 0;
@@ -47,7 +47,6 @@ module amt;
    wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
    wire                 capture_out;            // From all_moves of all_moves.v
    wire [3:0]           castle_mask_out;        // From all_moves of all_moves.v
-   wire                 display_done;           // From display_board of display_board.v
    wire [3:0]           en_passant_col_out;     // From all_moves of all_moves.v
    wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves of all_moves.v
    wire                 fifty_move_out;         // From all_moves of all_moves.v
@@ -71,48 +70,8 @@ module amt;
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
-        castle_mask = 4'b0000;
-        white_to_move = 1;
-        en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 0;
-        half_move = 0;
+`include "amt_board.vh"
 
-        // 8/8/8/N1k2P2/P3P3/8/6PP/6K1 b - - 0 0
-
-        board[4 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
-        board[4 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        board[4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[3 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[1 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[1 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[0 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-        // white_to_move=0 castle_mask=0x0 en_passant_col=0x0
-        
-        
-        if (0)
-          begin
-             board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
-             board[0 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
-             board[0 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
-             board[0 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_QUEN;
-             board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-             board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
-             board[0 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
-             board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
-             for (i = 0; i < 8; i = i + 1)
-               board[1 * `SIDE_WIDTH + i * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-
-             board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
-             board[7 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
-             board[7 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
-             board[7 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_QUEN;
-             board[7 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-             board[7 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
-             board[7 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
-             board[7 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
-             for (i = 0; i < 8; i = i + 1)
-               board[6 * `SIDE_WIDTH + i * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-          end
         forever
           #1 clk = ~clk;
      end
@@ -173,6 +132,12 @@ module amt;
           $finish;
      end // always @ (posedge clk)
 
+   wire [3:0]                             uci_promotion;
+   wire [2:0]                             uci_from_row, uci_from_col;
+   wire [2:0]                             uci_to_row, uci_to_col;
+   
+   assign {uci_promotion, uci_to_row, uci_to_col, uci_from_row, uci_from_col} = uci_out;
+
    localparam STATE_IDLE = 0;
    localparam STATE_DISP_INIT = 1;
    localparam STATE_DISP_BOARD_0 = 2;
@@ -181,14 +146,13 @@ module amt;
    localparam STATE_DONE_0 = 5;
    localparam STATE_DONE_1 = 6;
 
-   reg [4:0] state = STATE_IDLE;
+   reg [4:0]                              state = STATE_IDLE;
 
    always @(posedge clk)
      case (state)
        STATE_IDLE :
          begin
             am_move_index <= 0;
-            display_move <= 0;
             am_clear_moves <= 0;
             if (am_clear_moves)
               $finish; // fixme hack
@@ -211,19 +175,14 @@ module amt;
            end
          else
            begin
-              $display("move index: %d", am_move_index);
-              display_move <= 1;
+              $display("move_index=%d from_col=%d from_row=%d to_col=%d to_row=%d promotion=%d", am_move_index,
+                       uci_from_col, uci_from_row, uci_to_col, uci_to_row, uci_promotion);
               state <= STATE_DISP_BOARD_0;
            end
        STATE_DISP_BOARD_0 :
-         begin
-            display_move <= 0;
-            if (display_done)
-              state <= STATE_DISP_BOARD_1;
-         end
+         state <= STATE_DISP_BOARD_1;
        STATE_DISP_BOARD_1 :
          begin
-            $display("");
             am_move_index <= am_move_index + 1;
             if (am_move_index + 1 < am_move_count)
               state <= STATE_DISP_BOARD_2;
@@ -294,44 +253,6 @@ module amt;
       .repdet_wr_en_in                  (repdet_wr_en),          // Templated
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));
-
-   /* display_board AUTO_TEMPLATE (
-    .display (display_move),
-    .board (board_out[]),
-    .castle_mask (castle_mask_out[]),
-    .capture (capture_out[]),
-    .en_passant_col (en_passant_col_out[]),
-    .white_in_check (white_in_check_out),
-    .black_in_check (black_in_check_out),
-    .eval (eval_out[]),
-    .thrice_rep (thrice_rep_out),
-    .half_move (half_move_out[]),
-    .uci (uci_out[]),
-    );*/
-   display_board #
-     (
-      .EVAL_WIDTH (EVAL_WIDTH),
-      .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
-      .UCI_WIDTH (UCI_WIDTH)
-      )
-   display_board
-     (/*AUTOINST*/
-      // Outputs
-      .display_done                     (display_done),
-      // Inputs
-      .reset                            (reset),
-      .clk                              (clk),
-      .board                            (board_out[`BOARD_WIDTH-1:0]), // Templated
-      .castle_mask                      (castle_mask_out[3:0]),  // Templated
-      .en_passant_col                   (en_passant_col_out[3:0]), // Templated
-      .capture                          (capture_out),           // Templated
-      .white_in_check                   (white_in_check_out),    // Templated
-      .black_in_check                   (black_in_check_out),    // Templated
-      .eval                             (eval_out[EVAL_WIDTH-1:0]), // Templated
-      .thrice_rep                       (thrice_rep_out),        // Templated
-      .half_move                        (half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
-      .display                          (display_move),          // Templated
-      .uci                              (uci_out[UCI_WIDTH-1:0])); // Templated
 
    initial
      begin

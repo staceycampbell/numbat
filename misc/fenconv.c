@@ -41,7 +41,8 @@
 #define EN_PASSANT_VALID_BIT 3
 
 static void
-fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_mask, int *en_passant_col)
+fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_mask, int *en_passant_col,
+          int *half_move_clock, int *full_move_number)
 {
 	int row, col, i, stop_col;
 
@@ -151,9 +152,17 @@ fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_ma
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 	assert(buffer[i] == '-' || (buffer[i] >= 'a' && buffer[i] <= 'h'));
 	if (buffer[i] == '-')
+        {
 		*en_passant_col = 0 << EN_PASSANT_VALID_BIT;
+                ++i;
+        }
 	else
+        {
 		*en_passant_col = (1 << EN_PASSANT_VALID_BIT) | (buffer[i] - 'a');
+                i += 2;
+        }
+        if (sscanf((char *)&buffer[i], "%d %d", half_move_clock, full_move_number) != 2)
+                printf("%s: bad FEN half move clock or ful move number%s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
 }
 
 int
@@ -162,7 +171,7 @@ main(void)
 	int i, row, col;
 	int board[8][8];
 	char buffer[4096];
-	int white_to_move, castle_mask, en_passant_col;
+	int white_to_move, castle_mask, en_passant_col, half_move_clock, full_move_number;
         char *defines[1 << PIECE_BITS];
 
         for (i = 0; i < (1 << PIECE_BITS); ++i)
@@ -183,7 +192,7 @@ main(void)
 
 	while (fgets(buffer, sizeof(buffer), stdin))
 	{
-		fen_board(buffer, board, &white_to_move, &castle_mask, &en_passant_col);
+		fen_board(buffer, board, &white_to_move, &castle_mask, &en_passant_col, &half_move_clock, &full_move_number);
 		for (row = 7; row >= 0; --row)
                         for (col = 0; col < 8; ++col)
                                 if (board[row][col] != EMPTY_POSN)
@@ -191,7 +200,9 @@ main(void)
                                                row, col, defines[board[row][col]]);
 		printf("white_to_move = %d;\n", white_to_move);
 		printf("castle_mask = 4'h%X;\n", castle_mask);
-		printf("en_passant_col = 4'h%X\n", en_passant_col);
+		printf("en_passant_col = 4'h%X;\n", en_passant_col);
+                printf("half_move = %d;\n", half_move_clock);
+                printf("full_move_number = %d;\n", full_move_number);
 	}
 
 	return 0;
