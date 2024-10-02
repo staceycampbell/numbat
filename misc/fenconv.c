@@ -181,7 +181,6 @@ main(void)
         defines[BLACK_KING] = "BLACK_KING";
         defines[BLACK_QUEN] = "BLACK_QUEN";
 
-	printf("FEN: ");
 	while (fgets(buffer, sizeof(buffer), stdin))
 	{
 		fen_board(buffer, board, &white_to_move, &castle_mask, &en_passant_col);
@@ -190,8 +189,9 @@ main(void)
                                 if (board[row][col] != EMPTY_POSN)
                                         printf("board[%d * `SIDE_WIDTH + %d * `PIECE_WIDTH+:`PIECE_WIDTH] = `%s;\n",
                                                row, col, defines[board[row][col]]);
-		printf("white_to_move=%d castle_mask=0x%X en_passant_col=0x%X\n", white_to_move, castle_mask, en_passant_col);
-		printf("FEN: ");
+		printf("white_to_move = %d;\n", white_to_move);
+		printf("castle_mask = 4'h%X;\n", castle_mask);
+		printf("en_passant_col = 4'h%X\n", en_passant_col);
 	}
 
 	return 0;
