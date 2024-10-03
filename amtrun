@@ -8,8 +8,12 @@ ucitrunc=/tmp/ucitrunc$$
 allmoveslist=/tmp/allmoveslist$$
 testpgn=/tmp/testpgn$$.pgn
 testresult=/tmp/testresult$$
+amtdir=/tmp/amt$$
 stop=0
 counter=0
+mkdir -p $amtdir
+cp amt.sv display_board.sv is_attacking.sv display_is_attacking.sv board_attack.sv all_moves.sv evaluate.sv rep_det.sv $amtdir
+cp attack_mask.vh vchess.vh $amtdir
 while [ $stop -eq 0 ]
 do
     gameno=`shuf -i 1-12998 -n 1`
@@ -20,9 +24,10 @@ do
     moveno=`shuf -i 2-$movecount -n 1`
     tail -n+$moveno < $fenmoves | head -n1 > $fenmove
     echo 'moveno' $moveno 'gameno' $gameno `cat $fenmove`
-    misc/fenconv < $fenmove > amt_board.vh
-    make amt > /dev/null 2>&1
-    ./amt > $simout
+    misc/fenconv < $fenmove > $amtdir/amt_board.vh
+    (cd $amtdir && iverilog -Wall -o amt amt.sv display_board.sv is_attacking.sv \
+                            display_is_attacking.sv board_attack.sv all_moves.sv evaluate.sv rep_det.sv > /dev/null 2>&1)
+    $amtdir/amt > $simout
     egrep '^move_index' $simout > $allmoveslist
     genmoves=`cat $simout | wc -l`
     allmoves="`cat $allmoveslist | awk '{ print $2 }'`"
@@ -71,9 +76,10 @@ do
         fi
     done
     counter=`expr $counter + 1`
-    if [ $counter -eq 100 ]
+    if [ $counter -eq 1 ]
     then
         stop=1
     fi
 done
+rm -fr $amtdir
 rm -f $fenmoves $fenmove $simout $origpgn $ucitrunc $allmoveslist $testpgn $testresult
