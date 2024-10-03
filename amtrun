@@ -4,9 +4,10 @@ fenmoves=/tmp/fenmoves$$
 fenmove=/tmp/fenmove$$
 simout=/tmp/simout$$
 origpgn=/tmp/origpgn$$
+ucitrunc=/tmp/ucitrunc$$
 gameno=`shuf -i 1-12998 -n 1`
-pgn-extract -s --minmoves 4 --selectonly $gameno misc/GriffySr.pgn > $origpgn
-pgn-extract --notags -s -Wfen --minmoves 4 --selectonly $gameno misc/GriffySr.pgn | grep -v '^$' > $fenmoves
+pgn-extract --quiet -s --minmoves 4 --selectonly $gameno misc/GriffySr.pgn > $origpgn
+pgn-extract --quiet --notags -s -Wfen --minmoves 4 --selectonly $gameno misc/GriffySr.pgn | grep -v '^$' > $fenmoves
 cat $origpgn
 movecount=`wc -l < $fenmoves`
 movecount=`expr $movecount - 1`
@@ -19,15 +20,22 @@ make amt
 ./amt > $simout
 allmoves="`egrep '^move_index' $simout | awk '{ print $2 }'`"
 echo $allmoves
-pgn-extract -s -Wuci $origpgn
-playedmove=`pgn-extract --notags -s -Wuci $origpgn | grep -v '^$' | cut -d ' ' -f $moveno`
+pgn-extract --quiet -s -Wuci $origpgn
+pgn-extract --quiet --notags -s -Wuci $origpgn | grep -v '^$' > $ucitrunc
+playedmove=`cat $ucitrunc | cut -d ' ' -f $moveno`
+prevmoveno=`expr $moveno - 1`
+if [ $prevmoveno -lt 1 ]
+then
+    echo problem $moveno $prevmoveno
+    exit 1
+fi
+prevmoves=`cat $ucitrunc | cut -d ' ' -f 1-$prevmoveno`
 echo played move $playedmove
+echo previous moves $prevmoves
 echo $allmoves | grep -w -q $playedmove
 status=$?
-if [ $status -eq 0 ]
+if [ $status -ne 0 ]
 then
-    echo we have that
-else
-    echo not generated
+    echo played move $playedmove not generated
 fi
-rm -f $fenmoves $fenmove $simout $origpgn
+rm -f $fenmoves $fenmove $simout $origpgn $ucitrunc
