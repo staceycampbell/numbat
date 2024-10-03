@@ -3,15 +3,33 @@
 fenmoves=/tmp/fenmoves$$
 fenpgn=/tmp/fenpgn$$
 fenmove=/tmp/fenmove$$
+simout=/tmp/simout$$
+origpgn=/tmp/origpgn$$
 gameno=`shuf -i 1-13033 -n 1`
-pgn-extract -Wfen --minmoves 2 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null > $fenpgn
+pgn-extract --minmoves 3 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null > $origpgn 2>/dev/null
+pgn-extract -Wfen --minmoves 3 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null > $fenpgn 2>/dev/null
+cat $origpgn
 egrep '^[a-z]|^[1-8]' $fenpgn > $fenmoves
 movecount=`wc -l < $fenmoves`
 movecount=`expr $movecount - 1`
-moveno=`shuf -i 1-$movecount -n 1`
+moveno=`shuf -i 2-$movecount -n 1`
+echo 'using move index' $moveno
 tail -n+$moveno < $fenmoves | head -n1 > $fenmove
 cat $fenmove
 misc/fenconv < $fenmove > amt_board.vh
 make amt
-./amt
-rm -f $fenmoves $fenpgn $fenmove
+./amt > $simout
+allmoves="`egrep '^move_index' $simout | awk '{ print $2 }'`"
+echo $allmoves
+pgn-extract -Wuci $origpgn 2>/dev/null
+playedmove=`pgn-extract -Wuci $origpgn 2>/dev/null | egrep '^[a-h]' | cut -d ' ' -f $moveno`
+echo played move $playedmove
+echo $allmoves | grep -w -q $playedmove
+status=$?
+if [ $status -eq 0 ]
+then
+    echo we have that
+else
+    echo not generated
+fi
+rm -f $fenmoves $fenpgn $fenmove $simout $origpgn
