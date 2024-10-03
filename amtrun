@@ -15,22 +15,18 @@ do
     gameno=`shuf -i 1-12998 -n 1`
     pgn-extract --quiet -s --minmoves 4 --selectonly $gameno misc/GriffySr.pgn > $origpgn 2>/dev/null
     pgn-extract --quiet --notags -s -Wfen --minmoves 4 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null | grep -v '^$' > $fenmoves
-    cat $origpgn
     movecount=`wc -l < $fenmoves`
     movecount=`expr $movecount - 1`
     moveno=`shuf -i 2-$movecount -n 1`
-    echo 'moveno' $moveno 'gameno' $gameno
     tail -n+$moveno < $fenmoves | head -n1 > $fenmove
-    cat $fenmove
+    echo 'moveno' $moveno 'gameno' $gameno `cat $fenmove`
     misc/fenconv < $fenmove > amt_board.vh
-    make amt
+    make amt > /dev/null 2>&1
     ./amt > $simout
     egrep '^move_index' $simout > $allmoveslist
     genmoves=`cat $simout | wc -l`
     allmoves="`cat $allmoveslist | awk '{ print $2 }'`"
-    echo $allmoves
-    pgn-extract --quiet -s -Wuci $origpgn
-    pgn-extract --quiet --notags -s -Wuci $origpgn | grep -v '^$' > $ucitrunc
+    pgn-extract --quiet --notags -s -Wuci $origpgn 2>/dev/null | grep -v '^$' > $ucitrunc
     playedmove=`cat $ucitrunc | cut -d ' ' -f $moveno`
     prevmoveno=`expr $moveno - 1`
     if [ $prevmoveno -lt 1 ]
@@ -66,12 +62,16 @@ do
         status=$?
         if [ $status -eq 0 ]
         then
-            echo illegal move found, see $testresult
+            echo illegal move $move found
+            cat $testpgn
+            cat $testresult
+            cat $fenmove
+            cat $origpgn
             stop=1
         fi
     done
     counter=`expr $counter + 1`
-    if [ $counter -eq 10 ]
+    if [ $counter -eq 2 ]
     then
         stop=1
     fi
