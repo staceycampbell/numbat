@@ -136,6 +136,8 @@ module amt;
    wire [2:0]                             uci_from_row, uci_from_col;
    wire [2:0]                             uci_to_row, uci_to_col;
 
+   wire [7:0]                             status_char = white_in_check_out ? "W" : black_in_check_out ? "B" : "D";
+
    reg [7:0]                              pawn_promotions [0:(1 << `PIECE_BITS) - 1];
 
    initial
@@ -192,8 +194,8 @@ module amt;
            end
          else
            begin
-              $display("move_index=%1d %c%c%c%c%c", am_move_index, "a" + uci_from_col, "1" + uci_from_row,
-                       "a" + uci_to_col, "1" + uci_to_row, pawn_promotions[uci_promotion]);
+              $display("move_index=%1d %c%c%c%c%c %c", am_move_index, "a" + uci_from_col, "1" + uci_from_row,
+                       "a" + uci_to_col, "1" + uci_to_row, pawn_promotions[uci_promotion], status_char);
               state <= STATE_DISP_BOARD_0;
            end
        STATE_DISP_BOARD_0 :

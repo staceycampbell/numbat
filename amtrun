@@ -1,15 +1,13 @@
 #!/bin/bash
 (cd misc && make fenconv)
 fenmoves=/tmp/fenmoves$$
-fenpgn=/tmp/fenpgn$$
 fenmove=/tmp/fenmove$$
 simout=/tmp/simout$$
 origpgn=/tmp/origpgn$$
 gameno=`shuf -i 1-12998 -n 1`
 pgn-extract -s --minmoves 4 --selectonly $gameno misc/GriffySr.pgn > $origpgn
-pgn-extract -s -Wfen --minmoves 4 --selectonly $gameno misc/GriffySr.pgn > $fenpgn
+pgn-extract --notags -s -Wfen --minmoves 4 --selectonly $gameno misc/GriffySr.pgn | grep -v '^$' > $fenmoves
 cat $origpgn
-egrep '^[a-z]|^[1-8]|^[A-Z]' $fenpgn > $fenmoves
 movecount=`wc -l < $fenmoves`
 movecount=`expr $movecount - 1`
 moveno=`shuf -i 2-$movecount -n 1`
@@ -22,7 +20,7 @@ make amt
 allmoves="`egrep '^move_index' $simout | awk '{ print $2 }'`"
 echo $allmoves
 pgn-extract -s -Wuci $origpgn
-playedmove=`pgn-extract -s -Wuci $origpgn | egrep '^[a-h]' | cut -d ' ' -f $moveno`
+playedmove=`pgn-extract --notags -s -Wuci $origpgn | grep -v '^$' | cut -d ' ' -f $moveno`
 echo played move $playedmove
 echo $allmoves | grep -w -q $playedmove
 status=$?
@@ -32,4 +30,4 @@ then
 else
     echo not generated
 fi
-rm -f $fenmoves $fenpgn $fenmove $simout $origpgn
+rm -f $fenmoves $fenmove $simout $origpgn
