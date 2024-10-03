@@ -5,9 +5,9 @@ fenpgn=/tmp/fenpgn$$
 fenmove=/tmp/fenmove$$
 simout=/tmp/simout$$
 origpgn=/tmp/origpgn$$
-gameno=`shuf -i 1-13033 -n 1`
-pgn-extract --minmoves 3 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null > $origpgn 2>/dev/null
-pgn-extract -Wfen --minmoves 3 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null > $fenpgn 2>/dev/null
+gameno=`shuf -i 1-12998 -n 1`
+pgn-extract -s --minmoves 4 --selectonly $gameno misc/GriffySr.pgn > $origpgn
+pgn-extract -s -Wfen --minmoves 4 --selectonly $gameno misc/GriffySr.pgn > $fenpgn
 cat $origpgn
 egrep '^[a-z]|^[1-8]|^[A-Z]' $fenpgn > $fenmoves
 movecount=`wc -l < $fenmoves`
@@ -21,8 +21,8 @@ make amt
 ./amt > $simout
 allmoves="`egrep '^move_index' $simout | awk '{ print $2 }'`"
 echo $allmoves
-pgn-extract -Wuci $origpgn 2>/dev/null
-playedmove=`pgn-extract -Wuci $origpgn 2>/dev/null | egrep '^[a-h]' | cut -d ' ' -f $moveno`
+pgn-extract -s -Wuci $origpgn
+playedmove=`pgn-extract -s -Wuci $origpgn | egrep '^[a-h]' | cut -d ' ' -f $moveno`
 echo played move $playedmove
 echo $allmoves | grep -w -q $playedmove
 status=$?
