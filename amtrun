@@ -9,11 +9,11 @@ gameno=`shuf -i 1-13033 -n 1`
 pgn-extract --minmoves 3 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null > $origpgn 2>/dev/null
 pgn-extract -Wfen --minmoves 3 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null > $fenpgn 2>/dev/null
 cat $origpgn
-egrep '^[a-z]|^[1-8]' $fenpgn > $fenmoves
+egrep '^[a-z]|^[1-8]|^[A-Z]' $fenpgn > $fenmoves
 movecount=`wc -l < $fenmoves`
 movecount=`expr $movecount - 1`
 moveno=`shuf -i 2-$movecount -n 1`
-echo 'using move index' $moveno
+echo 'moveno' $moveno 'gameno' $gameno
 tail -n+$moveno < $fenmoves | head -n1 > $fenmove
 cat $fenmove
 misc/fenconv < $fenmove > amt_board.vh

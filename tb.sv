@@ -22,6 +22,7 @@ module tb;
    reg [3:0]                castle_mask;
    reg [3:0]                en_passant_col;
    reg [HALF_MOVE_WIDTH - 1:0] half_move;
+   reg [HALF_MOVE_WIDTH - 1:0] full_move_number;
 
    reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index = 0;
    reg                            display_move = 0;
@@ -38,30 +39,30 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 am_idle;                // From all_moves of all_moves.v
-   wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
-   wire                 am_move_ready;          // From all_moves of all_moves.v
-   wire                 am_moves_ready;         // From all_moves of all_moves.v
-   wire                 black_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]          black_is_attacking_out; // From all_moves of all_moves.v
-   wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
-   wire                 capture_out;            // From all_moves of all_moves.v
-   wire [3:0]           castle_mask_out;        // From all_moves of all_moves.v
-   wire                 display_done;           // From display_board of display_board.v
-   wire [3:0]           en_passant_col_out;     // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves of all_moves.v
-   wire                 fifty_move_out;         // From all_moves of all_moves.v
-   wire [HALF_MOVE_WIDTH-1:0] half_move_out;    // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
-   wire                 initial_fifty_move;     // From all_moves of all_moves.v
-   wire                 initial_mate;           // From all_moves of all_moves.v
-   wire                 initial_stalemate;      // From all_moves of all_moves.v
-   wire                 initial_thrice_rep;     // From all_moves of all_moves.v
-   wire                 thrice_rep_out;         // From all_moves of all_moves.v
-   wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
-   wire                 white_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
-   wire                 white_to_move_out;      // From all_moves of all_moves.v
+   wire                               am_idle;                // From all_moves of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0]      am_move_count; // From all_moves of all_moves.v
+   wire                               am_move_ready;          // From all_moves of all_moves.v
+   wire                               am_moves_ready;         // From all_moves of all_moves.v
+   wire                               black_in_check_out;     // From all_moves of all_moves.v
+   wire [63:0]                        black_is_attacking_out; // From all_moves of all_moves.v
+   wire [`BOARD_WIDTH-1:0]            board_out;           // From all_moves of all_moves.v
+   wire                               capture_out;            // From all_moves of all_moves.v
+   wire [3:0]                         castle_mask_out;        // From all_moves of all_moves.v
+   wire                               display_done;           // From display_board of display_board.v
+   wire [3:0]                         en_passant_col_out;     // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0]       eval_out;       // From all_moves of all_moves.v
+   wire                               fifty_move_out;         // From all_moves of all_moves.v
+   wire [HALF_MOVE_WIDTH-1:0]         half_move_out;    // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0]       initial_eval;   // From all_moves of all_moves.v
+   wire                               initial_fifty_move;     // From all_moves of all_moves.v
+   wire                               initial_mate;           // From all_moves of all_moves.v
+   wire                               initial_stalemate;      // From all_moves of all_moves.v
+   wire                               initial_thrice_rep;     // From all_moves of all_moves.v
+   wire                               thrice_rep_out;         // From all_moves of all_moves.v
+   wire [UCI_WIDTH-1:0]               uci_out;                // From all_moves of all_moves.v
+   wire                               white_in_check_out;     // From all_moves of all_moves.v
+   wire [63:0]                        white_is_attacking_out; // From all_moves of all_moves.v
+   wire                               white_to_move_out;      // From all_moves of all_moves.v
    // End of automatics
 
    initial
@@ -70,49 +71,33 @@ module tb;
         $dumpvars(0, tb);
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
-
-        castle_mask = 4'b0000;
-        white_to_move = 1;
-        en_passant_col = (0 << `EN_PASSANT_VALID_BIT) | 0;
-        half_move = 0;
-
-        // 8/8/8/N1k2P2/P3P3/8/6PP/6K1 b - - 0 0
-
-        board[4 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
-        board[4 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        board[4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[3 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        
+        // 8/5rk1/3pq1pb/PB2n3/1P2P1pQ/8/5PPP/2R2R1K w - - 1 29
+        board[6 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
+        board[6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        board[5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[5 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_QUEN;
+        board[5 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[5 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        board[4 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        board[4 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+        board[3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
         board[3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[3 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[3 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_QUEN;
+        board[1 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
         board[1 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
         board[1 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
-        board[0 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-        // white_to_move=0 castle_mask=0x0 en_passant_col=0x0
-        
-        
-        if (0)
-          begin
-             board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
-             board[0 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
-             board[0 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
-             board[0 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_QUEN;
-             board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-             board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
-             board[0 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
-             board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
-             for (i = 0; i < 8; i = i + 1)
-               board[1 * `SIDE_WIDTH + i * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[0 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
+        board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
+        board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        white_to_move = 1;
+        castle_mask = 4'h0;
+        en_passant_col = 4'h0;
+        half_move = 1;
+        full_move_number = 29;
 
-             board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
-             board[7 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
-             board[7 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
-             board[7 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_QUEN;
-             board[7 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-             board[7 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
-             board[7 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
-             board[7 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
-             for (i = 0; i < 8; i = i + 1)
-               board[6 * `SIDE_WIDTH + i * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-          end
         forever
           #1 clk = ~clk;
      end
