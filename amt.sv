@@ -135,6 +135,19 @@ module amt;
    wire [3:0]                             uci_promotion;
    wire [2:0]                             uci_from_row, uci_from_col;
    wire [2:0]                             uci_to_row, uci_to_col;
+
+   reg [7:0]                              pawn_promotions [0:(1 << `PIECE_BITS) - 1];
+
+   initial
+     begin
+        for (i = 0; i < (1 << `PIECE_BITS); i = i + 1)
+          pawn_promotions[i] = "?";
+        pawn_promotions[`EMPTY_POSN] = " ";
+        pawn_promotions[`PIECE_QUEN] = "Q";
+        pawn_promotions[`PIECE_BISH] = "B";
+        pawn_promotions[`PIECE_ROOK] = "R";
+        pawn_promotions[`PIECE_KNIT] = "N";
+     end
    
    assign {uci_promotion, uci_to_row, uci_to_col, uci_from_row, uci_from_col} = uci_out;
 
@@ -175,8 +188,8 @@ module amt;
            end
          else
            begin
-              $display("move_index=%d from_col=%d from_row=%d to_col=%d to_row=%d promotion=%d", am_move_index,
-                       uci_from_col, uci_from_row, uci_to_col, uci_to_row, uci_promotion);
+              $display("move_index=%1d %c%c%c%c%c", am_move_index, "a" + uci_from_col, "1" + uci_from_row,
+                       "a" + uci_to_col, "1" + uci_to_row, pawn_promotions[uci_promotion]);
               state <= STATE_DISP_BOARD_0;
            end
        STATE_DISP_BOARD_0 :
