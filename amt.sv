@@ -66,7 +66,7 @@ module amt;
    initial
      begin
         $dumpfile("wave.vcd");
-        $dumpvars(0, amt);
+        $dumpvars(1, amt);
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
@@ -143,10 +143,14 @@ module amt;
         for (i = 0; i < (1 << `PIECE_BITS); i = i + 1)
           pawn_promotions[i] = "?";
         pawn_promotions[`EMPTY_POSN] = " ";
-        pawn_promotions[`PIECE_QUEN] = "Q";
-        pawn_promotions[`PIECE_BISH] = "B";
-        pawn_promotions[`PIECE_ROOK] = "R";
-        pawn_promotions[`PIECE_KNIT] = "N";
+        pawn_promotions[`WHITE_QUEN] = "Q";
+        pawn_promotions[`WHITE_BISH] = "B";
+        pawn_promotions[`WHITE_ROOK] = "R";
+        pawn_promotions[`WHITE_KNIT] = "N";
+        pawn_promotions[`BLACK_QUEN] = "Q";
+        pawn_promotions[`BLACK_BISH] = "B";
+        pawn_promotions[`BLACK_ROOK] = "R";
+        pawn_promotions[`BLACK_KNIT] = "N";
      end
    
    assign {uci_promotion, uci_to_row, uci_to_col, uci_from_row, uci_from_col} = uci_out;
