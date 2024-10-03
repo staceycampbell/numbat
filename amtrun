@@ -76,7 +76,7 @@ do
         fi
     done
     counter=`expr $counter + 1`
-    if [ $counter -eq 1 ]
+    if [ $counter -eq 100 ]
     then
         stop=1
     fi
