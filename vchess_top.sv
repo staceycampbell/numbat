@@ -22,6 +22,8 @@ module vchess_top;
    wire                 am_black_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_black_is_attacking_out;// From all_moves of all_moves.v
    wire [`BOARD_WIDTH-1:0] am_board_out;        // From all_moves of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0] am_capture_count;// From all_moves of all_moves.v
+   wire                 am_capture_moves;       // From control of control.v
    wire                 am_capture_out;         // From all_moves of all_moves.v
    wire [3:0]           am_castle_mask_in;      // From control of control.v
    wire [3:0]           am_castle_mask_out;     // From all_moves of all_moves.v
@@ -146,6 +148,7 @@ module vchess_top;
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
       .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),
+      .am_capture_count                 (am_capture_count[MAX_POSITIONS_LOG2-1:0]),
       .board_out                        (am_board_out[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_out                (am_white_to_move_out),  // Templated
       .castle_mask_out                  (am_castle_mask_out[3:0]), // Templated
@@ -174,6 +177,7 @@ module vchess_top;
       .repdet_depth_in                  (am_repdet_depth_in[REPDET_WIDTH-1:0]), // Templated
       .repdet_wr_addr_in                (am_repdet_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
       .repdet_wr_en_in                  (am_repdet_wr_en_in),    // Templated
+      .am_capture_moves                 (am_capture_moves),
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));
 
@@ -206,6 +210,7 @@ module vchess_top;
       .am_repdet_wr_en_out              (am_repdet_wr_en_in),    // Templated
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves),
+      .am_capture_moves                 (am_capture_moves),
       .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
       .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
       .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),

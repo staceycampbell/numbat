@@ -436,7 +436,6 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 }
                 vchess_write_board(&board);
                 vchess_print_board(&board, 1);
-                vchess_reset_all_moves();
         }
 }
 

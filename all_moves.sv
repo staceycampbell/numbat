@@ -25,6 +25,7 @@ module all_moves #
     input [REPDET_WIDTH-1:0]             repdet_wr_addr_in,
     input                                repdet_wr_en_in,
 
+    input                                am_capture_moves,
     input [MAX_POSITIONS_LOG2 - 1:0]     am_move_index,
     input                                am_clear_moves,
 
@@ -38,6 +39,7 @@ module all_moves #
     output reg                           am_moves_ready,
     output reg                           am_move_ready,
     output [MAX_POSITIONS_LOG2 - 1:0]    am_move_count,
+    output [MAX_POSITIONS_LOG2 - 1:0]    am_capture_count,
 
     output [`BOARD_WIDTH - 1:0]          board_out,
     output                               white_to_move_out,
@@ -81,6 +83,10 @@ module all_moves #
    reg [LEGAL_RAM_WIDTH - 1:0]           legal_ram_rd_data;
    reg [MAX_POSITIONS_LOG2 - 1:0]        legal_ram_wr_addr;
    reg                                   legal_ram_wr_addr_init;
+
+   reg [LEGAL_RAM_WIDTH - 1:0]           capture_move_ram [0:`MAX_POSITIONS - 1];
+   reg [LEGAL_RAM_WIDTH - 1:0]           capture_move_ram_rd_data;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        capture_move_ram_wr_addr;
 
    reg [`BOARD_WIDTH - 1:0]              board_ram_wr;
    reg [3:0]                             en_passant_col_ram_wr;
@@ -182,16 +188,16 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
-   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
-   wire                 eval_valid;             // From evaluate of evaluate.v
-   wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire                 rd_thrice_rep;          // From rep_det of rep_det.v
-   wire                 rd_thrice_rep_valid;    // From rep_det of rep_det.v
-   wire                 white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire                                  black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                           black_is_attacking;     // From board_attack of board_attack.v
+   wire                                  display_attacking_done; // From board_attack of board_attack.v
+   wire signed [EVAL_WIDTH-1:0]          eval;           // From evaluate of evaluate.v
+   wire                                  eval_valid;             // From evaluate of evaluate.v
+   wire                                  is_attacking_done;      // From board_attack of board_attack.v
+   wire                                  rd_thrice_rep;          // From rep_det of rep_det.v
+   wire                                  rd_thrice_rep_valid;    // From rep_det of rep_det.v
+   wire                                  white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]                           white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
    wire signed [4:0]                     pawn_adv1_row [0:2];
@@ -202,12 +208,13 @@ module all_moves #
 
    wire                                  black_to_move = ~white_to_move;
 
-   assign am_move_count = legal_ram_wr_addr;
+   assign am_move_count = am_capture_moves ? capture_move_ram_wr_addr : legal_ram_wr_addr;
+   
    assign {uci_out, fifty_move_out, half_move_out, thrice_rep_out, eval_out,
            white_is_attacking_out, black_is_attacking_out,
            white_in_check_out, black_in_check_out,
            capture_out, en_passant_col_out, castle_mask_out, white_to_move_out,
-           board_out} = legal_ram_rd_data;
+           board_out} = am_capture_moves ? capture_move_ram_rd_data : legal_ram_rd_data;
 
    initial
      begin
@@ -299,7 +306,14 @@ module all_moves #
                                        castle_mask_ram_wr, white_to_move_ram_wr, board_ram_wr};
              ram_wr_addr <= ram_wr_addr + 1;
           end
-     end
+     end // always @ (posedge clk)
+
+   wire [LEGAL_RAM_WIDTH - 1:0] legal_all_data = {legal_uci_ram_wr,
+                                                  legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
+                                                  legal_eval_ram_wr, legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
+                                                  legal_white_in_check_ram_wr, legal_black_in_check_ram_wr,
+                                                  legal_capture_ram_wr, legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
+                                                  legal_white_to_move_ram_wr, legal_board_ram_wr};
 
    always @(posedge clk)
      begin
@@ -307,17 +321,22 @@ module all_moves #
         am_move_ready <= am_move_index == am_move_index_r;
 
         legal_ram_rd_data <= legal_move_ram[am_move_index];
+        capture_move_ram_rd_data <= capture_move_ram[am_move_index];
+        
         if (legal_ram_wr_addr_init)
-          legal_ram_wr_addr <= 0;
+          begin
+             legal_ram_wr_addr <= 0;
+             capture_move_ram_wr_addr <= 0;
+          end
         if (legal_ram_wr)
           begin
-             legal_move_ram[legal_ram_wr_addr] <= {legal_uci_ram_wr,
-                                                   legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
-                                                   legal_eval_ram_wr, legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
-                                                   legal_white_in_check_ram_wr, legal_black_in_check_ram_wr,
-                                                   legal_capture_ram_wr, legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
-                                                   legal_white_to_move_ram_wr, legal_board_ram_wr};
+             legal_move_ram[legal_ram_wr_addr] <= legal_all_data;
              legal_ram_wr_addr <= legal_ram_wr_addr + 1;
+          end
+        if (legal_ram_wr && legal_capture_ram_wr)
+          begin
+             capture_move_ram[capture_move_ram_wr_addr] <= legal_all_data;
+             capture_move_ram_wr_addr <= capture_move_ram_wr_addr + 1;
           end
      end
 

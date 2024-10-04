@@ -126,6 +126,12 @@ vchess_move_index(uint32_t move_index)
 }
 
 static inline void
+vchess_capture_moves(uint32_t capture_moves)
+{
+	vchess_write(4, capture_moves);
+}
+
+static inline void
 vchess_write_board_row(uint32_t row, uint32_t row_pieces)
 {
         vchess_write(8 + row, row_pieces);

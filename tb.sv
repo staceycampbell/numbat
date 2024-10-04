@@ -33,12 +33,14 @@ module tb;
    reg                            repdet_wr_en = 0;
    reg [`BOARD_WIDTH - 1:0]       tb_rep_history [0:TB_REP_HISTORY - 1];
    reg [$clog2(TB_REP_HISTORY) - 1:0] tb_rep_index;
+   reg                                am_capture_moves = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [MAX_POSITIONS_LOG2-1:0] am_capture_count;// From all_moves of all_moves.v
    wire                 am_idle;                // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -253,6 +255,7 @@ module tb;
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
       .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),
+      .am_capture_count                 (am_capture_count[MAX_POSITIONS_LOG2-1:0]),
       .board_out                        (board_out[`BOARD_WIDTH-1:0]),
       .white_to_move_out                (white_to_move_out),
       .castle_mask_out                  (castle_mask_out[3:0]),
@@ -281,6 +284,7 @@ module tb;
       .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated
       .repdet_wr_addr_in                (repdet_wr_addr[REPDET_WIDTH-1:0]), // Templated
       .repdet_wr_en_in                  (repdet_wr_en),          // Templated
+      .am_capture_moves                 (am_capture_moves),
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));
 
