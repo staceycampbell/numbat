@@ -4,6 +4,7 @@
 
 static char *sample[] = {
 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+#if 0
 "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1",
 "rnbqkbnr/pppppp1p/6p1/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2",
 "rnbqkbnr/pppppp1p/6p1/8/2PP4/8/PP2PPPP/RNBQKBNR b KQkq c3 0 2",
@@ -59,7 +60,6 @@ static char *sample[] = {
 "r2R1n2/1p2Ppbk/p1p4p/2P4n/6p1/2NpB1P1/PP3PKP/3R4 b - - 1 27",
 "r2R1n2/1p2Pp1k/p1p4p/2P4n/6p1/2bpB1P1/PP3PKP/3R4 w - - 0 28",
 "R4n2/1p2Pp1k/p1p4p/2P4n/6p1/2bpB1P1/PP3PKP/3R4 b - - 0 28",
-#if 0
 "R4n2/1p2Pp1k/p1p4p/2P4n/6p1/3pB1P1/Pb3PKP/3R4 w - - 0 29",
 "R4Q2/1p3p1k/p1p4p/2P4n/6p1/3pB1P1/Pb3PKP/3R4 b - - 0 29",
 "R4Q2/1p3p1k/2p4p/p1P4n/6p1/3pB1P1/Pb3PKP/3R4 w - - 0 30",

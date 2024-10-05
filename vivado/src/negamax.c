@@ -7,8 +7,8 @@
 
 #pragma GCC optimize ("O3")
 
-#define DEPTH_MAX 4
-#define Q_MAX (DEPTH_MAX + 6)   // when search reaches depth max switch to quiescence search
+#define DEPTH_MAX 5
+#define Q_MAX (DEPTH_MAX + 20)   // when search reaches depth max switch to quiescence search
 #define LARGE_EVAL (1 << 15)
 
 #define GLOBAL_VALUE_KING 10000
@@ -149,7 +149,7 @@ nm_sort(board_t ** board_ptr, uint32_t move_count, uint32_t wtm)
                         for (j = i + 1; j < move_count; ++j)
                                 if (board_ptr[i]->eval > board_ptr[j]->eval ||
                                     (board_ptr[i]->eval == board_ptr[j]->eval &&
-                                     (!board_ptr[i]->white_in_check && board_ptr[j]->white_in_check)))
+				     (!board_ptr[i]->white_in_check && board_ptr[j]->white_in_check)))
                                 {
                                         tmp_board_ptr = board_ptr[i];
                                         board_ptr[i] = board_ptr[j];
