@@ -18,8 +18,6 @@ module board_attack
    output [5:0]               black_pop
    );
 
-   reg [2:0]                  wait_count;
-
    // should be empty
    /*AUTOREGINPUT*/
    
@@ -48,7 +46,6 @@ module board_attack
          STATE_IDLE :
            begin
               is_attacking_done <= 0;
-              wait_count <= 0;
               if (board_valid)
                 state <= STATE_RUN;
            end
@@ -56,11 +53,7 @@ module board_attack
            if (white_is_attacking_valid != 0)
              state <= STATE_POP_COUNT_WS;
          STATE_POP_COUNT_WS : // wait for pop count to be valid
-           begin
-              wait_count <= wait_count + 1;
-              if (wait_count == 4)
-                state <= STATE_DONE;
-           end
+           state <= STATE_DONE;
          STATE_DONE :
            begin
               is_attacking_done <= 1;
