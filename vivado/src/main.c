@@ -7,6 +7,7 @@
 #include <lwip/init.h>
 #include <xil_cache.h>
 #include <xuartps.h>
+#include <xtime_l.h>
 #include "vchess.h"
 
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
@@ -290,6 +291,11 @@ do_both(void)
         uint32_t move_count, key_hit;
         board_t best_board;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
+        XTime t_end, t_start;
+        uint64_t elapsed_ticks;
+        double elapsed_time;
+
+        XTime_GetTime(&t_start);
 
         do
         {
@@ -314,6 +320,10 @@ do_both(void)
                 xil_printf("Abort\n");
         else
                 xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
+        XTime_GetTime(&t_end);
+        elapsed_ticks = t_end - t_start;
+        elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
+	printf("total elapsed time: %.1f\n", elapsed_time);
 }
 
 static void

@@ -5,10 +5,10 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-// #pragma GCC optimize ("O3")
+#pragma GCC optimize ("O3")
 
 #define DEPTH_MAX 4
-#define Q_MAX (DEPTH_MAX + 1)   // when search reaches depth max switch to quiescence search
+#define Q_MAX (DEPTH_MAX + 6)   // when search reaches depth max switch to quiescence search
 #define LARGE_EVAL (1 << 15)
 
 #define GLOBAL_VALUE_KING 10000
@@ -20,13 +20,13 @@ static board_t *board_vert[Q_MAX];
 static int32_t
 nm_eval(uint32_t wtm)
 {
-	int32_t value;
-	
-	value = vchess_initial_eval();
-	if (! wtm)
-		value = -value;
+        int32_t value;
+        
+        value = vchess_initial_eval();
+        if (! wtm)
+                value = -value;
 
-	return value;
+        return value;
 }
 
 static void
@@ -135,7 +135,9 @@ nm_sort(board_t ** board_ptr, uint32_t move_count, uint32_t wtm)
         {
                 for (i = 0; i < move_count - 1; ++i)
                         for (j = i + 1; j < move_count; ++j)
-                                if (board_ptr[i]->eval < board_ptr[j]->eval)
+                                if (board_ptr[i]->eval < board_ptr[j]->eval ||
+                                    (board_ptr[i]->eval == board_ptr[j]->eval &&
+                                     (!board_ptr[i]->black_in_check && board_ptr[j]->black_in_check)))
                                 {
                                         tmp_board_ptr = board_ptr[i];
                                         board_ptr[i] = board_ptr[j];
@@ -145,7 +147,9 @@ nm_sort(board_t ** board_ptr, uint32_t move_count, uint32_t wtm)
         else
                 for (i = 0; i < move_count - 1; ++i)
                         for (j = i + 1; j < move_count; ++j)
-                                if (board_ptr[i]->eval > board_ptr[j]->eval)
+                                if (board_ptr[i]->eval > board_ptr[j]->eval ||
+                                    (board_ptr[i]->eval == board_ptr[j]->eval &&
+                                     (!board_ptr[i]->white_in_check && board_ptr[j]->white_in_check)))
                                 {
                                         tmp_board_ptr = board_ptr[i];
                                         board_ptr[i] = board_ptr[j];
@@ -165,6 +169,7 @@ static int32_t
 negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply, uint32_t wtm)
 {
         uint32_t move_count, index;
+        uint32_t mate, stalemate, thrice_rep, fifty_move;
         int32_t value;
         uint32_t status;
         board_t *board_ptr[MAX_POSITIONS];
@@ -180,16 +185,13 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         value = nm_eval(wtm);
         if (move_count == 0) // mate, stalemate, or thrice repetition
         {
-		if (value > 0)
-			value = GLOBAL_VALUE_KING;
+                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
+                if (stalemate || thrice_rep || fifty_move)
+                        return 0;
+                value = -GLOBAL_VALUE_KING + ply;
                 ++leaf_nodes;
                 return value;
         }
-	if (depth == 0)
-	{
-                ++leaf_nodes;
-		return value;
-	}
         if (move_count >= MAX_POSITIONS)
         {
                 xil_printf("%s: stopping here, move_count=%d, %s %d\n", __PRETTY_FUNCTION__, move_count, __FILE__, __LINE__);
@@ -215,15 +217,15 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         for (index = 0; index < move_count; ++index)
         {
                 status = vchess_read_board(&board_stack[ply][index], index);
-		if (depth <= 0 && ! board_stack[ply][index].capture)
-		{
+                if (depth <= 0 && ! board_stack[ply][index].capture)
+                {
                         xil_printf("%s: problem with capture and quiescense stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-			while (1);
-		}
+                        while (1);
+                }
                 if (status)
                 {
                         xil_printf("%s: problem reading boards (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-			while (1);
+                        while (1);
                 }
                 board_ptr[index] = &board_stack[ply][index];
         }
@@ -252,8 +254,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         uint32_t ply;
         uint32_t move_count;
         uint64_t elapsed_ticks;
-	uint32_t wtm;
         double elapsed_time, nps;
+        uint32_t wtm;
         int32_t evaluate_move, best_evaluation;
         board_t best_board = { 0 };
         XTime t_end, t_start;
@@ -268,7 +270,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         XTime_GetTime(&t_start);
         game_index = game_moves - 1;
         best_board = game[game_index];
-	wtm = best_board.white_to_move;
+        wtm = best_board.white_to_move;
         nodes_visited = 0;
         leaf_nodes = 0;
         q_hard_cutoff = 0;

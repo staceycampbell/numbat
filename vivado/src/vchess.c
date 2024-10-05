@@ -51,11 +51,11 @@ vchess_read_uci(uci_t *uci)
         uint32_t val;
 
         val = vchess_read(139);
-	uci->col_from =  (val >>  0) & 0x7;
-	uci->row_from =  (val >>  4) & 0x7;
-	uci->col_to =    (val >>  8) & 0x7;
-	uci->row_to =    (val >> 12) & 0x7;
-	uci->promotion = (val >> 16) & 0xF;
+        uci->col_from =  (val >>  0) & 0x7;
+        uci->row_from =  (val >>  4) & 0x7;
+        uci->col_to =    (val >>  8) & 0x7;
+        uci->row_to =    (val >> 12) & 0x7;
+        uci->promotion = (val >> 16) & 0xF;
 }
 
 void
@@ -122,7 +122,7 @@ vchess_print_board(board_t *board, uint32_t initial_board)
         else
                 eval = board->eval;
         xil_printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move], board->en_passant_col,
-                        board->castle_mask, eval);
+                   board->castle_mask, eval);
         if (!initial_board)
         {
                 vchess_uci_string(&board->uci, uci_str);
@@ -130,7 +130,7 @@ vchess_print_board(board_t *board, uint32_t initial_board)
         }
         else
                 xil_printf(", legal moves: %d, mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d", vchess_move_count(), mate, stalemate,
-                                thrice_rep, fifty_move);
+                           thrice_rep, fifty_move);
         xil_printf("\n");
         if (board->black_in_check)
                 xil_printf("Black in check\n");
