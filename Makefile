@@ -1,6 +1,6 @@
 CFLAGS := -Wall -O2
 SRC := display_board.sv is_attacking.sv display_is_attacking.sv board_attack.sv all_moves.sv \
-	evaluate.sv rep_det.sv
+	evaluate.sv rep_det.sv popcount.sv
 
 all: tb
 

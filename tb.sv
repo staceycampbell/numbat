@@ -47,6 +47,7 @@ module tb;
    wire                 am_moves_ready;         // From all_moves of all_moves.v
    wire                 black_in_check_out;     // From all_moves of all_moves.v
    wire [63:0]          black_is_attacking_out; // From all_moves of all_moves.v
+   wire [5:0]           black_pop_out;          // From all_moves of all_moves.v
    wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
    wire                 capture_out;            // From all_moves of all_moves.v
    wire [3:0]           castle_mask_out;        // From all_moves of all_moves.v
@@ -64,6 +65,7 @@ module tb;
    wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
    wire                 white_in_check_out;     // From all_moves of all_moves.v
    wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
+   wire [5:0]           white_pop_out;          // From all_moves of all_moves.v
    wire                 white_to_move_out;      // From all_moves of all_moves.v
    // End of automatics
 
@@ -270,6 +272,8 @@ module tb;
       .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
       .fifty_move_out                   (fifty_move_out),
       .uci_out                          (uci_out[UCI_WIDTH-1:0]),
+      .white_pop_out                    (white_pop_out[5:0]),
+      .black_pop_out                    (black_pop_out[5:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
