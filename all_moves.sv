@@ -196,7 +196,6 @@ module all_moves #
    wire                 black_in_check;         // From board_attack of board_attack.v
    wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
    wire [5:0]           black_pop;              // From board_attack of board_attack.v
-   wire                 display_attacking_done; // From board_attack of board_attack.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From board_attack of board_attack.v
@@ -953,11 +952,7 @@ module all_moves #
     .board (attack_test[]),
     .board_valid (attack_test_valid),
     );*/
-   board_attack #
-     (
-      .DO_DISPLAY (0)
-      )
-   board_attack
+   board_attack board_attack
      (/*AUTOINST*/
       // Outputs
       .is_attacking_done                (is_attacking_done),
@@ -967,7 +962,6 @@ module all_moves #
       .black_in_check                   (black_in_check),
       .white_pop                        (white_pop[5:0]),
       .black_pop                        (black_pop[5:0]),
-      .display_attacking_done           (display_attacking_done),
       // Inputs
       .reset                            (reset),
       .clk                              (clk),

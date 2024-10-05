@@ -1,51 +1,44 @@
 `include "vchess.vh"
 
-module board_attack #
+module board_attack
   (
-   parameter DO_DISPLAY = 0
-   )
-   (
-    input                      reset,
-    input                      clk,
-   
-    input [`BOARD_WIDTH - 1:0] board,
-    input                      board_valid,
-    input                      clear_attack,
+   input                      reset,
+   input                      clk,
+  
+   input [`BOARD_WIDTH - 1:0] board,
+   input                      board_valid,
+   input                      clear_attack,
 
-    output reg                 is_attacking_done = 0,
-    output [63:0]              white_is_attacking,
-    output [63:0]              black_is_attacking,
-    output                     white_in_check,
-    output                     black_in_check,
-    output [5:0]               white_pop,
-    output [5:0]               black_pop,
-    output                     display_attacking_done
-    );
+   output reg                 is_attacking_done = 0,
+   output [63:0]              white_is_attacking,
+   output [63:0]              black_is_attacking,
+   output                     white_in_check,
+   output                     black_in_check,
+   output [5:0]               white_pop,
+   output [5:0]               black_pop
+   );
+
+   reg [2:0]                  wait_count;
 
    // should be empty
    /*AUTOREGINPUT*/
    
    /*AUTOWIRE*/
-   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 black_is_attacking_display_done;// From display_is_black_is_attacking of display_is_attacking.v
-   wire                 white_is_attacking_display_done;// From display_is_white_is_attacking of display_is_attacking.v
-   // End of automatics
    
-   wire [63:0]                 white_is_attacking_valid, black_is_attacking_valid;
-   wire [63:0]                 white_in_check_list, black_in_check_list;
+   wire [63:0]                white_is_attacking_valid, black_is_attacking_valid;
+   wire [63:0]                white_in_check_list, black_in_check_list;
 
-   genvar                      row, col;
+   genvar                     row, col;
 
    assign white_in_check = white_in_check_list != 0;
    assign black_in_check = black_in_check_list != 0;
-   assign display_attacking_done = black_is_attacking_display_done;
 
    localparam STATE_IDLE = 0;
    localparam STATE_RUN = 1;
-   localparam STATE_WS = 2;
-   localparam STATE_WAIT = 3;
+   localparam STATE_POP_COUNT_WS = 2;
+   localparam STATE_DONE = 3;
 
-   reg [1:0]                   state = STATE_IDLE;
+   reg [1:0]                  state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -55,15 +48,20 @@ module board_attack #
          STATE_IDLE :
            begin
               is_attacking_done <= 0;
+              wait_count <= 0;
               if (board_valid)
                 state <= STATE_RUN;
            end
          STATE_RUN :
            if (white_is_attacking_valid != 0)
-             state <= STATE_WS;
-         STATE_WS : // wait for pop count to be valid
-           state <= STATE_WAIT;
-         STATE_WAIT :
+             state <= STATE_POP_COUNT_WS;
+         STATE_POP_COUNT_WS : // wait for pop count to be valid
+           begin
+              wait_count <= wait_count + 1;
+              if (wait_count == 4)
+                state <= STATE_DONE;
+           end
+         STATE_DONE :
            begin
               is_attacking_done <= 1;
               if (clear_attack)
@@ -153,50 +151,6 @@ module board_attack #
              end
         end
       
-   endgenerate
-
-   generate
-      if (DO_DISPLAY)
-        begin
-           
-           /* display_is_attacking AUTO_TEMPLATE (
-            .attacking (white_is_attacking[]),
-            .attacking_valid (white_is_attacking_valid != 0),
-            .display_done (white_is_attacking_display_done),
-            );*/
-           display_is_attacking #
-             (
-              .COLOR_ATTACKS ("White")
-              )
-           display_is_white_is_attacking
-             (/*AUTOINST*/
-              // Outputs
-              .display_done             (white_is_attacking_display_done), // Templated
-              // Inputs
-              .clk                      (clk),
-              .reset                    (reset),
-              .attacking                (white_is_attacking[63:0]), // Templated
-              .attacking_valid          (white_is_attacking_valid != 0)); // Templated
-
-           /* display_is_attacking AUTO_TEMPLATE (
-            .attacking (black_is_attacking[]),
-            .attacking_valid (white_is_attacking_display_done),
-            .display_done (black_is_attacking_display_done),
-            );*/
-           display_is_attacking #
-             (
-              .COLOR_ATTACKS ("Black")
-              )
-           display_is_black_is_attacking
-             (/*AUTOINST*/
-              // Outputs
-              .display_done             (black_is_attacking_display_done), // Templated
-              // Inputs
-              .clk                      (clk),
-              .reset                    (reset),
-              .attacking                (black_is_attacking[63:0]), // Templated
-              .attacking_valid          (white_is_attacking_display_done)); // Templated
-        end // if (DO_DISPLAY)
    endgenerate
 
 endmodule
