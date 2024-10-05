@@ -992,6 +992,9 @@ module all_moves #
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (attack_test_valid),     // Templated
+      .white_pop                        (white_pop[5:0]),
+      .black_pop                        (black_pop[5:0]),
+      .is_attacking_done                (is_attacking_done),
       .board_in                         (attack_test[`BOARD_WIDTH-1:0]), // Templated
       .clear_eval                       (clear_eval));
 

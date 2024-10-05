@@ -9,12 +9,18 @@ module evaluate #
     input                      reset,
 
     input                      board_valid,
+    input [5:0]                white_pop,
+    input [5:0]                black_pop,
+    input                      is_attacking_done,
     input [`BOARD_WIDTH - 1:0] board_in,
     input                      clear_eval,
 
     (* use_dsp48 = "true" *) output reg signed [EVAL_WIDTH - 1:0] eval,
     output reg                 eval_valid
     );
+
+   localparam POP_SHIFT = 7; // weight * 128
+   localparam POP_SCORE_WIDTH = POP_SHIFT + 6 + 1; // signed
 
    localparam VALUE_PAWN = 100;
    localparam VALUE_KNIT = 310;
@@ -27,6 +33,8 @@ module evaluate #
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] pst [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]          idx [0:7][0:7];
+   reg signed [POP_SCORE_WIDTH - 1:0]        black_pop_score, white_pop_score;
+   reg signed [POP_SCORE_WIDTH + 1 - 1:0]    pop_score;
    
    (* use_dsp48 = "true" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
    (* use_dsp48 = "true" *) reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
@@ -36,6 +44,11 @@ module evaluate #
 
    always @(posedge clk)
      begin
+        // Claude Shannon's mobility score
+        black_pop_score <= -(black_pop << POP_SHIFT);
+        white_pop_score <= white_pop << POP_SHIFT;
+        pop_score <= black_pop_score + white_pop_score;
+        
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)
             score[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
@@ -44,14 +57,15 @@ module evaluate #
             sum_a[y][x / 4] <= score[y][x + 0] + score[y][x + 1] + score[y][x + 2] + score[y][x + 3];
         for (y = 0; y < 8; y = y + 2)
           sum_b[y / 2] <= sum_a[y + 0][0] + sum_a[y + 0][1] + sum_a[y + 1][0] + sum_a[y + 1][1];
-        eval <= sum_b[0] + sum_b[1] + sum_b[2] + sum_b[3];
+        eval <= pop_score + sum_b[0] + sum_b[1] + sum_b[2] + sum_b[3];
      end
 
    localparam STATE_IDLE = 0;
-   localparam STATE_SCORE = 1;
-   localparam STATE_SUM_A = 2;
-   localparam STATE_SUM_B = 3;
-   localparam STATE_EVAL = 4;
+   localparam STATE_WAIT_POP_VALID = 1;
+   localparam STATE_SCORE = 2;
+   localparam STATE_SUM_A = 3;
+   localparam STATE_SUM_B = 4;
+   localparam STATE_EVAL = 5;
 
    reg [3:0]                                 state = STATE_IDLE;
 
@@ -68,8 +82,11 @@ module evaluate #
               eval_valid <= 0;
               board <= board_in;
               if (board_valid)
-                state <= STATE_SCORE;
+                state <= STATE_WAIT_POP_VALID;
            end
+         STATE_WAIT_POP_VALID :
+           if (is_attacking_done)
+             state <= STATE_SCORE;
          STATE_SCORE :
            state <= STATE_SUM_A;
          STATE_SUM_A :
