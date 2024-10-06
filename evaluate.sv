@@ -5,21 +5,21 @@ module evaluate #
    parameter EVAL_WIDTH = 22
    )
    (
-    input                      clk,
-    input                      reset,
+    input                                clk,
+    input                                reset,
 
-    input                      board_valid,
-    input [5:0]                white_pop,
-    input [5:0]                black_pop,
-    input                      is_attacking_done,
-    input [`BOARD_WIDTH - 1:0] board_in,
-    input                      clear_eval,
+    input                                board_valid,
+    input [5:0]                          white_pop,
+    input [5:0]                          black_pop,
+    input                                is_attacking_done,
+    input [`BOARD_WIDTH - 1:0]           board_in,
+    input                                clear_eval,
 
-    (* use_dsp48 = "true" *) output reg signed [EVAL_WIDTH - 1:0] eval,
-    output reg                 eval_valid
+    output reg signed [EVAL_WIDTH - 1:0] eval,
+    output reg                           eval_valid
     );
 
-   localparam POP_SHIFT = 7; // weight * 128
+   localparam POP_SHIFT = 1;
    localparam POP_SCORE_WIDTH = POP_SHIFT + 6 + 1; // signed
 
    localparam VALUE_PAWN = 100;
@@ -29,16 +29,16 @@ module evaluate #
    localparam VALUE_QUEN = 900;
    localparam VALUE_KING = `GLOBAL_VALUE_KING;
 
-   reg [`BOARD_WIDTH - 1:0]    board;
+   reg [`BOARD_WIDTH - 1:0]              board;
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] pst [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]          idx [0:7][0:7];
    reg signed [POP_SCORE_WIDTH - 1:0]        black_pop_score, white_pop_score;
    reg signed [POP_SCORE_WIDTH + 1 - 1:0]    pop_score;
    
-   (* use_dsp48 = "true" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
-   (* use_dsp48 = "true" *) reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
-   (* use_dsp48 = "true" *) reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
+   reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
+   reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
+   reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
 
    integer                                   i, ri, y, x;
 
