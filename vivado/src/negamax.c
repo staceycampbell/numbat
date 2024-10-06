@@ -5,10 +5,10 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-#pragma GCC optimize ("O3")
+// #pragma GCC optimize ("O3")
 
 #define DEPTH_MAX 5
-#define Q_MAX (DEPTH_MAX + 20)   // when search reaches depth max switch to quiescence search
+#define Q_MAX (DEPTH_MAX + 10)   // when search reaches depth max switch to quiescence search
 #define LARGE_EVAL (1 << 15)
 
 #define GLOBAL_VALUE_KING 10000
@@ -149,7 +149,7 @@ nm_sort(board_t ** board_ptr, uint32_t move_count, uint32_t wtm)
                         for (j = i + 1; j < move_count; ++j)
                                 if (board_ptr[i]->eval > board_ptr[j]->eval ||
                                     (board_ptr[i]->eval == board_ptr[j]->eval &&
-				     (!board_ptr[i]->white_in_check && board_ptr[j]->white_in_check)))
+                                     (!board_ptr[i]->white_in_check && board_ptr[j]->white_in_check)))
                                 {
                                         tmp_board_ptr = board_ptr[i];
                                         board_ptr[i] = board_ptr[j];
@@ -183,12 +183,12 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         vchess_capture_moves(0);
         move_count = vchess_move_count();
         value = nm_eval(wtm);
+        vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
         if (move_count == 0) // mate, stalemate, or thrice repetition
         {
-                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
                 if (stalemate || thrice_rep || fifty_move)
                         return 0;
-                value = -GLOBAL_VALUE_KING + ply;
+                value = -GLOBAL_VALUE_KING + ply; // add ply for shortest path to win, longest to loss
                 ++leaf_nodes;
                 return value;
         }
@@ -200,6 +200,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         if (ply == Q_MAX - 1)   // hard limit on quiescence search
         {
                 ++leaf_nodes;
+                if (value == -GLOBAL_VALUE_KING)
+                        value = -GLOBAL_VALUE_KING + ply;
                 ++q_hard_cutoff;
                 return value;
         }
@@ -210,6 +212,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 if (move_count == 0) // no more captures
                 {
                         ++leaf_nodes;
+                        if (value == -GLOBAL_VALUE_KING)
+                                value = -GLOBAL_VALUE_KING + ply;
                         ++q_end;
                         return value;
                 }
@@ -307,8 +311,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 evaluate_move = -negamax(game, game_moves, board_ptr[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply, ! wtm);
                 if (evaluate_move > best_evaluation)
                 {
-                        best_evaluation = evaluate_move;
                         best_board = *board_ptr[i];
+                        best_evaluation = evaluate_move;
                 }
         }
         best_board.full_move_number = 1 + game_moves / 2;
