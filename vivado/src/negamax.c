@@ -130,33 +130,48 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
 static void
 nm_sort(board_t ** board_ptr, uint32_t move_count, uint32_t wtm)
 {
-        int i, j;
+        int i, n, newn;
         board_t *tmp_board_ptr;
 
+        n = move_count;
         if (wtm)
         {
-                for (i = 0; i < move_count - 1; ++i)
-                        for (j = i + 1; j < move_count; ++j)
-                                if (board_ptr[i]->eval < board_ptr[j]->eval ||
-                                    (board_ptr[i]->eval == board_ptr[j]->eval &&
-                                     (!board_ptr[i]->black_in_check && board_ptr[j]->black_in_check)))
+                do
+                {
+                        newn = 0;
+                        for (i = 1; i < n; ++i)
+                                if (board_ptr[i - 1]->eval < board_ptr[i]->eval ||
+                                    (board_ptr[i - 1]->eval == board_ptr[i]->eval &&
+                                     (! board_ptr[i - 1]->black_in_check && board_ptr[i]->black_in_check)))
                                 {
-                                        tmp_board_ptr = board_ptr[i];
-                                        board_ptr[i] = board_ptr[j];
-                                        board_ptr[j] = tmp_board_ptr;
+                                        tmp_board_ptr = board_ptr[i - 1];
+                                        board_ptr[i - 1] = board_ptr[i];
+                                        board_ptr[i] = tmp_board_ptr;
+                                        newn = i;
                                 }
+                        n = newn;
+                }
+                while (n > 1);
         }
         else
-                for (i = 0; i < move_count - 1; ++i)
-                        for (j = i + 1; j < move_count; ++j)
-                                if (board_ptr[i]->eval > board_ptr[j]->eval ||
-                                    (board_ptr[i]->eval == board_ptr[j]->eval &&
-                                     (!board_ptr[i]->white_in_check && board_ptr[j]->white_in_check)))
+        {
+                do
+                {
+                        newn = 0;
+                        for (i = 1; i < n; ++i)
+                                if (board_ptr[i - 1]->eval > board_ptr[i]->eval ||
+                                    (board_ptr[i - 1]->eval == board_ptr[i]->eval &&
+                                     (! board_ptr[i - 1]->white_in_check && board_ptr[i]->white_in_check)))
                                 {
-                                        tmp_board_ptr = board_ptr[i];
-                                        board_ptr[i] = board_ptr[j];
-                                        board_ptr[j] = tmp_board_ptr;
+                                        tmp_board_ptr = board_ptr[i - 1];
+                                        board_ptr[i - 1] = board_ptr[i];
+                                        board_ptr[i] = tmp_board_ptr;
+                                        newn = i;
                                 }
+                        n = newn;
+                }
+                while (n > 1);
+        }
 }
 
 static inline int32_t
@@ -251,7 +266,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 alpha = valmax(alpha, value);
                 ++index;
         }
-	while (index < move_count && alpha < beta);
+        while (index < move_count && alpha < beta);
 
         return alpha;
 }
