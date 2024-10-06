@@ -5,15 +5,15 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-// #pragma GCC optimize ("O3")
+#pragma GCC optimize ("O3")
 
-#define DEPTH_MAX 5
-#define Q_MAX (DEPTH_MAX + 10)   // when search reaches depth max switch to quiescence search
+#define DEPTH_MAX 4
+#define Q_MAX (DEPTH_MAX + 20)  // when search reaches depth max switch to quiescence search
 #define LARGE_EVAL (1 << 15)
 
 #define GLOBAL_VALUE_KING 10000
 
-static uint32_t nodes_visited, leaf_nodes, q_hard_cutoff, q_end;
+static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end;
 static board_t board_stack[Q_MAX][MAX_POSITIONS];
 static board_t *board_vert[Q_MAX];
 
@@ -21,9 +21,9 @@ static int32_t
 nm_eval(uint32_t wtm)
 {
         int32_t value;
-        
+
         value = vchess_initial_eval();
-        if (! wtm)
+        if (!wtm)
                 value = -value;
 
         return value;
@@ -39,7 +39,8 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
         vchess_status(0, 0, 0, 0, 0, &am_idle, 0);
         if (!am_idle)
         {
-                xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__,
+                           __LINE__);
                 while (1);
         }
         if (game_moves == 0 || ply >= DEPTH_MAX)        // mate, stalemate or quiescence (only looking at captures)
@@ -118,7 +119,8 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
                 status = vchess_read_board(&boards[i], i);
                 if (status)
                 {
-                        xil_printf("%s: problem with vchess_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        xil_printf("%s: problem with vchess_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__,
+                                   __LINE__);
                         return -3;
                 }
         }
@@ -166,12 +168,12 @@ valmax(int32_t a, int32_t b)
 }
 
 static int32_t
-negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply, uint32_t wtm)
+negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply)
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
         int32_t value;
-        uint32_t status;
+        uint32_t status, quiescence;
         board_t *board_ptr[MAX_POSITIONS];
 
         ++nodes_visited;
@@ -180,61 +182,63 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         nm_load_rep_table(game, game_moves, board_vert, ply);
         vchess_write_board(board);
 
-        vchess_capture_moves(0);
+        value = nm_eval(board->white_to_move);
+
+        quiescence = depth <= 0;
+
+        vchess_capture_moves(quiescence);
         move_count = vchess_move_count();
-        value = nm_eval(wtm);
-        vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
-        if (move_count == 0) // mate, stalemate, or thrice repetition
+
+        if (quiescence)
         {
+                if (value >= beta)
+                        return beta;
+                if (alpha < value)
+                        alpha = value;
+                if (move_count == 0)
+                {
+                        ++q_end;
+                        return alpha;
+                }
+                if (ply == Q_MAX - 1)   // hard limit on quiescese search depth
+                {
+                        ++q_hard_cutoff;
+                        return alpha;
+                }
+        }
+        else if (move_count == 0)       // mate, stalemate, or thrice repetition
+        {
+                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
                 if (stalemate || thrice_rep || fifty_move)
                         return 0;
-                value = -GLOBAL_VALUE_KING + ply; // add ply for shortest path to win, longest to loss
-                ++leaf_nodes;
+                value = -GLOBAL_VALUE_KING + ply;       // add ply for shortest path to win, longest to loss
+                ++terminal_nodes;
                 return value;
         }
         if (move_count >= MAX_POSITIONS)
         {
-                xil_printf("%s: stopping here, move_count=%d, %s %d\n", __PRETTY_FUNCTION__, move_count, __FILE__, __LINE__);
+                xil_printf("%s: stopping here, move_count=%d, %s %d\n", __PRETTY_FUNCTION__, move_count, __FILE__,
+                           __LINE__);
                 while (1);
-        }
-        if (ply == Q_MAX - 1)   // hard limit on quiescence search
-        {
-                ++leaf_nodes;
-                if (value == -GLOBAL_VALUE_KING)
-                        value = -GLOBAL_VALUE_KING + ply;
-                ++q_hard_cutoff;
-                return value;
-        }
-        if (depth <= 0)
-        {
-                vchess_capture_moves(1); // only captures, quiescence search
-                move_count = vchess_move_count();
-                if (move_count == 0) // no more captures
-                {
-                        ++leaf_nodes;
-                        if (value == -GLOBAL_VALUE_KING)
-                                value = -GLOBAL_VALUE_KING + ply;
-                        ++q_end;
-                        return value;
-                }
         }
         for (index = 0; index < move_count; ++index)
         {
                 status = vchess_read_board(&board_stack[ply][index], index);
-                if (depth <= 0 && ! board_stack[ply][index].capture)
-                {
-                        xil_printf("%s: problem with capture and quiescense stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                        while (1);
-                }
                 if (status)
                 {
                         xil_printf("%s: problem reading boards (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         while (1);
                 }
+                if (quiescence && !board_stack[ply][index].capture)
+                {
+                        xil_printf("%s: problem with capture and quiescense stopping (%s %d)\n", __PRETTY_FUNCTION__,
+                                   __FILE__, __LINE__);
+                        while (1);
+                }
                 board_ptr[index] = &board_stack[ply][index];
         }
 
-        nm_sort(board_ptr, move_count, wtm);
+        nm_sort(board_ptr, move_count, board->white_to_move);
 
         value = -LARGE_EVAL;
         index = 0;
@@ -242,13 +246,14 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         do
         {
                 board_vert[ply] = board_ptr[index];
-                value = valmax(value, -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply, ! wtm));
+                value = valmax(value,
+                               -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply));
                 alpha = valmax(alpha, value);
                 ++index;
         }
-        while (index < move_count && alpha < beta);
+	while (index < move_count && alpha < beta);
 
-        return value;
+        return alpha;
 }
 
 board_t
@@ -259,7 +264,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         uint32_t move_count;
         uint64_t elapsed_ticks;
         double elapsed_time, nps;
-        uint32_t wtm;
         int32_t evaluate_move, best_evaluation;
         board_t best_board = { 0 };
         XTime t_end, t_start;
@@ -274,9 +278,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         XTime_GetTime(&t_start);
         game_index = game_moves - 1;
         best_board = game[game_index];
-        wtm = best_board.white_to_move;
         nodes_visited = 0;
-        leaf_nodes = 0;
+        terminal_nodes = 0;
         q_hard_cutoff = 0;
         q_end = 0;
 
@@ -308,7 +311,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         for (i = 0; i < move_count; ++i)
         {
                 board_vert[ply] = board_ptr[i];
-                evaluate_move = -negamax(game, game_moves, board_ptr[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply, ! wtm);
+                evaluate_move =
+                        -negamax(game, game_moves, board_ptr[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply);
                 if (evaluate_move > best_evaluation)
                 {
                         best_board = *board_ptr[i];
@@ -327,8 +331,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         nps = (double)nodes_visited / elapsed_time;
-        printf("best_evaluation=%d, nodes_visited=%u, leaf_nodes=%u, seconds=%f, nps=%f, move_count=%u\n",
-               best_evaluation, nodes_visited, leaf_nodes, elapsed_time, nps, move_count);
+        printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%f, nps=%f, move_count=%u\n",
+               best_evaluation, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
         printf("q_hard_cutoff=%u, q_end=%u\n", q_hard_cutoff, q_end);
 
         return best_board;
