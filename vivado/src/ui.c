@@ -92,7 +92,7 @@ uci_move(char *p)
                 break;
         default:
                 fprintf(stderr, "%s: problems (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                exit(1);
+		return;
         }
         if (promotion != EMPTY_POSN)
         {
@@ -556,6 +556,12 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else
         {
-                uci_move(str);
+                char *uci_ptr, *c;
+
+                strcpy(str, (char *)cmd);
+                uci_ptr = str;
+                c = str;
+                while ((uci_ptr = strsep(&c, " \n\r")) != 0)
+                        uci_move(uci_ptr);
         }
 }
