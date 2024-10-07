@@ -7,7 +7,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define DEPTH_MAX 4
+#define DEPTH_MAX 6
 #define Q_MAX (DEPTH_MAX + 20)  // when search reaches depth max switch to quiescence search
 #define LARGE_EVAL (1 << 15)
 
@@ -268,7 +268,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-        return alpha;
+        return value;
 }
 
 board_t
