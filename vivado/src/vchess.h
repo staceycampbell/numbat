@@ -46,7 +46,7 @@
 
 #define MAX_POSITIONS 219
 #define GAME_MAX 2048 // maximum half moves
-#define BUF_SIZE 1024
+#define BUF_SIZE 65536
 
 typedef struct uci_t {
 	uint8_t row_from;
@@ -338,7 +338,9 @@ extern void vchess_uci_string(uci_t *uci, char *str);
 
 extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves);
 
+extern uint32_t sample_game(board_t game[GAME_MAX]);
+extern void do_both(void);
+
+extern void process_cmd(uint8_t cmd[BUF_SIZE]);
 extern void fen_print(board_t *board);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
-
-extern uint32_t sample_game(board_t game[GAME_MAX]);
