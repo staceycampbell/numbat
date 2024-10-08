@@ -84,10 +84,6 @@ module all_moves #
 
    reg                                   legal_ram_wr_addr_init;
 
-   reg [LEGAL_RAM_WIDTH - 1:0]           capture_move_ram [0:`MAX_POSITIONS - 1];
-   reg [LEGAL_RAM_WIDTH - 1:0]           capture_move_ram_rd_data;
-   reg [MAX_POSITIONS_LOG2 - 1:0]        capture_move_ram_wr_addr;
-
    reg [`BOARD_WIDTH - 1:0]              board_ram_wr;
    reg [3:0]                             en_passant_col_ram_wr;
    reg [3:0]                             castle_mask_ram_wr;
@@ -193,6 +189,8 @@ module all_moves #
    wire                 black_in_check;         // From board_attack of board_attack.v
    wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
    wire [5:0]           black_pop;              // From board_attack of board_attack.v
+   wire [LEGAL_RAM_WIDTH-1:0] capture_move_ram_rd_data;// From move_sort_capture of move_sort.v
+   wire [MAX_POSITIONS_LOG2-1:0] capture_move_ram_wr_addr;// From move_sort_capture of move_sort.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From board_attack of board_attack.v
@@ -324,16 +322,6 @@ module all_moves #
      begin
         am_move_index_r <= am_move_index;
         am_move_ready <= am_move_index == am_move_index_r;
-
-        capture_move_ram_rd_data <= capture_move_ram[am_move_index];
-        
-        if (legal_ram_wr_addr_init)
-          capture_move_ram_wr_addr <= 0;
-        if (legal_ram_wr && legal_capture_ram_wr)
-          begin
-             capture_move_ram[capture_move_ram_wr_addr] <= legal_ram_wr_data;
-             capture_move_ram_wr_addr <= capture_move_ram_wr_addr + 1;
-          end
      end
 
    assign pawn_enp_row[0] = pawn_row_cap_left;
@@ -1033,6 +1021,33 @@ module all_moves #
       .ram_wr                           (legal_ram_wr),          // Templated
       .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
 
+   /* move_sort AUTO_TEMPLATE (
+    .clk (clk),
+    .reset (reset),
+    .ram_wr_addr_init (legal_ram_wr_addr_init),
+    .ram_rd_addr (am_move_index[]),
+    .ram_wr_data (legal_ram_wr_data[]),
+    .ram_wr (legal_ram_wr && legal_capture_ram_wr),
+    .\(.*\) (capture_move_\1[]),
+    );*/
+   move_sort #
+     (
+      .RAM_WIDTH (LEGAL_RAM_WIDTH),
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
+      )
+   move_sort_capture
+     (/*AUTOINST*/
+      // Outputs
+      .ram_rd_data                      (capture_move_ram_rd_data[LEGAL_RAM_WIDTH-1:0]), // Templated
+      .ram_wr_addr                      (capture_move_ram_wr_addr[MAX_POSITIONS_LOG2-1:0]), // Templated
+      // Inputs
+      .clk                              (clk),                   // Templated
+      .reset                            (reset),                 // Templated
+      .ram_wr_addr_init                 (legal_ram_wr_addr_init), // Templated
+      .ram_wr_data                      (legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
+      .ram_wr                           (legal_ram_wr && legal_capture_ram_wr), // Templated
+      .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
+   
 endmodule
 
 // Local Variables:
