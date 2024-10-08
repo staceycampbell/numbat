@@ -13,5 +13,8 @@ amt: amt.sv $(SRC) vchess.vh attack_mask.vh amt_board.vh
 attack_mask.vh: attack
 	attack > attack_mask.vh
 
+srclist:
+	@echo $(SRC)
+
 clean:
 	rm -f tb wave.vcd attack attack.o attack_mask.vh amt amt_board.vh
