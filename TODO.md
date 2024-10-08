@@ -1,6 +1,6 @@
 - negamax/eval sort in Verilog
-- UCI input
 - improved evaluation, Claude Shannon's mobility score
 - communication with FICS
 - fix en-passant and three-fold repetition
 - no-material draw
+- opening book
