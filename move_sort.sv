@@ -34,16 +34,21 @@ module move_sort #
    reg [MAX_POSITIONS_LOG2 - 1:0]         port_a_addr;
    reg                                    port_a_wr_en = 0;
    reg [RAM_WIDTH - 1:0]                  port_a_wr_data;
-   reg [RAM_WIDTH - 1:0]                  port_a_rd_data;
    
    reg [MAX_POSITIONS_LOG2 - 1:0]         port_b_addr;
    reg                                    port_b_wr_en = 0;
    reg [RAM_WIDTH - 1:0]                  port_b_wr_data;
-   reg [RAM_WIDTH - 1:0]                  port_b_rd_data;
 
    reg [MAX_POSITIONS_LOG2 - 1:0]         n, newn;
-   
-   reg [RAM_WIDTH - 1:0]                  mram [0:`MAX_POSITIONS - 1]; // inferred dual port Xilinx Block RAM
+
+   // should be empty
+   /*AUTOREGINPUT*/
+
+   /*AUTOWIRE*/
+   // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [RAM_WIDTH-1:0] port_a_rd_data;         // From mram of mram.v
+   wire [RAM_WIDTH-1:0] port_b_rd_data;         // From mram of mram.v
+   // End of automatics
 
    wire [MAX_POSITIONS_LOG2 - 1:0]        active_port_a_addr = external_io ? ram_wr_addr : port_a_addr; // external write to "a" port
    wire [MAX_POSITIONS_LOG2 - 1:0]        active_port_b_addr = external_io ? ram_rd_addr : port_b_addr; // external read from "b" port
@@ -66,6 +71,11 @@ module move_sort #
      begin
         sort_start_z <= sort_start;
         black_to_move <= ! white_to_move;
+        
+        if (ram_wr_addr_init)
+          ram_wr_addr <= 0;
+        if (ram_wr)
+          ram_wr_addr <= ram_wr_addr + 1;
      end
 
    localparam STATE_IDLE = 0;
@@ -148,22 +158,34 @@ module move_sort #
            end
          default :
            state_sort <= STATE_IDLE;
-       endcase
+       endcase // case (state_sort)
 
-   always @(posedge clk)
-     begin
-        if (ram_wr_addr_init)
-          ram_wr_addr <= 0;
-        if (ram_wr)
-          ram_wr_addr <= ram_wr_addr + 1;
-
-        if (active_port_a_wr_en)
-          mram[active_port_a_addr] <= active_port_a_wr_data;
-        port_a_rd_data <= mram[active_port_a_addr];
-
-        if (active_port_b_wr_en)
-          mram[active_port_b_addr] <= port_b_wr_data;
-        port_b_rd_data <= mram[active_port_b_addr];
-     end
+   /* mram AUTO_TEMPLATE (
+    );*/
+   mram #
+     (
+      .RAM_WIDTH (RAM_WIDTH),
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
+      )
+   mram
+     (/*AUTOINST*/
+      // Outputs
+      .port_a_rd_data                   (port_a_rd_data[RAM_WIDTH-1:0]),
+      .port_b_rd_data                   (port_b_rd_data[RAM_WIDTH-1:0]),
+      // Inputs
+      .clk                              (clk),
+      .active_port_a_wr_en              (active_port_a_wr_en),
+      .active_port_a_addr               (active_port_a_addr[MAX_POSITIONS_LOG2-1:0]),
+      .active_port_b_wr_en              (active_port_b_wr_en),
+      .active_port_b_addr               (active_port_b_addr[MAX_POSITIONS_LOG2-1:0]),
+      .active_port_a_wr_data            (active_port_a_wr_data[RAM_WIDTH-1:0]),
+      .port_b_wr_data                   (port_b_wr_data[RAM_WIDTH-1:0]));
 
 endmodule
+
+// Local Variables:
+// verilog-auto-inst-param-value:t
+// verilog-library-directories:(
+//     "."
+//     )
+// End:
