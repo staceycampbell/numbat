@@ -19,68 +19,56 @@ module move_sort #
     input                                 ram_wr,
     input [MAX_POSITIONS_LOG2 - 1:0]      ram_rd_addr,
 
-    output reg [RAM_WIDTH - 1:0]          ram_rd_data,
+    output [RAM_WIDTH - 1:0]              ram_rd_data,
     output reg [MAX_POSITIONS_LOG2 - 1:0] ram_wr_addr,
 
     output reg                            sort_complete
     );
 
    reg                                    external_io = 0;
+
+   reg [MAX_POSITIONS_LOG2 - 1:0]         port_a_addr;
+   reg                                    port_a_wr_en = 0;
+   reg [RAM_WIDTH - 1:0]                  port_a_wr_data;
+   reg [RAM_WIDTH - 1:0]                  port_a_rd_data;
    
-   reg [MAX_POSITIONS_LOG2 - 1:0]         local_rd_addr, local_wr_addr;
-   reg [RAM_WIDTH - 1:0]                  local_wr_data;
-   reg                                    local_wr;
-
-   reg [MAX_POSITIONS_LOG2 - 1:0]         local2_rd_addr, local2_wr_addr;
-   reg [RAM_WIDTH - 1:0]                  local2_wr_data, local2_rd_data;
-   reg                                    local2_wr;
+   reg [MAX_POSITIONS_LOG2 - 1:0]         port_b_addr;
+   reg                                    port_b_wr_en = 0;
+   reg [RAM_WIDTH - 1:0]                  port_b_wr_data;
+   reg [RAM_WIDTH - 1:0]                  port_b_rd_data;
    
-   reg [RAM_WIDTH - 1:0]                  mram [0:`MAX_POSITIONS - 1];
+   reg [RAM_WIDTH - 1:0]                  mram [0:`MAX_POSITIONS - 1]; // inferred dual port Xilinx Block RAM
 
-   wire signed [EVAL_WIDTH - 1:0]         eval = $signed(ram_rd_data[EVAL_WIDTH - 1:0]);
-   wire                                   black_in_check = ram_rd_data[EVAL_WIDTH];
-   wire                                   white_in_check = ram_rd_data[EVAL_WIDTH + 1];
+   wire [MAX_POSITIONS_LOG2 - 1:0]        active_port_a_addr = external_io ? ram_wr_addr : port_a_addr; // external write a port
+   wire [MAX_POSITIONS_LOG2 - 1:0]        active_port_b_addr = external_io ? ram_rd_addr : port_b_addr; // external read b port
 
-   wire [MAX_POSITIONS_LOG2 - 1:0]        rd_addr = external_io ? ram_rd_addr : local_rd_addr;
-   wire [RAM_WIDTH - 1:0]                 wr_data = external_io ? ram_wr_data : ram_wr_data;
-   wire                                   wr = external_io ? ram_wr : local_wr;
+   wire [RAM_WIDTH - 1:0]                 active_port_a_wr_data = external_io ? ram_wr_data : port_a_wr_data;
+
+   wire                                   active_port_a_wr_en = external_io ? ram_wr : port_a_wr_en;
+
+   assign ram_rd_data = port_b_rd_data;
 
    always @(posedge clk)
      begin
-        if (ram_wr_addr_init && external_io)
+        external_io <= 1;
+        sort_complete <= 1;
+        
+        if (ram_wr_addr_init)
           ram_wr_addr <= 0;
         if (ram_wr)
-          begin
-             mram[ram_wr_addr] <= wr_data;
-             if (external_io)
-               ram_wr_addr <= ram_wr_addr + 1;
-             else
-               ram_wr_addr <= local_wr_addr;
-          end
-        ram_rd_data <= mram[rd_addr];
+          ram_wr_addr <= ram_wr_addr + 1;
 
-        if (local2_wr)
-          mram[local2_wr_addr] <= local2_wr_data;
-        local2_rd_data <= mram[local2_rd_addr];
+        port_a_wr_en <= 0; // overridden below
+        port_b_wr_en <= 0; // overridden below
+        
+        if (active_port_a_wr_en)
+          mram[active_port_a_addr] <= active_port_a_wr_data;
+        port_a_rd_data <= mram[active_port_a_addr];
+
+        if (port_b_wr_en)
+          mram[active_port_b_addr] <= port_b_wr_data;
+        port_b_rd_data <= mram[active_port_b_addr];
      end
-
-   localparam STATE_IDLE = 0;
-
-   reg [2:0] state = STATE_IDLE;
-
-   always @(posedge clk)
-     if (reset)
-       state <= STATE_IDLE;
-     else
-       case (state)
-         STATE_IDLE :
-           begin
-              local_wr <= 0;
-              local2_wr <= 0;
-              external_io <= 1;
-              sort_complete <= 1;
-           end
-       endcase
 
 endmodule
 
