@@ -39,7 +39,6 @@ module all_moves #
     output reg                           am_moves_ready,
     output reg                           am_move_ready,
     output [MAX_POSITIONS_LOG2 - 1:0]    am_move_count,
-    output [MAX_POSITIONS_LOG2 - 1:0]    am_capture_count,
 
     output [`BOARD_WIDTH - 1:0]          board_out,
     output                               white_to_move_out,

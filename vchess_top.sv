@@ -23,7 +23,6 @@ module vchess_top;
    wire [63:0]          am_black_is_attacking_out;// From all_moves of all_moves.v
    wire [5:0]           am_black_pop_out;       // From all_moves of all_moves.v
    wire [`BOARD_WIDTH-1:0] am_board_out;        // From all_moves of all_moves.v
-   wire [MAX_POSITIONS_LOG2-1:0] am_capture_count;// From all_moves of all_moves.v
    wire                 am_capture_moves;       // From control of control.v
    wire                 am_capture_out;         // From all_moves of all_moves.v
    wire [3:0]           am_castle_mask_in;      // From control of control.v
@@ -150,7 +149,6 @@ module vchess_top;
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
       .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),
-      .am_capture_count                 (am_capture_count[MAX_POSITIONS_LOG2-1:0]),
       .board_out                        (am_board_out[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_out                (am_white_to_move_out),  // Templated
       .castle_mask_out                  (am_castle_mask_out[3:0]), // Templated
