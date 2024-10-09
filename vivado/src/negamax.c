@@ -246,7 +246,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 }
                 if (quiescence && !board_stack[ply][index].capture)
                 {
-                        xil_printf("%s: problem with capture and quiescense stopping (%s %d)\n", __PRETTY_FUNCTION__,
+                        xil_printf("%s: problem with capture and quiescense, stopping (%s %d)\n", __PRETTY_FUNCTION__,
                                    __FILE__, __LINE__);
                         while (1);
                 }
