@@ -199,7 +199,7 @@ hash_calc(board_t *board)
 {
         uint32_t hash, i;
 
-        hash = board->castle_mask | (board->en_passant_col << 4); //  | (board->white_to_move << 8);
+        hash = board->castle_mask ^ board->en_passant_col;
         for (i = 0; i < 8; ++i)
                 if (i & 1)
                         hash += board->board[i];
@@ -208,7 +208,7 @@ hash_calc(board_t *board)
 
         if (board->white_to_move)
                 hash = ~hash;
-        
+
         hash = xorshift32(hash);
 
         return hash & (TABLE_SIZE - 1);
