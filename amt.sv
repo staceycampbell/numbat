@@ -83,7 +83,7 @@ module amt;
 
         if (t >= 5000)
           $finish;
-     end // always @ (posedge clk)
+     end
 
    wire [3:0]                             uci_promotion;
    wire [2:0]                             uci_from_row, uci_from_col;
@@ -146,13 +146,13 @@ module amt;
               state <= STATE_DONE_0;
            end
          else
-           begin
-              $display("move_index=%1d %c%c%c%c%c %c", am_move_index, "a" + uci_from_col, "1" + uci_from_row,
-                       "a" + uci_to_col, "1" + uci_to_row, pawn_promotions[uci_promotion], status_char);
-              state <= STATE_DISP_BOARD_0;
-           end
+           state <= STATE_DISP_BOARD_0;
        STATE_DISP_BOARD_0 :
-         state <= STATE_DISP_BOARD_1;
+         begin
+            $display("move_index=%1d %c%c%c%c%c %c", am_move_index, "a" + uci_from_col, "1" + uci_from_row,
+                     "a" + uci_to_col, "1" + uci_to_row, pawn_promotions[uci_promotion], status_char);
+            state <= STATE_DISP_BOARD_1;
+         end
        STATE_DISP_BOARD_1 :
          begin
             am_move_index <= am_move_index + 1;
