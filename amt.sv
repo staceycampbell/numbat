@@ -81,7 +81,7 @@ module amt;
 
         board_valid <= t == 72;
 
-        if (t >= 5000)
+        if (t >= 20000)
           $finish;
      end
 
