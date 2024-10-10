@@ -12,9 +12,9 @@ module move_sort #
     input                                 clk,
     input                                 reset,
 
-(* mark_debug = "true" *)    input                                 sort_start,
-    (* mark_debug = "true" *) input                                 sort_clear,
-    (* mark_debug = "true" *) input                                 white_to_move,
+    input                                 sort_start,
+    input                                 sort_clear,
+    input                                 white_to_move,
 
     input                                 ram_wr_addr_init,
     input [RAM_WIDTH - 1:0]               ram_wr_data,
@@ -24,19 +24,19 @@ module move_sort #
     output [RAM_WIDTH - 1:0]              ram_rd_data,
     output reg [MAX_POSITIONS_LOG2 - 1:0] ram_wr_addr,
 
-    (* mark_debug = "true" *) output reg                            sort_complete
+    output reg                            sort_complete
     );
 
    reg                                    external_io = 0;
    reg                                    sort_start_z = 0;
    reg                                    black_to_move;
 
-   (* mark_debug = "true" *) reg [MAX_POSITIONS_LOG2 - 1:0]         port_a_addr;
-   (* mark_debug = "true" *) reg                                    port_a_wr_en = 0;
+   reg [MAX_POSITIONS_LOG2 - 1:0]         port_a_addr;
+   reg                                    port_a_wr_en = 0;
    reg [RAM_WIDTH - 1:0]                  port_a_wr_data;
    
-   (* mark_debug = "true" *) reg [MAX_POSITIONS_LOG2 - 1:0]         port_b_addr;
-   (* mark_debug = "true" *) reg                                    port_b_wr_en = 0;
+   reg [MAX_POSITIONS_LOG2 - 1:0]         port_b_addr;
+   reg                                    port_b_wr_en = 0;
    reg [RAM_WIDTH - 1:0]                  port_b_wr_data;
 
    reg [MAX_POSITIONS_LOG2 - 1:0]         n, newn;
@@ -58,12 +58,12 @@ module move_sort #
    wire                                   active_port_a_wr_en = external_io ? ram_wr : port_a_wr_en;
    wire                                   active_port_b_wr_en = external_io ? 1'b0 : port_b_wr_en;
 
-   (* mark_debug = "true" *) wire signed [EVAL_WIDTH - 1:0]         eval_a = $signed(port_a_rd_data[EVAL_WIDTH - 1:0]);
-   (* mark_debug = "true" *) wire signed [EVAL_WIDTH - 1:0]         eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
-   (* mark_debug = "true" *) wire                                   black_in_check_a = port_a_rd_data[EVAL_WIDTH];
-   (* mark_debug = "true" *) wire                                   black_in_check_b = port_b_rd_data[EVAL_WIDTH];
-   (* mark_debug = "true" *) wire                                   white_in_check_a = port_a_rd_data[EVAL_WIDTH + 1];
-   (* mark_debug = "true" *) wire                                   white_in_check_b = port_b_rd_data[EVAL_WIDTH + 1];
+   wire signed [EVAL_WIDTH - 1:0]         eval_a = $signed(port_a_rd_data[EVAL_WIDTH - 1:0]);
+   wire signed [EVAL_WIDTH - 1:0]         eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
+   wire                                   black_in_check_a = port_a_rd_data[EVAL_WIDTH];
+   wire                                   black_in_check_b = port_b_rd_data[EVAL_WIDTH];
+   wire                                   white_in_check_a = port_a_rd_data[EVAL_WIDTH + 1];
+   wire                                   white_in_check_b = port_b_rd_data[EVAL_WIDTH + 1];
 
    assign ram_rd_data = port_b_rd_data;
 
@@ -83,10 +83,11 @@ module move_sort #
    localparam STATE_COMPARE = 2;
    localparam STATE_SWAP = 3;
    localparam STATE_INNER = 4;
-   localparam STATE_OUTER_CHECK = 5;
-   localparam STATE_DONE = 6;
+   localparam STATE_READ_WS = 5;
+   localparam STATE_OUTER_CHECK = 6;
+   localparam STATE_DONE = 7;
 
-   (* mark_debug = "true" *) reg [7:0]                              state_sort = STATE_IDLE;
+   reg [2:0]                              state_sort = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -112,7 +113,7 @@ module move_sort #
               newn <= 0;
               port_a_addr <= 0;
               port_b_addr <= 1;
-              state_sort <= STATE_COMPARE;
+              state_sort <= STATE_READ_WS;
            end
          STATE_COMPARE :
            begin
@@ -141,7 +142,11 @@ module move_sort #
               port_b_addr <= port_b_addr + 1;
               if (port_b_addr == n - 1)
                 state_sort <= STATE_OUTER_CHECK;
+              else
+                state_sort <= STATE_READ_WS;
            end
+         STATE_READ_WS :
+           state_sort <= STATE_COMPARE;
          STATE_OUTER_CHECK :
            begin
               n <= newn;
@@ -156,9 +161,7 @@ module move_sort #
               if (sort_clear)
                 state_sort <= STATE_IDLE;
            end
-         default :
-           state_sort <= STATE_IDLE;
-       endcase // case (state_sort)
+       endcase
 
    /* mram AUTO_TEMPLATE (
     );*/

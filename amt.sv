@@ -36,7 +36,6 @@ module amt;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [MAX_POSITIONS_LOG2-1:0] am_capture_count;// From all_moves of all_moves.v
    wire                 am_idle;                // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -196,7 +195,6 @@ module amt;
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
       .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),
-      .am_capture_count                 (am_capture_count[MAX_POSITIONS_LOG2-1:0]),
       .board_out                        (board_out[`BOARD_WIDTH-1:0]),
       .white_to_move_out                (white_to_move_out),
       .castle_mask_out                  (castle_mask_out[3:0]),

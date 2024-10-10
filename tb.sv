@@ -40,7 +40,6 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [MAX_POSITIONS_LOG2-1:0] am_capture_count;// From all_moves of all_moves.v
    wire                 am_idle;                // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -108,7 +107,7 @@ module tb;
         board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
         board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
         board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
-        white_to_move = 1;
+        white_to_move = 0;
         castle_mask = 4'hF;
         en_passant_col = 4'h0;
         half_move = 0;
@@ -265,7 +264,6 @@ module tb;
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
       .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),
-      .am_capture_count                 (am_capture_count[MAX_POSITIONS_LOG2-1:0]),
       .board_out                        (board_out[`BOARD_WIDTH-1:0]),
       .white_to_move_out                (white_to_move_out),
       .castle_mask_out                  (castle_mask_out[3:0]),
