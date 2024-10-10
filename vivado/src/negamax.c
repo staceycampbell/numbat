@@ -127,53 +127,6 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
         return move_count;
 }
 
-static void
-nm_sort(board_t ** board_ptr, uint32_t move_count, uint32_t wtm)
-{
-        int i, n, newn;
-        board_t *tmp_board_ptr;
-
-        n = move_count;
-        if (wtm)
-        {
-                do
-                {
-                        newn = 0;
-                        for (i = 1; i < n; ++i)
-                                if (board_ptr[i - 1]->eval < board_ptr[i]->eval ||
-                                    (board_ptr[i - 1]->eval == board_ptr[i]->eval &&
-                                     (! board_ptr[i - 1]->black_in_check && board_ptr[i]->black_in_check)))
-                                {
-                                        tmp_board_ptr = board_ptr[i - 1];
-                                        board_ptr[i - 1] = board_ptr[i];
-                                        board_ptr[i] = tmp_board_ptr;
-                                        newn = i;
-                                }
-                        n = newn;
-                }
-                while (n > 1);
-        }
-        else
-        {
-                do
-                {
-                        newn = 0;
-                        for (i = 1; i < n; ++i)
-                                if (board_ptr[i - 1]->eval > board_ptr[i]->eval ||
-                                    (board_ptr[i - 1]->eval == board_ptr[i]->eval &&
-                                     (! board_ptr[i - 1]->white_in_check && board_ptr[i]->white_in_check)))
-                                {
-                                        tmp_board_ptr = board_ptr[i - 1];
-                                        board_ptr[i - 1] = board_ptr[i];
-                                        board_ptr[i] = tmp_board_ptr;
-                                        newn = i;
-                                }
-                        n = newn;
-                }
-                while (n > 1);
-        }
-}
-
 static inline int32_t
 valmax(int32_t a, int32_t b)
 {
@@ -253,8 +206,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 board_ptr[index] = &board_stack[ply][index];
         }
 
-        nm_sort(board_ptr, move_count, board->white_to_move);
-
         value = -LARGE_EVAL;
         index = 0;
         ++ply;
@@ -319,7 +270,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
 
         for (i = 0; i < move_count; ++i)
                 board_ptr[i] = &root_node_boards[i];
-        nm_sort(board_ptr, move_count, game[game_index].white_to_move);
 
         ply = 0;
         best_evaluation = -LARGE_EVAL;
