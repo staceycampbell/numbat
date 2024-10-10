@@ -1,6 +1,6 @@
-CFLAGS := -g -Wall -Wno-dangling-else
+CFLAGS := -O2 -Wall -Wno-dangling-else
 
-all:: fenconv ucitoboard
+all:: fenconv ucitoboard hashtest
 
 clean:
-	rm -f fenconv fenconv.o ucitoboard ucitoboard.o
+	rm -f fenconv fenconv.o ucitoboard ucitoboard.o hashtest
