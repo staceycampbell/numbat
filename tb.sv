@@ -107,7 +107,7 @@ module tb;
         board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
         board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
         board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
-        white_to_move = 0;
+        white_to_move = 1;
         castle_mask = 4'hF;
         en_passant_col = 4'h0;
         half_move = 0;
@@ -169,7 +169,7 @@ module tb;
 
         board_valid <= t == 72;
 
-        if (t >= 5000)
+        if (t >= 10000)
           $finish;
      end // always @ (posedge clk)
 
