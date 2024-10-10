@@ -8,6 +8,8 @@
 #define EXCLUDE_VITIS 1
 #include "../vivado/src/vchess.h"
 
+#pragma GCC optimize ("O3")
+
 #define TABLE_SIZE_LOG2 23 // 2^23 * 512 bits
 #define TABLE_SIZE (1 << TABLE_SIZE_LOG2)
 
@@ -183,14 +185,31 @@ board_match(board_t *a, board_t *b)
 }
 
 static inline uint32_t
+xorshift32(uint32_t x)
+{
+	x |= x == 0;		// if x == 0, set x = 1 instead
+	x ^= (x & 0x0007ffff) << 13;
+	x ^= x >> 17;
+	x ^= (x & 0x07ffffff) << 5;
+	return x & 0xffffffff;
+}
+
+static inline uint32_t
 hash_calc(board_t *board)
 {
         uint32_t hash, i;
 
-        hash = board->board[0];
-        for (i = 1; i < 8; ++i)
-                hash ^= board->board[i];
-        hash ^= (board->castle_mask) | (board->en_passant_col << 4) | (board->white_to_move << 8);
+        hash = board->castle_mask | (board->en_passant_col << 4); //  | (board->white_to_move << 8);
+        for (i = 0; i < 8; ++i)
+                if (i & 1)
+                        hash += board->board[i];
+                else
+                        hash -= board->board[i];
+
+        if (board->white_to_move)
+                hash = ~hash;
+        
+        hash = xorshift32(hash);
 
         return hash & (TABLE_SIZE - 1);
 }
@@ -203,6 +222,7 @@ main(int argc, char *argv[])
         char buffer[4096];
         uint32_t *collision;
         board_t *hash_table;
+        double collision_percent;
 
         assert((collision = (uint32_t *)malloc(TABLE_SIZE * sizeof(uint32_t))) != 0);
         assert((hash_table = (board_t *)malloc(TABLE_SIZE * sizeof(board_t))) != 0);
@@ -236,8 +256,10 @@ main(int argc, char *argv[])
                 if (collision[i] > worst_collision)
                         worst_collision = collision[i];
 
-        printf("total=%u, total_hits=%u, total_collisions=%u, worst_collision=%u\n",
-               total, total_hits, ++total_collisions, worst_collision);
+        collision_percent = (double)total_collisions / (double)total * 100.0;
+
+        printf("total=%u, total_hits=%u, total_collisions=%u, worst_collision=%u, collision_percent=%.1f%%\n",
+               total, total_hits, ++total_collisions, worst_collision, collision_percent);
         
         return 0;
 }
