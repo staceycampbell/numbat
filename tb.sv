@@ -108,7 +108,7 @@ module tb;
         board[0 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_QUEN;
         board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
         board[0 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-        white_to_move = 0;
+        white_to_move = 1;
         castle_mask = 4'h0;
         en_passant_col = 4'h0;
         half_move = 3;

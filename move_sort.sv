@@ -46,8 +46,8 @@ module move_sort #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [RAM_WIDTH-1:0]                   port_a_rd_data;         // From mram of mram.v
-   wire [RAM_WIDTH-1:0]                   port_b_rd_data;         // From mram of mram.v
+   wire [RAM_WIDTH-1:0] port_a_rd_data;         // From mram of mram.v
+   wire [RAM_WIDTH-1:0] port_b_rd_data;         // From mram of mram.v
    // End of automatics
 
    wire [MAX_POSITIONS_LOG2 - 1:0]        active_port_a_addr = external_io ? ram_wr_addr : port_a_addr; // external write to "a" port
@@ -81,11 +81,10 @@ module move_sort #
    localparam STATE_IDLE = 0;
    localparam STATE_OUTER_INIT = 1;
    localparam STATE_COMPARE = 2;
-   localparam STATE_SWAP = 3;
-   localparam STATE_INNER = 4;
-   localparam STATE_READ_WS = 5;
-   localparam STATE_OUTER_CHECK = 6;
-   localparam STATE_DONE = 7;
+   localparam STATE_INNER = 3;
+   localparam STATE_READ_WS = 4;
+   localparam STATE_OUTER_CHECK = 5;
+   localparam STATE_DONE = 6;
 
    reg [2:0]                              state_sort = STATE_IDLE;
 
@@ -121,7 +120,14 @@ module move_sort #
               port_b_wr_en <= 0;
               if ((white_to_move && ((eval_a < eval_b) || (eval_a == eval_b && ! black_in_check_a && black_in_check_b))) ||
                   (black_to_move && ((eval_a > eval_b) || (eval_a == eval_b && ! white_in_check_a && white_in_check_b))))
-                state_sort <= STATE_SWAP;
+                begin
+                   port_a_wr_en <= 1;
+                   port_b_wr_en <= 1;
+                   port_a_wr_data <= port_b_rd_data;
+                   port_b_wr_data <= port_a_rd_data;
+                   newn <= port_b_addr;
+                   state_sort <= STATE_INNER;
+                end
               else
                 begin
                    port_a_addr <= port_a_addr + 1;
@@ -131,15 +137,6 @@ module move_sort #
                    else
                      state_sort <= STATE_READ_WS;
                 end
-           end
-         STATE_SWAP :
-           begin
-              port_a_wr_en <= 1;
-              port_b_wr_en <= 1;
-              port_a_wr_data <= port_b_rd_data;
-              port_b_wr_data <= port_a_rd_data;
-              newn <= port_b_addr;
-              state_sort <= STATE_INNER;
            end
          STATE_INNER :
            begin
@@ -168,6 +165,8 @@ module move_sort #
               if (sort_clear)
                 state_sort <= STATE_IDLE;
            end
+         default :
+           state_sort <= STATE_IDLE;
        endcase
 
    /* mram AUTO_TEMPLATE (
