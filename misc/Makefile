@@ -1,4 +1,4 @@
-CFLAGS := -O2 -Wall -Wno-dangling-else
+CFLAGS := -g -Wall -Wno-dangling-else
 
 all:: fenconv ucitoboard hashtest
 

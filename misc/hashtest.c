@@ -3,10 +3,13 @@
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
+#include <memory.h>
+#include <malloc.h>
 #define EXCLUDE_VITIS 1
 #include "../vivado/src/vchess.h"
 
 #define TABLE_SIZE_LOG2 23 // 2^23 * 512 bits
+#define TABLE_SIZE (1 << TABLE_SIZE_LOG2)
 
 static inline void
 place(board_t *board, uint32_t row, uint32_t col, uint32_t piece)
@@ -145,15 +148,96 @@ local_fen_board(char buffer[4096], board_t *board)
                 printf("%s: bad FEN half move clock or ful move number%s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
 }
 
+static inline uint32_t
+empty_entry(board_t *board)
+{
+        uint32_t sum, i;
+
+        i = 0;
+        sum = 0;
+        while (i < 8 && sum == 0)
+        {
+                sum += board->board[i];
+                ++i;
+        }
+
+        return sum == 0;
+}
+
+static inline uint32_t
+board_match(board_t *a, board_t *b)
+{
+        uint32_t i;
+
+        for (i = 0; i < 8; ++i)
+                if (a->board[i] != b->board[i])
+                        return 0;
+        if (a->castle_mask != b->castle_mask)
+                return 0;
+        if (a->en_passant_col != b->en_passant_col)
+                return 0;
+        if (a->white_to_move != b->white_to_move)
+                return 0;
+
+        return 1;
+}
+
+static inline uint32_t
+hash_calc(board_t *board)
+{
+        uint32_t hash, i;
+
+        hash = board->board[0];
+        for (i = 1; i < 8; ++i)
+                hash ^= board->board[i];
+        hash ^= (board->castle_mask) | (board->en_passant_col << 4) | (board->white_to_move << 8);
+
+        return hash & (TABLE_SIZE - 1);
+}
+
 int
 main(int argc, char *argv[])
 {
+        uint32_t i, j, hash, total_collisions, total_hits, worst_collision, total;
         board_t board;
         char buffer[4096];
+        uint32_t *collision;
+        board_t *hash_table;
 
+        assert((collision = (uint32_t *)malloc(TABLE_SIZE * sizeof(uint32_t))) != 0);
+        assert((hash_table = (board_t *)malloc(TABLE_SIZE * sizeof(board_t))) != 0);
+        for (i = 0; i < TABLE_SIZE; ++i)
+        {
+                collision[i] = 0;
+                for (j = 0; j < 8; ++j)
+                        hash_table[i].board[j] = 0;
+        }
+        total_collisions = 0;
+        total_hits = 0;
+        total = 0;
         while (fgets(buffer, sizeof(buffer), stdin))
                 if (strlen(buffer) > 1)
+                {
+                        ++total;
                         local_fen_board(buffer, &board);
+                        hash = hash_calc(&board);
+                        if (empty_entry(&hash_table[hash]))
+                                hash_table[hash] = board;
+                        else if (! board_match(&hash_table[hash], &board))
+                        {
+                                ++collision[hash];
+                                ++total_collisions;
+                        }
+                        else
+                                ++total_hits;
+                }
+        worst_collision = 0;
+        for (i = 0; i < TABLE_SIZE; ++i)
+                if (collision[i] > worst_collision)
+                        worst_collision = collision[i];
+
+        printf("total=%u, total_hits=%u, total_collisions=%u, worst_collision=%u\n",
+               total, total_hits, ++total_collisions, worst_collision);
         
         return 0;
 }
