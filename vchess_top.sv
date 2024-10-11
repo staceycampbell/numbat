@@ -1,6 +1,25 @@
 `include "vchess.vh"
 
-module vchess_top;
+module vchess_top
+  (
+   input         user_si570_sysclk_clk_n,
+   input         user_si570_sysclk_clk_p,
+
+   output        ddr4_sdram_062_act_n,
+   output [16:0] ddr4_sdram_062_adr,
+   output [1:0]  ddr4_sdram_062_ba,
+   output        ddr4_sdram_062_bg,
+   output        ddr4_sdram_062_ck_c,
+   output        ddr4_sdram_062_ck_t,
+   output        ddr4_sdram_062_cke,
+   output        ddr4_sdram_062_cs_n,
+   inout [7:0]   ddr4_sdram_062_dm_n,
+   inout [63:0]  ddr4_sdram_062_dq,
+   inout [7:0]   ddr4_sdram_062_dqs_c,
+   inout [7:0]   ddr4_sdram_062_dqs_t,
+   output        ddr4_sdram_062_odt,
+   output        ddr4_sdram_062_reset_n
+   );
 
    localparam EVAL_WIDTH = 22;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -8,11 +27,36 @@ module vchess_top;
    localparam HALF_MOVE_WIDTH = 10;
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, row/col to, row/col from
 
-   integer i;
+   integer       i;
 
    reg [`BOARD_WIDTH - 1:0] am_board_in;
    reg                      am_board_valid_in = 0;
    reg                      am_new_board_valid_in_z = 0;
+
+   reg [31:0]               trans_axi_araddr = 0;
+   reg [1:0]                trans_axi_arburst = 0;
+   reg [3:0]                trans_axi_arcache = 0;
+   reg [7:0]                trans_axi_arlen = 0;
+   reg [0:0]                trans_axi_arlock = 0;
+   reg [2:0]                trans_axi_arprot = 0;
+   reg [3:0]                trans_axi_arqos = 0;
+   reg [2:0]                trans_axi_arsize = 0;
+   reg                      trans_axi_arvalid = 0;
+   reg [31:0]               trans_axi_awaddr = 0;
+   reg [1:0]                trans_axi_awburst = 0;
+   reg [3:0]                trans_axi_awcache = 0;
+   reg [7:0]                trans_axi_awlen = 0;
+   reg [0:0]                trans_axi_awlock = 0;
+   reg [2:0]                trans_axi_awprot = 0;
+   reg [3:0]                trans_axi_awqos = 0;
+   reg [2:0]                trans_axi_awsize = 0;
+   reg                      trans_axi_awvalid = 0;
+   reg                      trans_axi_bready = 0;
+   reg                      trans_axi_rready = 0;
+   reg [511:0]              trans_axi_wdata = 0;
+   reg                      trans_axi_wlast = 0;
+   reg [63:0]               trans_axi_wstrb = 0;
+   reg                      trans_axi_wvalid = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -80,6 +124,15 @@ module vchess_top;
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
    wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 soft_reset;             // From control of control.v
+   wire                 trans_axi_arready;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 trans_axi_awready;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [1:0]           trans_axi_bresp;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 trans_axi_bvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [511:0]         trans_axi_rdata;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 trans_axi_rlast;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [1:0]           trans_axi_rresp;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 trans_axi_rvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 trans_axi_wready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    // End of automatics
    
    wire                          clk = digclk;
@@ -277,8 +330,32 @@ module vchess_top;
       .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
       .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
       .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
+      .ddr4_sdram_062_act_n             (ddr4_sdram_062_act_n),
+      .ddr4_sdram_062_adr               (ddr4_sdram_062_adr[16:0]),
+      .ddr4_sdram_062_ba                (ddr4_sdram_062_ba[1:0]),
+      .ddr4_sdram_062_bg                (ddr4_sdram_062_bg),
+      .ddr4_sdram_062_ck_c              (ddr4_sdram_062_ck_c),
+      .ddr4_sdram_062_ck_t              (ddr4_sdram_062_ck_t),
+      .ddr4_sdram_062_cke               (ddr4_sdram_062_cke),
+      .ddr4_sdram_062_cs_n              (ddr4_sdram_062_cs_n),
+      .ddr4_sdram_062_odt               (ddr4_sdram_062_odt),
+      .ddr4_sdram_062_reset_n           (ddr4_sdram_062_reset_n),
       .digclk                           (digclk),
       .reset                            (reset[0:0]),
+      .trans_axi_arready                (trans_axi_arready),
+      .trans_axi_awready                (trans_axi_awready),
+      .trans_axi_bresp                  (trans_axi_bresp[1:0]),
+      .trans_axi_bvalid                 (trans_axi_bvalid),
+      .trans_axi_rdata                  (trans_axi_rdata[511:0]),
+      .trans_axi_rlast                  (trans_axi_rlast),
+      .trans_axi_rresp                  (trans_axi_rresp[1:0]),
+      .trans_axi_rvalid                 (trans_axi_rvalid),
+      .trans_axi_wready                 (trans_axi_wready),
+      // Inouts
+      .ddr4_sdram_062_dm_n              (ddr4_sdram_062_dm_n[7:0]),
+      .ddr4_sdram_062_dq                (ddr4_sdram_062_dq[63:0]),
+      .ddr4_sdram_062_dqs_c             (ddr4_sdram_062_dqs_c[7:0]),
+      .ddr4_sdram_062_dqs_t             (ddr4_sdram_062_dqs_t[7:0]),
       // Inputs
       .ctrl0_axi_arready                (ctrl0_axi_arready),
       .ctrl0_axi_awready                (ctrl0_axi_awready),
@@ -287,7 +364,33 @@ module vchess_top;
       .ctrl0_axi_rdata                  (ctrl0_axi_rdata[31:0]),
       .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
       .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid),
-      .ctrl0_axi_wready                 (ctrl0_axi_wready));
+      .ctrl0_axi_wready                 (ctrl0_axi_wready),
+      .trans_axi_araddr                 (trans_axi_araddr[31:0]),
+      .trans_axi_arburst                (trans_axi_arburst[1:0]),
+      .trans_axi_arcache                (trans_axi_arcache[3:0]),
+      .trans_axi_arlen                  (trans_axi_arlen[7:0]),
+      .trans_axi_arlock                 (trans_axi_arlock[0:0]),
+      .trans_axi_arprot                 (trans_axi_arprot[2:0]),
+      .trans_axi_arqos                  (trans_axi_arqos[3:0]),
+      .trans_axi_arsize                 (trans_axi_arsize[2:0]),
+      .trans_axi_arvalid                (trans_axi_arvalid),
+      .trans_axi_awaddr                 (trans_axi_awaddr[31:0]),
+      .trans_axi_awburst                (trans_axi_awburst[1:0]),
+      .trans_axi_awcache                (trans_axi_awcache[3:0]),
+      .trans_axi_awlen                  (trans_axi_awlen[7:0]),
+      .trans_axi_awlock                 (trans_axi_awlock[0:0]),
+      .trans_axi_awprot                 (trans_axi_awprot[2:0]),
+      .trans_axi_awqos                  (trans_axi_awqos[3:0]),
+      .trans_axi_awsize                 (trans_axi_awsize[2:0]),
+      .trans_axi_awvalid                (trans_axi_awvalid),
+      .trans_axi_bready                 (trans_axi_bready),
+      .trans_axi_rready                 (trans_axi_rready),
+      .trans_axi_wdata                  (trans_axi_wdata[511:0]),
+      .trans_axi_wlast                  (trans_axi_wlast),
+      .trans_axi_wstrb                  (trans_axi_wstrb[63:0]),
+      .trans_axi_wvalid                 (trans_axi_wvalid),
+      .user_si570_sysclk_clk_n          (user_si570_sysclk_clk_n),
+      .user_si570_sysclk_clk_p          (user_si570_sysclk_clk_p));
 
 endmodule
 
