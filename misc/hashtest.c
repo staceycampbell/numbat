@@ -202,22 +202,35 @@ hash_calc(board_t * board)
 	hash = board->castle_mask ^ board->en_passant_col;
 	for (i = 0; i < 8; ++i)
 		if ((i & 1) == 1)
-			hash += board->board[i];
+			hash += xorshift32(board->board[i]);
 		else
-			hash -= board->board[i];
+			hash -= xorshift32(board->board[i]);
 
 	if (board->white_to_move)
-                hash = ~hash;
+                hash = xorshift32(hash);
 
 	hash = xorshift32(hash);
 
 	return hash & (TABLE_SIZE - 1);
 }
 
+static int
+compuint32(const void *p1, const void *p2)
+{
+        uint32_t n1, n2;
+
+        n1 = *(uint32_t *)p1;
+        n2 = *(uint32_t *)p2;
+
+        return n1 < n2;
+}
+
 int
 main(int argc, char *argv[])
 {
-	uint32_t i, j, hash, total_collisions, total_hits, worst_collision, total;
+	uint32_t i, j, hash, total_collisions, total_hits, worst_collision, total, entry;
+        uint32_t median_collisions;
+        double average_collisions;
 	board_t board;
 	char buffer[4096];
 	uint32_t *collision;
@@ -252,14 +265,27 @@ main(int argc, char *argv[])
 				++total_hits;
 		}
 	worst_collision = 0;
+        entry = 0;
+        average_collisions = 0;
 	for (i = 0; i < TABLE_SIZE; ++i)
+        {
 		if (collision[i] > worst_collision)
+                {
+                        entry = i;
 			worst_collision = collision[i];
+                }
+                average_collisions += collision[i];
+        }
+        average_collisions /= (double)TABLE_SIZE;
+        qsort(collision, TABLE_SIZE, sizeof(uint32_t), compuint32);
+        median_collisions = collision[TABLE_SIZE / 2];
 
-	collision_percent = (double)total_collisions / (double)total *100.0;
+	collision_percent = (double)total_collisions / (double)total * 100.0;
 
-	printf("total=%u, total_hits=%u, total_collisions=%u, worst_collision=%u, collision_percent=%.1f%%\n",
-	       total, total_hits, ++total_collisions, worst_collision, collision_percent);
+	printf("total=%u, total_hits=%u, total_collisions=%u, worst_collision=%u (entry=%u)\n",
+               total, total_hits, ++total_collisions, worst_collision, entry);
+        printf("median_collisions=%u, average_collisions=%.5f, collision_percent=%.1f%%\n",
+               median_collisions, average_collisions, collision_percent);
 
 	return 0;
 }
