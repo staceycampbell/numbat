@@ -10,7 +10,8 @@
 
 #pragma GCC optimize ("O3")
 
-#define TABLE_SIZE_LOG2 23      // 2^23 * 512 bits
+#define TABLE_SIZE_LOG2 23      // 2^23 * 512 bits for 4Gbit DDR4
+// #define TABLE_SIZE_LOG2 16      // 2^16 * 360 bits for 27Mbit URAM
 #define TABLE_SIZE (1 << TABLE_SIZE_LOG2)
 
 static inline void
@@ -187,7 +188,7 @@ board_match(board_t * a, board_t * b)
 static inline uint32_t
 xorshift32(uint32_t x)
 {
-        x |= x == 0;            // if x == 0, set x = 1 instead
+        // x = x == 0 ? 1 : x; // no need to avoid 0 in this use case
         x ^= (x & 0x0007ffff) << 13;
         x ^= x >> 17;
         x ^= (x & 0x07ffffff) << 5;
@@ -257,13 +258,13 @@ main(int argc, char *argv[])
                         hash = hash_calc(&board);
                         if (empty_entry(&hash_table[hash]))
                                 hash_table[hash] = board;
-                        else if (!board_match(&hash_table[hash], &board))
-                        {
+                        else if (board_match(&hash_table[hash], &board))
+                                ++total_hits;
+                        else
+			{
                                 ++collision[hash];
                                 ++total_collisions;
-                        }
-                        else
-                                ++total_hits;
+			}
                 }
         worst_collision = 0;
         entry = 0;
