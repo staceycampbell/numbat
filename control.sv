@@ -77,7 +77,9 @@ module control #
     output reg [31:0]                     ctrl0_axi_rdata,
     output [1:0]                          ctrl0_axi_rresp,
     output reg [0:0]                      ctrl0_axi_rvalid,
-    output [0:0]                          ctrl0_axi_wready
+    output [0:0]                          ctrl0_axi_wready,
+
+    input [31:0]                          misc_status
     );
 
    reg [$clog2(`BOARD_WIDTH) - 1:0]       board_addr;
@@ -203,6 +205,8 @@ module control #
                177 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
                178 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
                179 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
+
+               255 : ctrl0_axi_rdata <= misc_status;
                default : ctrl0_axi_rdata <= 0;
              endcase
              ctrl0_axi_rvalid <= 1;

@@ -554,6 +554,14 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 }
                 xil_printf("\n");
         }
+	else if (strcmp((char *)str, "tclear") == 0)
+	{
+		trans_clear_table();
+	}
+	else if (strcmp((char *)str, "mstatus") == 0)
+	{
+		xil_printf("misc_status=%08X\n", vchess_misc_status());
+	}
         else
         {
                 char *uci_ptr, *c;

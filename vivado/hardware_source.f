@@ -8,6 +8,7 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../move_sort.sv
 ../popcount.sv
 ../rep_det.sv
+../sync.sv
 ../vchess.sv
 ../vchess.vh
 ../vchess_top.sv

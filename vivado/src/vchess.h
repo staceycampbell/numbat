@@ -93,6 +93,12 @@ vchess_read(uint32_t reg)
         return val;
 }
 
+static inline uint32_t
+vchess_misc_status(void)
+{
+	return vchess_read(255);
+}
+
 static inline void
 vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves)
 {
@@ -344,3 +350,5 @@ extern void do_both(void);
 extern void process_cmd(uint8_t cmd[BUF_SIZE]);
 extern void fen_print(board_t *board);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
+
+extern void trans_clear_table(void);

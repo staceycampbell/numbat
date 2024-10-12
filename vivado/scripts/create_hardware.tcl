@@ -11,6 +11,7 @@ make_wrapper -files [get_files vchess/vchess_1.srcs/sources_1/bd/mpsoc_preset/mp
 
 set all_src_files [listFromFile hardware_source.f]
 add_files -norecurse $all_src_files
+add_files -fileset constrs_1 -norecurse vchess.xdc
 
 # set all_ip_files [listFromFile hardware_ip.f]
 # foreach ip_file $all_ip_files {
