@@ -11,14 +11,16 @@ trans_clear_table(void)
 {
 	int32_t i;
 	uint32_t d;
-	uint32_t *table = TRANS_BASE_ADDR;
+	volatile uint32_t *table = TRANS_BASE_ADDR;
 
-	for (i = 0; i < 400; ++i)
+	for (i = 0; i < 10000; ++i)
+		table[i] = i;
+	for (i = 10000; i < 20000; ++i)
 		table[i] = ~i;
-	for (i = 350; i < 400; ++i)
+	for (i = 10000 - 1; i >= 0; --i)
 	{
 		d = table[i];
-		xil_printf("%d %u\n", i, ~d);
+		if (d != i)
+			xil_printf("problem: %d %u\n", i, d);
 	}
-	xil_printf("\n");
 }
