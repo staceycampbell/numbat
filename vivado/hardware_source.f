@@ -6,9 +6,10 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../evaluate.sv
 ../is_attacking.sv
 ../move_sort.sv
+../mram.sv
 ../popcount.sv
 ../rep_det.sv
 ../sync.sv
 ../vchess.sv
-../vchess.vh
 ../vchess_top.sv
+../vchess.vh
