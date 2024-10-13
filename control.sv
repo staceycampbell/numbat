@@ -31,6 +31,24 @@ module control #
     output reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index,
     output reg                            am_clear_moves,
     output reg                            am_capture_moves,
+   
+    output [`BOARD_WIDTH - 1:0]           trans_board_out,
+    output                                trans_white_to_move_out,
+    output [3:0]                          trans_castle_mask_out,
+    output [3:0]                          trans_en_passant_col_out,
+   
+    output reg [7:0]                      trans_depth_out,
+    output reg                            trans_entry_lookup_out,
+    output reg                            trans_entry_store_out,
+    output reg [EVAL_WIDTH - 1:0]         trans_eval_out,
+    output reg [1:0]                      trans_flag_out,
+   
+    input [7:0]                           trans_depth_in,
+    input                                 trans_entry_valid_in,
+    input [EVAL_WIDTH - 1:0]              trans_eval_in,
+    input [1:0]                           trans_flag_in,
+    input [31:0]                          trans_hash_in,
+    input                                 trans_trans_idle_in,
 
     input                                 initial_mate,
     input                                 initial_stalemate,
@@ -96,12 +114,17 @@ module control #
    wire                                   ctrl0_wr_valid;         // From axi4lite_write_ctrl0 of axi4lite_write.v
    // End of automatics
 
-   assign ctrl0_axi_arready = 1; // always ready
-   assign ctrl0_axi_rresp = 2'b0; // always ok
-
    wire [15:0]                            wr_reg_addr = ctrl0_wr_addr[15:2];
    wire [15:0]                            rd_reg_addr = ctrl0_axi_araddr[15:2];
    wire [5:0]                             board_address = wr_reg_addr - 1;
+   
+   assign trans_board_out = am_new_board_out;
+   assign trans_white_to_move_out = am_white_to_move_out;
+   assign trans_castle_mask_out = am_castle_mask_out;
+   assign trans_en_passant_col_out = am_en_passant_col_out;
+
+   assign ctrl0_axi_arready = 1; // always ready
+   assign ctrl0_axi_rresp = 2'b0; // always ok
 
    always @(posedge clk)
      if (ctrl0_wr_valid)
