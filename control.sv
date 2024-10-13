@@ -14,6 +14,8 @@ module control #
 
     output reg                            soft_reset = 0,
 
+    output reg                            use_random_bit = 0,
+
     output reg                            am_new_board_valid_out,
     output reg [`BOARD_WIDTH - 1:0]       am_new_board_out,
     output reg [3:0]                      am_castle_mask_out,
@@ -89,9 +91,9 @@ module control #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [39:0]          ctrl0_wr_addr;          // From axi4lite_write_ctrl0 of axi4lite_write.v
-   wire [31:0]          ctrl0_wr_data;          // From axi4lite_write_ctrl0 of axi4lite_write.v
-   wire                 ctrl0_wr_valid;         // From axi4lite_write_ctrl0 of axi4lite_write.v
+   wire [39:0]                            ctrl0_wr_addr;          // From axi4lite_write_ctrl0 of axi4lite_write.v
+   wire [31:0]                            ctrl0_wr_data;          // From axi4lite_write_ctrl0 of axi4lite_write.v
+   wire                                   ctrl0_wr_valid;         // From axi4lite_write_ctrl0 of axi4lite_write.v
    // End of automatics
 
    assign ctrl0_axi_arready = 1; // always ready
@@ -108,6 +110,7 @@ module control #
            begin
               am_new_board_valid_out <= ctrl0_wr_data[0];
               am_clear_moves <= ctrl0_wr_data[1];
+              use_random_bit <= ctrl0_wr_data[30];
               soft_reset <= ctrl0_wr_data[31];
            end
          5'h01 : am_move_index <= ctrl0_wr_data[MAX_POSITIONS_LOG2 - 1:0];
@@ -157,6 +160,7 @@ module control #
                     ctrl0_axi_rdata[6] <= initial_thrice_rep;
                     ctrl0_axi_rdata[7] <= am_idle;
                     ctrl0_axi_rdata[8] <= initial_fifty_move;
+                    ctrl0_axi_rdata[30] <= use_random_bit;
                     ctrl0_axi_rdata[31] <= soft_reset;
                  end
                5'h01 : ctrl0_axi_rdata <= am_move_index;

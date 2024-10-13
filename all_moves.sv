@@ -12,6 +12,9 @@ module all_moves #
     input                                clk,
     input                                reset,
 
+    input                                use_random_bit,
+    input                                random_bit,
+
     input                                board_valid_in,
     input [`BOARD_WIDTH - 1:0]           board_in,
     input                                white_to_move_in,
@@ -188,22 +191,22 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                                  black_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                           black_is_attacking;     // From board_attack of board_attack.v
-   wire [5:0]                            black_pop;              // From board_attack of board_attack.v
-   wire [LEGAL_RAM_WIDTH-1:0]            capture_move_ram_rd_data;// From move_sort_capture of move_sort.v
-   wire [MAX_POSITIONS_LOG2-1:0]         capture_move_ram_wr_addr;// From move_sort_capture of move_sort.v
-   wire signed [EVAL_WIDTH-1:0]          eval;           // From evaluate of evaluate.v
-   wire                                  eval_valid;             // From evaluate of evaluate.v
-   wire                                  is_attacking_done;      // From board_attack of board_attack.v
-   wire [LEGAL_RAM_WIDTH-1:0]            legal_ram_rd_data;// From move_sort_legal of move_sort.v
-   wire [MAX_POSITIONS_LOG2-1:0]         legal_ram_wr_addr;// From move_sort_legal of move_sort.v
-   wire                                  legal_sort_complete;    // From move_sort_legal of move_sort.v
-   wire                                  rd_thrice_rep;          // From rep_det of rep_det.v
-   wire                                  rd_thrice_rep_valid;    // From rep_det of rep_det.v
-   wire                                  white_in_check;         // From board_attack of board_attack.v
-   wire [63:0]                           white_is_attacking;     // From board_attack of board_attack.v
-   wire [5:0]                            white_pop;              // From board_attack of board_attack.v
+   wire                 black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire [5:0]           black_pop;              // From board_attack of board_attack.v
+   wire [LEGAL_RAM_WIDTH-1:0] capture_move_ram_rd_data;// From move_sort_capture of move_sort.v
+   wire [MAX_POSITIONS_LOG2-1:0] capture_move_ram_wr_addr;// From move_sort_capture of move_sort.v
+   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
+   wire                 eval_valid;             // From evaluate of evaluate.v
+   wire                 is_attacking_done;      // From board_attack of board_attack.v
+   wire [LEGAL_RAM_WIDTH-1:0] legal_ram_rd_data;// From move_sort_legal of move_sort.v
+   wire [MAX_POSITIONS_LOG2-1:0] legal_ram_wr_addr;// From move_sort_legal of move_sort.v
+   wire                 legal_sort_complete;    // From move_sort_legal of move_sort.v
+   wire                 rd_thrice_rep;          // From rep_det of rep_det.v
+   wire                 rd_thrice_rep_valid;    // From rep_det of rep_det.v
+   wire                 white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
+   wire [5:0]           white_pop;              // From board_attack of board_attack.v
    // End of automatics
 
    wire signed [4:0]                     pawn_adv1_row [0:2];
@@ -991,12 +994,15 @@ module all_moves #
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
+      .use_random_bit                   (use_random_bit),
+      .random_bit                       (random_bit),
       .board_valid                      (attack_test_valid),     // Templated
       .white_pop                        (white_pop[5:0]),
       .black_pop                        (black_pop[5:0]),
       .is_attacking_done                (is_attacking_done),
       .board_in                         (attack_test[`BOARD_WIDTH-1:0]), // Templated
-      .clear_eval                       (clear_eval));
+      .clear_eval                       (clear_eval),
+      .white_to_move                    (white_to_move));
 
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),

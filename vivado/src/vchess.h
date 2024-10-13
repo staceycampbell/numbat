@@ -100,11 +100,12 @@ vchess_misc_status(void)
 }
 
 static inline void
-vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves)
+vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves, uint32_t use_random_bit)
 {
         uint32_t val;
         
         soft_reset = (soft_reset != 0) << 31;
+	use_random_bit = (use_random_bit != 0) << 30;
         new_board_valid = (new_board_valid != 0) << 0;
         clear_moves = (clear_moves != 0) << 1;
 
@@ -318,8 +319,8 @@ vchess_read_half_move(void)
 static inline void
 vchess_reset_all_moves(void)
 {
-        vchess_write_control(1, 0, 0);  // soft reset, new board valid, clear moves
-        vchess_write_control(0, 0, 0);
+        vchess_write_control(1, 0, 0, 0);  // soft reset, new board valid, clear moves
+        vchess_write_control(0, 0, 0, 0);
 }
 
 extern void print_app_header(void);

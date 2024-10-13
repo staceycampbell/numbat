@@ -28,6 +28,8 @@ module vchess_top
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, row/col to, row/col from
 
    integer       i;
+   
+   reg [15:0]    ddr4_counter;
 
    reg [`BOARD_WIDTH - 1:0] am_board_in;
    reg                      am_board_valid_in = 0;
@@ -138,10 +140,12 @@ module vchess_top
    wire [1:0]           trans_axi_rresp;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 trans_axi_rvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 trans_axi_wready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 use_random_bit;         // From control of control.v
    // End of automatics
 
-   (* mark_debug = "true" *) reg [15:0] ddr4_counter;
-   reg [15:0]                    ddr4_counter_out;
+   wire [15:0]                   ddr4_counter_out;
+
+   wire                          random_bit = ddr4_counter_out[0];
 
    always @(posedge c0_ddr4_ui_clk)
      ddr4_counter <= ddr4_counter + 1;
@@ -234,6 +238,8 @@ module vchess_top
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (soft_reset),            // Templated
+      .use_random_bit                   (use_random_bit),
+      .random_bit                       (random_bit),
       .board_valid_in                   (am_board_valid_in),     // Templated
       .board_in                         (am_board_in[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (am_white_to_move_in),   // Templated
@@ -265,6 +271,7 @@ module vchess_top
      (/*AUTOINST*/
       // Outputs
       .soft_reset                       (soft_reset),
+      .use_random_bit                   (use_random_bit),
       .am_new_board_valid_out           (am_new_board_valid_in), // Templated
       .am_new_board_out                 (am_new_board_in[`BOARD_WIDTH-1:0]), // Templated
       .am_castle_mask_out               (am_castle_mask_in[3:0]), // Templated

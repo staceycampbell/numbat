@@ -149,8 +149,8 @@ vchess_write_board(board_t *board)
                 vchess_write_board_row(i, board->board[i]);
         vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
         vchess_write_half_move(board->half_move_clock);
-        vchess_write_control(0, 1, 0);  // new board valid bit set
-        vchess_write_control(0, 0, 0);  // new board valid bit clear
+        vchess_write_control(0, 1, 0, 1);  // new board valid bit set
+        vchess_write_control(0, 0, 0, 1);  // new board valid bit clear
         i = 0;
         do
         {

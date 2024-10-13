@@ -8,12 +8,16 @@ module evaluate #
     input                                clk,
     input                                reset,
 
+    input                                use_random_bit,
+    input                                random_bit,
+
     input                                board_valid,
     input [5:0]                          white_pop,
     input [5:0]                          black_pop,
     input                                is_attacking_done,
     input [`BOARD_WIDTH - 1:0]           board_in,
     input                                clear_eval,
+    input                                white_to_move,
 
     output reg signed [EVAL_WIDTH - 1:0] eval,
     output reg                           eval_valid
@@ -40,14 +44,24 @@ module evaluate #
    reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
    reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
 
+   reg   signed [2:0]                        random_bit_final;
+
    integer                                   i, ri, y, x;
 
    always @(posedge clk)
      begin
+        if (use_random_bit)
+          if (white_to_move)
+            random_bit_final <= {1'b0, random_bit};
+          else
+            random_bit_final <= -$signed({1'b0,random_bit});
+        else
+          random_bit_final <= 0;
+        
         // Claude Shannon's mobility score
         black_pop_score <= -(black_pop << POP_SHIFT);
         white_pop_score <= white_pop << POP_SHIFT;
-        pop_score <= black_pop_score + white_pop_score;
+        pop_score <= black_pop_score + white_pop_score + random_bit_final;
         
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)
