@@ -35,6 +35,8 @@ module tb;
    reg [`BOARD_WIDTH - 1:0]       tb_rep_history [0:TB_REP_HISTORY - 1];
    reg [$clog2(TB_REP_HISTORY) - 1:0] tb_rep_index;
    reg                                am_capture_moves = 0;
+   reg                                random_bit = 0;
+   reg                                use_random_bit = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -305,6 +307,8 @@ module tb;
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
+      .use_random_bit                   (use_random_bit),
+      .random_bit                       (random_bit),
       .board_valid_in                   (board_valid),           // Templated
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated
