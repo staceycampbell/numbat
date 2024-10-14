@@ -10,7 +10,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define TABLE_SIZE_LOG2 23      // 2^23 * 512 bits for 4Gbit DDR4
+#define TABLE_SIZE_LOG2 25      // 2^25 * 512 bits for 2GByte DDR4
 // #define TABLE_SIZE_LOG2 16      // 2^16 * 360 bits for 27Mbit URAM
 #define TABLE_SIZE (1 << TABLE_SIZE_LOG2)
 
