@@ -254,6 +254,7 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.ENABLE_ADVANCED_OPTIONS {0} \
    CONFIG.NUM_MI {1} \
+   CONFIG.S00_HAS_REGSLICE {4} \
  ] $axi_interconnect_0
 
   # Create instance: axi_interconnect_1, and set properties

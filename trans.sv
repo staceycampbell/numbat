@@ -129,9 +129,16 @@ module trans #
    assign trans_axi_awsize = 3'b110; // 512 bits (64 bytes) per beat
    assign trans_axi_bready = 1'b1; // can always accept a write response
    assign trans_axi_wstrb = 64'hffff_ffff_ffff_ffff; // all byte lanes valid always
-
    assign trans_axi_wlast = 1'b1; // only one 512 bit write per transaction
    assign trans_axi_awlen = 8'h00; // always one write per transaction
+
+   assign trans_axi_arburst = 2'b00; // fixed address (not incrementing burst)
+   assign trans_axi_arcache = 4'b0011; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
+   assign trans_axi_arlen = 8'h00; // always one ready per transaction
+   assign trans_axi_arlock = 1'b0; // normal access
+   assign trans_axi_arprot = 3'b000; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
+   assign trans_axi_arqos = 4'b0; // no QOS scheme
+   assign trans_axi_arsize = 3'b110; // 512 bits (64 bytes) per beat
 
    function [31:0] xorshift32 (input [31:0] x);
       begin
