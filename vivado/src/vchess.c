@@ -139,10 +139,9 @@ vchess_print_board(board_t *board, uint32_t initial_board)
 }
 
 void
-vchess_write_board(board_t *board)
+vchess_write_board_basic(board_t *board)
 {
-        int i;
-        uint32_t moves_ready, move_count;
+	int32_t i;
 
         vchess_reset_all_moves();
         for (i = 0; i < 8; ++i)
@@ -151,6 +150,15 @@ vchess_write_board(board_t *board)
         vchess_write_half_move(board->half_move_clock);
         vchess_write_control(0, 1, 0, 1);  // new board valid bit set
         vchess_write_control(0, 0, 0, 1);  // new board valid bit clear
+}
+
+void
+vchess_write_board_wait(board_t *board)
+{
+        int32_t i;
+        uint32_t moves_ready, move_count;
+
+	vchess_write_board_basic(board);
         i = 0;
         do
         {
@@ -159,7 +167,7 @@ vchess_write_board(board_t *board)
         }
         while (i < 1000 && !moves_ready);
         if (!moves_ready)
-                xil_printf("%s: problems in vchess_write_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                xil_printf("%s: timeout! (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
         move_count = vchess_move_count();
         if (move_count >= 218)
         {

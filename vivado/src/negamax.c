@@ -148,7 +148,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, board_vert, ply);
-        vchess_write_board(board);
+        vchess_write_board_basic(board);
+        vchess_write_board_wait(board);
 
         value = nm_eval(board->white_to_move);
 
@@ -251,7 +252,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0);
-        vchess_write_board(&game[game_index]);
+        vchess_write_board_basic(&game[game_index]);
+        vchess_write_board_wait(&game[game_index]);
 
         vchess_capture_moves(0);
         move_count = vchess_move_count();
@@ -288,7 +290,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, 0, 0);
-        vchess_write_board(&best_board);
+        vchess_write_board_basic(&best_board);
+        vchess_write_board_wait(&best_board);
         vchess_capture_moves(0);
         move_count = vchess_move_count();
 

@@ -49,6 +49,10 @@
 #define GAME_MAX 2048 // maximum half moves
 #define BUF_SIZE 65536
 
+#define TRANS_EXACT 0
+#define TRANS_LOWER_BOUND 1
+#define TRANS_UPPER_BOUND 2
+
 typedef struct uci_t {
 	uint8_t row_from;
 	uint8_t col_from;
@@ -73,6 +77,13 @@ typedef struct board_t {
 	uci_t uci;
 } board_t;
 
+typedef struct trans_t {
+	uint32_t entry_valid;
+	int32_t depth;
+	int32_t eval;
+	uint32_t flag;
+} trans_t;
+
 static inline void
 vchess_write(uint32_t reg, uint32_t val)
 {
@@ -95,22 +106,30 @@ vchess_read(uint32_t reg)
 }
 
 static inline void
-vchess_trans_write(uint32_t depth, uint32_t flag, uint32_t entry_store, uint32_t entry_lookup, int32_t eval)
+vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval)
 {
 	uint32_t val;
+	uint32_t depth32;
+	uint8_t depth_u8;
+	const uint32_t entry_store = 1 << 1;
 
-	assert(entry_store != entry_lookup && depth <= 255 && flag <= 3);
-	vchess_write(521, (uint32_t)eval);
-	val = depth << 8 | flag << 2 | entry_store << 1 | entry_lookup;
+	depth_u8 = (uint8_t)depth;
+	depth32 = depth_u8;
+	val = depth32 << 8 | flag << 2 | entry_store;
 	vchess_write(520, val);
+	vchess_write(521, (uint32_t)eval);
 }
 
-// 512 : ctrl0_axi_rdata <= {trans_depth_in[7:0], 4'b0, trans_flag_in[1:0], trans_entry_valid_in, trans_trans_idle_in};
-// 513 : ctrl0_axi_rdata <= trans_hash_in;
-// 514 : ctrl0_axi_rdata <= trans_eval_in;
+static inline void
+vchess_trans_lookup(void)
+{
+	const uint32_t entry_lookup = 1 << 0;
+	
+	vchess_write(520, entry_lookup);
+}
 
 static inline uint32_t
-vchess_trans_read(int32_t *eval, uint32_t *depth, uint32_t *flag, uint32_t *entry_valid, uint32_t *trans_idle)
+vchess_trans_read(int32_t *eval, int32_t *depth, uint32_t *flag, uint32_t *entry_valid, uint32_t *trans_idle)
 {
 	uint32_t hash;
 	uint32_t val;
@@ -126,7 +145,7 @@ vchess_trans_read(int32_t *eval, uint32_t *depth, uint32_t *flag, uint32_t *entr
 	if (flag)
 		*flag = (val >> 2) & 0x3;
 	if (depth)
-		*depth = (val >> 8) & 0xFF;
+		*depth = (int8_t)((val >> 8) & 0xFF);
 
 	return hash;
 }
@@ -371,7 +390,8 @@ extern uint32_t cmd_transfer_data(uint8_t cmdbuf[512], uint32_t *index);
 extern void vchess_init(void);
 extern uint32_t vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
 extern void vchess_init_board(board_t *board);
-extern void vchess_write_board(board_t *board);
+extern void vchess_write_board_basic(board_t *board);
+extern void vchess_write_board_wait(board_t *board);
 extern void vchess_init_board(board_t *board);
 extern void vchess_print_board(board_t *board, uint32_t initial_board);
 extern uint32_t vchess_read_board(board_t *board, uint32_t index);
@@ -391,3 +411,5 @@ extern void fen_print(board_t *board);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 
 extern void trans_clear_table(void);
+extern void trans_lookup(trans_t *trans);
+extern void trans_store(trans_t *trans);

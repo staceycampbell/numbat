@@ -54,7 +54,8 @@ do_both(void)
         do
         {
                 best_board = nm_top(game, game_moves);
-                vchess_write_board(&best_board);
+                vchess_write_board_basic(&best_board);
+                vchess_write_board_wait(&best_board);
                 move_count = vchess_move_count();
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
                 vchess_reset_all_moves();

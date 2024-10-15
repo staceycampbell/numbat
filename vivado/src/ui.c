@@ -486,7 +486,8 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 if (game_moves > 0)
                 {
                         best_board = nm_top(game, game_moves);
-                        vchess_write_board(&best_board);
+                        vchess_write_board_basic(&best_board);
+                        vchess_write_board_wait(&best_board);
                         vchess_print_board(&best_board, 1);
                         fen_print(&best_board);
                         vchess_reset_all_moves();
@@ -532,7 +533,8 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 if (game_moves > 0)
                 {
                         xil_printf("last move in sample game:\n");
-                        vchess_write_board(&game[game_moves - 1]);
+                        vchess_write_board_basic(&game[game_moves - 1]);
+                        vchess_write_board_wait(&game[game_moves - 1]);
                         vchess_print_board(&game[game_moves - 1], 1);
                         fen_print(&game[game_moves - 1]);
                         vchess_reset_all_moves();
