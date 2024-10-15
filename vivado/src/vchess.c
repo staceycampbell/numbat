@@ -3,7 +3,7 @@
 #include <xil_printf.h>
 #include "vchess.h"
 
-#pragma GCC optimize ("O3")
+// #pragma GCC optimize ("O3")
 
 static char piece_char[1 << PIECE_BITS];
 
@@ -148,8 +148,6 @@ vchess_write_board_basic(board_t *board)
                 vchess_write_board_row(i, board->board[i]);
         vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
         vchess_write_half_move(board->half_move_clock);
-        vchess_write_control(0, 1, 0, 1);  // new board valid bit set
-        vchess_write_control(0, 0, 0, 1);  // new board valid bit clear
 }
 
 void
@@ -158,14 +156,15 @@ vchess_write_board_wait(board_t *board)
         int32_t i;
         uint32_t moves_ready, move_count;
 
-	vchess_write_board_basic(board);
+        vchess_write_control(0, 1, 0, 0);  // new board valid bit set
+        vchess_write_control(0, 0, 0, 0);  // new board valid bit clear
         i = 0;
         do
         {
                 vchess_status(0, &moves_ready, 0, 0, 0, 0, 0);
                 ++i;
         }
-        while (i < 1000 && !moves_ready);
+        while (i < 5000 && !moves_ready);
         if (!moves_ready)
                 xil_printf("%s: timeout! (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
         move_count = vchess_move_count();

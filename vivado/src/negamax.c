@@ -5,7 +5,7 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-#pragma GCC optimize ("O3")
+// #pragma GCC optimize ("O3")
 
 #define DEPTH_MAX 5
 #define Q_MAX (DEPTH_MAX + 20)  // when search reaches depth max switch to quiescence search
@@ -142,6 +142,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         uint32_t mate, stalemate, thrice_rep, fifty_move;
         int32_t value;
         uint32_t status, quiescence;
+	volatile uint32_t hash;
+	trans_t trans;
         board_t *board_ptr[MAX_POSITIONS];
 
         ++nodes_visited;
@@ -149,6 +151,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, board_vert, ply);
         vchess_write_board_basic(board);
+	hash = trans_lookup(&trans);
         vchess_write_board_wait(board);
 
         value = nm_eval(board->white_to_move);
@@ -157,6 +160,13 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         vchess_capture_moves(quiescence);
         move_count = vchess_move_count();
+        if (move_count >= MAX_POSITIONS)
+        {
+                xil_printf("%s: stopping here, move_count=%d, quiescence=%d, %s %d\n", __PRETTY_FUNCTION__,
+			   move_count, quiescence, __FILE__, __LINE__);
+		fen_print(board);
+                while (1);
+        }
 
         if (quiescence)
         {
@@ -183,12 +193,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 value = -GLOBAL_VALUE_KING + ply;       // add ply for shortest path to win, longest to loss
                 ++terminal_nodes;
                 return value;
-        }
-        if (move_count >= MAX_POSITIONS)
-        {
-                xil_printf("%s: stopping here, move_count=%d, %s %d\n", __PRETTY_FUNCTION__, move_count, __FILE__,
-                           __LINE__);
-                while (1);
         }
         for (index = 0; index < move_count; ++index)
         {
@@ -219,6 +223,13 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 ++index;
         }
         while (index < move_count && alpha < beta);
+
+	trans.depth = depth;
+	trans.eval = value;
+	trans.flag = 3;
+
+        vchess_write_board_basic(board);
+	trans_store(&trans);
 
         return value;
 }

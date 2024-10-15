@@ -115,9 +115,12 @@ vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval)
 
 	depth_u8 = (uint8_t)depth;
 	depth32 = depth_u8;
+	vchess_write(521, (uint32_t)eval);
+
 	val = depth32 << 8 | flag << 2 | entry_store;
 	vchess_write(520, val);
-	vchess_write(521, (uint32_t)eval);
+	val = depth32 << 8 | flag << 2;
+	vchess_write(520, val);
 }
 
 static inline void
@@ -126,6 +129,7 @@ vchess_trans_lookup(void)
 	const uint32_t entry_lookup = 1 << 0;
 	
 	vchess_write(520, entry_lookup);
+	vchess_write(520, 0);
 }
 
 static inline uint32_t
@@ -411,5 +415,5 @@ extern void fen_print(board_t *board);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 
 extern void trans_clear_table(void);
-extern void trans_lookup(trans_t *trans);
+extern uint32_t trans_lookup(trans_t *trans);
 extern void trans_store(trans_t *trans);

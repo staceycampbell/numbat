@@ -5,7 +5,7 @@
 #include <xtime_l.h>
 #include "vchess.h"
 
-#pragma GCC optimize ("O3")
+// #pragma GCC optimize ("O3")
 
 #define TRANS_BASE_ADDR ((void *)UINT64_C(0x400000000))
 #define TABLE_SIZE_LOG2 25
@@ -63,15 +63,18 @@ trans_wait_idle(const char *func, const char *file, int line)
 	}
 }
 
-void
+uint32_t
 trans_lookup(trans_t *trans)
 {
         uint32_t trans_idle;
+	uint32_t hash;
 
 	trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         vchess_trans_lookup();  // lookup hash will be calculated on board in last call to vchess_write_board_basic
 	trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-	vchess_trans_read(&trans->eval, &trans->depth, &trans->flag, &trans->entry_valid, &trans_idle);
+	hash = vchess_trans_read(&trans->eval, &trans->depth, &trans->flag, &trans->entry_valid, &trans_idle);
+
+	return hash;
 }
 
 void
