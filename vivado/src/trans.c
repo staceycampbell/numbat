@@ -5,7 +5,7 @@
 #include <xtime_l.h>
 #include "vchess.h"
 
-// #pragma GCC optimize ("O3")
+#pragma GCC optimize ("O3")
 
 #define TRANS_BASE_ADDR ((void *)UINT64_C(0x400000000))
 #define TABLE_SIZE_LOG2 25

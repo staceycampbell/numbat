@@ -5,15 +5,15 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-// #pragma GCC optimize ("O3")
+#pragma GCC optimize ("O3")
 
-#define DEPTH_MAX 5
-#define Q_MAX (DEPTH_MAX + 20)  // when search reaches depth max switch to quiescence search
+#define DEPTH_MAX 6
+#define Q_MAX (DEPTH_MAX + 25)  // when search reaches depth max switch to quiescence search
 #define LARGE_EVAL (1 << 15)
 
 #define GLOBAL_VALUE_KING 10000
 
-static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end;
+static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_lower, trans_upper, trans_exact, trans_save;
 static board_t board_stack[Q_MAX][MAX_POSITIONS];
 static board_t *board_vert[Q_MAX];
 
@@ -135,23 +135,60 @@ valmax(int32_t a, int32_t b)
         return b;
 }
 
+static inline int32_t
+valmin(int32_t a, int32_t b)
+{
+        if (a < b)
+                return a;
+        return b;
+}
+
 static int32_t
 negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply)
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
         int32_t value;
+	int32_t alpha_orig;
         uint32_t status, quiescence;
-	volatile uint32_t hash;
 	trans_t trans;
         board_t *board_ptr[MAX_POSITIONS];
 
         ++nodes_visited;
 
+	alpha_orig = alpha;
+
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, board_vert, ply);
+
         vchess_write_board_basic(board);
-	hash = trans_lookup(&trans);
+
+	// transposition table lookup
+	trans_lookup(&trans);
+	if (trans.entry_valid && trans.depth >= depth)
+	{
+		if (trans.flag == TRANS_EXACT)
+		{
+			++trans_exact;
+			return trans.eval;
+		}
+		else if (trans.flag == TRANS_LOWER_BOUND)
+		{
+			++trans_lower;
+			alpha = valmax(alpha, trans.eval);
+		}
+		else if (trans.flag == TRANS_UPPER_BOUND)
+		{
+			++trans_upper;
+			beta = valmin(beta, trans.eval);
+		}
+		if (alpha >= beta)
+		{
+			++trans_save;
+			return trans.eval;
+		}
+	}
+
         vchess_write_board_wait(board);
 
         value = nm_eval(board->white_to_move);
@@ -224,10 +261,15 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-	trans.depth = depth;
 	trans.eval = value;
-	trans.flag = 3;
-
+	if (value <= alpha_orig)
+		trans.flag = TRANS_UPPER_BOUND;
+	else if (value >= beta)
+		trans.flag = TRANS_LOWER_BOUND;
+	else
+		trans.flag = TRANS_EXACT;
+	trans.depth = depth;
+	trans.entry_valid = 1;
         vchess_write_board_basic(board);
 	trans_store(&trans);
 
@@ -260,6 +302,10 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         terminal_nodes = 0;
         q_hard_cutoff = 0;
         q_end = 0;
+	trans_lower = 0;
+	trans_upper = 0;
+	trans_exact = 0;
+	trans_save = 0;
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0);
@@ -313,6 +359,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         printf("\nbest_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%f, nps=%f, move_count=%u\n",
                best_evaluation, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
         printf("q_hard_cutoff=%u, q_end=%u\n", q_hard_cutoff, q_end);
+	printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u\n", trans_lower, trans_upper, trans_exact, trans_save);
 
         return best_board;
 }
