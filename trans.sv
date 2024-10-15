@@ -8,37 +8,37 @@ module trans #
     input                         clk,
     input                         reset,
 
-    input                         entry_lookup_in,
-    input                         entry_store_in,
+    (* mark_debug = "true" *) input                         entry_lookup_in,
+    (* mark_debug = "true" *) input                         entry_store_in,
    
     input [`BOARD_WIDTH - 1:0]    board_in,
-    input                         white_to_move_in,
-    input [3:0]                   castle_mask_in,
-    input [3:0]                   en_passant_col_in,
+    (* mark_debug = "true" *) input                         white_to_move_in,
+    (* mark_debug = "true" *) input [3:0]                   castle_mask_in,
+    (* mark_debug = "true" *) input [3:0]                   en_passant_col_in,
 
-    input [1:0]                   flag_in,
-    input [EVAL_WIDTH - 1:0]      eval_in,
-    input [7:0]                   depth_in,
+    (* mark_debug = "true" *) input [1:0]                   flag_in,
+    (* mark_debug = "true" *) input [EVAL_WIDTH - 1:0]      eval_in,
+    (* mark_debug = "true" *) input [7:0]                   depth_in,
 
-    output                        trans_idle_out,
+    (* mark_debug = "true" *) output                        trans_idle_out,
 
-    output reg                    entry_valid_out,
-    output reg [31:0]             hash_out,
-    output reg [EVAL_WIDTH - 1:0] eval_out,
-    output reg [7:0]              depth_out,
-    output reg [1:0]              flag_out,
+    (* mark_debug = "true" *) output reg                    entry_valid_out,
+    (* mark_debug = "true" *) output reg [31:0]             hash_out,
+    (* mark_debug = "true" *) output reg [EVAL_WIDTH - 1:0] eval_out,
+    (* mark_debug = "true" *) output reg [7:0]              depth_out,
+    (* mark_debug = "true" *) output reg [1:0]              flag_out,
    
-    input                         trans_axi_arready,
-    input                         trans_axi_awready,
+    (* mark_debug = "true" *) input                         trans_axi_arready,
+    (* mark_debug = "true" *) input                         trans_axi_awready,
     input [1:0]                   trans_axi_bresp,
     input                         trans_axi_bvalid,
     input [511:0]                 trans_axi_rdata,
     input                         trans_axi_rlast,
     input [1:0]                   trans_axi_rresp,
-    input                         trans_axi_rvalid,
-    input                         trans_axi_wready,
+    (* mark_debug = "true" *) input                         trans_axi_rvalid,
+    (* mark_debug = "true" *) input                         trans_axi_wready,
 
-    output reg [31:0]             trans_axi_araddr,
+    (* mark_debug = "true" *) output reg [31:0]             trans_axi_araddr,
     output [1:0]                  trans_axi_arburst,
     output [3:0]                  trans_axi_arcache,
     output [7:0]                  trans_axi_arlen,
@@ -46,7 +46,7 @@ module trans #
     output [2:0]                  trans_axi_arprot,
     output [3:0]                  trans_axi_arqos,
     output [2:0]                  trans_axi_arsize,
-    output reg                    trans_axi_arvalid,
+    (* mark_debug = "true" *) output reg                    trans_axi_arvalid,
     output reg [31:0]             trans_axi_awaddr,
     output [1:0]                  trans_axi_awburst,
     output [3:0]                  trans_axi_awcache,
@@ -55,13 +55,13 @@ module trans #
     output [2:0]                  trans_axi_awprot,
     output [3:0]                  trans_axi_awqos,
     output [2:0]                  trans_axi_awsize,
-    output reg                    trans_axi_awvalid,
+    (* mark_debug = "true" *) output reg                    trans_axi_awvalid,
     output                        trans_axi_bready,
-    output reg                    trans_axi_rready,
+    (* mark_debug = "true" *) output reg                    trans_axi_rready,
     output reg [511:0]            trans_axi_wdata,
     output                        trans_axi_wlast,
     output [63:0]                 trans_axi_wstrb,
-    output reg                    trans_axi_wvalid
+    (* mark_debug = "true" *) output reg                    trans_axi_wvalid
     );
 
    localparam BASE_ADDRESS = 32'h00000000; // axi4 byte address for base of memory
@@ -81,13 +81,13 @@ module trans #
    localparam STATE_LOOKUP_WAIT_ADDR = 10;
    localparam STATE_LOOKUP_VALIDATE = 11;
    
-   reg [3:0]                      state = STATE_IDLE;
+   (* mark_debug = "true" *) reg [3:0]                      state = STATE_IDLE;
 
    reg [31:0]                     hash_0[8], hash_0_8;;
    reg [31:0]                     hash_1_0, hash_1_1, hash_1_8;
    reg [31:0]                     hash_2;
 
-   reg                            entry_store, entry_lookup;
+   (* mark_debug = "true" *) reg                            entry_store, entry_lookup;
    reg                            entry_store_in_z, entry_lookup_in_z;
 
    reg [`BOARD_WIDTH - 1:0]       board;

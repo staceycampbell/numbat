@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 
 #if ! defined(EXCLUDE_VITIS)
 #include <xparameters.h>
@@ -91,6 +92,43 @@ vchess_read(uint32_t reg)
         val = *ptr;
 
         return val;
+}
+
+static inline void
+vchess_trans_write(uint32_t depth, uint32_t flag, uint32_t entry_store, uint32_t entry_lookup, int32_t eval)
+{
+	uint32_t val;
+
+	assert(entry_store != entry_lookup && depth <= 255 && flag <= 3);
+	vchess_write(521, (uint32_t)eval);
+	val = depth << 8 | flag << 2 | entry_store << 1 | entry_lookup;
+	vchess_write(520, val);
+}
+
+// 512 : ctrl0_axi_rdata <= {trans_depth_in[7:0], 4'b0, trans_flag_in[1:0], trans_entry_valid_in, trans_trans_idle_in};
+// 513 : ctrl0_axi_rdata <= trans_hash_in;
+// 514 : ctrl0_axi_rdata <= trans_eval_in;
+
+static inline uint32_t
+vchess_trans_read(int32_t *eval, uint32_t *depth, uint32_t *flag, uint32_t *entry_valid, uint32_t *trans_idle)
+{
+	uint32_t hash;
+	uint32_t val;
+
+	hash = vchess_read(513);
+	if (eval)
+		*eval = (int32_t)vchess_read(514);
+	val = vchess_read(512);
+	if (trans_idle)
+		*trans_idle = val & 0x1;
+	if (entry_valid)
+		*entry_valid = (val >> 1) & 0x1;
+	if (flag)
+		*flag = (val >> 2) & 0x3;
+	if (depth)
+		*depth = (val >> 8) & 0xFF;
+
+	return hash;
 }
 
 static inline uint32_t
