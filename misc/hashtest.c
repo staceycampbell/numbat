@@ -14,6 +14,66 @@
 // #define TABLE_SIZE_LOG2 16      // 2^16 * 360 bits for 27Mbit URAM
 #define TABLE_SIZE (1 << TABLE_SIZE_LOG2)
 
+static uint32_t zob_rand_board[8][8][BLACK_KING + 1];
+static uint32_t zob_rand_btm;
+static uint32_t zob_rand_en_passant_col[2][16];
+static uint32_t zob_rand_castle_mask[16];
+
+static uint32_t
+get_piece(board_t *board, uint32_t row, uint32_t col)
+{
+        uint32_t row_contents, shift, piece;
+
+        row_contents = board->board[row];
+        shift = col * PIECE_BITS;
+        piece = (row_contents >> shift) & 0xF;
+
+        return piece;
+}
+
+static void
+zobrist_init(uint32_t seed)
+{
+        int32_t row, col, piece, i, color;
+
+        srandom(seed);
+
+        for (row = 0; row < 8; ++row)
+                for (col = 0; col < 8; ++col)
+                        for (piece = 1; piece <= BLACK_KING; ++piece)
+                                zob_rand_board[row][col][piece] = random();
+        zob_rand_btm = random();
+        for (color = 0; color <= 1; ++color)
+                for (col = 0; col < 16; ++col)
+                        zob_rand_en_passant_col[color][col] = random();
+        for (i = 0; i < 16; ++i)
+                zob_rand_castle_mask[i] = random();
+}
+
+static inline uint32_t
+hash_calc(board_t * board)
+{
+        uint32_t hash, row, col, piece;
+
+        hash = 0;
+        if (! board->white_to_move)
+                hash ^= zob_rand_btm;
+
+        for (row = 0; row < 8; ++row)
+                for (col = 0; col < 8; ++col)
+                {
+                        piece = get_piece(board, row, col);
+                        if (piece != EMPTY_POSN)
+                                hash ^= zob_rand_board[row][col][piece];
+                }
+        hash ^= zob_rand_en_passant_col[board->white_to_move ? 0 : 1][board->en_passant_col];
+        hash ^= zob_rand_castle_mask[board->castle_mask];
+
+        hash &= TABLE_SIZE - 1;
+
+        return hash;
+}
+
 static inline void
 place(board_t * board, uint32_t row, uint32_t col, uint32_t piece)
 {
@@ -185,37 +245,6 @@ board_match(board_t * a, board_t * b)
         return 1;
 }
 
-static inline uint32_t
-xorshift32(uint32_t x)
-{
-        // x = x == 0 ? 1 : x; // no need to avoid 0 in this use case
-        x ^= (x & 0x0007ffff) << 13;
-        x ^= x >> 17;
-        x ^= (x & 0x07ffffff) << 5;
-        return x & 0xffffffff;
-}
-
-static inline uint32_t
-hash_calc(board_t * board)
-{
-        uint32_t hash, i;
-
-        hash = board->castle_mask ^ board->en_passant_col;
-        for (i = 0; i < 8; ++i)
-                if ((i & 1) == 1)
-                        hash += xorshift32(board->board[i]);
-                else
-                        hash -= xorshift32(board->board[i]);
-
-        if (board->white_to_move)
-                hash = xorshift32(hash);
-
-        hash = xorshift32(hash);
-        hash &= TABLE_SIZE - 1;
-
-        return hash;
-}
-
 static int
 compuint32(const void *p1, const void *p2)
 {
@@ -231,7 +260,7 @@ int
 main(int argc, char *argv[])
 {
         uint32_t i, j, hash, total_collisions, total_hits, worst_collision, total, entry;
-        uint32_t median_collisions;
+        uint32_t median_collisions, seed;
         double average_collisions;
         board_t board;
         char buffer[4096];
@@ -247,6 +276,11 @@ main(int argc, char *argv[])
                 for (j = 0; j < 8; ++j)
                         hash_table[i].board[j] = 0;
         }
+        if (argc == 2)
+                seed = strtoul(argv[1], 0, 0);
+        else
+                seed = 1;
+        zobrist_init(seed);
         total_collisions = 0;
         total_hits = 0;
         total = 0;
@@ -285,8 +319,8 @@ main(int argc, char *argv[])
         collision_percent = (double)total_collisions / (double)total *100.0;
         capacity = (double)total / (double)TABLE_SIZE * 100.0;
 
-        printf("total=%u, total_hits=%u, total_collisions=%u, worst_collision=%u (entry=%u)\n",
-               total, total_hits, ++total_collisions, worst_collision, entry);
+        printf("seed=%u total=%u, total_hits=%u, total_collisions=%u, worst_collision=%u (entry=%u)\n",
+               seed, total, total_hits, ++total_collisions, worst_collision, entry);
         printf("median_collisions=%u, average_collisions=%.5f, collision_percent=%.1f%%, capacity=%.1f%%\n",
                median_collisions, average_collisions, collision_percent, capacity);
 
