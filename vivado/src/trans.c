@@ -35,7 +35,7 @@ trans_test_idle(const char *func, const char *file, int line)
 {
         uint32_t trans_idle;
 
-	vchess_trans_read(0, 0, 0, 0, &trans_idle);
+	vchess_trans_read(0, 0, 0, 0, 0, &trans_idle);
 	if (! trans_idle)
 	{
 		printf("%s: transposition table state machine is not idle, stopping. (%s %d)\n", func, file, line);
@@ -52,7 +52,7 @@ trans_wait_idle(const char *func, const char *file, int line)
         i = 0;
         do
         {
-                vchess_trans_read(0, 0, 0, 0, &trans_idle);
+                vchess_trans_read(0, 0, 0, 0, 0, &trans_idle);
                 ++i;
         }
         while (!trans_idle && i < 1000);
@@ -64,7 +64,7 @@ trans_wait_idle(const char *func, const char *file, int line)
 }
 
 uint32_t
-trans_lookup(trans_t *trans)
+trans_lookup(trans_t *trans, uint32_t *collision)
 {
         uint32_t trans_idle;
 	uint32_t hash;
@@ -72,7 +72,7 @@ trans_lookup(trans_t *trans)
 	trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         vchess_trans_lookup();  // lookup hash will be calculated on board in last call to vchess_write_board_basic
 	trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-	hash = vchess_trans_read(&trans->eval, &trans->depth, &trans->flag, &trans->entry_valid, &trans_idle);
+	hash = vchess_trans_read(collision, &trans->eval, &trans->depth, &trans->flag, &trans->entry_valid, &trans_idle);
 
 	return hash;
 }

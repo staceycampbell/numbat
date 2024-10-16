@@ -133,7 +133,7 @@ vchess_trans_lookup(void)
 }
 
 static inline uint32_t
-vchess_trans_read(int32_t *eval, int32_t *depth, uint32_t *flag, uint32_t *entry_valid, uint32_t *trans_idle)
+vchess_trans_read(uint32_t *collision, int32_t *eval, int32_t *depth, uint32_t *flag, uint32_t *entry_valid, uint32_t *trans_idle)
 {
 	uint32_t hash;
 	uint32_t val;
@@ -150,6 +150,8 @@ vchess_trans_read(int32_t *eval, int32_t *depth, uint32_t *flag, uint32_t *entry
 		*flag = (val >> 2) & 0x3;
 	if (depth)
 		*depth = (int8_t)((val >> 8) & 0xFF);
+	if (collision)
+		*collision = (val >> 9) & 0x1;
 
 	return hash;
 }
@@ -415,5 +417,5 @@ extern void fen_print(board_t *board);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 
 extern void trans_clear_table(void);
-extern uint32_t trans_lookup(trans_t *trans);
+extern uint32_t trans_lookup(trans_t *trans, uint32_t *collision);
 extern void trans_store(trans_t *trans);

@@ -13,7 +13,7 @@
 
 #define GLOBAL_VALUE_KING 10000
 
-static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_lower, trans_upper, trans_exact, trans_save;
+static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_lower, trans_upper, trans_exact, trans_save, trans_collision;
 static board_t board_stack[Q_MAX][MAX_POSITIONS];
 static board_t *board_vert[Q_MAX];
 
@@ -151,6 +151,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         int32_t value;
 	int32_t alpha_orig;
         uint32_t status, quiescence;
+	uint32_t collision;
 	trans_t trans;
         board_t *board_ptr[MAX_POSITIONS];
 
@@ -164,7 +165,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         vchess_write_board_basic(board);
 
 	// transposition table lookup
-	trans_lookup(&trans);
+	trans_lookup(&trans, &collision);
+	trans_collision += collision;
 	if (trans.entry_valid && trans.depth >= depth)
 	{
 		if (trans.flag == TRANS_EXACT)
@@ -306,6 +308,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
 	trans_upper = 0;
 	trans_exact = 0;
 	trans_save = 0;
+	trans_collision = 0;
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0);
@@ -359,7 +362,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         printf("\nbest_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%f, nps=%f, move_count=%u\n",
                best_evaluation, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
         printf("q_hard_cutoff=%u, q_end=%u\n", q_hard_cutoff, q_end);
-	printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u\n", trans_lower, trans_upper, trans_exact, trans_save);
+	printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u, trans_collision=%u\n",
+			trans_lower, trans_upper, trans_exact, trans_save, trans_collision);
 
         return best_board;
 }

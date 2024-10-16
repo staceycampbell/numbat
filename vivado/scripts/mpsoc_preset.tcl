@@ -261,13 +261,13 @@ proc create_root_design { parentCell } {
   set axi_interconnect_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_1 ]
   set_property -dict [ list \
    CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
-   CONFIG.M00_HAS_REGSLICE {4} \
+   CONFIG.M00_HAS_REGSLICE {3} \
    CONFIG.NUM_MI {1} \
    CONFIG.NUM_SI {2} \
    CONFIG.S00_HAS_DATA_FIFO {0} \
-   CONFIG.S00_HAS_REGSLICE {4} \
+   CONFIG.S00_HAS_REGSLICE {3} \
    CONFIG.S01_HAS_DATA_FIFO {0} \
-   CONFIG.S01_HAS_REGSLICE {4} \
+   CONFIG.S01_HAS_REGSLICE {3} \
    CONFIG.STRATEGY {0} \
    CONFIG.XBAR_DATA_WIDTH {512} \
  ] $axi_interconnect_1

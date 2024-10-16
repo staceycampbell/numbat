@@ -49,6 +49,7 @@ module control #
     input [1:0]                           trans_flag_in,
     input [31:0]                          trans_hash_in,
     input                                 trans_trans_idle_in,
+    input                                 trans_collision_in,
 
     input                                 initial_mate,
     input                                 initial_stalemate,
@@ -238,7 +239,7 @@ module control #
 
                255 : ctrl0_axi_rdata <= misc_status;
 
-               512 : ctrl0_axi_rdata <= {trans_depth_in[7:0], 4'b0, trans_flag_in[1:0], trans_entry_valid_in, trans_trans_idle_in};
+               512 : ctrl0_axi_rdata <= {trans_collision_in, trans_depth_in[7:0], 4'b0, trans_flag_in[1:0], trans_entry_valid_in, trans_trans_idle_in};
                513 : ctrl0_axi_rdata <= trans_hash_in;
                514 : ctrl0_axi_rdata <= trans_eval_in;
                520 : ctrl0_axi_rdata <= {trans_depth_out[7:0], 4'b0, trans_flag_out[1:0], trans_entry_store_out, trans_entry_lookup_out};

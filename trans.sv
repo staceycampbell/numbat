@@ -5,63 +5,64 @@ module trans #
    parameter EVAL_WIDTH = 0
    )
    (
-    input                      clk,
-    input                      reset,
+    input                         clk,
+    input                         reset,
 
-    (* mark_debug = "true" *) input entry_lookup_in,
-    (* mark_debug = "true" *) input entry_store_in,
+    input                         entry_lookup_in,
+    input                         entry_store_in,
    
-    input [`BOARD_WIDTH - 1:0] board_in,
-    (* mark_debug = "true" *) input white_to_move_in,
-    (* mark_debug = "true" *) input [3:0] castle_mask_in,
-    (* mark_debug = "true" *) input [3:0] en_passant_col_in,
+    input [`BOARD_WIDTH - 1:0]    board_in,
+    input                         white_to_move_in,
+    input [3:0]                   castle_mask_in,
+    input [3:0]                   en_passant_col_in,
 
-    (* mark_debug = "true" *) input [1:0] flag_in,
-    (* mark_debug = "true" *) input [EVAL_WIDTH - 1:0] eval_in,
-    (* mark_debug = "true" *) input [7:0] depth_in,
+    input [1:0]                   flag_in,
+    input [EVAL_WIDTH - 1:0]      eval_in,
+    input [7:0]                   depth_in,
 
-    (* mark_debug = "true" *) output trans_idle_out,
+    output                        trans_idle_out,
 
-    (* mark_debug = "true" *) output reg entry_valid_out,
-    (* mark_debug = "true" *) output reg [31:0] hash_out,
-    (* mark_debug = "true" *) output reg [EVAL_WIDTH - 1:0] eval_out,
-    (* mark_debug = "true" *) output reg [7:0] depth_out,
-    (* mark_debug = "true" *) output reg [1:0] flag_out,
+    output reg                    entry_valid_out,
+    output reg [31:0]             hash_out,
+    output reg [EVAL_WIDTH - 1:0] eval_out,
+    output reg [7:0]              depth_out,
+    output reg [1:0]              flag_out,
+    output reg                    collision_out,
    
-    (* mark_debug = "true" *) input trans_axi_arready,
-    (* mark_debug = "true" *) input trans_axi_awready,
-    input [1:0]                trans_axi_bresp,
-    input                      trans_axi_bvalid,
-    input [511:0]              trans_axi_rdata,
-    input                      trans_axi_rlast,
-    input [1:0]                trans_axi_rresp,
-    (* mark_debug = "true" *) input trans_axi_rvalid,
-    (* mark_debug = "true" *) input trans_axi_wready,
+    input                         trans_axi_arready,
+    input                         trans_axi_awready,
+    input [1:0]                   trans_axi_bresp,
+    input                         trans_axi_bvalid,
+    input [511:0]                 trans_axi_rdata,
+    input                         trans_axi_rlast,
+    input [1:0]                   trans_axi_rresp,
+    input                         trans_axi_rvalid,
+    input                         trans_axi_wready,
 
-    (* mark_debug = "true" *) output reg [31:0] trans_axi_araddr,
-    output [1:0]               trans_axi_arburst,
-    output [3:0]               trans_axi_arcache,
-    output [7:0]               trans_axi_arlen,
-    output [0:0]               trans_axi_arlock,
-    output [2:0]               trans_axi_arprot,
-    output [3:0]               trans_axi_arqos,
-    output [2:0]               trans_axi_arsize,
-    (* mark_debug = "true" *) output reg trans_axi_arvalid,
-    output reg [31:0]          trans_axi_awaddr,
-    output [1:0]               trans_axi_awburst,
-    output [3:0]               trans_axi_awcache,
-    output [7:0]               trans_axi_awlen,
-    output [0:0]               trans_axi_awlock,
-    output [2:0]               trans_axi_awprot,
-    output [3:0]               trans_axi_awqos,
-    output [2:0]               trans_axi_awsize,
-    (* mark_debug = "true" *) output reg trans_axi_awvalid,
-    output                     trans_axi_bready,
-    (* mark_debug = "true" *) output reg trans_axi_rready,
-    output reg [511:0]         trans_axi_wdata,
-    output                     trans_axi_wlast,
-    output [63:0]              trans_axi_wstrb,
-    (* mark_debug = "true" *) output reg trans_axi_wvalid
+    output reg [31:0]             trans_axi_araddr,
+    output [1:0]                  trans_axi_arburst,
+    output [3:0]                  trans_axi_arcache,
+    output [7:0]                  trans_axi_arlen,
+    output [0:0]                  trans_axi_arlock,
+    output [2:0]                  trans_axi_arprot,
+    output [3:0]                  trans_axi_arqos,
+    output [2:0]                  trans_axi_arsize,
+    output reg                    trans_axi_arvalid,
+    output reg [31:0]             trans_axi_awaddr,
+    output [1:0]                  trans_axi_awburst,
+    output [3:0]                  trans_axi_awcache,
+    output [7:0]                  trans_axi_awlen,
+    output [0:0]                  trans_axi_awlock,
+    output [2:0]                  trans_axi_awprot,
+    output [3:0]                  trans_axi_awqos,
+    output [2:0]                  trans_axi_awsize,
+    output reg                    trans_axi_awvalid,
+    output                        trans_axi_bready,
+    output reg                    trans_axi_rready,
+    output reg [511:0]            trans_axi_wdata,
+    output                        trans_axi_wlast,
+    output [63:0]                 trans_axi_wstrb,
+    output reg                    trans_axi_wvalid
     );
 
    localparam BASE_ADDRESS = 32'h00000000; // axi4 byte address for base of memory
@@ -81,39 +82,39 @@ module trans #
    localparam STATE_LOOKUP_WAIT_ADDR = 10;
    localparam STATE_LOOKUP_VALIDATE = 11;
    
-   (* mark_debug = "true" *) reg [3:0]                      state = STATE_IDLE;
+   reg [3:0]                      state = STATE_IDLE;
 
-   reg [31:0]                  hash_0[8], hash_0_8;;
-   reg [31:0]                  hash_1_0, hash_1_1, hash_1_8;
-   reg [31:0]                  hash_2;
+   reg [31:0]                     hash_0[8], hash_0_8;;
+   reg [31:0]                     hash_1_0, hash_1_1, hash_1_8;
+   reg [31:0]                     hash_2;
 
-   (* mark_debug = "true" *) reg                            entry_store, entry_lookup;
-   reg                         entry_store_in_z, entry_lookup_in_z;
+   reg                            entry_store, entry_lookup;
+   reg                            entry_store_in_z, entry_lookup_in_z;
 
-   reg [`BOARD_WIDTH - 1:0]    board;
-   reg                         white_to_move;
-   reg [3:0]                   castle_mask;
-   reg [3:0]                   en_passant_col;
-   reg [1:0]                   flag;
-   reg [EVAL_WIDTH - 1:0]      eval;
-   reg [7:0]                   depth;
+   reg [`BOARD_WIDTH - 1:0]       board;
+   reg                            white_to_move;
+   reg [3:0]                      castle_mask;
+   reg [3:0]                      en_passant_col;
+   reg [1:0]                      flag;
+   reg [EVAL_WIDTH - 1:0]         eval;
+   reg [7:0]                      depth;
 
-   reg [511:0]                 lookup;
+   reg [511:0]                    lookup;
 
-   integer                     i;
+   integer                        i;
 
-   wire [`BOARD_WIDTH - 1:0]   lookup_board;
-   wire                        lookup_white_to_move;
-   wire [3:0]                  lookup_castle_mask;
-   wire [3:0]                  lookup_en_passant_col;
-   wire [1:0]                  lookup_flag;
-   wire [EVAL_WIDTH - 1:0]     lookup_eval;
-   wire [7:0]                  lookup_depth;
-   wire                        lookup_valid;
+   wire [`BOARD_WIDTH - 1:0]      lookup_board;
+   wire                           lookup_white_to_move;
+   wire [3:0]                     lookup_castle_mask;
+   wire [3:0]                     lookup_en_passant_col;
+   wire [1:0]                     lookup_flag;
+   wire [EVAL_WIDTH - 1:0]        lookup_eval;
+   wire [7:0]                     lookup_depth;
+   wire                           lookup_valid;
 
-   wire [31:0]                 hash_address = BASE_ADDRESS + (hash_out << $clog2(512 / 8)); // axi4 byte address for 512 bit table entry
-   wire [511:0]                store = {1'b1, depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0],
-                                        white_to_move, castle_mask[3:0], en_passant_col[3:0], board[`BOARD_WIDTH - 1:0]};
+   wire [31:0]                    hash_address = BASE_ADDRESS + (hash_out << $clog2(512 / 8)); // axi4 byte address for 512 bit table entry
+   wire [511:0]                   store = {1'b1, depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0],
+                                           white_to_move, castle_mask[3:0], en_passant_col[3:0], board[`BOARD_WIDTH - 1:0]};
 
    assign {lookup_valid, lookup_depth[7:0], lookup_flag[1:0], lookup_eval[EVAL_WIDTH - 1:0],
            ilookup_white_to_move, lookup_castle_mask[3:0], lookup_en_passant_col[3:0], lookup_board[`BOARD_WIDTH - 1:0]} = lookup;
@@ -305,6 +306,11 @@ module trans #
                                  lookup_en_passant_col == en_passant_col &&
                                  lookup_castle_mask == castle_mask &&
                                  lookup_white_to_move == white_to_move;
+              collision_out <= lookup_valid &&
+                               (lookup_board != board ||
+                                lookup_en_passant_col != en_passant_col ||
+                                lookup_castle_mask != castle_mask ||
+                                lookup_white_to_move != white_to_move);
               state <= STATE_IDLE;
            end
          default :
