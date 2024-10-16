@@ -362,8 +362,9 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         printf("\nbest_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%f, nps=%f, move_count=%u\n",
                best_evaluation, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
         printf("q_hard_cutoff=%u, q_end=%u\n", q_hard_cutoff, q_end);
-	printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u, trans_collision=%u\n",
-			trans_lower, trans_upper, trans_exact, trans_save, trans_collision);
+	printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u, trans_collision=%u (%.2f%%)\n",
+	       trans_lower, trans_upper, trans_exact, trans_save, trans_collision,
+	       ((double)trans_collision * 100.0) / (double)nodes_visited);
 
         return best_board;
 }
