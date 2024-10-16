@@ -1,0 +1,54 @@
+#!/bin/bash
+printf 'reg [79:0] zob_rand_board [0:767];\n'
+printf 'reg [79:0] zob_rand_btm;\n'
+printf 'reg [79:0] zob_rand_en_passant_col [0:31];\n'
+printf 'reg [3:0] zob_piece_lookup [1:14];\n'
+printf 'reg [79:0] zob_rand_castle_mask [0:15];\n'
+echo
+printf 'zob_piece_lookup[ 1] =  0;\n'
+printf 'zob_piece_lookup[ 2] =  1;\n'
+printf 'zob_piece_lookup[ 3] =  2;\n'
+printf 'zob_piece_lookup[ 4] =  3;\n'
+printf 'zob_piece_lookup[ 5] =  4;\n'
+printf 'zob_piece_lookup[ 6] =  5;\n'
+printf 'zob_piece_lookup[ 9] =  6;\n'
+printf 'zob_piece_lookup[10] =  7;\n'
+printf 'zob_piece_lookup[11] =  8;\n'
+printf 'zob_piece_lookup[12] =  9;\n'
+printf 'zob_piece_lookup[13] = 10;\n'
+printf 'zob_piece_lookup[14] = 11;\n'
+echo
+piece=0
+while [ $piece -le 11 ]
+do
+    for row in 0 1 2 3 4 5 6 7
+    do
+        for col in 0 1 2 3 4 5 6 7
+        do
+            rn="`od -An -N 16 -t x4 < /dev/urandom | sed -e 's/ //g' | cut -c 1-20`"
+            index=`echo $piece '*' 64 + $row '*' 8 '+' $col | bc -l`
+            printf "zob_rand_board[%3d] = 'h%s;\n" $index $rn
+        done
+    done
+    piece=`expr $piece + 1`
+done
+echo
+rn="`od -An -N 16 -t x4 < /dev/urandom | sed -e 's/ //g' | cut -c 1-20`"
+printf "zob_rand_btm = 'h%s;\n" $rn
+echo
+i=0
+while [ $i -lt 32 ]
+do
+    rn="`od -An -N 16 -t x4 < /dev/urandom | sed -e 's/ //g' | cut -c 1-20`"
+    printf "zob_rand_en_passant_col[%2d] = 'h%s;\n" $i $rn
+    i=`expr $i + 1`
+done
+echo
+i=0
+while [ $i -lt 16 ]
+do
+    rn="`od -An -N 16 -t x4 < /dev/urandom | sed -e 's/ //g' | cut -c 1-20`"
+    printf "zob_rand_castle_mask[%2d] = 'h%s;\n" $i $rn
+    i=`expr $i + 1`
+done
+
