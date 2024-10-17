@@ -46,8 +46,8 @@ module move_sort #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [RAM_WIDTH-1:0]                   port_a_rd_data;         // From mram of mram.v
-   wire [RAM_WIDTH-1:0]                   port_b_rd_data;         // From mram of mram.v
+   wire [RAM_WIDTH-1:0] port_a_rd_data;         // From mram of mram.v
+   wire [RAM_WIDTH-1:0] port_b_rd_data;         // From mram of mram.v
    // End of automatics
 
    wire [MAX_POSITIONS_LOG2 - 1:0]        active_port_a_addr = external_io ? ram_wr_addr : port_a_addr; // external write to "a" port
@@ -123,14 +123,7 @@ module move_sort #
                   (black_to_move && ((eval_a > eval_b) || (eval_a == eval_b && ! white_in_check_a && white_in_check_b))))
                 state_sort <= STATE_SWAP;
               else
-                begin
-                   port_a_addr <= port_a_addr + 1;
-                   port_b_addr <= port_b_addr + 1;
-                   if (port_b_addr == n - 1)
-                     state_sort <= STATE_OUTER_CHECK;
-                   else
-                     state_sort <= STATE_READ_WS;
-                end
+                state_sort <= STATE_INNER;
            end
          STATE_SWAP :
            begin
