@@ -8,7 +8,7 @@
 #pragma GCC optimize ("O3")
 
 #define DEPTH_MAX 6
-#define Q_MAX (DEPTH_MAX + 25)  // when search reaches depth max switch to quiescence search
+#define Q_MAX (DEPTH_MAX + 20)  // when search reaches depth max switch to quiescence search
 #define LARGE_EVAL (1 << 15)
 
 #define GLOBAL_VALUE_KING 10000
@@ -359,7 +359,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         nps = (double)nodes_visited / elapsed_time;
-        printf("\nbest_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f, move_count=%u\n",
+
+        printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f, move_count=%u\n",
                best_evaluation, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
         printf("q_hard_cutoff=%u, q_end=%u\n", q_hard_cutoff, q_end);
 	printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u, trans_collision=%u (%.2f%%)\n",
