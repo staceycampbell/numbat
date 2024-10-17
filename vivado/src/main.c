@@ -69,6 +69,7 @@ do_both(void)
                 }
                 vchess_print_board(&best_board, 0);
                 fen_print(&best_board);
+                xil_printf("\n");
                 key_hit = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
         }
         while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move) && !key_hit);
