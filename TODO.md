@@ -1,5 +1,4 @@
-- negamax/eval sort in Verilog
-- improved evaluation, Claude Shannon's mobility score
+- improved evaluation, Claude Shannon's pawn structure
 - communication with FICS
 - fix en-passant and three-fold repetition
 - no-material draw
