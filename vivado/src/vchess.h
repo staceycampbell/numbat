@@ -152,6 +152,31 @@ vchess_trans_read(uint32_t *collision, int32_t *eval, int32_t *depth, uint32_t *
 		*collision = (val >> 9) & 0x1;
 }
 
+static inline void
+vchess_trans_hash_only(void)
+{
+	const uint32_t hash_only = 1 << 4;
+
+	vchess_write(520, hash_only);
+	vchess_write(520, 0);
+}
+
+static inline uint64_t
+vchess_trans_hash(uint32_t *bits64_79)
+{
+	uint64_t bits31_0, bits_63_32;
+	uint64_t hash;
+
+	bits31_0 = vchess_read(522);
+	bits_63_32 = vchess_read(523);
+	if (bits64_79)
+		*bits64_79 = vchess_read(524);
+	hash = bits_63_32 << 32 | bits31_0;
+
+	return hash;
+}
+	
+
 static inline uint32_t
 vchess_misc_status(void)
 {
@@ -415,3 +440,5 @@ extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t *trans, uint32_t *collision);
 extern void trans_store(trans_t *trans);
+
+extern void book_build(void);

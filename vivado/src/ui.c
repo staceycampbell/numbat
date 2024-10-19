@@ -567,6 +567,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 	{
 		xil_printf("misc_status=%08X\n", vchess_misc_status());
 	}
+	else if (strcmp((char *)str, "bbook") == 0)
+	{
+		book_build();
+	}
         else
         {
                 char *uci_ptr, *c;

@@ -10,6 +10,7 @@ module trans #
 
     input                         entry_lookup_in,
     input                         entry_store_in,
+    input                         hash_only_in,
    
     input [`BOARD_WIDTH - 1:0]    board_in,
     input                         white_to_move_in,
@@ -27,6 +28,8 @@ module trans #
     output reg [7:0]              depth_out,
     output reg [1:0]              flag_out,
     output reg                    collision_out,
+
+    output reg [79:0]             hash_out,
    
     input                         trans_axi_arready,
     input                         trans_axi_awready,
@@ -90,8 +93,8 @@ module trans #
    reg [79:0]                     hash_side;
    reg [79:0]                     hash;
 
-   reg                            entry_store, entry_lookup;
-   reg                            entry_store_in_z, entry_lookup_in_z;
+   reg                            entry_store, entry_lookup, hash_only;
+   reg                            entry_store_in_z, entry_lookup_in_z, hash_only_in_z;
    
    (* ram_style = "distributed" *) reg [79:0] zob_rand_board [0:767];
    (* ram_style = "distributed" *) reg [79:0] zob_rand_en_passant_col [0:31];
@@ -148,7 +151,8 @@ module trans #
      begin
         entry_lookup_in_z <= entry_lookup_in;
         entry_store_in_z <= entry_store_in;
-        
+        hash_only_in_z <= hash_only_in;
+
         trans_axi_wdata <= store;
         trans_axi_awaddr <= hash_address;
         
@@ -159,6 +163,7 @@ module trans #
         eval_out <= lookup_eval;
         depth_out <= lookup_depth;
         flag_out <= lookup_flag;
+        hash_out <= hash;
      end
 
    always @(posedge clk)
@@ -191,6 +196,11 @@ module trans #
               else if (entry_lookup_in && ~entry_lookup_in_z)
                 begin
                    entry_lookup <= 1;
+                   state <= STATE_HASH_0;
+                end
+              else if (hash_only_in && hash_only_in_z)
+                begin
+                   hash_only <= 1;
                    state <= STATE_HASH_0;
                 end
            end
@@ -226,8 +236,10 @@ module trans #
               hash <= hash_side ^ zob_rand_en_passant_col[en_passant_col] ^ zob_rand_castle_mask[castle_mask];
               if (entry_store)
                 state <= STATE_STORE;
-              else
+              else if (entry_lookup)
                 state <= STATE_LOOKUP;
+              else
+                state <= STATE_IDLE; // hash_only
            end
          STATE_STORE :
            begin

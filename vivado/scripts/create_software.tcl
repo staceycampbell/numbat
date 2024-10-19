@@ -9,6 +9,9 @@ set proc "psu_cortexa53_0"
 platform create -name "vchess_standalone" -hw $hw -os standalone
 domain create -name standalone_domain -os standalone -proc $proc
 bsp setlib -name lwip211
+bsp setlib -name xilffs -ver 4.7
+bsp config word_access "false"
+bsp config fs_interface "1"
 platform write
 platform generate
 
