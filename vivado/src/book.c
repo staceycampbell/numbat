@@ -84,14 +84,14 @@ book_build(void)
 	entry_hit = 0;
         counter = 0;
         xil_printf("%s opened\n", fn);
-        while (counter < 100000 && f_gets(buffer, sizeof(buffer), &fp))
+        while (counter < 1000000 && f_gets(buffer, sizeof(buffer), &fp))
         {
                 len = strnlen(buffer, sizeof(buffer) - 2);
                 if (len > 0)
                 {
                         buffer[len - 1] = '\0';
                         if (counter % 4096 == 0)
-                                xil_printf("line %9d: %s\r", counter, buffer);
+                                xil_printf("line %9d: %s, book_count=%u, entry_hit=%u\r", counter, buffer, book_count, entry_hit);
                         uci_init();
                         c = buffer;
                         do
@@ -121,7 +121,7 @@ book_build(void)
                                         while (book_index < book_count &&
                                                !(hash == book[book_index].hash &&
                                                  hash_extra == book[book_index].hash_extra &&
-                                                 uci_match(&game[game_moves - 2].uci, &game[game_moves - 1].uci)))
+                                                 uci_match(&book[book_index].uci, &game[game_moves - 1].uci)))
                                                 ++book_index;
 					if (book_index < book_count)
 					{

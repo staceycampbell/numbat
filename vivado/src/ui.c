@@ -587,6 +587,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 uci_ptr = str;
                 c = str;
                 while ((uci_ptr = strsep(&c, " \n\r")) != 0)
-                        uci_move(uci_ptr);
+                        if (uci_move(uci_ptr))
+			{
+				xil_printf("%s: unkown uci move\n", __PRETTY_FUNCTION__);
+				return;
+			}
         }
 }
