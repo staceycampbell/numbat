@@ -64,7 +64,7 @@ typedef struct uci_t {
 typedef struct book_t {
 	uint64_t hash;
 	uint32_t count;
-	uint16_t hash_high;
+	uint16_t hash_extra;
 	uci_t uci;
 } book_t;
 
@@ -169,7 +169,7 @@ vchess_trans_hash_only(void)
 }
 
 static inline uint64_t
-vchess_trans_hash(uint32_t *bits64_79)
+vchess_trans_hash(uint16_t *bits64_79)
 {
 	uint64_t bits31_0, bits_63_32;
 	uint64_t hash;
@@ -182,7 +182,22 @@ vchess_trans_hash(uint32_t *bits64_79)
 
 	return hash;
 }
-	
+
+static inline int32_t
+vchess_trans_idle_wait(void)
+{
+	uint32_t counter;
+	uint32_t trans_idle;
+
+	counter = 0;
+	do
+	{
+		vchess_trans_read(0, 0, 0, 0, 0, &trans_idle);
+		++counter;
+	} while (counter < 100 && ! trans_idle);
+
+	return trans_idle;
+}
 
 static inline uint32_t
 vchess_misc_status(void)
@@ -414,6 +429,17 @@ vchess_reset_all_moves(void)
         vchess_write_control(0, 0, 0, 0);
 }
 
+static inline uint32_t
+uci_match(const uci_t *a, const uci_t *b)
+{
+        uint32_t ret;
+
+        ret = a->row_from == b->row_from && a->row_to == b->row_to && a->col_from == b->col_from &&
+		a->col_to == b->col_to && a->promotion == b->promotion;
+
+        return ret;
+}
+
 extern void print_app_header(void);
 extern int start_application(void);
 extern void init_platform(void);
@@ -443,6 +469,9 @@ extern void do_both(void);
 extern void process_cmd(uint8_t cmd[BUF_SIZE]);
 extern void fen_print(board_t *board);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
+
+extern void uci_init(void);
+extern int32_t uci_move(char *p);
 
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t *trans, uint32_t *collision);

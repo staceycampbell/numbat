@@ -13,7 +13,7 @@
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
 
-static void
+void
 uci_init(void)
 {
         int32_t i, j;
@@ -53,7 +53,7 @@ uci_init(void)
         game_moves = 1;
 }
 
-static void
+int32_t
 uci_move(char *p)
 {
         int32_t col_from, row_from, col_to, row_to;
@@ -73,6 +73,12 @@ uci_move(char *p)
         row_from = p[1] - '1';
         col_to = p[2] - 'a';
         row_to = p[3] - '1';
+	if (col_from < 0 || col_from > 7 || row_from < 0 || row_from > 7 ||
+	    col_to < 0 || col_to > 7 || row_to < 0 || row_to > 7)
+	{
+		xil_printf("%s: bad uci move (%s)\n", __PRETTY_FUNCTION__, p);
+		return -2;
+	}
         switch (p[4])
         {
         case 'Q':
@@ -92,7 +98,7 @@ uci_move(char *p)
                 break;
         default:
                 fprintf(stderr, "%s: problems (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-		return;
+                return -1;
         }
         if (promotion != EMPTY_POSN)
         {
@@ -214,6 +220,8 @@ uci_move(char *p)
         }
         game[game_moves] = next_board;
         ++game_moves;
+
+	return 0;
 }
 
 void
@@ -504,7 +512,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "game") == 0)
         {
-		trans_clear_table();
+                trans_clear_table();
                 uci_init();
         }
         else if (strcmp((char *)str, "pos") == 0)
@@ -523,7 +531,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 status = fen_board(cmd, &board);
                 if (status)
                         return;
-		trans_clear_table();
+                trans_clear_table();
                 game_moves = 1;
                 board.half_move_clock = 0;
                 board.full_move_number = 0;
@@ -531,7 +539,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "sample") == 0)
         {
-		trans_clear_table();
+                trans_clear_table();
                 game_moves = sample_game(game);
                 if (game_moves > 0)
                 {
@@ -559,18 +567,18 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 }
                 xil_printf("\n");
         }
-	else if (strcmp((char *)str, "tclear") == 0)
-	{
-		trans_clear_table();
-	}
-	else if (strcmp((char *)str, "mstatus") == 0)
-	{
-		xil_printf("misc_status=%08X\n", vchess_misc_status());
-	}
-	else if (strcmp((char *)str, "bbook") == 0)
-	{
-		book_build();
-	}
+        else if (strcmp((char *)str, "tclear") == 0)
+        {
+                trans_clear_table();
+        }
+        else if (strcmp((char *)str, "mstatus") == 0)
+        {
+                xil_printf("misc_status=%08X\n", vchess_misc_status());
+        }
+        else if (strcmp((char *)str, "bbook") == 0)
+        {
+                book_build();
+        }
         else
         {
                 char *uci_ptr, *c;
