@@ -61,6 +61,13 @@ typedef struct uci_t {
 	uint8_t promotion;
 } uci_t;
 
+typedef struct book_t {
+	uint64_t hash;
+	uint32_t count;
+	uint16_t hash_high;
+	uci_t uci;
+} book_t;
+
 typedef struct board_t {
         uint32_t board[8];
         int32_t eval;
@@ -442,3 +449,4 @@ extern void trans_lookup(trans_t *trans, uint32_t *collision);
 extern void trans_store(trans_t *trans);
 
 extern void book_build(void);
+extern void book_format_media(void);
