@@ -2,12 +2,15 @@
 #include <stdint.h>
 #include <string.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include <xtime_l.h>
 #include <xil_printf.h>
 #include <ff.h>
 #include "vchess.h"
 
 #pragma GCC optimize ("O3")
+
+#define SORT_THRESHOLD 256
 
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
@@ -28,11 +31,31 @@ book_format_media(void)
         }
 }
 
+static int32_t
+book_compare(const void *p1, const void *p2)
+{
+        const book_t *b1, *b2;
+
+        b1 = (book_t *) p1;
+        b2 = (book_t *) p2;
+
+        if (b1->hash_extra < b2->hash_extra)
+                return -1;
+        if (b1->hash_extra > b2->hash_extra)
+                return 1;
+        if (b1->hash < b2->hash)
+                return -1;
+        if (b1->hash > b2->hash)
+                return 1;
+        return 0;
+}
+
 void
 book_build(void)
 {
-        uint32_t counter, done;
-	uint32_t entry_hit;
+        uint32_t counter, done, sorted_counter, unsorted_index, next_sort;
+        uint32_t sorted_hit, unsorted_hit;
+        uint32_t bw;
         int32_t len, move_ok;
         uint32_t trans_idle;
         uint32_t hash;
@@ -43,11 +66,12 @@ book_build(void)
         XTime t_end, t_start;
         uint64_t elapsed_ticks;
         double elapsed_time, lps;
-        book_t *book;
+        book_t *book, book_entry, *book_entry_found;
         uint32_t book_size, book_count, book_index;
         TCHAR buffer[4096];
 
         static const char *fn = "popular.txt";
+        static const char *fnw = "book.bin";
         static int fs_init = 0;
         static FATFS fatfs;
 
@@ -58,8 +82,7 @@ book_build(void)
         book = (book_t *) malloc(book_size * sizeof(book_t));
         if (book == 0)
         {
-                xil_printf("%s: unable to malloc %d bytes for book (%s %d)\n", __PRETTY_FUNCTION__,
-                           book_size * sizeof(book_t), __FILE__, __LINE__);
+                xil_printf("%s: unable to malloc %d bytes for book (%s %d)\n", __PRETTY_FUNCTION__, book_size * sizeof(book_t), __FILE__, __LINE__);
                 return;
         }
 
@@ -81,8 +104,12 @@ book_build(void)
                 return;
         }
 
-	entry_hit = 0;
+        sorted_hit = 0;
+        unsorted_hit = 0;
         counter = 0;
+        sorted_counter = 0;
+        unsorted_index = 0;
+        next_sort = SORT_THRESHOLD;
         xil_printf("%s opened\n", fn);
         while (counter < 1000000 && f_gets(buffer, sizeof(buffer), &fp))
         {
@@ -91,7 +118,8 @@ book_build(void)
                 {
                         buffer[len - 1] = '\0';
                         if (counter % 4096 == 0)
-                                xil_printf("line %9d: %s, book_count=%u, entry_hit=%u\r", counter, buffer, book_count, entry_hit);
+                                xil_printf("line %9d: %s, book_count=%u, sorted_hit=%u, unsorted_hit=%u\r",
+                                           counter, buffer, book_count, sorted_hit, unsorted_hit);
                         uci_init();
                         c = buffer;
                         do
@@ -113,41 +141,59 @@ book_build(void)
                                         move_ok = uci_move(uci_str_ptr) == 0;
                                         if (!move_ok)
                                         {
-                                                xil_printf("%s: bad uci data %d. (%s %d)\n", __PRETTY_FUNCTION__,
-                                                           move_ok, __FILE__, __LINE__);
+                                                xil_printf("%s: bad uci data line %d. (%s %d)\n", __PRETTY_FUNCTION__,
+                                                           counter + 1, __FILE__, __LINE__);
                                                 return;
                                         }
-                                        book_index = 0;
-                                        while (book_index < book_count &&
-                                               !(hash == book[book_index].hash &&
-                                                 hash_extra == book[book_index].hash_extra &&
-                                                 uci_match(&book[book_index].uci, &game[game_moves - 1].uci)))
-                                                ++book_index;
-					if (book_index < book_count)
-					{
-						++entry_hit;
-						++book[book_index].count;
-					}
-					else
-					{
-						++book_index;
-						if (book_index == book_size)
-						{
-							book_size += 10000;
-							book = (book_t *)realloc(book, book_size * sizeof(book_t));
-							if (book == 0)
-							{
-								xil_printf("%s: realloc of %d failed. (%s %d)\n", __PRETTY_FUNCTION__,
-									   book_size * sizeof(book_t), __FILE__, __LINE__);
-								return;
-							}
-						}
-						book[book_index].count = 1;
-						book[book_index].hash = hash;
-						book[book_index].hash_extra = hash_extra;
-						book[book_index].uci = game[game_moves - 1].uci;
-						++book_count;
-					}
+                                        book_entry.count = 1;
+                                        book_entry.hash = hash;
+                                        book_entry.hash_extra = hash_extra;
+                                        book_entry.uci = game[game_moves - 1].uci;
+
+                                        book_entry_found = bsearch(&book_entry, book, sorted_counter, sizeof(book_t), book_compare);
+
+                                        if (book_entry_found)
+                                        {
+                                                book_index = book_entry_found - book;
+                                                ++sorted_hit;
+                                                ++book[book_index].count;
+                                        }
+                                        else
+                                        {
+                                                book_index = unsorted_index;
+                                                while (book_index < book_count &&
+                                                       !(hash == book[book_index].hash && hash_extra == book[book_index].hash_extra))
+                                                        ++book_index;
+                                                if (book_index < book_count)
+                                                {
+                                                        ++unsorted_hit;
+                                                        ++book[book_index].count;
+                                                }
+                                                else
+                                                {
+                                                        ++book_index;
+                                                        if (book_index == book_size)
+                                                        {
+                                                                book_size += 10000;
+                                                                book = (book_t *) realloc(book, book_size * sizeof(book_t));
+                                                                if (book == 0)
+                                                                {
+                                                                        xil_printf("%s: realloc of %d failed. (%s %d)\n", __PRETTY_FUNCTION__,
+                                                                                   book_size * sizeof(book_t), __FILE__, __LINE__);
+                                                                        return;
+                                                                }
+                                                        }
+                                                        book[book_index] = book_entry;
+                                                        ++book_count;
+                                                        if (book_count == next_sort)
+                                                        {
+                                                                sorted_counter = book_count;
+                                                                unsorted_index = book_count;
+                                                                qsort(book, sorted_counter, sizeof(book_t), book_compare);
+                                                                next_sort = next_sort + SORT_THRESHOLD;
+                                                        }
+                                                }
+                                        }
                                 }
                         }
                         while (!done);
@@ -156,10 +202,22 @@ book_build(void)
         }
         f_close(&fp);
 
+        qsort(book, book_count, sizeof(book_t), book_compare);
+
+        status = f_open(&fp, fnw, FA_CREATE_ALWAYS | FA_WRITE);
+        if (status != FR_OK)
+        {
+                xil_printf("%s: cannot write %s\n", __PRETTY_FUNCTION__, fnw);
+                return;
+        }
+        status = f_write(&fp, (void *)book, book_count * sizeof(book_t), &bw);
+        xil_printf("\n%s: %u bytes (%u x %u) written to %s\n", __PRETTY_FUNCTION__, bw, book_count, sizeof(book_t), fnw);
+        f_close(&fp);
+
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         lps = (double)counter / elapsed_time;
-        printf("\n%u lines in %.0f seconds, %.1f lines per second, %s closed\n", counter, elapsed_time, lps, fn);
-	printf("%u book entries, %u book hits\n", book_count, entry_hit);
+        printf("\n%u lines in %.0f seconds, %.1f lines per second\n", counter, elapsed_time, lps);
+        printf("%u book entries, %u sorted hits, %u unsorted hits\n", book_count, sorted_hit, unsorted_hit);
 }
