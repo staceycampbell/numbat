@@ -17,6 +17,79 @@ extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
 
 static const TCHAR *sd_path = "0:/";
+static const char *book_bin_fn = "book.bin";
+static int fs_init = 0;
+static FATFS fatfs;
+
+static book_t *book;
+static uint32_t book_count;
+
+static void
+book_print_entry(book_t *entry)
+{
+        char str[6];
+        uint32_t hash_high, hash_low;
+
+        hash_high = entry->hash >> 32;
+        hash_low = entry->hash << 32 >> 32;
+        vchess_uci_string(&entry->uci, str);
+        printf("hash_extra=%4X hash=%08X%08X count=%6d %s\n", entry->hash_extra, hash_high, hash_low, entry->count, str);
+}
+
+int32_t
+book_open(void)
+{
+        FRESULT status;
+        FIL fp;
+        uint32_t bytes, br, i;
+        
+        if (!fs_init)
+        {
+                status = f_mount(&fatfs, sd_path, 0);
+                if (status != FR_OK)
+                {
+                        xil_printf("%s: SD filesystem mount failed (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        return -2;
+                }
+                fs_init = 1;
+        }
+        status = f_open(&fp, book_bin_fn, FA_READ);
+        if (status != FR_OK)
+        {
+                xil_printf("%s: cannot read %s\n", __PRETTY_FUNCTION__, book_bin_fn);
+                return -1;
+        }
+        bytes = f_size(&fp);
+        book_count = bytes / sizeof(book_t);
+        book = (book_t *)malloc(bytes);
+        if (book == 0)
+        {
+                xil_printf("%s: book malloc failed with %d entries\n", __PRETTY_FUNCTION__, book_count);
+                return -1;
+        }
+        xil_printf("%s: reading %d entries from %s\n", __PRETTY_FUNCTION__, book_count, book_bin_fn);
+        status = f_read(&fp, book, bytes, &br);
+        if (status != FR_OK)
+        {
+                xil_printf("%s: %s f_read failed (%d)\n", __PRETTY_FUNCTION__, book_bin_fn, status);
+                return -1;
+        }
+        if (bytes != br)
+        {
+                xil_printf("%s: asked for %d byts from %s, received %d\n", __PRETTY_FUNCTION__, bytes, br);
+                return -1;
+        }
+        f_close(&fp);
+
+        xil_printf("first 10 book entries\n");
+        for (i = 0; i < 10; ++i)
+                book_print_entry(&book[i]);
+        xil_printf("last 10 book entries\n");
+        for (i = book_count - 10; i < book_count; ++i)
+                book_print_entry(&book[i]);
+
+        return 0;
+}
 
 void
 book_format_media(void)
@@ -51,18 +124,6 @@ book_compare(const void *p1, const void *p2)
         return 0;
 }
 
-static void
-book_print_entry(book_t *entry)
-{
-        char str[6];
-        uint32_t hash_high, hash_low;
-
-        hash_high = entry->hash >> 32;
-        hash_low = entry->hash << 32 >> 32;
-        vchess_uci_string(&entry->uci, str);
-        printf("hash_extra=%4X hash=%08X%08X count=%6d %s\n", entry->hash_extra, hash_high, hash_low, entry->count, str);
-}
-
 void
 book_build(void)
 {
@@ -79,14 +140,11 @@ book_build(void)
         XTime t_end, t_start;
         uint64_t elapsed_ticks;
         double elapsed_time, lps;
-        book_t *book, book_entry, *book_entry_found;
-        uint32_t book_size, book_count, book_index;
+        book_t book_entry, *book_entry_found;
+        uint32_t book_size, book_index;
         TCHAR buffer[4096];
 
         static const char *fn = "popular.txt";
-        static const char *fnw = "book.bin";
-        static int fs_init = 0;
-        static FATFS fatfs;
 
         XTime_GetTime(&t_start);
 
@@ -219,14 +277,14 @@ book_build(void)
 
         qsort(book, book_count, sizeof(book_t), book_compare);
 
-        status = f_open(&fp, fnw, FA_CREATE_ALWAYS | FA_WRITE);
+        status = f_open(&fp, book_bin_fn, FA_CREATE_ALWAYS | FA_WRITE);
         if (status != FR_OK)
         {
-                xil_printf("%s: cannot write %s\n", __PRETTY_FUNCTION__, fnw);
+                xil_printf("%s: cannot write %s\n", __PRETTY_FUNCTION__, book_bin_fn);
                 return;
         }
         status = f_write(&fp, (void *)book, book_count * sizeof(book_t), &bw);
-        xil_printf("\n%s: %u bytes (%u x %u) written to %s\n", __PRETTY_FUNCTION__, bw, book_count, sizeof(book_t), fnw);
+        xil_printf("\n%s: %u bytes (%u x %u) written to %s\n", __PRETTY_FUNCTION__, bw, book_count, sizeof(book_t), book_bin_fn);
         f_close(&fp);
 
         XTime_GetTime(&t_end);

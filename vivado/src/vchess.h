@@ -479,3 +479,4 @@ extern void trans_store(trans_t *trans);
 
 extern void book_build(void);
 extern void book_format_media(void);
+extern int32_t book_open(void);

@@ -579,6 +579,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 book_build();
         }
+        else if (strcmp((char *)str, "bopen") == 0)
+        {
+                book_open();
+        }
         else
         {
                 char *uci_ptr, *c;
