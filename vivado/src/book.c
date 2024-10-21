@@ -3,6 +3,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <xtime_l.h>
 #include <xil_printf.h>
 #include <ff.h>
@@ -50,15 +51,27 @@ book_compare(const void *p1, const void *p2)
         return 0;
 }
 
+static void
+book_print_entry(book_t *entry)
+{
+        char str[6];
+        uint32_t hash_high, hash_low;
+
+        hash_high = entry->hash >> 32;
+        hash_low = entry->hash << 32 >> 32;
+        vchess_uci_string(&entry->uci, str);
+        printf("hash_extra=%4X hash=%08X%08X count=%6d %s\n", entry->hash_extra, hash_high, hash_low, entry->count, str);
+}
+
 void
 book_build(void)
 {
-        uint32_t counter, done, sorted_counter, unsorted_index, next_sort;
+        uint32_t i, counter, done, sorted_counter, unsorted_index, next_sort;
         uint32_t sorted_hit, unsorted_hit;
         uint32_t bw;
         int32_t len, move_ok;
         uint32_t trans_idle;
-        uint32_t hash;
+        uint64_t hash;
         uint16_t hash_extra;
         char *uci_str_ptr, *c;
         FRESULT status;
@@ -91,6 +104,7 @@ book_build(void)
                 status = f_mount(&fatfs, sd_path, 0);
                 if (status != FR_OK)
                 {
+                        free(book);
                         xil_printf("%s: SD filesystem mount failed (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         return;
                 }
@@ -100,6 +114,7 @@ book_build(void)
         status = f_open(&fp, fn, FA_READ);
         if (status != FR_OK)
         {
+                free(book);
                 xil_printf("%s: cannot read %s (%s %d)\n", __PRETTY_FUNCTION__, fn, __FILE__, __LINE__);
                 return;
         }
@@ -141,6 +156,7 @@ book_build(void)
                                         move_ok = uci_move(uci_str_ptr) == 0;
                                         if (!move_ok)
                                         {
+                                                free(book);
                                                 xil_printf("%s: bad uci data line %d. (%s %d)\n", __PRETTY_FUNCTION__,
                                                            counter + 1, __FILE__, __LINE__);
                                                 return;
@@ -171,8 +187,9 @@ book_build(void)
                                                 }
                                                 else
                                                 {
-                                                        ++book_index;
-                                                        if (book_index == book_size)
+                                                        book[book_count] = book_entry;
+                                                        ++book_count;
+                                                        if (book_count == book_size)
                                                         {
                                                                 book_size += 10000;
                                                                 book = (book_t *) realloc(book, book_size * sizeof(book_t));
@@ -183,8 +200,6 @@ book_build(void)
                                                                         return;
                                                                 }
                                                         }
-                                                        book[book_index] = book_entry;
-                                                        ++book_count;
                                                         if (book_count == next_sort)
                                                         {
                                                                 sorted_counter = book_count;
@@ -220,4 +235,12 @@ book_build(void)
         lps = (double)counter / elapsed_time;
         printf("\n%u lines in %.0f seconds, %.1f lines per second\n", counter, elapsed_time, lps);
         printf("%u book entries, %u sorted hits, %u unsorted hits\n", book_count, sorted_hit, unsorted_hit);
+
+        xil_printf("first 10 book entries\n");
+        for (i = 0; i < 10; ++i)
+                book_print_entry(&book[i]);
+        xil_printf("last 10 book entries\n");
+        for (i = book_count - 10; i < book_count; ++i)
+                book_print_entry(&book[i]);
+        free(book);
 }
