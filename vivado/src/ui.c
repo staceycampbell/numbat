@@ -583,6 +583,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 uci_t uci;
 
                 uci_init();
+                uci_move("e2e4");
+                uci_move("c7c5");
+                uci_move("g1f3");
+                uci_move("d7d6");
                 vchess_write_board_basic(&game[game_moves - 1]);
                 vchess_trans_hash_only();
                 trans_idle = vchess_trans_idle_wait();
@@ -593,8 +597,8 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 }
                 hash = vchess_trans_hash(&hash_extra);
                 status = book_move(hash_extra, hash, &uci, BOOK_WEIGHT);
-		if (! status)
-			xil_printf("no book move found\n");
+                if (! status)
+                        xil_printf("no book move found\n");
         }
         else
         {

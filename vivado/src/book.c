@@ -11,7 +11,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define SORT_THRESHOLD 256
+#define SORT_THRESHOLD 64
 
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
@@ -95,10 +95,6 @@ book_move(uint16_t hash_extra, uint64_t hash, uci_t * uci, uint32_t sel_flag)
         for (i = start_index; i <= end_index; ++i)
                 book_print_entry(&book[i]);
         *uci = book[end_index].uci;
-        xil_printf("looking for more\n");
-        for (i = 0; i < book_count; ++i)
-                if (book[i].hash_extra == hash_extra && book[i].hash == hash)
-                        book_print_entry(&book[i]);
 
         return 1;
 }
@@ -108,7 +104,7 @@ book_open(void)
 {
         FRESULT status;
         FIL fp;
-        uint32_t bytes, br, i;
+        uint32_t bytes, br;
 
         if (!fs_init)
         {
@@ -147,13 +143,6 @@ book_open(void)
                 return -1;
         }
         f_close(&fp);
-
-        xil_printf("first 10 book entries\n");
-        for (i = 0; i < 10; ++i)
-                book_print_entry(&book[i]);
-        xil_printf("last 10 book entries\n");
-        for (i = book_count - 10; i < book_count; ++i)
-                book_print_entry(&book[i]);
 
         return 0;
 }
@@ -229,6 +218,7 @@ book_build(void)
         uint32_t sorted_hit, unsorted_hit;
         int32_t len, move_ok;
         uint32_t trans_idle;
+        uint32_t bw;
         uint64_t hash;
         uint16_t hash_extra;
         char *uci_str_ptr, *c;
@@ -281,7 +271,7 @@ book_build(void)
         unsorted_index = 0;
         next_sort = SORT_THRESHOLD;
         xil_printf("%s opened\n", fn);
-        while (counter < 1000000 && f_gets(buffer, sizeof(buffer), &fp))
+        while (counter < 2000000 && f_gets(buffer, sizeof(buffer), &fp))
         {
                 len = strnlen(buffer, sizeof(buffer) - 2);
                 if (len > 0)
@@ -376,15 +366,15 @@ book_build(void)
 
         qsort(book, book_count, sizeof(book_t), book_compare_count);
 
-//        status = f_open(&fp, book_bin_fn, FA_CREATE_ALWAYS | FA_WRITE);
-//        if (status != FR_OK)
-//        {
-//                xil_printf("%s: cannot write %s\n", __PRETTY_FUNCTION__, book_bin_fn);
-//                return;
-//        }
-//        status = f_write(&fp, (void *)book, book_count * sizeof(book_t), &bw);
-//        xil_printf("\n%s: %u bytes (%u x %u) written to %s\n", __PRETTY_FUNCTION__, bw, book_count, sizeof(book_t), book_bin_fn);
-//        f_close(&fp);
+        status = f_open(&fp, book_bin_fn, FA_CREATE_ALWAYS | FA_WRITE);
+        if (status != FR_OK)
+        {
+                xil_printf("%s: cannot write %s\n", __PRETTY_FUNCTION__, book_bin_fn);
+                return;
+        }
+        status = f_write(&fp, (void *)book, book_count * sizeof(book_t), &bw);
+        xil_printf("\n%s: %u bytes (%u x %u) written to %s\n", __PRETTY_FUNCTION__, bw, book_count, sizeof(book_t), book_bin_fn);
+        f_close(&fp);
 
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
@@ -393,5 +383,6 @@ book_build(void)
         printf("\n%u lines in %.0f seconds, %.1f lines per second\n", counter, elapsed_time, lps);
         printf("%u book entries, %u sorted hits, %u unsorted hits\n", book_count, sorted_hit, unsorted_hit);
 
-//         free(book);
+        free(book);
 }
+
