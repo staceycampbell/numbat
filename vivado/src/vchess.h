@@ -53,6 +53,10 @@
 #define TRANS_LOWER_BOUND 1
 #define TRANS_UPPER_BOUND 2
 
+#define BOOK_RANDOM 0
+#define BOOK_BEST 1
+#define BOOK_WEIGHT 2
+
 typedef struct uci_t {
 	uint8_t row_from;
 	uint8_t col_from;
@@ -169,16 +173,16 @@ vchess_trans_hash_only(void)
 }
 
 static inline uint64_t
-vchess_trans_hash(uint16_t *bits64_79)
+vchess_trans_hash(uint16_t *bits_79_64)
 {
-	uint64_t bits31_0, bits_63_32;
+	uint64_t bits_31_0, bits_63_32;
 	uint64_t hash;
 
-	bits31_0 = vchess_read(522);
+	bits_31_0 = vchess_read(522);
 	bits_63_32 = vchess_read(523);
-	if (bits64_79)
-		*bits64_79 = vchess_read(524);
-	hash = bits_63_32 << 32 | bits31_0;
+	if (bits_79_64)
+		*bits_79_64 = vchess_read(524);
+	hash = bits_63_32 << 32 | bits_31_0;
 
 	return hash;
 }
@@ -480,3 +484,4 @@ extern void trans_store(trans_t *trans);
 extern void book_build(void);
 extern void book_format_media(void);
 extern int32_t book_open(void);
+extern uint32_t book_move(uint16_t hash_extra, uint64_t hash, uci_t *uci, uint32_t sel_flag);

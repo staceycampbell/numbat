@@ -73,12 +73,11 @@ uci_move(char *p)
         row_from = p[1] - '1';
         col_to = p[2] - 'a';
         row_to = p[3] - '1';
-	if (col_from < 0 || col_from > 7 || row_from < 0 || row_from > 7 ||
-	    col_to < 0 || col_to > 7 || row_to < 0 || row_to > 7)
-	{
-		xil_printf("%s: bad uci move (%s)\n", __PRETTY_FUNCTION__, p);
-		return -2;
-	}
+        if (col_from < 0 || col_from > 7 || row_from < 0 || row_from > 7 || col_to < 0 || col_to > 7 || row_to < 0 || row_to > 7)
+        {
+                xil_printf("%s: bad uci move (%s)\n", __PRETTY_FUNCTION__, p);
+                return -2;
+        }
         switch (p[4])
         {
         case 'Q':
@@ -134,11 +133,9 @@ uci_move(char *p)
                         next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_LONG);
         }
         else if (piece == WHITE_KING)
-                next_board.castle_mask = previous_board->castle_mask &
-                        ~(1 << CASTLE_WHITE_SHORT | 1 << CASTLE_WHITE_LONG);
+                next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_SHORT | 1 << CASTLE_WHITE_LONG);
         else if (piece == BLACK_KING)
-                next_board.castle_mask = previous_board->castle_mask &
-                        ~(1 << CASTLE_BLACK_SHORT | 1 << CASTLE_BLACK_LONG);
+                next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_SHORT | 1 << CASTLE_BLACK_LONG);
 
         // castling
         if (piece == WHITE_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 6)
@@ -181,16 +178,14 @@ uci_move(char *p)
                 next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
         }
         // en-passant capture
-        else if (piece == WHITE_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN
-                 && col_from != col_to)
+        else if (piece == WHITE_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
         {
                 vchess_place(&next_board, row_to, col_to, WHITE_PAWN);
                 vchess_place(&next_board, row_to, col_to - 1, EMPTY_POSN);
                 next_board.capture = 1;
                 next_board.half_move_clock = 0;
         }
-        else if (piece == BLACK_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN
-                 && col_from != col_to)
+        else if (piece == BLACK_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
         {
                 vchess_place(&next_board, row_to, col_to, BLACK_PAWN);
                 vchess_place(&next_board, row_to, col_to + 1, EMPTY_POSN);
@@ -221,7 +216,7 @@ uci_move(char *p)
         game[game_moves] = next_board;
         ++game_moves;
 
-	return 0;
+        return 0;
 }
 
 void
@@ -368,8 +363,7 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
                 default:
                         if (!(buffer[i] >= '1' && buffer[i] <= '8'))
                         {
-                                xil_printf("%s: bad FEN data %s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__,
-                                           __LINE__);
+                                xil_printf("%s: bad FEN data %s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
                                 return 1;
                         }
                         stop_col = col + buffer[i] - '1';
@@ -445,8 +439,7 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
         }
         if (sscanf((char *)&buffer[i], "%d %d", &board->half_move_clock, &board->full_move_number) != 2)
         {
-                xil_printf("%s: bad FEN half move clock or ful move number%s (%s %d)\n", __PRETTY_FUNCTION__, buffer,
-                           __FILE__, __LINE__);
+                xil_printf("%s: bad FEN half move clock or ful move number%s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
                 return 1;
         }
 
@@ -503,8 +496,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         ++game_moves;
                 }
                 else
-                        xil_printf("%s: ignored, no game sequence to analyze (%s %d)\n", __PRETTY_FUNCTION__, __FILE__,
-                                   __LINE__);
+                        xil_printf("%s: ignored, no game sequence to analyze (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
         }
         else if (strcmp((char *)str, "both") == 0)
         {
@@ -583,6 +575,27 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 book_open();
         }
+        else if (strcmp((char *)str, "btest") == 0)
+        {
+                uint32_t status, trans_idle;
+                uint16_t hash_extra;
+                uint64_t hash;
+                uci_t uci;
+
+                uci_init();
+                vchess_write_board_basic(&game[game_moves - 1]);
+                vchess_trans_hash_only();
+                trans_idle = vchess_trans_idle_wait();
+                if (!trans_idle)
+                {
+                        xil_printf("%s: hash state machine idle timeout, stopping. (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        while (1);
+                }
+                hash = vchess_trans_hash(&hash_extra);
+                status = book_move(hash_extra, hash, &uci, BOOK_WEIGHT);
+		if (! status)
+			xil_printf("no book move found\n");
+        }
         else
         {
                 char *uci_ptr, *c;
@@ -592,9 +605,9 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 c = str;
                 while ((uci_ptr = strsep(&c, " \n\r")) != 0)
                         if (uci_move(uci_ptr))
-			{
-				xil_printf("%s: unkown uci move\n", __PRETTY_FUNCTION__);
-				return;
-			}
+                        {
+                                xil_printf("%s: unkown uci move\n", __PRETTY_FUNCTION__);
+                                return;
+                        }
         }
 }
