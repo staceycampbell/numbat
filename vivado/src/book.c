@@ -9,7 +9,7 @@
 #include <ff.h>
 #include "vchess.h"
 
-// #pragma GCC optimize ("O3")
+#pragma GCC optimize ("O3")
 
 #define SORT_THRESHOLD 256
 
@@ -25,7 +25,7 @@ static book_t *book;
 static uint32_t book_count;
 
 static void
-book_print_entry(book_t *entry)
+book_print_entry(book_t * entry)
 {
         char str[6];
         uint32_t hash_high, hash_low;
@@ -56,51 +56,51 @@ book_compare(const void *p1, const void *p2)
 }
 
 uint32_t
-book_move(uint16_t hash_extra, uint64_t hash, uci_t *uci, uint32_t sel_flag)
+book_move(uint16_t hash_extra, uint64_t hash, uci_t * uci, uint32_t sel_flag)
 {
-	int32_t book_index, i, start_index, end_index;
-	book_t *book_entry_found, book_entry;
+        int32_t book_index, i, start_index, end_index;
+        book_t *book_entry_found, book_entry;
 
-	book_entry.hash_extra = hash_extra;
-	book_entry.hash = hash;
-	book_entry_found = bsearch(&book_entry, book, book_count, sizeof(book_t), book_compare);
-	if (! book_entry_found)
-		return 0;
-	book_index = book_entry_found - book;
-	i = book_index;
-	if (i > 0)
-	{
-		while (i >= 0 && book[i].hash_extra == hash_extra && book[i].hash == hash)
-			--i;
-		if (i < 0)
-			start_index = 0;
-		else
-			start_index = i + 1;
-	}
-	else
-		start_index = 0;
-	i = book_index;
-	if (i < book_count)
-	{
-		while (i < book_count && book[i].hash_extra == hash_extra && book[i].hash == hash)
-			++i;
-		if (i == book_count)
-			end_index = book_count - 1;
-		else
-			end_index = i - 1;
-	}
-	else
-		end_index = book_count - 1;
-	xil_printf("start_index=%d end_index=%d\n", start_index, end_index);
-	for (i = start_index; i <= end_index; ++i)
-		book_print_entry(&book[i]);
-	*uci = book[end_index].uci;
-	xil_printf("looking for more\n");
-	for (i = 0; i < book_count; ++i)
-		if (book[i].hash_extra == hash_extra && book[i].hash == hash)
-			book_print_entry(&book[i]);
+        book_entry.hash_extra = hash_extra;
+        book_entry.hash = hash;
+        book_entry_found = bsearch(&book_entry, book, book_count, sizeof(book_t), book_compare);
+        if (!book_entry_found)
+                return 0;
+        book_index = book_entry_found - book;
+        i = book_index;
+        if (i > 0)
+        {
+                while (i >= 0 && book[i].hash_extra == hash_extra && book[i].hash == hash)
+                        --i;
+                if (i < 0)
+                        start_index = 0;
+                else
+                        start_index = i + 1;
+        }
+        else
+                start_index = 0;
+        i = book_index;
+        if (i < book_count)
+        {
+                while (i < book_count && book[i].hash_extra == hash_extra && book[i].hash == hash)
+                        ++i;
+                if (i == book_count)
+                        end_index = book_count - 1;
+                else
+                        end_index = i - 1;
+        }
+        else
+                end_index = book_count - 1;
+        xil_printf("start_index=%d end_index=%d\n", start_index, end_index);
+        for (i = start_index; i <= end_index; ++i)
+                book_print_entry(&book[i]);
+        *uci = book[end_index].uci;
+        xil_printf("looking for more\n");
+        for (i = 0; i < book_count; ++i)
+                if (book[i].hash_extra == hash_extra && book[i].hash == hash)
+                        book_print_entry(&book[i]);
 
-	return 1;
+        return 1;
 }
 
 int32_t
@@ -109,7 +109,7 @@ book_open(void)
         FRESULT status;
         FIL fp;
         uint32_t bytes, br, i;
-        
+
         if (!fs_init)
         {
                 status = f_mount(&fatfs, sd_path, 0);
@@ -128,7 +128,7 @@ book_open(void)
         }
         bytes = f_size(&fp);
         book_count = bytes / sizeof(book_t);
-        book = (book_t *)malloc(bytes);
+        book = (book_t *) malloc(bytes);
         if (book == 0)
         {
                 xil_printf("%s: book malloc failed with %d entries\n", __PRETTY_FUNCTION__, book_count);
@@ -188,14 +188,14 @@ book_compare_uci(const void *p1, const void *p2)
                 return -1;
         if (b1->hash > b2->hash)
                 return 1;
-	if (b1->uci.row_from < b2->uci.row_from)
-		return -1;
-	if (b1->uci.row_from > b2->uci.row_from)
-		return 1;
-	if (b1->uci.col_from < b2->uci.col_from)
-		return -1;
-	if (b1->uci.col_from > b2->uci.col_from)
-		return 1;
+        if (b1->uci.row_from < b2->uci.row_from)
+                return -1;
+        if (b1->uci.row_from > b2->uci.row_from)
+                return 1;
+        if (b1->uci.col_from < b2->uci.col_from)
+                return -1;
+        if (b1->uci.col_from > b2->uci.col_from)
+                return 1;
         return 0;
 }
 
@@ -203,20 +203,22 @@ static int32_t
 book_compare_count(const void *p1, const void *p2)
 {
         const book_t *b1, *b2;
-	int32_t initial;
-
-	initial = book_compare_uci(p1, p2);
-
-	if (initial != 0)
-		return initial;
 
         b1 = (book_t *) p1;
         b2 = (book_t *) p2;
 
-	if (b1->count < b2->count)
-		return -1;
-	if (b1->count > b2->count)
-		return 1;
+        if (b1->hash_extra < b2->hash_extra)
+                return -1;
+        if (b1->hash_extra > b2->hash_extra)
+                return 1;
+        if (b1->hash < b2->hash)
+                return -1;
+        if (b1->hash > b2->hash)
+                return 1;
+        if (b1->count > b2->count)
+                return -1;
+        if (b1->count < b2->count)
+                return 1;
         return 0;
 }
 
@@ -272,9 +274,6 @@ book_build(void)
                 return;
         }
 
-	uint32_t pboard;
-	board_t tboard;
-
         sorted_hit = 0;
         unsorted_hit = 0;
         counter = 0;
@@ -292,8 +291,6 @@ book_build(void)
                                 xil_printf("line %9d: %s, book_count=%u, sorted_hit=%u, unsorted_hit=%u\r",
                                            counter, buffer, book_count, sorted_hit, unsorted_hit);
                         uci_init();
-			tboard = game[game_moves - 1];
-			pboard = 1;
                         c = buffer;
                         do
                         {
@@ -307,12 +304,6 @@ book_build(void)
                                         while (1);
                                 }
                                 hash = vchess_trans_hash(&hash_extra);
-				if (pboard)
-				{
-					fen_print(&tboard);
-					fen_print(&game[game_moves - 1]);
-					pboard = 0;
-				}
                                 uci_str_ptr = strsep(&c, " \n\r");
                                 done = uci_str_ptr == 0;
                                 if (!done)
@@ -343,8 +334,8 @@ book_build(void)
                                                 book_index = unsorted_index;
                                                 while (book_index < book_count &&
                                                        !(hash == book[book_index].hash &&
-							 hash_extra == book[book_index].hash_extra &&
-							 uci_match(&book[book_index].uci, &book_entry.uci)))
+                                                         hash_extra == book[book_index].hash_extra &&
+                                                         uci_match(&book[book_index].uci, &book_entry.uci)))
                                                         ++book_index;
                                                 if (book_index < book_count)
                                                 {
@@ -370,7 +361,7 @@ book_build(void)
                                                         {
                                                                 sorted_counter = book_count;
                                                                 unsorted_index = book_count;
-                                                                qsort(book, sorted_counter, sizeof(book_t), book_compare);
+                                                                qsort(book, sorted_counter, sizeof(book_t), book_compare_uci);
                                                                 next_sort = next_sort + SORT_THRESHOLD;
                                                         }
                                                 }

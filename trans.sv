@@ -8,9 +8,9 @@ module trans #
     input                         clk,
     input                         reset,
 
-    (* mark_debug = "true" *) input                         entry_lookup_in,
-    (* mark_debug = "true" *) input                         entry_store_in,
-    (* mark_debug = "true" *) input                         hash_only_in,
+    input                         entry_lookup_in,
+    input                         entry_store_in,
+    input                         hash_only_in,
    
     input [`BOARD_WIDTH - 1:0]    board_in,
     input                         white_to_move_in,
@@ -21,7 +21,7 @@ module trans #
     input [EVAL_WIDTH - 1:0]      eval_in,
     input [7:0]                   depth_in,
 
-    (* mark_debug = "true" *) output                        trans_idle_out,
+    output                        trans_idle_out,
 
     output reg                    entry_valid_out,
     output reg [EVAL_WIDTH - 1:0] eval_out,
@@ -29,7 +29,7 @@ module trans #
     output reg [1:0]              flag_out,
     output reg                    collision_out,
 
-    (* mark_debug = "true" *) output reg [79:0]             hash_out,
+    output reg [79:0]             hash_out,
    
     input                         trans_axi_arready,
     input                         trans_axi_awready,
@@ -85,15 +85,15 @@ module trans #
    localparam STATE_LOOKUP_WAIT_ADDR = 11;
    localparam STATE_LOOKUP_VALIDATE = 12;
    
-   (* mark_debug = "true" *) reg [3:0]                      state = STATE_IDLE;
+   reg [3:0]                      state = STATE_IDLE;
 
-   (* mark_debug = "true" *) reg [79:0]                     hash_0 [63:0];
-   (* mark_debug = "true" *) reg [79:0]                     hash_1 [15:0];
-   (* mark_debug = "true" *) reg [79:0]                     hash_2 [ 3:0];
-   (* mark_debug = "true" *) reg [79:0]                     hash_side;
-   (* mark_debug = "true" *) reg [79:0]                     hash;
+   reg [79:0]                     hash_0 [63:0];
+   reg [79:0]                     hash_1 [15:0];
+   reg [79:0]                     hash_2 [ 3:0];
+   reg [79:0]                     hash_side;
+   reg [79:0]                     hash;
 
-   (* mark_debug = "true" *) reg                            entry_store, entry_lookup, hash_only;
+   reg                            entry_store, entry_lookup, hash_only;
    reg                            entry_store_in_z, entry_lookup_in_z, hash_only_in_z;
    
    (* ram_style = "distributed" *) reg [79:0] zob_rand_board [0:767];
@@ -102,10 +102,10 @@ module trans #
    (* ram_style = "distributed" *) reg [79:0] zob_rand_castle_mask [0:15];
    reg [79:0]                     zob_rand_btm;
 
-   (* mark_debug = "true" *) reg [`BOARD_WIDTH - 1:0]       board;
-   (* mark_debug = "true" *) reg                            white_to_move;
-   (* mark_debug = "true" *) reg [3:0]                      castle_mask;
-   (* mark_debug = "true" *) reg [3:0]                      en_passant_col;
+   reg [`BOARD_WIDTH - 1:0]       board;
+   reg                            white_to_move;
+   reg [3:0]                      castle_mask;
+   reg [3:0]                      en_passant_col;
    reg [1:0]                      flag;
    reg [EVAL_WIDTH - 1:0]         eval;
    reg [7:0]                      depth;
@@ -209,6 +209,8 @@ module trans #
               for (i = 0; i < 64; i = i + 1)
                 if (board[i * `PIECE_BITS+:`PIECE_BITS] != `EMPTY_POSN)
                   hash_0[i] <= zob_rand_board[zob_piece_lookup[board[i * `PIECE_BITS+:`PIECE_BITS]] << 6 | i];
+                else
+                  hash_0[i] <= 0;
               state <= STATE_HASH_1;
            end
          STATE_HASH_1 :
