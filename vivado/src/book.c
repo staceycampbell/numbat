@@ -24,8 +24,8 @@ static FATFS fatfs;
 static book_t *book;
 static uint32_t book_count;
 
-static void
-book_print_entry(book_t * entry)
+void
+book_print_entry(book_t *entry)
 {
         char str[6];
         uint32_t hash_high, hash_low;
@@ -148,12 +148,6 @@ book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t * uci)
         }
         else
                 end_index = book_count - 1;
-        xil_printf("start_index=%d end_index=%d\n", start_index, end_index);
-        for (i = start_index; i <= end_index; ++i)
-	{
-		xil_printf("%8d: ", i);
-                book_print_entry(&book[i]);
-	}
 	switch (sel_flag)
 	{
 	case BOOK_MOST_COMMON :
@@ -170,7 +164,6 @@ book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t * uci)
 			--sel_index;
 		break;
 	}
-	xil_printf("sel_index=%d\n", sel_index);
 
 	*uci = book[sel_index].uci;
 

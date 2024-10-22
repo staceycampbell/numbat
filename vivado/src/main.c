@@ -59,12 +59,13 @@ do_both(void)
                 book_move_found = book_game_move(&game[game_moves - 1]);
                 if (book_move_found)
                 {
+			xil_printf("book move\n");
+
 			mate = 0;
 			stalemate = 0;
 			thrice_rep = 0;
 			fifty_move = 0;
 			move_count = 1;
-
                         best_board = game[game_moves - 1];
                 }
                 else
