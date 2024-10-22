@@ -54,8 +54,8 @@
 #define TRANS_UPPER_BOUND 2
 
 #define BOOK_RANDOM 0
-#define BOOK_BEST 1
-#define BOOK_WEIGHT 2
+#define BOOK_MOST_COMMON 1
+#define BOOK_RANDOM_COMMON 2
 
 typedef struct uci_t {
 	uint8_t row_from;
@@ -114,6 +114,12 @@ vchess_read(uint32_t reg)
         val = *ptr;
 
         return val;
+}
+
+static inline uint32_t
+vchess_random(void)
+{
+	return vchess_read(254);
 }
 
 static inline void
@@ -484,4 +490,4 @@ extern void trans_store(trans_t *trans);
 extern void book_build(void);
 extern void book_format_media(void);
 extern int32_t book_open(void);
-extern uint32_t book_move(uint16_t hash_extra, uint64_t hash, uci_t *uci, uint32_t sel_flag);
+extern uint32_t book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t *uci);

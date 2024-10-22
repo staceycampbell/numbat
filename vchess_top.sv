@@ -157,6 +157,7 @@ module vchess_top
    wire                 trans_trans_idle_out;   // From trans of trans.v
    wire                 trans_white_to_move_in; // From control of control.v
    wire                 use_random_bit;         // From control of control.v
+   wire [31:0]          xorshift32_reg;         // From xorshift32 of xorshift32.v
    // End of automatics
 
    wire [15:0]                   ddr4_counter_out;
@@ -434,7 +435,19 @@ module vchess_top
       .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
       .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
       .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
-      .misc_status                      (misc_status[31:0]));
+      .misc_status                      (misc_status[31:0]),
+      .xorshift32_reg                   (xorshift32_reg[31:0]));
+
+   /* xorshift32 AUTO_TEMPLATE (
+    .x (xorshift32_reg[]),
+    );*/
+   xorshift32 xorshift32
+     (/*AUTOINST*/
+      // Outputs
+      .x                                (xorshift32_reg[31:0]),  // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset));
 
    /* mpsoc_preset_wrapper AUTO_TEMPLATE (
     );*/
@@ -516,7 +529,7 @@ module vchess_top
       .trans_axi_wvalid                 (trans_axi_wvalid),
       .user_si570_sysclk_clk_n          (user_si570_sysclk_clk_n),
       .user_si570_sysclk_clk_p          (user_si570_sysclk_clk_p));
-   
+
    /* sync AUTO_TEMPLATE (
     .clk (clk),
     .async_in (c0_ddr4_ui_clk_sync_rst),

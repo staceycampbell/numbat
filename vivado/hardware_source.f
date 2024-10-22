@@ -13,3 +13,4 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../trans.sv
 ../vchess_top.sv
 ../vchess.vh
+../xorshift32.sv

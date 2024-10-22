@@ -56,9 +56,9 @@ book_compare(const void *p1, const void *p2)
 }
 
 uint32_t
-book_move(uint16_t hash_extra, uint64_t hash, uci_t * uci, uint32_t sel_flag)
+book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t * uci)
 {
-        int32_t book_index, i, start_index, end_index;
+        int32_t book_index, i, start_index, end_index, sel_index, random_count;
         book_t *book_entry_found, book_entry;
 
         book_entry.hash_extra = hash_extra;
@@ -93,8 +93,29 @@ book_move(uint16_t hash_extra, uint64_t hash, uci_t * uci, uint32_t sel_flag)
                 end_index = book_count - 1;
         xil_printf("start_index=%d end_index=%d\n", start_index, end_index);
         for (i = start_index; i <= end_index; ++i)
+	{
+		xil_printf("%8d: ", i);
                 book_print_entry(&book[i]);
-        *uci = book[end_index].uci;
+	}
+	switch (sel_flag)
+	{
+	case BOOK_MOST_COMMON :
+		sel_index = start_index;
+		break;
+	case BOOK_RANDOM :
+		sel_index = random() % (end_index - start_index + 1) + start_index;
+		break;
+	case BOOK_RANDOM_COMMON :
+	default :
+		random_count = random() % book[start_index].count;
+		sel_index = end_index;
+		while (sel_index >= start_index && book[sel_index].count < random_count)
+			--sel_index;
+		break;
+	}
+	xil_printf("sel_index=%d\n", sel_index);
+
+	*uci = book[sel_index].uci;
 
         return 1;
 }

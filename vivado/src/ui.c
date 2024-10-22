@@ -596,10 +596,14 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         while (1);
                 }
                 hash = vchess_trans_hash(&hash_extra);
-                status = book_move(hash_extra, hash, &uci, BOOK_WEIGHT);
+                status = book_move(hash_extra, hash, BOOK_RANDOM_COMMON, &uci);
                 if (! status)
                         xil_printf("no book move found\n");
         }
+	else if (strcmp((char *)str, "rand") == 0)
+	{
+		xil_printf("%08X\n", vchess_random());
+	}
         else
         {
                 char *uci_ptr, *c;
