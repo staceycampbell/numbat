@@ -2,4 +2,3 @@
 - communication with FICS
 - fix en-passant and three-fold repetition
 - no-material draw
-- opening book
