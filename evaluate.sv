@@ -19,6 +19,7 @@ module evaluate #
     input                                clear_eval,
     input                                white_to_move,
 
+    output reg                           insufficient_material,
     output reg signed [EVAL_WIDTH - 1:0] eval,
     output reg                           eval_valid
     );
@@ -142,6 +143,8 @@ module evaluate #
                                          insufficent_score_black[58] + insufficent_score_black[59] +
                                          insufficent_score_black[60] + insufficent_score_black[61] +
                                          insufficent_score_black[62] + insufficent_score_black[63];
+        insufficient_material <= ((insufficent_score_white_accum == 0 && insufficent_score_black_accum <= 1) ||
+                                  (insufficent_score_white_accum <= 1 && insufficent_score_black_accum == 0));
         
         if (use_random_bit)
           if (white_to_move)
@@ -164,8 +167,7 @@ module evaluate #
             sum_a[y][x / 4] <= score[y][x + 0] + score[y][x + 1] + score[y][x + 2] + score[y][x + 3];
         for (y = 0; y < 8; y = y + 2)
           sum_b[y / 2] <= sum_a[y + 0][0] + sum_a[y + 0][1] + sum_a[y + 1][0] + sum_a[y + 1][1];
-        if ((insufficent_score_white_accum == 0 && insufficent_score_black_accum <= 1) ||
-            (insufficent_score_white_accum <= 1 && insufficent_score_black_accum == 0))
+        if (insufficient_material)
           eval <= 0;
         else
           eval <= pop_score + sum_b[0] + sum_b[1] + sum_b[2] + sum_b[3];

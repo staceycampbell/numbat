@@ -37,6 +37,7 @@ module all_moves #
     output reg signed [EVAL_WIDTH - 1:0] initial_eval,
     output reg                           initial_thrice_rep = 0,
     output reg                           initial_fifty_move = 0,
+    output reg                           initial_insufficient_material = 0,
 
     output reg                           am_idle,
     output reg                           am_moves_ready,
@@ -58,16 +59,17 @@ module all_moves #
     output                               fifty_move_out,
     output [UCI_WIDTH - 1:0]             uci_out,
     output [5:0]                         white_pop_out,
-    output [5:0]                         black_pop_out
+    output [5:0]                         black_pop_out,
+    output                               insufficient_material_out
     );
 
    // board + castle mask + en passant col + color to move
    localparam INITIAL_WIDTH = `BOARD_WIDTH + 4 + 4 + 1;
    // white/black pop counts, UCI, initial width + capture + pawn adv (to zero-out half move)
-   localparam RAM_WIDTH = 5 + 5 + UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
-   // white/black pop counts, UCI, fifty move, half move, thrice rep, eval, is-attacking white/black,
+   localparam RAM_WIDTH = 6 + 6 + UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
+   // insufficient material, white/black pop counts, UCI, fifty move, half move, thrice rep, eval, is-attacking white/black,
    // white in check, black in check, capture, initial width
-   localparam LEGAL_RAM_WIDTH = 5 + 5 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
+   localparam LEGAL_RAM_WIDTH = 1 + 6 + 6 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
 
    reg                                   initial_board_check;
 
@@ -110,6 +112,7 @@ module all_moves #
    reg [63:0]                            legal_black_is_attacking_ram_wr;
    reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
    reg                                   legal_thrice_rep_ram_wr;
+   reg                                   legal_insufficent_material_ram_wr;
    reg [5:0]                             legal_white_pop_ram_wr, legal_black_pop_ram_wr;
    reg [UCI_WIDTH - 1:0]                 legal_uci_ram_wr;
    reg                                   legal_ram_wr = 0;
@@ -198,6 +201,7 @@ module all_moves #
    wire [MAX_POSITIONS_LOG2-1:0] capture_move_ram_wr_addr;// From move_sort_capture of move_sort.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
+   wire                 insufficient_material;  // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From board_attack of board_attack.v
    wire [LEGAL_RAM_WIDTH-1:0] legal_ram_rd_data;// From move_sort_legal of move_sort.v
    wire [MAX_POSITIONS_LOG2-1:0] legal_ram_wr_addr;// From move_sort_legal of move_sort.v
@@ -219,7 +223,7 @@ module all_moves #
 
    assign am_move_count = am_capture_moves ? capture_move_ram_wr_addr : legal_ram_wr_addr;
    
-   assign {white_pop_out, black_pop_out, uci_out, fifty_move_out, half_move_out, thrice_rep_out,
+   assign {insufficient_material_out, white_pop_out, black_pop_out, uci_out, fifty_move_out, half_move_out, thrice_rep_out,
            white_is_attacking_out, black_is_attacking_out,
            capture_out, en_passant_col_out, castle_mask_out,
            board_out, white_to_move_out, white_in_check_out,
@@ -317,7 +321,8 @@ module all_moves #
           end
      end // always @ (posedge clk)
 
-   wire [LEGAL_RAM_WIDTH - 1:0] legal_ram_wr_data = {legal_white_pop_ram_wr, legal_black_pop_ram_wr, legal_uci_ram_wr,
+   wire [LEGAL_RAM_WIDTH - 1:0] legal_ram_wr_data = {legal_insufficent_material_ram_wr,
+                                                     legal_white_pop_ram_wr, legal_black_pop_ram_wr, legal_uci_ram_wr,
                                                      legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
                                                      legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
                                                      legal_capture_ram_wr, legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
@@ -476,6 +481,7 @@ module all_moves #
               rd_clear_sample <= 0;
 
               initial_thrice_rep <= 0;
+              initial_insufficient_material <= 0;
               initial_fifty_move <= half_move_in >= 100;
 
               legal_ram_wr_addr_init <= 1; // clear legal generated move counter
@@ -502,6 +508,7 @@ module all_moves #
               rd_ram_wr_en <= 1;
 
               initial_eval <= eval;
+              initial_insufficient_material <= insufficient_material;
               clear_eval <= 1;
               clear_attack <= 1;
               attack_test_valid <= 0;
@@ -880,6 +887,7 @@ module all_moves #
               else
                 legal_eval_ram_wr <= eval;
               legal_thrice_rep_ram_wr <= rd_thrice_rep;
+              legal_insufficent_material_ram_wr <= insufficient_material;
               if (attack_pawn_zero_half_move || attack_test_capture)
                 begin
                    legal_half_move_ram_wr <= 0;
@@ -930,7 +938,7 @@ module all_moves #
               clear_eval <= 0;
               clear_attack <= 0;
               rd_clear_sample <= 0;
-              if (initial_fifty_move || initial_thrice_rep) // forced draw
+              if (initial_fifty_move || initial_thrice_rep || initial_insufficient_material) // forced draw
                 initial_eval <= 0;
               else if (am_move_count == 0) // no legal moves found
                 begin
@@ -989,6 +997,7 @@ module all_moves #
    evaluate
      (/*AUTOINST*/
       // Outputs
+      .insufficient_material            (insufficient_material),
       .eval                             (eval[EVAL_WIDTH-1:0]),
       .eval_valid                       (eval_valid),
       // Inputs
