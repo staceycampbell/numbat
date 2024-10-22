@@ -43,6 +43,7 @@ void
 do_both(void)
 {
         uint32_t move_count, key_hit;
+        uint32_t book_move_found;
         board_t best_board;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
         XTime t_end, t_start;
@@ -51,16 +52,32 @@ do_both(void)
 
         XTime_GetTime(&t_start);
 
+        book_open();
+
         do
         {
-                best_board = nm_top(game, game_moves);
-                vchess_write_board_basic(&best_board);
-                vchess_write_board_wait(&best_board);
-                move_count = vchess_move_count();
-                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
-                vchess_reset_all_moves();
-                game[game_moves] = best_board;
-                ++game_moves;
+                book_move_found = book_game_move(&game[game_moves - 1]);
+                if (book_move_found)
+                {
+			mate = 0;
+			stalemate = 0;
+			thrice_rep = 0;
+			fifty_move = 0;
+			move_count = 1;
+
+                        best_board = game[game_moves - 1];
+                }
+                else
+                {
+                        best_board = nm_top(game, game_moves);
+                        vchess_write_board_basic(&best_board);
+                        vchess_write_board_wait(&best_board);
+                        move_count = vchess_move_count();
+                        vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
+                        vchess_reset_all_moves();
+                        game[game_moves] = best_board;
+                        ++game_moves;
+                }
                 if (game_moves >= GAME_MAX)
                 {
                         xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
@@ -76,8 +93,7 @@ do_both(void)
         if (key_hit)
                 xil_printf("Abort\n");
         else
-                xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n", mate, stalemate,
-                           thrice_rep, fifty_move);
+                xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;

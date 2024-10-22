@@ -491,3 +491,4 @@ extern void book_build(void);
 extern void book_format_media(void);
 extern int32_t book_open(void);
 extern uint32_t book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t *uci);
+extern uint32_t book_game_move(board_t *board);

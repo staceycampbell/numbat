@@ -156,8 +156,8 @@ vchess_write_board_wait(board_t *board)
         int32_t i;
         uint32_t moves_ready, move_count;
 
-        vchess_write_control(0, 1, 0, 0);  // new board valid bit set
-        vchess_write_control(0, 0, 0, 0);  // new board valid bit clear
+        vchess_write_control(0, 1, 0, 0);       // new board valid bit set
+        vchess_write_control(0, 0, 0, 0);       // new board valid bit clear
         i = 0;
         do
         {
@@ -170,8 +170,11 @@ vchess_write_board_wait(board_t *board)
         move_count = vchess_move_count();
         if (move_count >= 218)
         {
-                vchess_print_board(board, 1);
-                fen_print(board);
+                if (board)
+                {
+                        vchess_print_board(board, 1);
+                        fen_print(board);
+                }
                 xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }

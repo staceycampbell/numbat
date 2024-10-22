@@ -56,6 +56,63 @@ book_compare(const void *p1, const void *p2)
 }
 
 uint32_t
+book_game_move(board_t *board)
+{
+        int32_t trans_idle;
+	uint64_t hash;
+	uint16_t hash_extra;
+	uint32_t found, move_count, i, status, confirmed;
+	board_t next_board;
+	uci_t uci;
+	char uci_str[6];
+
+        vchess_write_board_basic(board);
+        vchess_trans_hash_only();
+        trans_idle = vchess_trans_idle_wait();
+        if (!trans_idle)
+        {
+                xil_printf("%s: hash state machine idle timeout, stopping. (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                while (1);
+        }
+        hash = vchess_trans_hash(&hash_extra);
+	found = book_move(hash_extra, hash, BOOK_RANDOM, &uci);
+	if (! found)
+		return 0;
+
+        vchess_write_board_wait(0);
+	vchess_capture_moves(0);
+	move_count = vchess_move_count();
+	if (move_count == 0)
+		return 0; // game is over
+
+	confirmed = 0;
+	i = 0;
+	do
+	{
+                status = vchess_read_board(&next_board, i);
+                if (status)
+                {
+                        xil_printf("%s: problem with vchess_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        return 0;
+                }
+		confirmed = uci_match(&uci, &next_board.uci);
+		++i;
+        }
+	while (i < move_count && ! confirmed);
+
+	if (! confirmed)
+	{
+		xil_printf("%s: book returned move %s that is not in all_moves!\n", __PRETTY_FUNCTION__, uci_str);
+		return 0;
+	}
+
+	vchess_uci_string(&uci, uci_str);
+	uci_move(uci_str);
+
+	return 1;
+}
+
+uint32_t
 book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t * uci)
 {
         int32_t book_index, i, start_index, end_index, sel_index, random_count;
@@ -103,11 +160,11 @@ book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t * uci)
 		sel_index = start_index;
 		break;
 	case BOOK_RANDOM :
-		sel_index = random() % (end_index - start_index + 1) + start_index;
+		sel_index = vchess_random() % (end_index - start_index + 1) + start_index;
 		break;
 	case BOOK_RANDOM_COMMON :
 	default :
-		random_count = random() % book[start_index].count;
+		random_count = vchess_random() % book[start_index].count;
 		sel_index = end_index;
 		while (sel_index >= start_index && book[sel_index].count < random_count)
 			--sel_index;
@@ -126,7 +183,10 @@ book_open(void)
         FRESULT status;
         FIL fp;
         uint32_t bytes, br;
+	static int32_t book_init = 0;
 
+	if (book_init)
+		return 0;
         if (!fs_init)
         {
                 status = f_mount(&fatfs, sd_path, 0);
@@ -164,6 +224,8 @@ book_open(void)
                 return -1;
         }
         f_close(&fp);
+
+	book_init = 1;
 
         return 0;
 }
