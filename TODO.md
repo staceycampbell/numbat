@@ -2,3 +2,4 @@
 - communication with FICS
 - fix en-passant and three-fold repetition
 - no-material draw
+- time and search depth management
