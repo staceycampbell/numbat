@@ -1,5 +1,5 @@
 - improved evaluation, Claude Shannon's pawn structure
 - communication with FICS
 - fix en-passant and three-fold repetition
-- no-material draw
 - time and search depth management
+- fix three-fold repetition and eval

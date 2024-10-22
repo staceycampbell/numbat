@@ -57,6 +57,7 @@ module control #
     input signed [EVAL_WIDTH - 1:0]       initial_eval, // root node eval
     input                                 initial_thrice_rep, // root node thrice rep
     input                                 initial_fifty_move,
+    input                                 initial_insufficient_material,
 
     input                                 am_idle,
     input                                 am_moves_ready, // all moves now calculated
@@ -79,6 +80,7 @@ module control #
     input [UCI_WIDTH - 1:0]               am_uci_in,
     input [5:0]                           am_white_pop_in,
     input [5:0]                           am_black_pop_in,
+    input                                 am_insufficient_material_in,
 
     input [39:0]                          ctrl0_axi_araddr,
     input [2:0]                           ctrl0_axi_arprot,
@@ -190,6 +192,7 @@ module control #
                     ctrl0_axi_rdata[6] <= initial_thrice_rep;
                     ctrl0_axi_rdata[7] <= am_idle;
                     ctrl0_axi_rdata[8] <= initial_fifty_move;
+                    ctrl0_axi_rdata[9] <= initial_insufficient_material;
                     ctrl0_axi_rdata[30] <= use_random_bit;
                     ctrl0_axi_rdata[31] <= soft_reset;
                  end
@@ -222,7 +225,8 @@ module control #
                129 : ctrl0_axi_rdata <= am_white_is_attacking_in[63:32];
                130 : ctrl0_axi_rdata <= am_black_is_attacking_in[31:0];
                131 : ctrl0_axi_rdata <= am_black_is_attacking_in[63:32];
-               132 : ctrl0_axi_rdata <= {am_fifty_move_in, am_thrice_rep_in, am_black_in_check_in, am_white_in_check_in, am_capture_in};
+               132 : ctrl0_axi_rdata <= {am_insufficient_material_in, am_fifty_move_in, am_thrice_rep_in,
+                                         am_black_in_check_in, am_white_in_check_in, am_capture_in};
                133 : ctrl0_axi_rdata <= {am_white_to_move_in, am_castle_mask_in, am_en_passant_col_in};
                134 : ctrl0_axi_rdata <= am_eval_in;
                135 : ctrl0_axi_rdata <= am_move_count;

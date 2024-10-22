@@ -56,6 +56,7 @@ module vchess_top
    wire [HALF_MOVE_WIDTH-1:0] am_half_move_in;  // From control of control.v
    wire [HALF_MOVE_WIDTH-1:0] am_half_move_out; // From all_moves of all_moves.v
    wire                 am_idle;                // From all_moves of all_moves.v
+   wire                 am_insufficient_material_out;// From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_index; // From control of control.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -101,6 +102,7 @@ module vchess_top
    wire                 digclk;                 // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
    wire                 initial_fifty_move;     // From all_moves of all_moves.v
+   wire                 initial_insufficient_material;// From all_moves of all_moves.v
    wire                 initial_mate;           // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
@@ -232,6 +234,7 @@ module vchess_top
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
+      .initial_insufficient_material    (initial_insufficient_material),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
@@ -252,6 +255,7 @@ module vchess_top
       .uci_out                          (am_uci_out[UCI_WIDTH-1:0]), // Templated
       .white_pop_out                    (am_white_pop_out[5:0]), // Templated
       .black_pop_out                    (am_black_pop_out[5:0]), // Templated
+      .insufficient_material_out        (am_insufficient_material_out), // Templated
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (soft_reset),            // Templated
@@ -404,6 +408,7 @@ module vchess_top
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
+      .initial_insufficient_material    (initial_insufficient_material),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
@@ -424,6 +429,7 @@ module vchess_top
       .am_uci_in                        (am_uci_out[UCI_WIDTH-1:0]), // Templated
       .am_white_pop_in                  (am_white_pop_out[5:0]), // Templated
       .am_black_pop_in                  (am_black_pop_out[5:0]), // Templated
+      .am_insufficient_material_in      (am_insufficient_material_out), // Templated
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
