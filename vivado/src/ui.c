@@ -181,14 +181,14 @@ uci_move(char *p)
         else if (piece == WHITE_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
         {
                 vchess_place(&next_board, row_to, col_to, WHITE_PAWN);
-                vchess_place(&next_board, row_to, col_to - 1, EMPTY_POSN);
+                vchess_place(&next_board, row_from, col_to, EMPTY_POSN);
                 next_board.capture = 1;
                 next_board.half_move_clock = 0;
         }
         else if (piece == BLACK_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
         {
                 vchess_place(&next_board, row_to, col_to, BLACK_PAWN);
-                vchess_place(&next_board, row_to, col_to + 1, EMPTY_POSN);
+                vchess_place(&next_board, row_from, col_to, EMPTY_POSN);
                 next_board.capture = 1;
                 next_board.half_move_clock = 0;
         }
@@ -529,6 +529,13 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 board.full_move_number = 0;
                 game[0] = board;
         }
+	else if (strcmp((char *)str, "print") == 0)
+	{
+		if (game_moves > 0)
+			vchess_print_board(&game[game_moves - 1], 1);
+		else
+			xil_printf("No positions to print.\n");
+	}
         else if (strcmp((char *)str, "sample") == 0)
         {
                 trans_clear_table();

@@ -229,7 +229,11 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
                 if (stalemate || thrice_rep || fifty_move)
                         return 0;
-                value = -GLOBAL_VALUE_KING + ply;       // add ply for shortest path to win, longest to loss
+		// mate
+		if (board->white_to_move)
+			value = GLOBAL_VALUE_KING;
+		else
+			value = -GLOBAL_VALUE_KING;
                 ++terminal_nodes;
                 return value;
         }
