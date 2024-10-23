@@ -5,23 +5,24 @@ module evaluate #
    parameter EVAL_WIDTH = 22
    )
    (
-    input                                clk,
-    input                                reset,
+    input                            clk,
+    input                            reset,
 
-    input                                use_random_bit,
-    input                                random_bit,
+    input                            use_random_bit,
+    input                            random_bit,
 
-    input                                board_valid,
-    input [5:0]                          white_pop,
-    input [5:0]                          black_pop,
-    input                                is_attacking_done,
-    input [`BOARD_WIDTH - 1:0]           board_in,
-    input                                clear_eval,
-    input                                white_to_move,
+    input                            board_valid,
+    input                            is_attacking_done,
+    input [`BOARD_WIDTH - 1:0]       board_in,
+    input                            clear_eval,
+    input                            white_to_move,
+   
+    input [5:0]                      white_pop,
+    input [5:0]                      black_pop,
 
-    output reg                           insufficient_material,
-    output reg signed [EVAL_WIDTH - 1:0] eval,
-    output reg                           eval_valid
+    output                           insufficient_material,
+    output signed [EVAL_WIDTH - 1:0] eval,
+    output reg                       eval_valid
     );
 
    localparam POP_WEIGHT = 10;
@@ -34,26 +35,31 @@ module evaluate #
    localparam VALUE_QUEN = 900;
    localparam VALUE_KING = `GLOBAL_VALUE_KING;
 
-   reg [`BOARD_WIDTH - 1:0]              board;
+   reg [`BOARD_WIDTH - 1:0]          board;
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] pst [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]          idx [0:7][0:7];
-   reg [5:0]                                 white_pop_r, black_pop_r;
-   reg signed [POP_SCORE_WIDTH - 1:0]        black_pop_score, white_pop_score;
-   reg signed [POP_SCORE_WIDTH + 1 - 1:0]    pop_score;
+   reg [5:0]                                 white_pop_t1, black_pop_t1;
+   reg signed [POP_SCORE_WIDTH - 1:0]        black_pop_score_t2, white_pop_score_t2;
+   reg signed [POP_SCORE_WIDTH + 1 - 1:0]    pop_score_t3;
+   reg                                       insufficient_material_t3;
+   reg signed [EVAL_WIDTH - 1:0]             eval_t4;
    
-   (* use_dsp = "yes" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
+   (* use_dsp = "yes" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score_t1 [0:7][0:7];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_a_t2 [0:7][0:1];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_b_t3 [0:3];
 
-   reg [1:0]                                 isw [0:63];
-   reg [1:0]                                 isb [0:63];
-   reg [8:0]                                 isw_accum;
-   reg [8:0]                                 isb_accum;
+   reg [1:0]                                 isw_t1 [0:63];
+   reg [1:0]                                 isb_t1 [0:63];
+   reg [8:0]                                 isw_accum_t2;
+   reg [8:0]                                 isb_accum_t2;
 
    reg   signed [2:0]                        random_bit_final;
 
    integer                                   i, ri, y, x;
+
+   assign eval = eval_t4;
+   assign insufficient_material = insufficient_material_t3;
 
    always @(posedge clk)
      begin
@@ -62,41 +68,41 @@ module evaluate #
              if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_PAWN ||
                  board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_ROOK ||
                  board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_QUEN)
-               isw[i] <= 2'b11;
+               isw_t1[i] <= 2'b11;
              else if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_BISH ||
                       board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_KNIT)
-               isw[i] <= 2'b01;
+               isw_t1[i] <= 2'b01;
              else
-               isw[i] <= 2'b00;
+               isw_t1[i] <= 2'b00;
              if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_PAWN ||
                  board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_ROOK ||
                  board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_QUEN)
-               isw[i] <= 2'b11;
+               isb_t1[i] <= 2'b11;
              else if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_BISH ||
                       board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_KNIT)
-               isb[i] <= 2'b01;
+               isb_t1[i] <= 2'b01;
              else
-               isb[i] <= 2'b00;
+               isb_t1[i] <= 2'b00;
           end
 
-        isw_accum <= isw[ 0] + isw[ 1] + isw[ 2] + isw[ 3] + isw[ 4] + isw[ 5] + isw[ 6] + isw[ 7] +
-                     isw[ 8] + isw[ 9] + isw[10] + isw[11] + isw[12] + isw[13] + isw[14] + isw[15] +
-                     isw[16] + isw[17] + isw[18] + isw[19] + isw[20] + isw[21] + isw[22] + isw[23] +
-                     isw[24] + isw[25] + isw[26] + isw[27] + isw[28] + isw[29] + isw[30] + isw[31] +
-                     isw[32] + isw[33] + isw[34] + isw[35] + isw[36] + isw[37] + isw[38] + isw[39] +
-                     isw[40] + isw[41] + isw[42] + isw[43] + isw[44] + isw[45] + isw[46] + isw[47] +
-                     isw[48] + isw[49] + isw[50] + isw[51] + isw[52] + isw[53] + isw[54] + isw[55] +
-                     isw[56] + isw[57] + isw[58] + isw[59] + isw[60] + isw[61] + isw[62] + isw[63];
+        isw_accum_t2 <= isw_t1[ 0] + isw_t1[ 1] + isw_t1[ 2] + isw_t1[ 3] + isw_t1[ 4] + isw_t1[ 5] + isw_t1[ 6] + isw_t1[ 7] +
+                        isw_t1[ 8] + isw_t1[ 9] + isw_t1[10] + isw_t1[11] + isw_t1[12] + isw_t1[13] + isw_t1[14] + isw_t1[15] +
+                        isw_t1[16] + isw_t1[17] + isw_t1[18] + isw_t1[19] + isw_t1[20] + isw_t1[21] + isw_t1[22] + isw_t1[23] +
+                        isw_t1[24] + isw_t1[25] + isw_t1[26] + isw_t1[27] + isw_t1[28] + isw_t1[29] + isw_t1[30] + isw_t1[31] +
+                        isw_t1[32] + isw_t1[33] + isw_t1[34] + isw_t1[35] + isw_t1[36] + isw_t1[37] + isw_t1[38] + isw_t1[39] +
+                        isw_t1[40] + isw_t1[41] + isw_t1[42] + isw_t1[43] + isw_t1[44] + isw_t1[45] + isw_t1[46] + isw_t1[47] +
+                        isw_t1[48] + isw_t1[49] + isw_t1[50] + isw_t1[51] + isw_t1[52] + isw_t1[53] + isw_t1[54] + isw_t1[55] +
+                        isw_t1[56] + isw_t1[57] + isw_t1[58] + isw_t1[59] + isw_t1[60] + isw_t1[61] + isw_t1[62] + isw_t1[63];
         
-        isb_accum <= isb[ 0] + isb[ 1] + isb[ 2] + isb[ 3] + isb[ 4] + isb[ 5] + isb[ 6] + isb[ 7] +
-                     isb[ 8] + isb[ 9] + isb[10] + isb[11] + isb[12] + isb[13] + isb[14] + isb[15] +
-                     isb[16] + isb[17] + isb[18] + isb[19] + isb[20] + isb[21] + isb[22] + isb[23] +
-                     isb[24] + isb[25] + isb[26] + isb[27] + isb[28] + isb[29] + isb[30] + isb[31] +
-                     isb[32] + isb[33] + isb[34] + isb[35] + isb[36] + isb[37] + isb[38] + isb[39] +
-                     isb[40] + isb[41] + isb[42] + isb[43] + isb[44] + isb[45] + isb[46] + isb[47] +
-                     isb[48] + isb[49] + isb[50] + isb[51] + isb[52] + isb[53] + isb[54] + isb[55] +
-                     isb[56] + isb[57] + isb[58] + isb[59] + isb[60] + isb[61] + isb[62] + isb[63];
-        insufficient_material <= ((isw_accum == 0 && isb_accum <= 1) || (isw_accum <= 1 && isb_accum == 0));
+        isb_accum_t2 <= isb_t1[ 0] + isb_t1[ 1] + isb_t1[ 2] + isb_t1[ 3] + isb_t1[ 4] + isb_t1[ 5] + isb_t1[ 6] + isb_t1[ 7] +
+                        isb_t1[ 8] + isb_t1[ 9] + isb_t1[10] + isb_t1[11] + isb_t1[12] + isb_t1[13] + isb_t1[14] + isb_t1[15] +
+                        isb_t1[16] + isb_t1[17] + isb_t1[18] + isb_t1[19] + isb_t1[20] + isb_t1[21] + isb_t1[22] + isb_t1[23] +
+                        isb_t1[24] + isb_t1[25] + isb_t1[26] + isb_t1[27] + isb_t1[28] + isb_t1[29] + isb_t1[30] + isb_t1[31] +
+                        isb_t1[32] + isb_t1[33] + isb_t1[34] + isb_t1[35] + isb_t1[36] + isb_t1[37] + isb_t1[38] + isb_t1[39] +
+                        isb_t1[40] + isb_t1[41] + isb_t1[42] + isb_t1[43] + isb_t1[44] + isb_t1[45] + isb_t1[46] + isb_t1[47] +
+                        isb_t1[48] + isb_t1[49] + isb_t1[50] + isb_t1[51] + isb_t1[52] + isb_t1[53] + isb_t1[54] + isb_t1[55] +
+                        isb_t1[56] + isb_t1[57] + isb_t1[58] + isb_t1[59] + isb_t1[60] + isb_t1[61] + isb_t1[62] + isb_t1[63];
+        insufficient_material_t3 <= ((isw_accum_t2 == 0 && isb_accum_t2 <= 1) || (isw_accum_t2 <= 1 && isb_accum_t2 == 0));
         
         if (use_random_bit)
           if (white_to_move)
@@ -107,33 +113,33 @@ module evaluate #
           random_bit_final <= 0;
         
         // Claude Shannon's mobility score
-        black_pop_r <= black_pop;
-        white_pop_r <= white_pop;
-        black_pop_score <= -(black_pop_r * POP_WEIGHT);
-        white_pop_score <= white_pop_r * POP_WEIGHT;
-        pop_score <= black_pop_score + white_pop_score + random_bit_final;
+        black_pop_t1 <= black_pop;
+        white_pop_t1 <= white_pop;
+        black_pop_score_t2 <= -(black_pop_t1 * POP_WEIGHT);
+        white_pop_score_t2 <= white_pop_t1 * POP_WEIGHT;
+        pop_score_t3 <= black_pop_score_t2 + white_pop_score_t2 + random_bit_final;
         
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)
-            score[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
+            score_t1[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 4)
-            sum_a[y][x / 4] <= score[y][x + 0] + score[y][x + 1] + score[y][x + 2] + score[y][x + 3];
+            sum_a_t2[y][x / 4] <= score_t1[y][x + 0] + score_t1[y][x + 1] + score_t1[y][x + 2] + score_t1[y][x + 3];
         for (y = 0; y < 8; y = y + 2)
-          sum_b[y / 2] <= sum_a[y + 0][0] + sum_a[y + 0][1] + sum_a[y + 1][0] + sum_a[y + 1][1];
-        if (insufficient_material)
-          eval <= 0;
+          sum_b_t3[y / 2] <= sum_a_t2[y + 0][0] + sum_a_t2[y + 0][1] + sum_a_t2[y + 1][0] + sum_a_t2[y + 1][1];
+        if (insufficient_material_t3)
+          eval_t4 <= 0;
         else
-          eval <= pop_score + sum_b[0] + sum_b[1] + sum_b[2] + sum_b[3];
+          eval_t4 <= pop_score_t3 + sum_b_t3[0] + sum_b_t3[1] + sum_b_t3[2] + sum_b_t3[3];
      end
 
    localparam STATE_IDLE = 0;
    localparam STATE_WAIT_POP_VALID = 1;
-   localparam STATE_SCORE = 2;
-   localparam STATE_SUM_A = 3;
-   localparam STATE_SUM_B = 4;
-   localparam STATE_WS_0 = 5;
-   localparam STATE_EVAL = 6;
+   localparam STATE_EVAL_T1 = 2;
+   localparam STATE_EVAL_T2 = 3;
+   localparam STATE_EVAL_T3 = 4;
+   localparam STATE_EVAL_T4 = 5;
+   localparam STATE_EVAL_T5 = 6;
 
    reg [3:0]                                 state = STATE_IDLE;
 
@@ -154,16 +160,16 @@ module evaluate #
            end
          STATE_WAIT_POP_VALID :
            if (is_attacking_done)
-             state <= STATE_SCORE;
-         STATE_SCORE :
-           state <= STATE_SUM_A;
-         STATE_SUM_A :
-           state <= STATE_SUM_B;
-         STATE_SUM_B :
-           state <= STATE_WS_0;
-         STATE_WS_0 :
-           state <= STATE_EVAL;
-         STATE_EVAL : // eval calc must be complete on this clock
+             state <= STATE_EVAL_T1;
+         STATE_EVAL_T1 :
+           state <= STATE_EVAL_T2;
+         STATE_EVAL_T2 :
+           state <= STATE_EVAL_T3;
+         STATE_EVAL_T3 :
+           state <= STATE_EVAL_T4;
+         STATE_EVAL_T4 :
+           state <= STATE_EVAL_T5;
+         STATE_EVAL_T5 : // eval calc must be complete on this clock
            begin
               eval_valid <= 1;
               if (clear_eval)
