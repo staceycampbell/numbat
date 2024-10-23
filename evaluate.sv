@@ -24,8 +24,8 @@ module evaluate #
     output reg                           eval_valid
     );
 
-   localparam POP_SHIFT = 1;
-   localparam POP_SCORE_WIDTH = POP_SHIFT + 6 + 1; // signed
+   localparam POP_WEIGHT = 10;
+   localparam POP_SCORE_WIDTH = $clog2(POP_WEIGHT * 64) + 1; // signed
 
    localparam VALUE_PAWN = 100;
    localparam VALUE_KNIT = 310;
@@ -38,17 +38,18 @@ module evaluate #
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(VALUE_KING) - 1 + 1:0] pst [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]          idx [0:7][0:7];
+   reg [5:0]                                 white_pop_r, black_pop_r;
    reg signed [POP_SCORE_WIDTH - 1:0]        black_pop_score, white_pop_score;
    reg signed [POP_SCORE_WIDTH + 1 - 1:0]    pop_score;
    
-   reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
-   reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
-   reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
+   (* use_dsp = "yes" *) reg signed [$clog2(VALUE_KING) - 1 + 2:0] score [0:7][0:7];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_a [0:7][0:1];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_b [0:3];
 
-   reg [1:0]                                 insufficent_score_white [0:63];
-   reg [1:0]                                 insufficent_score_black [0:63];
-   reg [8:0]                                 insufficent_score_white_accum;
-   reg [8:0]                                 insufficent_score_black_accum;
+   reg [1:0]                                 isw [0:63];
+   reg [1:0]                                 isb [0:63];
+   reg [8:0]                                 isw_accum;
+   reg [8:0]                                 isb_accum;
 
    reg   signed [2:0]                        random_bit_final;
 
@@ -61,90 +62,41 @@ module evaluate #
              if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_PAWN ||
                  board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_ROOK ||
                  board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_QUEN)
-               insufficent_score_white[i] <= 2'b11;
+               isw[i] <= 2'b11;
              else if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_BISH ||
                       board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_KNIT)
-               insufficent_score_white[i] <= 2'b01;
+               isw[i] <= 2'b01;
              else
-               insufficent_score_white[i] <= 2'b00;
+               isw[i] <= 2'b00;
              if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_PAWN ||
                  board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_ROOK ||
                  board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_QUEN)
-               insufficent_score_white[i] <= 2'b11;
+               isw[i] <= 2'b11;
              else if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_BISH ||
                       board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `BLACK_KNIT)
-               insufficent_score_black[i] <= 2'b01;
+               isb[i] <= 2'b01;
              else
-               insufficent_score_black[i] <= 2'b00;
+               isb[i] <= 2'b00;
           end
 
-        insufficent_score_white_accum <= insufficent_score_white[ 0] + insufficent_score_white[ 1] +
-                                         insufficent_score_white[ 2] + insufficent_score_white[ 3] +
-                                         insufficent_score_white[ 4] + insufficent_score_white[ 5] +
-                                         insufficent_score_white[ 6] + insufficent_score_white[ 7] +
-                                         insufficent_score_white[ 8] + insufficent_score_white[ 9] +
-                                         insufficent_score_white[10] + insufficent_score_white[11] +
-                                         insufficent_score_white[12] + insufficent_score_white[13] +
-                                         insufficent_score_white[14] + insufficent_score_white[15] +
-                                         insufficent_score_white[16] + insufficent_score_white[17] +
-                                         insufficent_score_white[18] + insufficent_score_white[19] +
-                                         insufficent_score_white[20] + insufficent_score_white[21] +
-                                         insufficent_score_white[22] + insufficent_score_white[23] +
-                                         insufficent_score_white[24] + insufficent_score_white[25] +
-                                         insufficent_score_white[26] + insufficent_score_white[27] +
-                                         insufficent_score_white[28] + insufficent_score_white[29] +
-                                         insufficent_score_white[30] + insufficent_score_white[31] +
-                                         insufficent_score_white[32] + insufficent_score_white[33] +
-                                         insufficent_score_white[34] + insufficent_score_white[35] +
-                                         insufficent_score_white[36] + insufficent_score_white[37] +
-                                         insufficent_score_white[38] + insufficent_score_white[39] +
-                                         insufficent_score_white[40] + insufficent_score_white[41] +
-                                         insufficent_score_white[42] + insufficent_score_white[43] +
-                                         insufficent_score_white[44] + insufficent_score_white[45] +
-                                         insufficent_score_white[46] + insufficent_score_white[47] +
-                                         insufficent_score_white[48] + insufficent_score_white[49] +
-                                         insufficent_score_white[50] + insufficent_score_white[51] +
-                                         insufficent_score_white[52] + insufficent_score_white[53] +
-                                         insufficent_score_white[54] + insufficent_score_white[55] +
-                                         insufficent_score_white[56] + insufficent_score_white[57] +
-                                         insufficent_score_white[58] + insufficent_score_white[59] +
-                                         insufficent_score_white[60] + insufficent_score_white[61] +
-                                         insufficent_score_white[62] + insufficent_score_white[63];
+        isw_accum <= isw[ 0] + isw[ 1] + isw[ 2] + isw[ 3] + isw[ 4] + isw[ 5] + isw[ 6] + isw[ 7] +
+                     isw[ 8] + isw[ 9] + isw[10] + isw[11] + isw[12] + isw[13] + isw[14] + isw[15] +
+                     isw[16] + isw[17] + isw[18] + isw[19] + isw[20] + isw[21] + isw[22] + isw[23] +
+                     isw[24] + isw[25] + isw[26] + isw[27] + isw[28] + isw[29] + isw[30] + isw[31] +
+                     isw[32] + isw[33] + isw[34] + isw[35] + isw[36] + isw[37] + isw[38] + isw[39] +
+                     isw[40] + isw[41] + isw[42] + isw[43] + isw[44] + isw[45] + isw[46] + isw[47] +
+                     isw[48] + isw[49] + isw[50] + isw[51] + isw[52] + isw[53] + isw[54] + isw[55] +
+                     isw[56] + isw[57] + isw[58] + isw[59] + isw[60] + isw[61] + isw[62] + isw[63];
         
-        insufficent_score_black_accum <= insufficent_score_black[ 0] + insufficent_score_black[ 1] +
-                                         insufficent_score_black[ 2] + insufficent_score_black[ 3] +
-                                         insufficent_score_black[ 4] + insufficent_score_black[ 5] +
-                                         insufficent_score_black[ 6] + insufficent_score_black[ 7] +
-                                         insufficent_score_black[ 8] + insufficent_score_black[ 9] +
-                                         insufficent_score_black[10] + insufficent_score_black[11] +
-                                         insufficent_score_black[12] + insufficent_score_black[13] +
-                                         insufficent_score_black[14] + insufficent_score_black[15] +
-                                         insufficent_score_black[16] + insufficent_score_black[17] +
-                                         insufficent_score_black[18] + insufficent_score_black[19] +
-                                         insufficent_score_black[20] + insufficent_score_black[21] +
-                                         insufficent_score_black[22] + insufficent_score_black[23] +
-                                         insufficent_score_black[24] + insufficent_score_black[25] +
-                                         insufficent_score_black[26] + insufficent_score_black[27] +
-                                         insufficent_score_black[28] + insufficent_score_black[29] +
-                                         insufficent_score_black[30] + insufficent_score_black[31] +
-                                         insufficent_score_black[32] + insufficent_score_black[33] +
-                                         insufficent_score_black[34] + insufficent_score_black[35] +
-                                         insufficent_score_black[36] + insufficent_score_black[37] +
-                                         insufficent_score_black[38] + insufficent_score_black[39] +
-                                         insufficent_score_black[40] + insufficent_score_black[41] +
-                                         insufficent_score_black[42] + insufficent_score_black[43] +
-                                         insufficent_score_black[44] + insufficent_score_black[45] +
-                                         insufficent_score_black[46] + insufficent_score_black[47] +
-                                         insufficent_score_black[48] + insufficent_score_black[49] +
-                                         insufficent_score_black[50] + insufficent_score_black[51] +
-                                         insufficent_score_black[52] + insufficent_score_black[53] +
-                                         insufficent_score_black[54] + insufficent_score_black[55] +
-                                         insufficent_score_black[56] + insufficent_score_black[57] +
-                                         insufficent_score_black[58] + insufficent_score_black[59] +
-                                         insufficent_score_black[60] + insufficent_score_black[61] +
-                                         insufficent_score_black[62] + insufficent_score_black[63];
-        insufficient_material <= ((insufficent_score_white_accum == 0 && insufficent_score_black_accum <= 1) ||
-                                  (insufficent_score_white_accum <= 1 && insufficent_score_black_accum == 0));
+        isb_accum <= isb[ 0] + isb[ 1] + isb[ 2] + isb[ 3] + isb[ 4] + isb[ 5] + isb[ 6] + isb[ 7] +
+                     isb[ 8] + isb[ 9] + isb[10] + isb[11] + isb[12] + isb[13] + isb[14] + isb[15] +
+                     isb[16] + isb[17] + isb[18] + isb[19] + isb[20] + isb[21] + isb[22] + isb[23] +
+                     isb[24] + isb[25] + isb[26] + isb[27] + isb[28] + isb[29] + isb[30] + isb[31] +
+                     isb[32] + isb[33] + isb[34] + isb[35] + isb[36] + isb[37] + isb[38] + isb[39] +
+                     isb[40] + isb[41] + isb[42] + isb[43] + isb[44] + isb[45] + isb[46] + isb[47] +
+                     isb[48] + isb[49] + isb[50] + isb[51] + isb[52] + isb[53] + isb[54] + isb[55] +
+                     isb[56] + isb[57] + isb[58] + isb[59] + isb[60] + isb[61] + isb[62] + isb[63];
+        insufficient_material <= ((isw_accum == 0 && isb_accum <= 1) || (isw_accum <= 1 && isb_accum == 0));
         
         if (use_random_bit)
           if (white_to_move)
@@ -155,8 +107,10 @@ module evaluate #
           random_bit_final <= 0;
         
         // Claude Shannon's mobility score
-        black_pop_score <= -(black_pop << POP_SHIFT);
-        white_pop_score <= white_pop << POP_SHIFT;
+        black_pop_r <= black_pop;
+        white_pop_r <= white_pop;
+        black_pop_score <= -(black_pop_r * POP_WEIGHT);
+        white_pop_score <= white_pop_r * POP_WEIGHT;
         pop_score <= black_pop_score + white_pop_score + random_bit_final;
         
         for (y = 0; y < 8; y = y + 1)
@@ -178,7 +132,8 @@ module evaluate #
    localparam STATE_SCORE = 2;
    localparam STATE_SUM_A = 3;
    localparam STATE_SUM_B = 4;
-   localparam STATE_EVAL = 5;
+   localparam STATE_WS_0 = 5;
+   localparam STATE_EVAL = 6;
 
    reg [3:0]                                 state = STATE_IDLE;
 
@@ -205,8 +160,10 @@ module evaluate #
          STATE_SUM_A :
            state <= STATE_SUM_B;
          STATE_SUM_B :
+           state <= STATE_WS_0;
+         STATE_WS_0 :
            state <= STATE_EVAL;
-         STATE_EVAL :
+         STATE_EVAL : // eval calc must be complete on this clock
            begin
               eval_valid <= 1;
               if (clear_eval)
