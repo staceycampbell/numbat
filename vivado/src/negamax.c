@@ -18,13 +18,17 @@ static board_t board_stack[Q_MAX][MAX_POSITIONS];
 static board_t *board_vert[Q_MAX];
 
 static int32_t
-nm_eval(uint32_t wtm)
+nm_eval(uint32_t wtm, uint32_t ply)
 {
         int32_t value;
 
         value = vchess_initial_eval();
         if (!wtm)
                 value = -value;
+	if (value == GLOBAL_VALUE_KING)
+		value -= ply * 4;
+	else if (value == -GLOBAL_VALUE_KING)
+		value += ply * 4;
 
         return value;
 }
@@ -193,7 +197,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         vchess_write_board_wait(board);
 
-        value = nm_eval(board->white_to_move);
+        value = nm_eval(board->white_to_move, ply);
 
         quiescence = depth <= 0;
 
@@ -230,10 +234,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 if (stalemate || thrice_rep || fifty_move)
                         return 0;
 		// mate
-		if (board->white_to_move)
-			value = GLOBAL_VALUE_KING;
-		else
-			value = -GLOBAL_VALUE_KING;
                 ++terminal_nodes;
                 return value;
         }
@@ -260,8 +260,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         do
         {
                 board_vert[ply] = board_ptr[index];
-                value = valmax(value,
-                               -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply));
+                value = valmax(value, -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply));
                 alpha = valmax(alpha, value);
                 ++index;
         }

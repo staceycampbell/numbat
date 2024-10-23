@@ -81,15 +81,19 @@ uci_move(char *p)
         switch (p[4])
         {
         case 'Q':
+        case 'q':
                 promotion = PIECE_QUEN;
                 break;
         case 'N':
+        case 'n':
                 promotion = PIECE_KNIT;
                 break;
         case 'B':
+        case 'b':
                 promotion = PIECE_BISH;
                 break;
         case 'R':
+        case 'r':
                 promotion = PIECE_ROOK;
                 break;
         case '\0':

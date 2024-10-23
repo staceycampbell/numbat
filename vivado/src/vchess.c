@@ -62,6 +62,7 @@ void
 vchess_uci_string(uci_t *uci, char *str)
 {
         char ch;
+	uint32_t promotion_type;
 
         str[0] = uci->col_from + 'a';
         str[1] = uci->row_from + '1';
@@ -70,19 +71,20 @@ vchess_uci_string(uci_t *uci, char *str)
 
         if (uci->promotion != EMPTY_POSN)
         {
-                switch (uci->promotion)
+		promotion_type = uci->promotion & ~(1 << BLACK_BIT);
+                switch (promotion_type)
                 {
                 case PIECE_QUEN:
-                        ch = 'q';
+                        ch = 'Q';
                         break;
                 case PIECE_ROOK:
-                        ch = 'r';
+                        ch = 'R';
                         break;
                 case PIECE_BISH:
-                        ch = 'b';
+                        ch = 'B';
                         break;
                 case PIECE_KNIT:
-                        ch = 'n';
+                        ch = 'N';
                         break;
                 default:
                         ch = '?';
