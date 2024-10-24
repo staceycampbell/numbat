@@ -5,9 +5,9 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-// #pragma GCC optimize ("O3")
+#pragma GCC optimize ("O3")
 
-#define DEPTH_MAX 5
+#define DEPTH_MAX 6
 #define Q_MAX (DEPTH_MAX + 20)  // when search reaches depth max switch to quiescence search
 #define LARGE_EVAL (1 << 15)
 
