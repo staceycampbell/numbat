@@ -5,7 +5,7 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-#pragma GCC optimize ("O3")
+// #pragma GCC optimize ("O3")
 
 #define DEPTH_MAX 5
 #define Q_MAX (DEPTH_MAX + 20)  // when search reaches depth max switch to quiescence search
@@ -25,10 +25,10 @@ nm_eval(uint32_t wtm, uint32_t ply)
         value = vchess_initial_eval();
         if (!wtm)
                 value = -value;
-	if (value == GLOBAL_VALUE_KING)
-		value -= ply * 4;
-	else if (value == -GLOBAL_VALUE_KING)
-		value += ply * 4;
+        if (value == GLOBAL_VALUE_KING)
+                value -= ply * 4;
+        else if (value == -GLOBAL_VALUE_KING)
+                value += ply * 4;
 
         return value;
 }
@@ -43,8 +43,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
         vchess_status(0, 0, 0, 0, 0, &am_idle, 0);
         if (!am_idle)
         {
-                xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__,
-                           __LINE__);
+                xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
         if (game_moves == 0 || ply >= DEPTH_MAX)        // mate, stalemate or quiescence (only looking at captures)
@@ -123,8 +122,7 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
                 status = vchess_read_board(&boards[i], i);
                 if (status)
                 {
-                        xil_printf("%s: problem with vchess_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__,
-                                   __LINE__);
+                        xil_printf("%s: problem with vchess_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         return -3;
                 }
         }
@@ -153,47 +151,47 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
         int32_t value;
-	int32_t alpha_orig;
+        int32_t alpha_orig;
         uint32_t status, quiescence;
-	uint32_t collision;
-	trans_t trans;
+        uint32_t collision;
+        trans_t trans;
         board_t *board_ptr[MAX_POSITIONS];
 
         ++nodes_visited;
 
-	alpha_orig = alpha;
+        alpha_orig = alpha;
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, board_vert, ply);
 
         vchess_write_board_basic(board);
 
-	// transposition table lookup
-	trans_lookup(&trans, &collision);
-	trans_collision += collision;
-	if (trans.entry_valid && trans.depth >= depth)
-	{
-		if (trans.flag == TRANS_EXACT)
-		{
-			++trans_exact;
-			return trans.eval;
-		}
-		else if (trans.flag == TRANS_LOWER_BOUND)
-		{
-			++trans_lower;
-			alpha = valmax(alpha, trans.eval);
-		}
-		else if (trans.flag == TRANS_UPPER_BOUND)
-		{
-			++trans_upper;
-			beta = valmin(beta, trans.eval);
-		}
-		if (alpha >= beta)
-		{
-			++trans_save;
-			return trans.eval;
-		}
-	}
+        // transposition table lookup
+        trans_lookup(&trans, &collision);
+        trans_collision += collision;
+        if (trans.entry_valid && trans.depth >= depth)
+        {
+                if (trans.flag == TRANS_EXACT)
+                {
+                        ++trans_exact;
+                        return trans.eval;
+                }
+                else if (trans.flag == TRANS_LOWER_BOUND)
+                {
+                        ++trans_lower;
+                        alpha = valmax(alpha, trans.eval);
+                }
+                else if (trans.flag == TRANS_UPPER_BOUND)
+                {
+                        ++trans_upper;
+                        beta = valmin(beta, trans.eval);
+                }
+                if (alpha >= beta)
+                {
+                        ++trans_save;
+                        return trans.eval;
+                }
+        }
 
         vchess_write_board_wait(board);
 
@@ -206,8 +204,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         if (move_count >= MAX_POSITIONS)
         {
                 xil_printf("%s: stopping here, move_count=%d, quiescence=%d, %s %d\n", __PRETTY_FUNCTION__,
-			   move_count, quiescence, __FILE__, __LINE__);
-		fen_print(board);
+                           move_count, quiescence, __FILE__, __LINE__);
+                fen_print(board);
                 while (1);
         }
 
@@ -233,7 +231,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
                 if (stalemate || thrice_rep || fifty_move)
                         return 0;
-		// mate
+                // mate
                 ++terminal_nodes;
                 return value;
         }
@@ -247,8 +245,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 }
                 if (quiescence && !board_stack[ply][index].capture)
                 {
-                        xil_printf("%s: problem with capture and quiescense, stopping (%s %d)\n", __PRETTY_FUNCTION__,
-                                   __FILE__, __LINE__);
+                        xil_printf("%s: problem with capture and quiescense, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         while (1);
                 }
                 board_ptr[index] = &board_stack[ply][index];
@@ -266,17 +263,17 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-	trans.eval = value;
-	if (value <= alpha_orig)
-		trans.flag = TRANS_UPPER_BOUND;
-	else if (value >= beta)
-		trans.flag = TRANS_LOWER_BOUND;
-	else
-		trans.flag = TRANS_EXACT;
-	trans.depth = depth;
-	trans.entry_valid = 1;
+        trans.eval = value;
+        if (value <= alpha_orig)
+                trans.flag = TRANS_UPPER_BOUND;
+        else if (value >= beta)
+                trans.flag = TRANS_LOWER_BOUND;
+        else
+                trans.flag = TRANS_EXACT;
+        trans.depth = depth;
+        trans.entry_valid = 1;
         vchess_write_board_basic(board);
-	trans_store(&trans);
+        trans_store(&trans);
 
         return value;
 }
@@ -307,11 +304,11 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         terminal_nodes = 0;
         q_hard_cutoff = 0;
         q_end = 0;
-	trans_lower = 0;
-	trans_upper = 0;
-	trans_exact = 0;
-	trans_save = 0;
-	trans_collision = 0;
+        trans_lower = 0;
+        trans_upper = 0;
+        trans_exact = 0;
+        trans_save = 0;
+        trans_collision = 0;
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0);
@@ -337,12 +334,11 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 board_ptr[i] = &root_node_boards[i];
 
         ply = 0;
-        best_evaluation = -LARGE_EVAL;
+        best_evaluation = -(LARGE_EVAL + 1);
         for (i = 0; i < move_count; ++i)
         {
                 board_vert[ply] = board_ptr[i];
-                evaluate_move =
-                        -negamax(game, game_moves, board_ptr[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply);
+                evaluate_move = -negamax(game, game_moves, board_ptr[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply);
                 if (evaluate_move > best_evaluation)
                 {
                         best_board = *board_ptr[i];
@@ -366,9 +362,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f, move_count=%u\n",
                best_evaluation, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
         printf("q_hard_cutoff=%u, q_end=%u\n", q_hard_cutoff, q_end);
-	printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u, trans_collision=%u (%.2f%%)\n",
-	       trans_lower, trans_upper, trans_exact, trans_save, trans_collision,
-	       ((double)trans_collision * 100.0) / (double)nodes_visited);
+        printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u, trans_collision=%u (%.2f%%)\n",
+               trans_lower, trans_upper, trans_exact, trans_save, trans_collision, ((double)trans_collision * 100.0) / (double)nodes_visited);
 
         return best_board;
 }
