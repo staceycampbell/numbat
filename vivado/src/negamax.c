@@ -7,15 +7,15 @@
 
 #pragma GCC optimize ("O3")
 
-#define DEPTH_MAX 6
-#define Q_MAX (DEPTH_MAX + 20)  // when search reaches depth max switch to quiescence search
+#define MAX_DEPTH 25
 #define LARGE_EVAL (1 << 15)
 
 #define GLOBAL_VALUE_KING 10000
 
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_lower, trans_upper, trans_exact, trans_save, trans_collision;
-static board_t board_stack[Q_MAX][MAX_POSITIONS];
-static board_t *board_vert[Q_MAX];
+static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
+static board_t *board_vert[MAX_DEPTH];
+static int32_t depth_limit;
 
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply)
@@ -34,7 +34,7 @@ nm_eval(uint32_t wtm, uint32_t ply)
 }
 
 static void
-nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_vert[DEPTH_MAX], uint32_t ply)
+nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_vert[MAX_DEPTH], uint32_t ply, uint32_t quiescence)
 {
         uint32_t entries;
         int32_t sel, index;
@@ -46,7 +46,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                 xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
-        if (game_moves == 0 || ply >= DEPTH_MAX)        // mate, stalemate or quiescence (only looking at captures)
+        if (game_moves == 0 || quiescence)        // mate, stalemate or quiescence (only looking at captures)
         {
                 vchess_repdet_write(0);
                 return;
@@ -160,9 +160,10 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         ++nodes_visited;
 
         alpha_orig = alpha;
+        quiescence = depth <= 0;
 
         vchess_reset_all_moves();
-        nm_load_rep_table(game, game_moves, board_vert, ply);
+        nm_load_rep_table(game, game_moves, board_vert, ply, quiescence);
 
         vchess_write_board_basic(board);
 
@@ -197,8 +198,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         value = nm_eval(board->white_to_move, ply);
 
-        quiescence = depth <= 0;
-
         vchess_capture_moves(quiescence);
         move_count = vchess_move_count();
         if (move_count >= MAX_POSITIONS)
@@ -220,7 +219,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                         ++q_end;
                         return alpha;
                 }
-                if (ply == Q_MAX - 1)   // hard limit on quiescese search depth
+                if (ply == MAX_DEPTH - 1)   // hard limit on quiescese search depth
                 {
                         ++q_hard_cutoff;
                         return alpha;
@@ -311,7 +310,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         trans_collision = 0;
 
         vchess_reset_all_moves();
-        nm_load_rep_table(game, game_index, 0, 0);
+        nm_load_rep_table(game, game_index, 0, 0, 0);
         vchess_write_board_basic(&game[game_index]);
         vchess_write_board_wait(&game[game_index]);
 
@@ -322,6 +321,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 xil_printf("%s: game is over, no moves (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return best_board;
         }
+
+	depth_limit = 6;
 
         status = nm_load_positions(root_node_boards);
         if (status != move_count)
@@ -338,7 +339,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         for (i = 0; i < move_count; ++i)
         {
                 board_vert[ply] = board_ptr[i];
-                evaluate_move = -negamax(game, game_moves, board_ptr[i], DEPTH_MAX - 1, -LARGE_EVAL, LARGE_EVAL, ply);
+                evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply);
                 if (evaluate_move > best_evaluation)
                 {
                         best_board = *board_ptr[i];
@@ -348,7 +349,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         best_board.full_move_number = 1 + game_moves / 2;
 
         vchess_reset_all_moves();
-        nm_load_rep_table(game, game_moves, 0, 0);
+        nm_load_rep_table(game, game_moves, 0, 0, 0);
         vchess_write_board_basic(&best_board);
         vchess_write_board_wait(&best_board);
         vchess_capture_moves(0);
