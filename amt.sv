@@ -54,9 +54,11 @@ module amt;
    wire [HALF_MOVE_WIDTH-1:0] half_move_out;    // From all_moves of all_moves.v
    wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
    wire                 initial_fifty_move;     // From all_moves of all_moves.v
+   wire                 initial_insufficient_material;// From all_moves of all_moves.v
    wire                 initial_mate;           // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
+   wire                 insufficient_material_out;// From all_moves of all_moves.v
    wire                 thrice_rep_out;         // From all_moves of all_moves.v
    wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
    wire                 white_in_check_out;     // From all_moves of all_moves.v
@@ -193,6 +195,7 @@ module amt;
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
+      .initial_insufficient_material    (initial_insufficient_material),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
@@ -213,6 +216,7 @@ module amt;
       .uci_out                          (uci_out[UCI_WIDTH-1:0]),
       .white_pop_out                    (white_pop_out[5:0]),
       .black_pop_out                    (black_pop_out[5:0]),
+      .insufficient_material_out        (insufficient_material_out),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
