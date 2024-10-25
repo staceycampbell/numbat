@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <xil_printf.h>
 #include <xtime_l.h>
 #include <xil_io.h>
@@ -16,6 +17,8 @@ static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_lower
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
 static int32_t depth_limit;
+static XTime time_limit;
+static uint32_t time_limit_exceeded;
 
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply)
@@ -46,7 +49,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                 xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
-        if (game_moves == 0 || quiescence)        // mate, stalemate or quiescence (only looking at captures)
+        if (game_moves == 0 || quiescence)      // mate, stalemate or quiescence (only looking at captures)
         {
                 vchess_repdet_write(0);
                 return;
@@ -155,6 +158,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         uint32_t status, quiescence;
         uint32_t collision;
         trans_t trans;
+        XTime t_now;
         board_t *board_ptr[MAX_POSITIONS];
 
         ++nodes_visited;
@@ -219,7 +223,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                         ++q_end;
                         return alpha;
                 }
-                if (ply == MAX_DEPTH - 1)   // hard limit on quiescese search depth
+                if (ply == MAX_DEPTH - 1)       // hard limit on quiescese search depth
                 {
                         ++q_hard_cutoff;
                         return alpha;
@@ -234,6 +238,12 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 ++terminal_nodes;
                 return value;
         }
+
+        XTime_GetTime(&t_now);
+        time_limit_exceeded = t_now > time_limit;
+        if (time_limit_exceeded)
+                return value;
+
         for (index = 0; index < move_count; ++index)
         {
                 status = vchess_read_board(&board_stack[ply][index], index);
@@ -277,6 +287,22 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         return value;
 }
 
+static int32_t
+nm_move_sort_compare(const void *p1, const void *p2)
+{
+        const board_t **b1, **b2;
+
+        b1 = (const board_t **)p1;
+        b2 = (const board_t **)p2;
+
+        if ((*b1)->eval > (*b2)->eval)
+                return -1;
+        if ((*b1)->eval < (*b2)->eval)
+                return 1;
+
+        return 0;
+}
+
 board_t
 nm_top(board_t game[GAME_MAX], uint32_t game_moves)
 {
@@ -285,7 +311,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         uint32_t move_count;
         uint64_t elapsed_ticks;
         double elapsed_time, nps;
-        int32_t evaluate_move, best_evaluation;
+        int32_t evaluate_move, best_evaluation, overall_best;
         board_t best_board = { 0 };
         XTime t_end, t_start;
         board_t root_node_boards[MAX_POSITIONS];
@@ -322,8 +348,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 return best_board;
         }
 
-	depth_limit = 6;
-
         status = nm_load_positions(root_node_boards);
         if (status != move_count)
         {
@@ -334,17 +358,36 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         for (i = 0; i < move_count; ++i)
                 board_ptr[i] = &root_node_boards[i];
 
-        ply = 0;
-        best_evaluation = -(LARGE_EVAL + 1);
-        for (i = 0; i < move_count; ++i)
+        best_board = root_node_boards[0];
+        time_limit = t_start + UINT64_C(5) * UINT64_C(COUNTS_PER_SECOND);
+        time_limit_exceeded = 0;
+
+        overall_best = -LARGE_EVAL;
+        depth_limit = 2;        // top nodes already sorted in all_moves.sv
+        while (depth_limit < MAX_DEPTH - 1 && !time_limit_exceeded)
         {
-                board_vert[ply] = board_ptr[i];
-                evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply);
-                if (evaluate_move > best_evaluation)
+                ply = 0;
+                i = 0;
+                best_evaluation = -LARGE_EVAL;
+                while (i < move_count && !time_limit_exceeded)
                 {
-                        best_board = *board_ptr[i];
-                        best_evaluation = evaluate_move;
+                        board_vert[ply] = board_ptr[i];
+                        evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply);
+                        board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
+                        if (!time_limit_exceeded && evaluate_move > best_evaluation)
+                        {
+                                best_board = *board_ptr[i];
+                                best_evaluation = evaluate_move;
+                                overall_best = evaluate_move;
+                        }
+                        ++i;
                 }
+                if (!time_limit_exceeded)
+                {
+			qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
+                        ++depth_limit;
+                }
+
         }
         best_board.full_move_number = 1 + game_moves / 2;
 
@@ -361,8 +404,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         nps = (double)nodes_visited / elapsed_time;
 
         printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f, move_count=%u\n",
-               best_evaluation, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
-        printf("q_hard_cutoff=%u, q_end=%u\n", q_hard_cutoff, q_end);
+               overall_best, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
+        printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u\n", ++depth_limit, q_hard_cutoff, q_end);
         printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u, trans_collision=%u (%.2f%%)\n",
                trans_lower, trans_upper, trans_exact, trans_save, trans_collision, ((double)trans_collision * 100.0) / (double)nodes_visited);
 
