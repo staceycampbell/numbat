@@ -11,6 +11,7 @@ module trans #
     input                         entry_lookup_in,
     input                         entry_store_in,
     input                         hash_only_in,
+(* mark_debug = "true" *)    input                         clear_trans_in,
    
     input [`BOARD_WIDTH - 1:0]    board_in,
     input                         white_to_move_in,
@@ -21,7 +22,7 @@ module trans #
     input [EVAL_WIDTH - 1:0]      eval_in,
     input [7:0]                   depth_in,
 
-    output                        trans_idle_out,
+(* mark_debug = "true" *)    output                        trans_idle_out,
 
     output reg                    entry_valid_out,
     output reg [EVAL_WIDTH - 1:0] eval_out,
@@ -72,20 +73,23 @@ module trans #
    localparam TABLE_SIZE = 1 << TABLE_SIZE_LOG2;
 
    localparam STATE_IDLE = 0;
-   localparam STATE_HASH_0 = 1;
-   localparam STATE_HASH_1 = 2;
-   localparam STATE_HASH_2 = 3;
-   localparam STATE_HASH_3 = 4;
-   localparam STATE_HASH_4 = 5;
-   localparam STATE_STORE = 6;
-   localparam STATE_STORE_WAIT_DATA = 7;
-   localparam STATE_STORE_WAIT_ADDR = 8;
-   localparam STATE_LOOKUP = 9;
-   localparam STATE_LOOKUP_WAIT_DATA = 10;
-   localparam STATE_LOOKUP_WAIT_ADDR = 11;
-   localparam STATE_LOOKUP_VALIDATE = 12;
+   localparam STATE_CLEAR_TRANS_INIT = 1;
+   localparam STATE_CLEAR_TRANS = 2;
+   localparam STATE_CLEAR_TRANS_NEXT = 3;
+   localparam STATE_HASH_0 = 4;
+   localparam STATE_HASH_1 = 5;
+   localparam STATE_HASH_2 = 6;
+   localparam STATE_HASH_3 = 7;
+   localparam STATE_HASH_4 = 8;
+   localparam STATE_STORE = 9;
+   localparam STATE_STORE_WAIT_DATA = 10;
+   localparam STATE_STORE_WAIT_ADDR = 11;
+   localparam STATE_LOOKUP = 12;
+   localparam STATE_LOOKUP_WAIT_DATA = 13;
+   localparam STATE_LOOKUP_WAIT_ADDR = 14;
+   localparam STATE_LOOKUP_VALIDATE = 15;
    
-   reg [3:0]                      state = STATE_IDLE;
+(* mark_debug = "true" *)   reg [3:0]                      state = STATE_IDLE;
 
    reg [79:0]                     hash_0 [63:0];
    reg [79:0]                     hash_1 [15:0];
@@ -93,8 +97,8 @@ module trans #
    reg [79:0]                     hash_side;
    reg [79:0]                     hash;
 
-   reg                            entry_store, entry_lookup, hash_only;
-   reg                            entry_store_in_z, entry_lookup_in_z, hash_only_in_z;
+(* mark_debug = "true" *)   reg                            entry_store, entry_lookup, hash_only, clear_trans;
+   reg                            entry_store_in_z, entry_lookup_in_z, hash_only_in_z, clear_trans_in_z;
    
    (* ram_style = "distributed" *) reg [79:0] zob_rand_board [0:767];
    (* ram_style = "distributed" *) reg [79:0] zob_rand_en_passant_col [0:31];
@@ -109,6 +113,7 @@ module trans #
    reg [1:0]                      flag;
    reg [EVAL_WIDTH - 1:0]         eval;
    reg [7:0]                      depth;
+(* mark_debug = "true" *)   reg                            valid_wr;
 
    reg [127:0]                    lookup;
 
@@ -121,7 +126,7 @@ module trans #
    wire                           lookup_valid;
 
    wire [31:0]                    hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
-   wire [127:0]                   store = {1'b1, depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0], hash[79:0]};
+   wire [127:0]                   store = {valid_wr, depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0], hash[79:0]};
 
    assign {lookup_valid, lookup_depth[7:0], lookup_flag[1:0], lookup_eval[EVAL_WIDTH - 1:0], lookup_hash[79:0]} = lookup;
    
@@ -152,9 +157,12 @@ module trans #
         entry_lookup_in_z <= entry_lookup_in;
         entry_store_in_z <= entry_store_in;
         hash_only_in_z <= hash_only_in;
+        clear_trans_in_z <= clear_trans_in;
 
         trans_axi_wdata <= store;
         trans_axi_awaddr <= hash_address;
+
+        valid_wr <= ~clear_trans;
         
         trans_axi_araddr <= hash_address;
         if (trans_axi_rready && trans_axi_rvalid)
@@ -188,6 +196,8 @@ module trans #
 
               entry_store <= 0;
               entry_lookup <= 0;
+              hash_only <= 0;
+              clear_trans <= 0;
               if (entry_store_in && ~entry_store_in_z)
                 begin
                    entry_store <= 1;
@@ -198,11 +208,36 @@ module trans #
                    entry_lookup <= 1;
                    state <= STATE_HASH_0;
                 end
-              else if (hash_only_in && hash_only_in_z)
+              else if (hash_only_in && ~hash_only_in_z)
                 begin
                    hash_only <= 1;
                    state <= STATE_HASH_0;
                 end
+              else if (clear_trans_in && ~clear_trans_in_z)
+                begin
+                   clear_trans <= 1;
+                   state <= STATE_CLEAR_TRANS_INIT;
+                end
+           end
+         STATE_CLEAR_TRANS_INIT :
+           begin
+              hash <= 0;
+              state <= STATE_CLEAR_TRANS;
+           end
+         STATE_CLEAR_TRANS :
+           begin
+              if (hash == TABLE_SIZE)
+                begin
+                   clear_trans <= 0;
+                   state <= STATE_IDLE;
+                end
+              else
+                state <= STATE_STORE;
+           end
+         STATE_CLEAR_TRANS_NEXT :
+           begin
+              hash <= hash + 1;
+              state <= STATE_CLEAR_TRANS;
            end
          STATE_HASH_0 :
            begin
@@ -251,7 +286,10 @@ module trans #
                 begin
                    trans_axi_wvalid <= 0;
                    trans_axi_awvalid <= 0;
-                   state <= STATE_IDLE;
+                   if (clear_trans)
+                     state <= STATE_CLEAR_TRANS_NEXT;
+                   else
+                     state <= STATE_IDLE;
                 end
               else if (trans_axi_awvalid && trans_axi_awready)
                 begin
@@ -268,13 +306,19 @@ module trans #
            if (trans_axi_wready)
              begin
                 trans_axi_wvalid <= 0;
-                state <= STATE_IDLE;
+                if (clear_trans)
+                  state <= STATE_CLEAR_TRANS_NEXT;
+                else
+                  state <= STATE_IDLE;
              end
          STATE_STORE_WAIT_ADDR :
            if (trans_axi_awready)
              begin
                 trans_axi_awvalid <= 0;
-                state <= STATE_IDLE;
+                if (clear_trans)
+                  state <= STATE_CLEAR_TRANS_NEXT;
+                else
+                  state <= STATE_IDLE;
              end
          STATE_LOOKUP :
            begin

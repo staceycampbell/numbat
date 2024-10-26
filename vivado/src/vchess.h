@@ -180,6 +180,15 @@ vchess_trans_hash_only(void)
 	vchess_write(520, 0);
 }
 
+static inline void
+vchess_trans_clear_table(void)
+{
+	const uint32_t clear_trans = 1 << 5;
+
+	vchess_write(520, clear_trans);
+	vchess_write(520, 0);
+}
+
 static inline uint64_t
 vchess_trans_hash(uint16_t *bits_79_64)
 {

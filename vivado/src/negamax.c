@@ -357,7 +357,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 board_ptr[i] = &root_node_boards[i];
 
         best_board = root_node_boards[0];
-        time_limit = t_start + UINT64_C(5) * UINT64_C(COUNTS_PER_SECOND);
+        time_limit = t_start + UINT64_C(40) * UINT64_C(COUNTS_PER_SECOND);
         time_limit_exceeded = 0;
 
         overall_best = -LARGE_EVAL;
