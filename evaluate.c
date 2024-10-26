@@ -177,12 +177,12 @@ main(void)
         printf("value[`WHITE_KING] = `GLOBAL_VALUE_KING;\n");
 
         printf("value[`EMPTY_POSN] = 0;\n");
-        printf("value[`BLACK_PAWN] = %d;\n", PAWN_VALUE);
-        printf("value[`BLACK_KNIT] = %d;\n", KNIGHT_VALUE);
-        printf("value[`BLACK_BISH] = %d;\n", BISHOP_VALUE);
-        printf("value[`BLACK_ROOK] = %d;\n", ROOK_VALUE);
-        printf("value[`BLACK_QUEN] = %d;\n", QUEEN_VALUE);
-        printf("value[`BLACK_KING] = `GLOBAL_VALUE_KING;\n");
+        printf("value[`BLACK_PAWN] = %d;\n", -PAWN_VALUE);
+        printf("value[`BLACK_KNIT] = %d;\n", -KNIGHT_VALUE);
+        printf("value[`BLACK_BISH] = %d;\n", -BISHOP_VALUE);
+        printf("value[`BLACK_ROOK] = %d;\n", -ROOK_VALUE);
+        printf("value[`BLACK_QUEN] = %d;\n", -QUEEN_VALUE);
+        printf("value[`BLACK_KING] = -(`GLOBAL_VALUE_KING);\n");
 
         for (c = 0; c <= 1; ++c)
                 for (i = 0; i < 64; ++i)
