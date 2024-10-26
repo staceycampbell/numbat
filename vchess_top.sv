@@ -21,7 +21,7 @@ module vchess_top
    output        ddr4_sdram_062_reset_n
    );
 
-   localparam EVAL_WIDTH = 22;
+   localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
    localparam REPDET_WIDTH = 8;
    localparam HALF_MOVE_WIDTH = 10;

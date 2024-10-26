@@ -45,6 +45,8 @@
 
 #define EN_PASSANT_VALID_BIT 3
 
+#define GLOBAL_VALUE_KING 40000
+
 #define MAX_POSITIONS 219
 #define GAME_MAX 2048 // maximum half moves
 #define BUF_SIZE 65536

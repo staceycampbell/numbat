@@ -11,8 +11,6 @@
 #define MAX_DEPTH 25
 #define LARGE_EVAL (1 << 15)
 
-#define GLOBAL_VALUE_KING 10000
-
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_lower, trans_upper, trans_exact, trans_save, trans_collision;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
