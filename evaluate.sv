@@ -2,7 +2,7 @@
 
 module evaluate #
   (
-   parameter EVAL_WIDTH = 22
+   parameter EVAL_WIDTH = 0
    )
    (
     input                            clk,

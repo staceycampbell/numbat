@@ -166,6 +166,7 @@ main(void)
 {
         int32_t c, i;
         static const char *c_str[2] = {"BLACK", "WHITE"};
+	static const int32_t sign[2] = {-1, 1};
         
         printf("value[`EMPTY_POSN] = 0;\n");
         printf("value[`WHITE_PAWN] = %d;\n", PAWN_VALUE);
@@ -186,11 +187,11 @@ main(void)
         for (c = 0; c <= 1; ++c)
                 for (i = 0; i < 64; ++i)
                 {
-                        printf("pst[`%s_PAWN][%2d] = %3d;\n", c_str[c], i, pval[c][i]);
-                        printf("pst[`%s_KNIT][%2d] = %3d;\n", c_str[c], i, nval[0][c][i]); // just mg for now
-                        printf("pst[`%s_BISH][%2d] = %3d;\n", c_str[c], i, bval[0][c][i]); // just mg for now
-                        printf("pst[`%s_QUEN][%2d] = %3d;\n", c_str[c], i, qval[0][c][i]); // just mg for now
-                        printf("pst[`%s_KING][%2d] = %3d;\n", c_str[c], i, kval[c][i]);
+                        printf("pst[`%s_PAWN][%2d] = %3d;\n", c_str[c], i, pval[c][i] * sign[c]);
+                        printf("pst[`%s_KNIT][%2d] = %3d;\n", c_str[c], i, nval[0][c][i] * sign[c]); // just mg for now
+                        printf("pst[`%s_BISH][%2d] = %3d;\n", c_str[c], i, bval[0][c][i] * sign[c]); // just mg for now
+                        printf("pst[`%s_QUEN][%2d] = %3d;\n", c_str[c], i, qval[0][c][i] * sign[c]); // just mg for now
+                        printf("pst[`%s_KING][%2d] = %3d;\n", c_str[c], i, kval[c][i] * sign[c]);
                 }
 
         return 0;
