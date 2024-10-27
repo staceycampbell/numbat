@@ -11,7 +11,7 @@ module trans #
     input                         entry_lookup_in,
     input                         entry_store_in,
     input                         hash_only_in,
-(* mark_debug = "true" *)    input                         clear_trans_in,
+    input                         clear_trans_in,
    
     input [`BOARD_WIDTH - 1:0]    board_in,
     input                         white_to_move_in,
@@ -22,7 +22,7 @@ module trans #
     input [EVAL_WIDTH - 1:0]      eval_in,
     input [7:0]                   depth_in,
 
-(* mark_debug = "true" *)    output                        trans_idle_out,
+    output                        trans_idle_out,
 
     output reg                    entry_valid_out,
     output reg [EVAL_WIDTH - 1:0] eval_out,
@@ -89,7 +89,7 @@ module trans #
    localparam STATE_LOOKUP_WAIT_ADDR = 14;
    localparam STATE_LOOKUP_VALIDATE = 15;
    
-(* mark_debug = "true" *)   reg [3:0]                      state = STATE_IDLE;
+   reg [3:0]                      state = STATE_IDLE;
 
    reg [79:0]                     hash_0 [63:0];
    reg [79:0]                     hash_1 [15:0];
@@ -97,7 +97,7 @@ module trans #
    reg [79:0]                     hash_side;
    reg [79:0]                     hash;
 
-(* mark_debug = "true" *)   reg                            entry_store, entry_lookup, hash_only, clear_trans;
+   reg                            entry_store, entry_lookup, hash_only, clear_trans;
    reg                            entry_store_in_z, entry_lookup_in_z, hash_only_in_z, clear_trans_in_z;
    
    (* ram_style = "distributed" *) reg [79:0] zob_rand_board [0:767];
@@ -113,7 +113,7 @@ module trans #
    reg [1:0]                      flag;
    reg [EVAL_WIDTH - 1:0]         eval;
    reg [7:0]                      depth;
-(* mark_debug = "true" *)   reg                            valid_wr;
+   reg                            valid_wr;
 
    reg [127:0]                    lookup;
 
@@ -144,7 +144,7 @@ module trans #
    assign trans_axi_wlast = 1'b1; // only one 128 bit write per transaction
    assign trans_axi_awlen = 8'h00; // always one write per transaction
 
-   assign trans_axi_arburst = 2'b00; // fixed address (not incrementing burst)
+   assign trans_axi_arburst = clear_trans ? 2'b01 : 2'b00; // incrementing for clear, otherwise fixed address (not incrementing burst)
    assign trans_axi_arcache = 4'b0011; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
    assign trans_axi_arlen = 8'h00; // always one ready per transaction
    assign trans_axi_arlock = 1'b0; // normal access
