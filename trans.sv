@@ -68,14 +68,18 @@ module trans #
     output reg                    trans_axi_wvalid
     );
 
-   localparam BASE_ADDRESS = 32'h00000000; // axi4 byte address for base of memory
-   localparam TABLE_SIZE_LOG2 = 27; // 2^27 * 128 bits for 2GByte DDR4
+   localparam BASE_ADDRESS = 32'h00000000; // AXI4 byte address for base of memory
+   localparam MEM_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GByte DDR4
+   localparam MEM_ADDR_WIDTH = $clog2(MEM_SIZE_BYTES);
+   localparam TABLE_SIZE_LOG2 = $clog2(MEM_SIZE_BYTES) + $clog2(8) - $clog2(128); // 2^27 * 128 bits for 2GByte
    localparam TABLE_SIZE = 1 << TABLE_SIZE_LOG2;
+   localparam BURST_TICK_TOTAL = TABLE_SIZE;
+   localparam BURST_COUNTER_WIDTH = $clog2(BURST_TICK_TOTAL) + 1;
 
    localparam STATE_IDLE = 0;
    localparam STATE_CLEAR_TRANS_INIT = 1;
    localparam STATE_CLEAR_TRANS = 2;
-   localparam STATE_CLEAR_TRANS_NEXT = 3;
+   localparam STATE_TRANS_WAIT_DATA = 3;
    localparam STATE_HASH_0 = 4;
    localparam STATE_HASH_1 = 5;
    localparam STATE_HASH_2 = 6;
@@ -114,19 +118,22 @@ module trans #
    reg [EVAL_WIDTH - 1:0]         eval;
    reg [7:0]                      depth;
    reg                            valid_wr;
+   reg [BURST_COUNTER_WIDTH - 1:0] burst_counter;
 
-   reg [127:0]                    lookup;
+   reg [127:0]                     lookup;
 
-   integer                        i;
+   integer                         i;
 
-   wire [79:0]                    lookup_hash;
-   wire [1:0]                     lookup_flag;
-   wire [EVAL_WIDTH - 1:0]        lookup_eval;
-   wire [7:0]                     lookup_depth;
-   wire                           lookup_valid;
+   wire [79:0]                     lookup_hash;
+   wire [1:0]                      lookup_flag;
+   wire [EVAL_WIDTH - 1:0]         lookup_eval;
+   wire [7:0]                      lookup_depth;
+   wire                            lookup_valid;
 
-   wire [31:0]                    hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
-   wire [127:0]                   store = {valid_wr, depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0], hash[79:0]};
+   wire [MEM_ADDR_WIDTH - 1:0]     hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
+   wire [127:0]                    store = {valid_wr, depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0], hash[79:0]};
+
+   wire                            clear_wlast = burst_counter[7:0] == 8'hFF;
 
    assign {lookup_valid, lookup_depth[7:0], lookup_flag[1:0], lookup_eval[EVAL_WIDTH - 1:0], lookup_hash[79:0]} = lookup;
    
@@ -136,17 +143,17 @@ module trans #
    assign trans_axi_awlock = 1'b0; // normal access
    assign trans_axi_awprot = 3'b000; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
    assign trans_axi_awqos = 4'b0; // no QOS scheme
-   assign trans_axi_awburst = 2'b00; // fixed address (not incrementing burst)
+   assign trans_axi_awburst = clear_trans ? 2'b01 : 2'b00; // incrementing address for burst clear, otherwise fixed address
    assign trans_axi_awcache = 4'b0011; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
    assign trans_axi_awsize = 3'b100; // 128 bits (16 bytes) per beat
    assign trans_axi_bready = 1'b1; // can always accept a write response
    assign trans_axi_wstrb = 16'hffff; // all byte lanes valid always
-   assign trans_axi_wlast = 1'b1; // only one 128 bit write per transaction
-   assign trans_axi_awlen = 8'h00; // always one write per transaction
+   assign trans_axi_wlast = clear_trans ? clear_wlast : 1'b1; // full 256 ticks per burst on clear, otherwise one 128 bit write per transaction
+   assign trans_axi_awlen = clear_trans ? 8'hFF : 8'h00; // full bursts on clear, otherwise one write per transaction
 
-   assign trans_axi_arburst = clear_trans ? 2'b01 : 2'b00; // incrementing for clear, otherwise fixed address (not incrementing burst)
+   assign trans_axi_arburst = 2'b00; // fixed address (not incrementing burst)
    assign trans_axi_arcache = 4'b0011; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
-   assign trans_axi_arlen = 8'h00; // always one ready per transaction
+   assign trans_axi_arlen = 8'h00; // one ready per transaction
    assign trans_axi_arlock = 1'b0; // normal access
    assign trans_axi_arprot = 3'b000; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
    assign trans_axi_arqos = 4'b0; // no QOS scheme
@@ -161,6 +168,11 @@ module trans #
 
         trans_axi_wdata <= store;
         trans_axi_awaddr <= hash_address;
+
+        if (clear_trans_in && ~clear_trans_in_z)
+          burst_counter <= 0;
+        else if (trans_axi_wready && trans_axi_wvalid)
+          burst_counter <= burst_counter + 1;
 
         valid_wr <= ~clear_trans;
         
@@ -222,22 +234,28 @@ module trans #
          STATE_CLEAR_TRANS_INIT :
            begin
               hash <= 0;
+              trans_axi_awvalid <= 0;
+              trans_axi_wvalid <= 0;
               state <= STATE_CLEAR_TRANS;
            end
          STATE_CLEAR_TRANS :
            begin
-              if (hash == TABLE_SIZE)
-                begin
-                   clear_trans <= 0;
-                   state <= STATE_IDLE;
-                end
-              else
-                state <= STATE_STORE;
+              trans_axi_awvalid <= 1;
+              trans_axi_wvalid <= burst_counter < BURST_TICK_TOTAL;
+              if (trans_axi_awvalid && trans_axi_awready)
+                if (hash >= TABLE_SIZE - 256)
+                  begin
+                     trans_axi_awvalid <= 0;
+                     state <= STATE_TRANS_WAIT_DATA;
+                  end
+                else
+                  hash <= hash + 256;
            end
-         STATE_CLEAR_TRANS_NEXT :
+         STATE_TRANS_WAIT_DATA :
            begin
-              hash <= hash + 1;
-              state <= STATE_CLEAR_TRANS;
+              trans_axi_wvalid <= burst_counter < BURST_TICK_TOTAL;
+              if (~trans_axi_wvalid)
+                state <= STATE_IDLE;
            end
          STATE_HASH_0 :
            begin
@@ -286,10 +304,7 @@ module trans #
                 begin
                    trans_axi_wvalid <= 0;
                    trans_axi_awvalid <= 0;
-                   if (clear_trans)
-                     state <= STATE_CLEAR_TRANS_NEXT;
-                   else
-                     state <= STATE_IDLE;
+                   state <= STATE_IDLE;
                 end
               else if (trans_axi_awvalid && trans_axi_awready)
                 begin
@@ -306,19 +321,13 @@ module trans #
            if (trans_axi_wready)
              begin
                 trans_axi_wvalid <= 0;
-                if (clear_trans)
-                  state <= STATE_CLEAR_TRANS_NEXT;
-                else
-                  state <= STATE_IDLE;
+                state <= STATE_IDLE;
              end
          STATE_STORE_WAIT_ADDR :
            if (trans_axi_awready)
              begin
                 trans_axi_awvalid <= 0;
-                if (clear_trans)
-                  state <= STATE_CLEAR_TRANS_NEXT;
-                else
-                  state <= STATE_IDLE;
+                state <= STATE_IDLE;
              end
          STATE_LOOKUP :
            begin

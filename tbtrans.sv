@@ -54,6 +54,7 @@ module tbtrans;
    reg [EVAL_WIDTH-1:0]               eval_in = 0;
    reg [1:0]                          flag_in = 0;
    reg                                hash_only_in = 0;
+   reg                                clear_trans_in = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -216,6 +217,7 @@ module tbtrans;
       .entry_lookup_in                  (entry_lookup_in),
       .entry_store_in                   (entry_store_in),
       .hash_only_in                     (hash_only_in),
+      .clear_trans_in                   (clear_trans_in),
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
