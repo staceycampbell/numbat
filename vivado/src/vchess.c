@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <xil_printf.h>
@@ -103,7 +104,7 @@ vchess_print_board(board_t *board, uint32_t initial_board)
         int y, x;
         char uci_str[6];
         uint32_t piece;
-        int32_t eval;
+        int32_t eval, material;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
         static const char *to_move[2] = { "Black", "White" };
 
@@ -112,32 +113,36 @@ vchess_print_board(board_t *board, uint32_t initial_board)
                 for (x = 0; x < 8; ++x)
                 {
                         piece = vchess_get_piece(board, y, x);
-                        xil_printf("%c ", piece_char[piece]);
+                        printf("%c ", piece_char[piece]);
                 }
-                xil_printf("\n");
+                printf("\n");
         }
         if (initial_board)
         {
                 eval = vchess_initial_eval();
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
+		material = vchess_initial_material();
         }
         else
+	{
                 eval = board->eval;
-        xil_printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move], board->en_passant_col,
+		material = 0;
+	}
+        printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move], board->en_passant_col,
                    board->castle_mask, eval);
         if (!initial_board)
         {
                 vchess_uci_string(&board->uci, uci_str);
-                xil_printf(", capture: %d, thrice rep: %d, half move: %d, uci: %s", board->capture, board->thrice_rep, board->half_move_clock, uci_str);
+                printf(", capture: %d, thrice rep: %d, half move: %d, uci: %s", board->capture, board->thrice_rep, board->half_move_clock, uci_str);
         }
         else
-                xil_printf(", legal moves: %d, mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d", vchess_move_count(), mate, stalemate,
-                           thrice_rep, fifty_move);
-        xil_printf("\n");
+                printf(", mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d, material: %.2f",
+		       mate, stalemate, thrice_rep, fifty_move, (double)material / 100.0);
+        printf("\n");
         if (board->black_in_check)
-                xil_printf("Black in check\n");
+                printf("Black in check\n");
         if (board->white_in_check)
-                xil_printf("White in check\n");
+                printf("White in check\n");
 }
 
 void

@@ -22,7 +22,8 @@ module evaluate #
 
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
-    output reg                       eval_valid
+    output reg                       eval_valid,
+    output reg signed [31:0]         material
     );
 
    localparam POP_WEIGHT = 10;
@@ -41,6 +42,7 @@ module evaluate #
    (* use_dsp = "yes" *) reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_t1 [0:7][0:7];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_a_t2 [0:7][0:1];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_b_t3 [0:3];
+   (* use_dsp = "yes" *) reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 3:0] material_t1 [0:15], material_t2 [0:3];
 
    reg [1:0]                                         isw_t1 [0:63];
    reg [1:0]                                         isb_t1 [0:63];
@@ -111,6 +113,16 @@ module evaluate #
         black_pop_score_t2 <= -(black_pop_t1 * POP_WEIGHT);
         white_pop_score_t2 <= white_pop_t1 * POP_WEIGHT;
         pop_score_t3 <= black_pop_score_t2 + white_pop_score_t2 + random_bit_final;
+
+        for (i = 0; i < 16; i = i + 1)
+          material_t1[i] <=
+                 value[board[(i * 4 + 0) * `PIECE_WIDTH+:`PIECE_WIDTH]] +
+                 value[board[(i * 4 + 1) * `PIECE_WIDTH+:`PIECE_WIDTH]] +
+                 value[board[(i * 4 + 2) * `PIECE_WIDTH+:`PIECE_WIDTH]] +
+                 value[board[(i * 4 + 3) * `PIECE_WIDTH+:`PIECE_WIDTH]];
+        for (i = 0; i < 4; i = i + 1)
+          material_t2[i] <= material_t1[i * 4 + 0] + material_t1[i * 4 + 1] + material_t1[i * 4 + 2] + material_t1[i * 4 + 3];
+        material <= material_t2[0] + material_t2[1] + material_t2[2] + material_t2[3];
         
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)

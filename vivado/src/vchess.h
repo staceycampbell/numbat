@@ -118,6 +118,16 @@ vchess_read(uint32_t reg)
         return val;
 }
 
+static inline int32_t
+vchess_initial_material(void)
+{
+	int32_t material;
+
+	material = (int32_t)vchess_read(141);
+
+	return material;
+}
+
 static inline uint32_t
 vchess_random(void)
 {

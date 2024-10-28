@@ -38,6 +38,7 @@ module all_moves #
     output reg                           initial_thrice_rep = 0,
     output reg                           initial_fifty_move = 0,
     output reg                           initial_insufficient_material = 0,
+    output reg signed [31:0]             initial_material,
 
     output reg                           am_idle,
     output reg                           am_moves_ready,
@@ -206,6 +207,7 @@ module all_moves #
    wire [LEGAL_RAM_WIDTH-1:0] legal_ram_rd_data;// From move_sort_legal of move_sort.v
    wire [MAX_POSITIONS_LOG2-1:0] legal_ram_wr_addr;// From move_sort_legal of move_sort.v
    wire                 legal_sort_complete;    // From move_sort_legal of move_sort.v
+   wire signed [31:0]   material;               // From evaluate of evaluate.v
    wire                 rd_thrice_rep;          // From rep_det of rep_det.v
    wire                 rd_thrice_rep_valid;    // From rep_det of rep_det.v
    wire                 white_in_check;         // From board_attack of board_attack.v
@@ -509,6 +511,7 @@ module all_moves #
 
               initial_eval <= eval;
               initial_insufficient_material <= insufficient_material;
+              initial_material <= material;
               clear_eval <= 1;
               clear_attack <= 1;
               attack_test_valid <= 0;
@@ -1000,18 +1003,19 @@ module all_moves #
       .insufficient_material            (insufficient_material),
       .eval                             (eval[EVAL_WIDTH-1:0]),
       .eval_valid                       (eval_valid),
+      .material                         (material[31:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .use_random_bit                   (use_random_bit),
       .random_bit                       (random_bit),
       .board_valid                      (attack_test_valid),     // Templated
-      .white_pop                        (white_pop[5:0]),
-      .black_pop                        (black_pop[5:0]),
       .is_attacking_done                (is_attacking_done),
       .board_in                         (attack_test[`BOARD_WIDTH-1:0]), // Templated
       .clear_eval                       (clear_eval),
-      .white_to_move                    (white_to_move));
+      .white_to_move                    (white_to_move),
+      .white_pop                        (white_pop[5:0]),
+      .black_pop                        (black_pop[5:0]));
 
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),

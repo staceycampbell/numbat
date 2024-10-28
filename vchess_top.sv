@@ -104,6 +104,7 @@ module vchess_top
    wire                 initial_fifty_move;     // From all_moves of all_moves.v
    wire                 initial_insufficient_material;// From all_moves of all_moves.v
    wire                 initial_mate;           // From all_moves of all_moves.v
+   wire signed [31:0]   initial_material;       // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
    wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
@@ -236,6 +237,7 @@ module vchess_top
       .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
+      .initial_material                 (initial_material[31:0]),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
@@ -412,6 +414,7 @@ module vchess_top
       .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
+      .initial_material                 (initial_material[31:0]),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),

@@ -85,7 +85,7 @@ do_both(void)
                                    game_moves, GAME_MAX, __FILE__, __LINE__);
                         while (1);
                 }
-                vchess_print_board(&best_board, 0);
+                vchess_print_board(&best_board, 1);
                 fen_print(&best_board);
                 xil_printf("\n");
                 key_hit = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);

@@ -8,7 +8,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define MAX_DEPTH 25
+#define MAX_DEPTH 27
 #define LARGE_EVAL (1 << 20)
 
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_lower, trans_upper, trans_exact, trans_save, trans_collision;
@@ -270,17 +270,20 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-        trans.eval = value;
-        if (value <= alpha_orig)
-                trans.flag = TRANS_UPPER_BOUND;
-        else if (value >= beta)
-                trans.flag = TRANS_LOWER_BOUND;
-        else
-                trans.flag = TRANS_EXACT;
-        trans.depth = depth;
-        trans.entry_valid = 1;
-        vchess_write_board_basic(board);
-        trans_store(&trans);
+        if (value != 0)
+        {
+                trans.eval = value;
+                if (value <= alpha_orig)
+                        trans.flag = TRANS_UPPER_BOUND;
+                else if (value >= beta)
+                        trans.flag = TRANS_LOWER_BOUND;
+                else
+                        trans.flag = TRANS_EXACT;
+                trans.depth = depth;
+                trans.entry_valid = 1;
+                vchess_write_board_basic(board);
+                trans_store(&trans);
+        }
 
         return value;
 }
@@ -333,6 +336,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         trans_save = 0;
         trans_collision = 0;
 
+	trans_clear_table();
+
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0, 0);
         vchess_write_board_basic(&game[game_index]);
@@ -357,7 +362,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 board_ptr[i] = &root_node_boards[i];
 
         best_board = root_node_boards[0];
-        time_limit = t_start + UINT64_C(40) * UINT64_C(COUNTS_PER_SECOND);
+        time_limit = t_start + UINT64_C(60) * UINT64_C(COUNTS_PER_SECOND);
         time_limit_exceeded = 0;
 
         overall_best = -LARGE_EVAL;
