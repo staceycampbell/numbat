@@ -8,13 +8,16 @@
 
 #pragma GCC optimize ("O3")
 
-#define MAX_DEPTH 27
+#define FIXED_TIME 60
+
+#define MAX_DEPTH 28
 #define LARGE_EVAL (1 << 20)
 
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_lower, trans_upper, trans_exact, trans_save, trans_collision;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
 static int32_t depth_limit;
+static int32_t quiescence_ply_reached, valid_quiescence_ply_reached;
 static XTime time_limit;
 static uint32_t time_limit_exceeded;
 
@@ -221,6 +224,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                         ++q_end;
                         return alpha;
                 }
+		if (ply > quiescence_ply_reached)
+			quiescence_ply_reached = ply;
                 if (ply == MAX_DEPTH - 1)       // hard limit on quiescese search depth
                 {
                         ++q_hard_cutoff;
@@ -270,7 +275,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-        if (value != 0)
+        if (value != 0) // keep draws out of transposition table for now
         {
                 trans.eval = value;
                 if (value <= alpha_orig)
@@ -336,7 +341,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         trans_save = 0;
         trans_collision = 0;
 
-	trans_clear_table();
+	trans_clear_table(); // for easier debug
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0, 0);
@@ -362,8 +367,11 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 board_ptr[i] = &root_node_boards[i];
 
         best_board = root_node_boards[0];
-        time_limit = t_start + UINT64_C(60) * UINT64_C(COUNTS_PER_SECOND);
+        time_limit = t_start + UINT64_C(FIXED_TIME) * UINT64_C(COUNTS_PER_SECOND);
         time_limit_exceeded = 0;
+
+	quiescence_ply_reached = 0;
+	valid_quiescence_ply_reached = 0;
 
         overall_best = -LARGE_EVAL;
         depth_limit = 2;        // top nodes already sorted in all_moves.sv
@@ -389,6 +397,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 {
 			qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
                         ++depth_limit;
+			if (quiescence_ply_reached > valid_quiescence_ply_reached)
+				valid_quiescence_ply_reached = quiescence_ply_reached;
                 }
 
         }
@@ -408,7 +418,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
 
         printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f, move_count=%u\n",
                overall_best, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
-        printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u\n", ++depth_limit, q_hard_cutoff, q_end);
+        printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u, q_depth=%d\n", ++depth_limit, q_hard_cutoff, q_end, valid_quiescence_ply_reached);
         printf("trans_lower=%u, trans_upper=%u, trans_exact=%u, trans_save=%u, trans_collision=%u (%.2f%%)\n",
                trans_lower, trans_upper, trans_exact, trans_save, trans_collision, ((double)trans_collision * 100.0) / (double)nodes_visited);
 

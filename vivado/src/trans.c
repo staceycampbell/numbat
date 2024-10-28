@@ -39,7 +39,6 @@ trans_clear_table(void)
 	double elapsed_time;
 	uint32_t trans_idle;
 
-	xil_printf("Clearing transposition table of %d 64 bit words...", TABLE_WORD64_COUNT);
         XTime_GetTime(&t_start);
 	vchess_trans_clear_table();
 	do
@@ -49,13 +48,12 @@ trans_clear_table(void)
 		elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
 		vchess_trans_read(0, 0, 0, 0, 0, &trans_idle);
 	}
-	while (elapsed_time < 4.0 && ! trans_idle);
+	while (elapsed_time < 2.0 && ! trans_idle);
 	if (! trans_idle)
 	{
 		xil_printf("%s: timeout on trans_idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 		while (1);
 	}
-	printf("done in %0.2f seconds.\n", elapsed_time);
 }
 
 static void

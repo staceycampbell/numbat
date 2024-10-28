@@ -9,7 +9,7 @@
 static char piece_char[1 << PIECE_BITS];
 
 uint32_t
-vchess_get_piece(board_t *board, uint32_t row, uint32_t col)
+vchess_get_piece(board_t * board, uint32_t row, uint32_t col)
 {
         uint32_t row_contents, shift, piece;
 
@@ -21,7 +21,7 @@ vchess_get_piece(board_t *board, uint32_t row, uint32_t col)
 }
 
 void
-vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece)
+vchess_place(board_t * board, uint32_t row, uint32_t col, uint32_t piece)
 {
         uint32_t row_contents;
         uint32_t shift;
@@ -34,7 +34,7 @@ vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece)
 }
 
 uint32_t
-vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to)
+vchess_move_piece(board_t * board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to)
 {
         uint32_t piece, occupied;
 
@@ -47,23 +47,23 @@ vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t
 }
 
 void
-vchess_read_uci(uci_t *uci)
+vchess_read_uci(uci_t * uci)
 {
         uint32_t val;
 
         val = vchess_read(139);
-        uci->col_from =  (val >>  0) & 0x7;
-        uci->row_from =  (val >>  4) & 0x7;
-        uci->col_to =    (val >>  8) & 0x7;
-        uci->row_to =    (val >> 12) & 0x7;
+        uci->col_from = (val >> 0) & 0x7;
+        uci->row_from = (val >> 4) & 0x7;
+        uci->col_to = (val >> 8) & 0x7;
+        uci->row_to = (val >> 12) & 0x7;
         uci->promotion = (val >> 16) & 0xF;
 }
 
 void
-vchess_uci_string(uci_t *uci, char *str)
+vchess_uci_string(uci_t * uci, char *str)
 {
         char ch;
-	uint32_t promotion_type;
+        uint32_t promotion_type;
 
         str[0] = uci->col_from + 'a';
         str[1] = uci->row_from + '1';
@@ -72,7 +72,7 @@ vchess_uci_string(uci_t *uci, char *str)
 
         if (uci->promotion != EMPTY_POSN)
         {
-		promotion_type = uci->promotion & ~(1 << BLACK_BIT);
+                promotion_type = uci->promotion & ~(1 << BLACK_BIT);
                 switch (promotion_type)
                 {
                 case PIECE_QUEN:
@@ -99,9 +99,9 @@ vchess_uci_string(uci_t *uci, char *str)
 }
 
 void
-vchess_print_board(board_t *board, uint32_t initial_board)
+vchess_print_board(board_t * board, uint32_t initial_board)
 {
-        int y, x;
+        int y, x, rev;
         char uci_str[6];
         uint32_t piece;
         int32_t eval, material;
@@ -110,35 +110,49 @@ vchess_print_board(board_t *board, uint32_t initial_board)
 
         for (y = 7; y >= 0; --y)
         {
+		printf("%c%c%c%c %c ", 27,  91,  50, 109, '1' + y); // dim
+		printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109); // sgr0
                 for (x = 0; x < 8; ++x)
                 {
                         piece = vchess_get_piece(board, y, x);
-                        printf("%c ", piece_char[piece]);
+                        rev = (y ^ x) & 1;
+                        if (rev)
+                                printf("%c%c%c%c", 27, 91, 55, 109); // smso
+                        if ((piece & (1 << BLACK_BIT)) != 0)
+                                printf("%c%c%c%c", 27, 91, 49, 109); // bold
+                        printf(" %c ", piece_char[piece]);
+                        printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109); // sgr0
                 }
                 printf("\n");
         }
+	printf("   %c%c%c%c", 27,  91,  50, 109); // dim
+	for (x = 0; x < 8; ++x)
+		printf(" %c ", 'a' + x);
+	printf("%c%c%c%c%c%c\n", 27, 40, 66, 27, 91, 109); // sgr0
         if (initial_board)
         {
                 eval = vchess_initial_eval();
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
-		material = vchess_initial_material();
+                material = vchess_initial_material();
         }
         else
-	{
+        {
                 eval = board->eval;
-		material = 0;
-	}
+                material = 0;
+        }
         printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move], board->en_passant_col,
-                   board->castle_mask, eval);
+               board->castle_mask, eval);
         if (!initial_board)
         {
-                vchess_uci_string(&board->uci, uci_str);
-                printf(", capture: %d, thrice rep: %d, half move: %d, uci: %s", board->capture, board->thrice_rep, board->half_move_clock, uci_str);
+                printf(", capture: %d, thrice rep: %d, half move: %d", board->capture, board->thrice_rep, board->half_move_clock);
         }
         else
-                printf(", mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d, material: %.2f",
-		       mate, stalemate, thrice_rep, fifty_move, (double)material / 100.0);
-        printf("\n");
+        {
+                printf(", mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
+                printf("material: %.2f", (double)material / 100.0);
+        }
+        vchess_uci_string(&board->uci, uci_str);
+        printf(", uci: %s\n", uci_str);
         if (board->black_in_check)
                 printf("Black in check\n");
         if (board->white_in_check)
@@ -146,9 +160,9 @@ vchess_print_board(board_t *board, uint32_t initial_board)
 }
 
 void
-vchess_write_board_basic(board_t *board)
+vchess_write_board_basic(board_t * board)
 {
-	int32_t i;
+        int32_t i;
 
         vchess_reset_all_moves();
         for (i = 0; i < 8; ++i)
@@ -158,7 +172,7 @@ vchess_write_board_basic(board_t *board)
 }
 
 void
-vchess_write_board_wait(board_t *board)
+vchess_write_board_wait(board_t * board)
 {
         int32_t i;
         uint32_t moves_ready, move_count;
@@ -188,7 +202,7 @@ vchess_write_board_wait(board_t *board)
 }
 
 uint32_t
-vchess_read_board(board_t *board, uint32_t index)
+vchess_read_board(board_t * board, uint32_t index)
 {
         uint32_t move_count;
         uint32_t move_ready, moves_ready;
@@ -202,7 +216,7 @@ vchess_read_board(board_t *board, uint32_t index)
                 while (1);
         }
         status = vchess_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0);
-        if (! moves_ready)
+        if (!moves_ready)
         {
                 xil_printf("moves_ready not set\n");
                 return 2;
@@ -214,7 +228,7 @@ vchess_read_board(board_t *board, uint32_t index)
         }
         vchess_move_index(index);
         status = vchess_status(&move_ready, 0, 0, 0, 0, 0, 0);
-        if (! move_ready)
+        if (!move_ready)
         {
                 xil_printf("move_ready not set: 0x%X\n", status);
                 return 3;
@@ -232,7 +246,7 @@ vchess_read_board(board_t *board, uint32_t index)
 }
 
 void
-vchess_init_board(board_t *board)
+vchess_init_board(board_t * board)
 {
         int i, j;
 
@@ -279,10 +293,10 @@ void
 vchess_init(void)
 {
         int i;
-        
+
         for (i = 0; i < (1 << PIECE_BITS); ++i)
                 piece_char[i] = '?';
-        piece_char[EMPTY_POSN] = '.';
+        piece_char[EMPTY_POSN] = ' ';
         piece_char[WHITE_PAWN] = 'P';
         piece_char[WHITE_ROOK] = 'R';
         piece_char[WHITE_KNIT] = 'N';
