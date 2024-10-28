@@ -224,6 +224,30 @@ uci_move(char *p)
 }
 
 void
+uci_print_game(uint32_t result)
+{
+        uint32_t i;
+        char uci_str[6];
+	static const char *result_str[4] = {"1/2-1/2", "1-0", "0-1", ""};
+
+	if (game_moves <= 1)
+		return;
+        for (i = 1; i < game_moves; ++i)
+        {
+                vchess_uci_string(&game[i].uci, uci_str);
+                printf("%s ", uci_str);
+                if (i % 16 == 0)
+                        printf("\n");
+        }
+	if (result >= sizeof(result_str) / sizeof(result_str[0]))
+	{
+		printf("%s: Bad result value!\n", __PRETTY_FUNCTION__);
+		return;
+	}
+        printf("%s\n", result_str[result]);
+}
+
+void
 fen_print(board_t * board)
 {
         int row, col, empty, i;
@@ -558,17 +582,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "dump") == 0)
         {
-                uint32_t i;
-                char uci_str[6];
-
-                for (i = 1; i < game_moves; ++i)
-                {
-                        vchess_uci_string(&game[i].uci, uci_str);
-                        xil_printf("%s ", uci_str);
-                        if (i % 16 == 0)
-                                xil_printf("\n");
-                }
-                xil_printf("\n");
+		uci_print_game(RESULT_NONE);
         }
         else if (strcmp((char *)str, "tclear") == 0)
         {

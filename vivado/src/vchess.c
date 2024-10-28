@@ -117,9 +117,13 @@ vchess_print_board(board_t * board, uint32_t initial_board)
                         piece = vchess_get_piece(board, y, x);
                         rev = (y ^ x) & 1;
                         if (rev)
-                                printf("%c%c%c%c", 27, 91, 55, 109); // smso
+                                printf("%c%c%c%c%c", 27,  91,  52,  55, 109); // setb 7, light bg
+			else
+                                printf("%c%c%c%c%c", 27,  91,  52,  48, 109); // setb 0, black bg
                         if ((piece & (1 << BLACK_BIT)) != 0)
-                                printf("%c%c%c%c", 27, 91, 49, 109); // bold
+                                printf("%c%c%c%c%c", 27,  91,  51,  50, 109); // green
+			else
+				printf("%c%c%c%c%c", 27,  91,  51,  49, 109); // red
                         printf(" %c ", piece_char[piece]);
                         printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109); // sgr0
                 }

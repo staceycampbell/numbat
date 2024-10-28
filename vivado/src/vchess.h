@@ -59,6 +59,11 @@
 #define BOOK_MOST_COMMON 1
 #define BOOK_RANDOM_COMMON 2
 
+#define RESULT_DRAW 0
+#define RESULT_WHITE_WIN 1
+#define RESULT_BLACK_WIN 2
+#define RESULT_NONE 3
+
 typedef struct uci_t {
 	uint8_t row_from;
 	uint8_t col_from;
@@ -503,6 +508,7 @@ extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 
 extern void uci_init(void);
 extern int32_t uci_move(char *p);
+extern void uci_print_game(uint32_t result);
 
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t *trans, uint32_t *collision);

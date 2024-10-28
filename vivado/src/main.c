@@ -42,7 +42,7 @@ print_ip_settings(ip_addr_t * ip, ip_addr_t * mask, ip_addr_t * gw)
 void
 do_both(void)
 {
-        uint32_t move_count, key_hit;
+        uint32_t move_count, key_hit, game_result;
         uint32_t book_move_found;
         board_t best_board;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
@@ -59,13 +59,13 @@ do_both(void)
                 book_move_found = book_game_move(&game[game_moves - 1]);
                 if (book_move_found)
                 {
-			xil_printf("book move\n");
+                        xil_printf("book move\n");
 
-			mate = 0;
-			stalemate = 0;
-			thrice_rep = 0;
-			fifty_move = 0;
-			move_count = 1;
+                        mate = 0;
+                        stalemate = 0;
+                        thrice_rep = 0;
+                        fifty_move = 0;
+                        move_count = 1;
                         best_board = game[game_moves - 1];
                 }
                 else
@@ -91,14 +91,24 @@ do_both(void)
                 key_hit = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
         }
         while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move) && !key_hit);
-        if (key_hit)
-                xil_printf("Abort\n");
-        else
-                xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         printf("total elapsed time: %.1f\n", elapsed_time);
+        if (key_hit)
+                xil_printf("Abort\n");
+        else
+        {
+                xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n\n", mate, stalemate, thrice_rep, fifty_move);
+                if (mate)
+                        if (best_board.white_in_check)
+                                game_result = RESULT_BLACK_WIN;
+                        else
+                                game_result = RESULT_WHITE_WIN;
+                else
+                        game_result = RESULT_DRAW;
+                uci_print_game(game_result);
+        }
 }
 
 static uint32_t
