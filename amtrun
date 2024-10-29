@@ -14,7 +14,7 @@ counter=0
 srclist="amt.sv `make srclist`"
 mkdir -p $amtdir
 cp $srclist $amtdir
-cp attack_mask.vh vchess.vh $amtdir
+cp attack_mask.vh vchess.vh evaluate.vh $amtdir
 while [ $stop -eq 0 ]
 do
     gameno=`shuf -i 1-12998 -n 1`
@@ -27,6 +27,11 @@ do
     echo 'moveno' $moveno 'gameno' $gameno `cat $fenmove`
     misc/fenconv < $fenmove > $amtdir/amt_board.vh
     (cd $amtdir && iverilog -Wall -o amt $srclist > /dev/null 2>&1)
+    if [ ! -f $amtdir/amt ]
+    then
+        echo $0: $amtdir/amt missing 1>&2
+        exit 1
+    fi
     $amtdir/amt > $simout
     egrep '^move_index' $simout > $allmoveslist
     genmoves=`cat $simout | wc -l`
