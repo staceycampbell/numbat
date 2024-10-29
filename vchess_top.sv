@@ -117,6 +117,7 @@ module vchess_top
    wire [2:0]           trans_axi_arprot;       // From trans of trans.v
    wire [3:0]           trans_axi_arqos;        // From trans of trans.v
    wire                 trans_axi_arready;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [3:0]           trans_axi_arregion;     // From trans of trans.v
    wire [2:0]           trans_axi_arsize;       // From trans of trans.v
    wire                 trans_axi_arvalid;      // From trans of trans.v
    wire [31:0]          trans_axi_awaddr;       // From trans of trans.v
@@ -127,6 +128,7 @@ module vchess_top
    wire [2:0]           trans_axi_awprot;       // From trans of trans.v
    wire [3:0]           trans_axi_awqos;        // From trans of trans.v
    wire                 trans_axi_awready;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [3:0]           trans_axi_awregion;     // From trans of trans.v
    wire [2:0]           trans_axi_awsize;       // From trans of trans.v
    wire                 trans_axi_awvalid;      // From trans of trans.v
    wire                 trans_axi_bready;       // From trans of trans.v
@@ -158,6 +160,7 @@ module vchess_top
    wire [1:0]           trans_flag_out;         // From trans of trans.v
    wire                 trans_hash_only_in;     // From control of control.v
    wire [79:0]          trans_hash_out;         // From trans of trans.v
+   wire [31:0]          trans_trans;            // From trans of trans.v
    wire                 trans_trans_idle_out;   // From trans of trans.v
    wire                 trans_white_to_move_in; // From control of control.v
    wire                 use_random_bit;         // From control of control.v
@@ -324,6 +327,9 @@ module vchess_top
       .trans_axi_wlast                  (trans_axi_wlast),       // Templated
       .trans_axi_wstrb                  (trans_axi_wstrb[15:0]), // Templated
       .trans_axi_wvalid                 (trans_axi_wvalid),      // Templated
+      .trans_axi_arregion               (trans_axi_arregion[3:0]), // Templated
+      .trans_axi_awregion               (trans_axi_awregion[3:0]), // Templated
+      .trans_trans                      (trans_trans[31:0]),
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (reset),                 // Templated
@@ -408,6 +414,7 @@ module vchess_top
       .trans_trans_idle_in              (trans_trans_idle_out),  // Templated
       .trans_collision_in               (trans_collision_out),   // Templated
       .trans_hash_in                    (trans_hash_out[79:0]),  // Templated
+      .trans_trans                      (trans_trans[31:0]),
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
@@ -522,6 +529,7 @@ module vchess_top
       .trans_axi_arlock                 (trans_axi_arlock[0:0]),
       .trans_axi_arprot                 (trans_axi_arprot[2:0]),
       .trans_axi_arqos                  (trans_axi_arqos[3:0]),
+      .trans_axi_arregion               (trans_axi_arregion[3:0]),
       .trans_axi_arsize                 (trans_axi_arsize[2:0]),
       .trans_axi_arvalid                (trans_axi_arvalid),
       .trans_axi_awaddr                 (trans_axi_awaddr[31:0]),
@@ -531,6 +539,7 @@ module vchess_top
       .trans_axi_awlock                 (trans_axi_awlock[0:0]),
       .trans_axi_awprot                 (trans_axi_awprot[2:0]),
       .trans_axi_awqos                  (trans_axi_awqos[3:0]),
+      .trans_axi_awregion               (trans_axi_awregion[3:0]),
       .trans_axi_awsize                 (trans_axi_awsize[2:0]),
       .trans_axi_awvalid                (trans_axi_awvalid),
       .trans_axi_bready                 (trans_axi_bready),

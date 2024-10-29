@@ -144,19 +144,18 @@ vchess_print_board(board_t * board, uint32_t initial_board)
                 eval = board->eval;
                 material = 0;
         }
-        printf("%s to move, en passant col: %1X, castle mask: %1X, eval: %d", to_move[board->white_to_move], board->en_passant_col,
-               board->castle_mask, eval);
+        printf("%s to move, en passant col: %1X, castle mask: %1X\n", to_move[board->white_to_move], board->en_passant_col, board->castle_mask);
         if (!initial_board)
         {
-                printf(", capture: %d, thrice rep: %d, half move: %d", board->capture, board->thrice_rep, board->half_move_clock);
+                printf("capture: %d, thrice rep: %d, half move: %d", board->capture, board->thrice_rep, board->half_move_clock);
         }
         else
         {
-                printf(", mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
+                printf("mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
                 printf("material: %.2f", (double)material / 100.0);
         }
         vchess_uci_string(&board->uci, uci_str);
-        printf(", uci: %s\n", uci_str);
+        printf(", eval: %d, uci: %s\n", eval, uci_str);
         if (board->black_in_check)
                 printf("Black in check\n");
         if (board->white_in_check)
