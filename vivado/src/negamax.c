@@ -8,7 +8,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define FIXED_TIME 75
+#define FIXED_TIME 15
 
 #define MAX_DEPTH 28
 #define LARGE_EVAL (1 << 20)
@@ -363,10 +363,13 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 return best_board;
         }
 
+        best_board = root_node_boards[0];
+        if (move_count == 1)
+                return best_board;
+
         for (i = 0; i < move_count; ++i)
                 board_ptr[i] = &root_node_boards[i];
 
-        best_board = root_node_boards[0];
         time_limit = t_start + UINT64_C(FIXED_TIME) * UINT64_C(COUNTS_PER_SECOND);
         time_limit_exceeded = 0;
 
