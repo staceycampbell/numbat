@@ -17,8 +17,8 @@ module evaluate #
     input                            clear_eval,
     input                            white_to_move,
    
-    input [5:0]                      white_pop,
-    input [5:0]                      black_pop,
+    input [5:0]                      attack_white_pop,
+    input [5:0]                      attack_black_pop,
 
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
@@ -49,6 +49,8 @@ module evaluate #
 
    assign eval = eval_t1;
 
+   // phase = Min(62, TotalPieces(white, occupied) + TotalPieces(black, occupied));
+   // score = ((tree->score_mg * phase) + (tree->score_eg * (62 - phase))) / 62;
    always @(posedge clk)
      begin
         eval_t1 <= (eval_eg_general + eval_mg_general) / 2;
@@ -127,7 +129,7 @@ module evaluate #
       .board                            (board[`BOARD_WIDTH-1:0]),
       .clear_eval                       (clear_eval),
       .white_to_move                    (white_to_move),
-      .white_pop                        (white_pop[5:0]),
-      .black_pop                        (black_pop[5:0]));
+      .attack_white_pop                 (attack_white_pop[5:0]),
+      .attack_black_pop                 (attack_black_pop[5:0]));
 
 endmodule

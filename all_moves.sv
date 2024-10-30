@@ -59,8 +59,8 @@ module all_moves #
     output [HALF_MOVE_WIDTH - 1:0]       half_move_out,
     output                               fifty_move_out,
     output [UCI_WIDTH - 1:0]             uci_out,
-    output [5:0]                         white_pop_out,
-    output [5:0]                         black_pop_out,
+    output [5:0]                         attack_white_pop_out,
+    output [5:0]                         attack_black_pop_out,
     output                               insufficient_material_out
     );
 
@@ -114,7 +114,7 @@ module all_moves #
    reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
    reg                                   legal_thrice_rep_ram_wr;
    reg                                   legal_insufficent_material_ram_wr;
-   reg [5:0]                             legal_white_pop_ram_wr, legal_black_pop_ram_wr;
+   reg [5:0]                             legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr;
    reg [UCI_WIDTH - 1:0]                 legal_uci_ram_wr;
    reg                                   legal_ram_wr = 0;
 
@@ -131,7 +131,7 @@ module all_moves #
    reg [63:0]                            attack_test_black_is_attacking;
    reg                                   attack_pawn_zero_half_move;
    reg [UCI_WIDTH - 1:0]                 attack_uci;
-   reg [5:0]                             attack_test_white_pop, attack_test_black_pop;
+   reg [5:0]                             attack_test_attack_white_pop, attack_test_attack_black_pop;
 
    reg [`BOARD_WIDTH - 1:0]              attack_test;
    reg                                   attack_test_valid;
@@ -195,9 +195,10 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [5:0]           attack_black_pop;       // From board_attack of board_attack.v
+   wire [5:0]           attack_white_pop;       // From board_attack of board_attack.v
    wire                 black_in_check;         // From board_attack of board_attack.v
    wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire [5:0]           black_pop;              // From board_attack of board_attack.v
    wire [LEGAL_RAM_WIDTH-1:0] capture_move_ram_rd_data;// From move_sort_capture of move_sort.v
    wire [MAX_POSITIONS_LOG2-1:0] capture_move_ram_wr_addr;// From move_sort_capture of move_sort.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
@@ -212,7 +213,6 @@ module all_moves #
    wire                 rd_thrice_rep_valid;    // From rep_det of rep_det.v
    wire                 white_in_check;         // From board_attack of board_attack.v
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
-   wire [5:0]           white_pop;              // From board_attack of board_attack.v
    // End of automatics
 
    wire signed [4:0]                     pawn_adv1_row [0:2];
@@ -225,7 +225,7 @@ module all_moves #
 
    assign am_move_count = am_capture_moves ? capture_move_ram_wr_addr : legal_ram_wr_addr;
    
-   assign {insufficient_material_out, white_pop_out, black_pop_out, uci_out, fifty_move_out, half_move_out, thrice_rep_out,
+   assign {insufficient_material_out, attack_white_pop_out, attack_black_pop_out, uci_out, fifty_move_out, half_move_out, thrice_rep_out,
            white_is_attacking_out, black_is_attacking_out,
            capture_out, en_passant_col_out, castle_mask_out,
            board_out, white_to_move_out, white_in_check_out,
@@ -324,7 +324,7 @@ module all_moves #
      end // always @ (posedge clk)
 
    wire [LEGAL_RAM_WIDTH - 1:0] legal_ram_wr_data = {legal_insufficent_material_ram_wr,
-                                                     legal_white_pop_ram_wr, legal_black_pop_ram_wr, legal_uci_ram_wr,
+                                                     legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr, legal_uci_ram_wr,
                                                      legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
                                                      legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
                                                      legal_capture_ram_wr, legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
@@ -863,8 +863,8 @@ module all_moves #
               attack_test_black_in_check <= black_in_check;
               attack_test_white_is_attacking <= white_is_attacking;
               attack_test_black_is_attacking <= black_is_attacking;
-              attack_test_white_pop <= white_pop;
-              attack_test_black_pop <= black_pop;
+              attack_test_attack_white_pop <= attack_white_pop;
+              attack_test_attack_black_pop <= attack_black_pop;
               if (is_attacking_done && eval_valid && rd_thrice_rep_valid)
                 if ((white_to_move && white_in_check) || (black_to_move && black_in_check))
                   state <= STATE_LEGAL_NEXT;
@@ -883,8 +883,8 @@ module all_moves #
               legal_white_is_attacking_ram_wr <= attack_test_white_is_attacking;
               legal_black_is_attacking_ram_wr <= attack_test_black_is_attacking;
               legal_uci_ram_wr <= attack_uci;
-              legal_white_pop_ram_wr <= attack_test_white_pop;
-              legal_black_pop_ram_wr <= attack_test_black_pop;
+              legal_attack_white_pop_ram_wr <= attack_test_attack_white_pop;
+              legal_attack_black_pop_ram_wr <= attack_test_attack_black_pop;
               if (rd_thrice_rep)
                 legal_eval_ram_wr <= 0;
               else
@@ -980,8 +980,8 @@ module all_moves #
       .black_is_attacking               (black_is_attacking[63:0]),
       .white_in_check                   (white_in_check),
       .black_in_check                   (black_in_check),
-      .white_pop                        (white_pop[5:0]),
-      .black_pop                        (black_pop[5:0]),
+      .attack_white_pop                 (attack_white_pop[5:0]),
+      .attack_black_pop                 (attack_black_pop[5:0]),
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
@@ -1014,8 +1014,8 @@ module all_moves #
       .board_in                         (attack_test[`BOARD_WIDTH-1:0]), // Templated
       .clear_eval                       (clear_eval),
       .white_to_move                    (white_to_move),
-      .white_pop                        (white_pop[5:0]),
-      .black_pop                        (black_pop[5:0]));
+      .attack_white_pop                 (attack_white_pop[5:0]),
+      .attack_black_pop                 (attack_black_pop[5:0]));
 
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),

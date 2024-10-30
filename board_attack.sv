@@ -14,8 +14,8 @@ module board_attack
    output [63:0]              black_is_attacking,
    output                     white_in_check,
    output                     black_in_check,
-   output [5:0]               white_pop,
-   output [5:0]               black_pop
+   output [5:0]               attack_white_pop,
+   output [5:0]               attack_black_pop
    );
 
    // should be empty
@@ -66,12 +66,12 @@ module board_attack
 
    /* popcount AUTO_TEMPLATE (
     .x0 (white_is_attacking[]),
-    .population (white_pop[]),
+    .population (attack_white_pop[]),
     );*/
    popcount popcount_white
      (/*AUTOINST*/
       // Outputs
-      .population                       (white_pop[5:0]),        // Templated
+      .population                       (attack_white_pop[5:0]), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -79,12 +79,12 @@ module board_attack
 
    /* popcount AUTO_TEMPLATE (
     .x0 (black_is_attacking[]),
-    .population (black_pop[]),
+    .population (attack_black_pop[]),
     );*/
    popcount popcount_black
      (/*AUTOINST*/
       // Outputs
-      .population                       (black_pop[5:0]),        // Templated
+      .population                       (attack_black_pop[5:0]), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

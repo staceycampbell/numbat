@@ -43,34 +43,35 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                               am_idle;                // From all_moves of all_moves.v
-   wire [MAX_POSITIONS_LOG2-1:0]      am_move_count; // From all_moves of all_moves.v
-   wire                               am_move_ready;          // From all_moves of all_moves.v
-   wire                               am_moves_ready;         // From all_moves of all_moves.v
-   wire                               black_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]                        black_is_attacking_out; // From all_moves of all_moves.v
-   wire [5:0]                         black_pop_out;          // From all_moves of all_moves.v
-   wire [`BOARD_WIDTH-1:0]            board_out;           // From all_moves of all_moves.v
-   wire                               capture_out;            // From all_moves of all_moves.v
-   wire [3:0]                         castle_mask_out;        // From all_moves of all_moves.v
-   wire                               display_done;           // From display_board of display_board.v
-   wire [3:0]                         en_passant_col_out;     // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0]       eval_out;       // From all_moves of all_moves.v
-   wire                               fifty_move_out;         // From all_moves of all_moves.v
-   wire [HALF_MOVE_WIDTH-1:0]         half_move_out;    // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0]       initial_eval;   // From all_moves of all_moves.v
-   wire                               initial_fifty_move;     // From all_moves of all_moves.v
-   wire                               initial_insufficient_material;// From all_moves of all_moves.v
-   wire                               initial_mate;           // From all_moves of all_moves.v
-   wire                               initial_stalemate;      // From all_moves of all_moves.v
-   wire                               initial_thrice_rep;     // From all_moves of all_moves.v
-   wire                               insufficient_material_out;// From all_moves of all_moves.v
-   wire                               thrice_rep_out;         // From all_moves of all_moves.v
-   wire [UCI_WIDTH-1:0]               uci_out;                // From all_moves of all_moves.v
-   wire                               white_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]                        white_is_attacking_out; // From all_moves of all_moves.v
-   wire [5:0]                         white_pop_out;          // From all_moves of all_moves.v
-   wire                               white_to_move_out;      // From all_moves of all_moves.v
+   wire                 am_idle;                // From all_moves of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
+   wire                 am_move_ready;          // From all_moves of all_moves.v
+   wire                 am_moves_ready;         // From all_moves of all_moves.v
+   wire [5:0]           attack_black_pop_out;   // From all_moves of all_moves.v
+   wire [5:0]           attack_white_pop_out;   // From all_moves of all_moves.v
+   wire                 black_in_check_out;     // From all_moves of all_moves.v
+   wire [63:0]          black_is_attacking_out; // From all_moves of all_moves.v
+   wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
+   wire                 capture_out;            // From all_moves of all_moves.v
+   wire [3:0]           castle_mask_out;        // From all_moves of all_moves.v
+   wire                 display_done;           // From display_board of display_board.v
+   wire [3:0]           en_passant_col_out;     // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves of all_moves.v
+   wire                 fifty_move_out;         // From all_moves of all_moves.v
+   wire [HALF_MOVE_WIDTH-1:0] half_move_out;    // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
+   wire                 initial_fifty_move;     // From all_moves of all_moves.v
+   wire                 initial_insufficient_material;// From all_moves of all_moves.v
+   wire                 initial_mate;           // From all_moves of all_moves.v
+   wire signed [31:0]   initial_material;       // From all_moves of all_moves.v
+   wire                 initial_stalemate;      // From all_moves of all_moves.v
+   wire                 initial_thrice_rep;     // From all_moves of all_moves.v
+   wire                 insufficient_material_out;// From all_moves of all_moves.v
+   wire                 thrice_rep_out;         // From all_moves of all_moves.v
+   wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
+   wire                 white_in_check_out;     // From all_moves of all_moves.v
+   wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
+   wire                 white_to_move_out;      // From all_moves of all_moves.v
    // End of automatics
    
    wire [3:0]                         uci_promotion;
@@ -262,6 +263,7 @@ module tb;
       .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
+      .initial_material                 (initial_material[31:0]),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
@@ -280,8 +282,8 @@ module tb;
       .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
       .fifty_move_out                   (fifty_move_out),
       .uci_out                          (uci_out[UCI_WIDTH-1:0]),
-      .white_pop_out                    (white_pop_out[5:0]),
-      .black_pop_out                    (black_pop_out[5:0]),
+      .attack_white_pop_out             (attack_white_pop_out[5:0]),
+      .attack_black_pop_out             (attack_black_pop_out[5:0]),
       .insufficient_material_out        (insufficient_material_out),
       // Inputs
       .clk                              (clk),
