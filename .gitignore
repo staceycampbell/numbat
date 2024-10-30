@@ -8,4 +8,4 @@ amt
 amt_board.vh
 tbtrans
 evaluate
-evaluate.vh
+evaluate_*.vh

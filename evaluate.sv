@@ -31,7 +31,7 @@ module evaluate #
 
    reg [`BOARD_WIDTH - 1:0]          board;
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
-   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst [`EMPTY_POSN:`BLACK_KING][0:63];
+   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_mg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]                  idx [0:7][0:7];
    reg [5:0]                                         white_pop_t1, black_pop_t1;
    reg signed [POP_SCORE_WIDTH - 1:0]                black_pop_score_t2, white_pop_score_t2;
@@ -126,7 +126,7 @@ module evaluate #
         
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)
-            score_t1[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
+            score_t1[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst_mg[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 4)
             sum_a_t2[y][x / 4] <= score_t1[y][x + 0] + score_t1[y][x + 1] + score_t1[y][x + 2] + score_t1[y][x + 3];
@@ -197,10 +197,10 @@ module evaluate #
           begin
              value[ri] = 0;
              for (i = 0; i < 64; i = i + 1)
-               pst[ri][i] = 0;
+               pst_mg[ri][i] = 0;
           end
 
-`include "evaluate.vh"
+`include "evaluate_general.vh"
 
      end
 

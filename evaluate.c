@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <assert.h>
 
-// Crafty, copyright 1996-2020 by Robert M. Hyatt, Ph.D.
+// Crafty weights, copyright 1996-2020 by Robert M. Hyatt, Ph.D.
 
 #define MATE                                 32768
 #define PAWN_VALUE                             100
@@ -10,6 +11,11 @@
 #define ROOK_VALUE                             490
 #define QUEEN_VALUE                           1000
 #define KING_VALUE                           40000
+
+typedef struct fileinfo_t {
+        const char *fn;
+        FILE *fp;
+} fileinfo_t;
 
 static const int pval[2][64] = {
    { 0,  0,  0,  0,  0,  0,  0,  0,
@@ -167,32 +173,41 @@ main(void)
         int32_t c, i;
         static const char *c_str[2] = {"BLACK", "WHITE"};
 	static const int32_t sign[2] = {-1, 1};
-        
-        printf("value[`EMPTY_POSN] = 0;\n");
-        printf("value[`WHITE_PAWN] = %d;\n", PAWN_VALUE);
-        printf("value[`WHITE_KNIT] = %d;\n", KNIGHT_VALUE);
-        printf("value[`WHITE_BISH] = %d;\n", BISHOP_VALUE);
-        printf("value[`WHITE_ROOK] = %d;\n", ROOK_VALUE);
-        printf("value[`WHITE_QUEN] = %d;\n", QUEEN_VALUE);
-        printf("value[`WHITE_KING] = `GLOBAL_VALUE_KING;\n");
+        fileinfo_t fileinfo[1] = {
+                {"evaluate_general.vh", 0}};
+        static const int eval_general = 0;
 
-        printf("value[`EMPTY_POSN] = 0;\n");
-        printf("value[`BLACK_PAWN] = %d;\n", -PAWN_VALUE);
-        printf("value[`BLACK_KNIT] = %d;\n", -KNIGHT_VALUE);
-        printf("value[`BLACK_BISH] = %d;\n", -BISHOP_VALUE);
-        printf("value[`BLACK_ROOK] = %d;\n", -ROOK_VALUE);
-        printf("value[`BLACK_QUEN] = %d;\n", -QUEEN_VALUE);
-        printf("value[`BLACK_KING] = -(`GLOBAL_VALUE_KING);\n");
+        for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)
+                assert((fileinfo[i].fp = fopen(fileinfo[i].fn, "w")) != 0);
+        
+        fprintf(fileinfo[eval_general].fp, "value[`EMPTY_POSN] = 0;\n");
+        fprintf(fileinfo[eval_general].fp, "value[`WHITE_PAWN] = %d;\n", PAWN_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`WHITE_KNIT] = %d;\n", KNIGHT_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`WHITE_BISH] = %d;\n", BISHOP_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`WHITE_ROOK] = %d;\n", ROOK_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`WHITE_QUEN] = %d;\n", QUEEN_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`WHITE_KING] = `GLOBAL_VALUE_KING;\n");
+
+        fprintf(fileinfo[eval_general].fp, "value[`EMPTY_POSN] = 0;\n");
+        fprintf(fileinfo[eval_general].fp, "value[`BLACK_PAWN] = %d;\n", -PAWN_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`BLACK_KNIT] = %d;\n", -KNIGHT_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`BLACK_BISH] = %d;\n", -BISHOP_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`BLACK_ROOK] = %d;\n", -ROOK_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`BLACK_QUEN] = %d;\n", -QUEEN_VALUE);
+        fprintf(fileinfo[eval_general].fp, "value[`BLACK_KING] = -(`GLOBAL_VALUE_KING);\n");
 
         for (c = 0; c <= 1; ++c)
                 for (i = 0; i < 64; ++i)
                 {
-                        printf("pst[`%s_PAWN][%2d] = %3d;\n", c_str[c], i, pval[c][i] * sign[c]);
-                        printf("pst[`%s_KNIT][%2d] = %3d;\n", c_str[c], i, nval[0][c][i] * sign[c]); // just mg for now
-                        printf("pst[`%s_BISH][%2d] = %3d;\n", c_str[c], i, bval[0][c][i] * sign[c]); // just mg for now
-                        printf("pst[`%s_QUEN][%2d] = %3d;\n", c_str[c], i, qval[0][c][i] * sign[c]); // just mg for now
-                        printf("pst[`%s_KING][%2d] = %3d;\n", c_str[c], i, kval[c][i] * sign[c]);
+                        fprintf(fileinfo[eval_general].fp, "pst_mg[`%s_PAWN][%2d] = %3d;\n", c_str[c], i, pval[c][i] * sign[c]);
+                        fprintf(fileinfo[eval_general].fp, "pst_mg[`%s_KNIT][%2d] = %3d;\n", c_str[c], i, nval[0][c][i] * sign[c]);
+                        fprintf(fileinfo[eval_general].fp, "pst_mg[`%s_BISH][%2d] = %3d;\n", c_str[c], i, bval[0][c][i] * sign[c]);
+                        fprintf(fileinfo[eval_general].fp, "pst_mg[`%s_QUEN][%2d] = %3d;\n", c_str[c], i, qval[0][c][i] * sign[c]);
+                        fprintf(fileinfo[eval_general].fp, "pst_mg[`%s_KING][%2d] = %3d;\n", c_str[c], i, kval[c][i] * sign[c]);
                 }
+
+        for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)
+                fclose(fileinfo[i].fp);
 
         return 0;
 }
