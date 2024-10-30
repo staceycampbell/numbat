@@ -204,6 +204,12 @@ main(void)
                         fprintf(fileinfo[eval_general].fp, "pst_mg[`%s_BISH][%2d] = %3d;\n", c_str[c], i, bval[0][c][i] * sign[c]);
                         fprintf(fileinfo[eval_general].fp, "pst_mg[`%s_QUEN][%2d] = %3d;\n", c_str[c], i, qval[0][c][i] * sign[c]);
                         fprintf(fileinfo[eval_general].fp, "pst_mg[`%s_KING][%2d] = %3d;\n", c_str[c], i, kval[c][i] * sign[c]);
+
+                        fprintf(fileinfo[eval_general].fp, "pst_eg[`%s_PAWN][%2d] = %3d;\n", c_str[c], i, pval[c][i] * sign[c]); // use mg
+                        fprintf(fileinfo[eval_general].fp, "pst_eg[`%s_KNIT][%2d] = %3d;\n", c_str[c], i, nval[1][c][i] * sign[c]);
+                        fprintf(fileinfo[eval_general].fp, "pst_eg[`%s_BISH][%2d] = %3d;\n", c_str[c], i, bval[1][c][i] * sign[c]);
+                        fprintf(fileinfo[eval_general].fp, "pst_eg[`%s_QUEN][%2d] = %3d;\n", c_str[c], i, qval[1][c][i] * sign[c]);
+                        fprintf(fileinfo[eval_general].fp, "pst_eg[`%s_KING][%2d] = %3d;\n", c_str[c], i, kval[c][i] * sign[c]); // use mg
                 }
 
         for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)

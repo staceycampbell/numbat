@@ -39,8 +39,9 @@ module evaluate #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire signed [EVAL_WIDTH-1:0] eval_general;   // From evaluate_general of evaluate_general.v
+   wire signed [EVAL_WIDTH-1:0] eval_eg_general;// From evaluate_general of evaluate_general.v
    wire                 eval_general_valid;     // From evaluate_general of evaluate_general.v
+   wire signed [EVAL_WIDTH-1:0] eval_mg_general;// From evaluate_general of evaluate_general.v
    // End of automatics
 
    wire [EVALUATION_COUNT - 1:0]     eval_done_status = {eval_general_valid};
@@ -50,7 +51,7 @@ module evaluate #
 
    always @(posedge clk)
      begin
-        eval_t1 <= eval_general;
+        eval_t1 <= (eval_eg_general + eval_mg_general) / 2;
      end
 
    localparam STATE_IDLE = 0;
@@ -103,7 +104,7 @@ module evaluate #
    /* evaluate_general AUTO_TEMPLATE (
     .board_valid (local_board_valid),
     .eval_valid (eval_general_valid),
-    .eval (eval_general[]),
+    .eval_\([me]\)g (eval_\1g_general[]),
     );*/
    evaluate_general #
      (
@@ -113,7 +114,8 @@ module evaluate #
      (/*AUTOINST*/
       // Outputs
       .insufficient_material            (insufficient_material),
-      .eval                             (eval_general[EVAL_WIDTH-1:0]), // Templated
+      .eval_mg                          (eval_mg_general[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg                          (eval_eg_general[EVAL_WIDTH-1:0]), // Templated
       .eval_valid                       (eval_general_valid),    // Templated
       .material                         (material[31:0]),
       // Inputs

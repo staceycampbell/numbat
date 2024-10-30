@@ -4,6 +4,7 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../board_attack.sv
 ../control.sv
 ../evaluate.sv
+../evaluate_general.sv
 ../is_attacking.sv
 ../move_sort.sv
 ../mram.sv

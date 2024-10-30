@@ -20,7 +20,8 @@ module evaluate_general #
     input [5:0]                      black_pop,
 
     output                           insufficient_material,
-    output signed [EVAL_WIDTH - 1:0] eval,
+    output signed [EVAL_WIDTH - 1:0] eval_mg,
+    output signed [EVAL_WIDTH - 1:0] eval_eg,
     output reg                       eval_valid,
     output reg signed [31:0]         material
     );
@@ -34,17 +35,23 @@ module evaluate_general #
 
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_mg [`EMPTY_POSN:`BLACK_KING][0:63];
+   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_eg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]                  idx [0:7][0:7];
    reg [5:0]                                         white_pop_t1, black_pop_t1;
    reg signed [POP_SCORE_WIDTH - 1:0]                black_pop_score_t2, white_pop_score_t2;
    reg signed [POP_SCORE_WIDTH + 1 - 1:0]            pop_score_t3;
    reg                                               insufficient_material_t3;
-   reg signed [EVAL_WIDTH - 1:0]                     eval_t4;
    
-   (* use_dsp = "yes" *) reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_t1 [0:7][0:7];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_a_t2 [0:7][0:1];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0]             sum_b_t3 [0:3];
-   (* use_dsp = "yes" *) reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 3:0] material_t1 [0:15], material_t2 [0:3];
+   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_mg_t1 [0:7][0:7];
+   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_eg_t1 [0:7][0:7];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_a_mg_t2 [0:7][0:1];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_a_eg_t2 [0:7][0:1];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_b_mg_t3 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_b_eg_t3 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]                     eval_mg_t4;
+   reg signed [EVAL_WIDTH - 1:0]                     eval_eg_t4;
+   
+   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 3:0] material_t1 [0:15], material_t2 [0:3];
 
    reg [1:0]                                         isw_t1 [0:63];
    reg [1:0]                                         isb_t1 [0:63];
@@ -55,7 +62,8 @@ module evaluate_general #
 
    integer                                           i, ri, y, x;
 
-   assign eval = eval_t4;
+   assign eval_mg = eval_mg_t4;
+   assign eval_eg = eval_eg_t4;
    assign insufficient_material = insufficient_material_t3;
 
    always @(posedge clk)
@@ -128,16 +136,31 @@ module evaluate_general #
         
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)
-            score_t1[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst_mg[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
+            begin
+               score_mg_t1[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst_mg[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
+               score_eg_t1[y][x] <= value[board[idx[y][x]+:`PIECE_WIDTH]] + pst_eg[board[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
+            end
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 4)
-            sum_a_t2[y][x / 4] <= score_t1[y][x + 0] + score_t1[y][x + 1] + score_t1[y][x + 2] + score_t1[y][x + 3];
+            begin
+               sum_a_mg_t2[y][x / 4] <= score_mg_t1[y][x + 0] + score_mg_t1[y][x + 1] + score_mg_t1[y][x + 2] + score_mg_t1[y][x + 3];
+               sum_a_eg_t2[y][x / 4] <= score_eg_t1[y][x + 0] + score_eg_t1[y][x + 1] + score_eg_t1[y][x + 2] + score_eg_t1[y][x + 3];
+            end
         for (y = 0; y < 8; y = y + 2)
-          sum_b_t3[y / 2] <= sum_a_t2[y + 0][0] + sum_a_t2[y + 0][1] + sum_a_t2[y + 1][0] + sum_a_t2[y + 1][1];
+          begin
+             sum_b_mg_t3[y / 2] <= sum_a_mg_t2[y + 0][0] + sum_a_mg_t2[y + 0][1] + sum_a_mg_t2[y + 1][0] + sum_a_mg_t2[y + 1][1];
+             sum_b_eg_t3[y / 2] <= sum_a_eg_t2[y + 0][0] + sum_a_eg_t2[y + 0][1] + sum_a_eg_t2[y + 1][0] + sum_a_eg_t2[y + 1][1];
+          end
         if (insufficient_material_t3)
-          eval_t4 <= 0;
+          begin
+             eval_mg_t4 <= 0;
+             eval_eg_t4 <= 0;
+          end
         else
-          eval_t4 <= pop_score_t3 + sum_b_t3[0] + sum_b_t3[1] + sum_b_t3[2] + sum_b_t3[3];
+          begin
+             eval_mg_t4 <= pop_score_t3 + sum_b_mg_t3[0] + sum_b_mg_t3[1] + sum_b_mg_t3[2] + sum_b_mg_t3[3];
+             eval_eg_t4 <= pop_score_t3 + sum_b_eg_t3[0] + sum_b_eg_t3[1] + sum_b_eg_t3[2] + sum_b_eg_t3[3];
+          end
      end
 
    localparam STATE_IDLE = 0;
@@ -191,6 +214,13 @@ module evaluate_general #
              value[ri] = 0;
              for (i = 0; i < 64; i = i + 1)
                pst_mg[ri][i] = 0;
+          end
+
+        for (ri = `EMPTY_POSN; ri <= `BLACK_KING; ri = ri + 1)
+          begin
+             value[ri] = 0;
+             for (i = 0; i < 64; i = i + 1)
+               pst_eg[ri][i] = 0;
           end
 
 `include "evaluate_general.vh"
