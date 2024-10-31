@@ -40,9 +40,10 @@ module vchess_top
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [5:0]           am_attack_black_pop_out;// From all_moves of all_moves.v
+   wire [5:0]           am_attack_white_pop_out;// From all_moves of all_moves.v
    wire                 am_black_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_black_is_attacking_out;// From all_moves of all_moves.v
-   wire [5:0]           am_black_pop_out;       // From all_moves of all_moves.v
    wire [`BOARD_WIDTH-1:0] am_board_out;        // From all_moves of all_moves.v
    wire                 am_capture_moves;       // From control of control.v
    wire                 am_capture_out;         // From all_moves of all_moves.v
@@ -72,7 +73,6 @@ module vchess_top
    wire [UCI_WIDTH-1:0] am_uci_out;             // From all_moves of all_moves.v
    wire                 am_white_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_white_is_attacking_out;// From all_moves of all_moves.v
-   wire [5:0]           am_white_pop_out;       // From all_moves of all_moves.v
    wire                 am_white_to_move_in;    // From control of control.v
    wire                 am_white_to_move_out;   // From all_moves of all_moves.v
    wire                 c0_ddr4_ui_clk;         // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
@@ -259,8 +259,8 @@ module vchess_top
       .half_move_out                    (am_half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .fifty_move_out                   (am_fifty_move_out),     // Templated
       .uci_out                          (am_uci_out[UCI_WIDTH-1:0]), // Templated
-      .white_pop_out                    (am_white_pop_out[5:0]), // Templated
-      .black_pop_out                    (am_black_pop_out[5:0]), // Templated
+      .attack_white_pop_out             (am_attack_white_pop_out[5:0]), // Templated
+      .attack_black_pop_out             (am_attack_black_pop_out[5:0]), // Templated
       .insufficient_material_out        (am_insufficient_material_out), // Templated
       // Inputs
       .clk                              (clk),                   // Templated
@@ -440,8 +440,8 @@ module vchess_top
       .am_half_move_in                  (am_half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .am_fifty_move_in                 (am_fifty_move_out),     // Templated
       .am_uci_in                        (am_uci_out[UCI_WIDTH-1:0]), // Templated
-      .am_white_pop_in                  (am_white_pop_out[5:0]), // Templated
-      .am_black_pop_in                  (am_black_pop_out[5:0]), // Templated
+      .am_attack_white_pop_in           (am_attack_white_pop_out[5:0]), // Templated
+      .am_attack_black_pop_in           (am_attack_black_pop_out[5:0]), // Templated
       .am_insufficient_material_in      (am_insufficient_material_out), // Templated
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),

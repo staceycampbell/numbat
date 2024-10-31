@@ -8,7 +8,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define FIXED_TIME 15
+#define FIXED_TIME 240
 
 #define MAX_DEPTH 28
 #define LARGE_EVAL (1 << 20)
