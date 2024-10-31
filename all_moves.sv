@@ -133,8 +133,9 @@ module all_moves #
    reg [UCI_WIDTH - 1:0]                 attack_uci;
    reg [5:0]                             attack_test_attack_white_pop, attack_test_attack_black_pop;
 
-   reg [`BOARD_WIDTH - 1:0]              attack_test;
-   reg                                   attack_test_valid;
+   reg [`BOARD_WIDTH - 1:0]              evaluate_board;
+   reg                                   evaluate_white_to_move;
+   reg                                   evaluate_go;
 
    reg                                   clear_eval = 0;
    reg                                   clear_attack = 0;
@@ -466,8 +467,9 @@ module all_moves #
               en_passant_col <= en_passant_col_in;
               half_move <= half_move_in;
 
-              attack_test <= board_in;
-              attack_test_valid <= board_valid_in;
+              evaluate_board <= board_in;
+              evaluate_white_to_move <= white_to_move;
+              evaluate_go <= board_valid_in;
 
               // upstream populates thrice repetition ram while idle and
               // before asserting board valid
@@ -514,7 +516,7 @@ module all_moves #
               initial_material <= material;
               clear_eval <= 1;
               clear_attack <= 1;
-              attack_test_valid <= 0;
+              evaluate_go <= 0;
               legal_sort_start <= 0;
               legal_sort_clear <= 0;
               initial_board_check <= (white_to_move && white_in_check) || (black_to_move && black_in_check);
@@ -814,7 +816,7 @@ module all_moves #
            begin
               {attack_uci, attack_pawn_zero_half_move, attack_test_capture, attack_test_en_passant_col,
                attack_test_castle_mask, attack_test_white_to_move, attack_test_board} <= ram_rd_data;
-              attack_test_valid <= 0;
+              evaluate_go <= 0;
               clear_eval <= 0;
               clear_attack <= 0;
               rd_clear_sample <= 0;
@@ -848,8 +850,9 @@ module all_moves #
               rd_board_valid <= 1;
               rd_castle_mask_in <= castle_mask_in;
 
-              attack_test <= attack_test_board;
-              attack_test_valid <= 1;
+              evaluate_white_to_move <= attack_test_white_to_move;
+              evaluate_board <= attack_test_board;
+              evaluate_go <= 1;
 
               ram_rd_addr <= ram_rd_addr + 1;
               state <= STATE_ATTACK_WAIT;
@@ -858,7 +861,7 @@ module all_moves #
            begin
               rd_board_valid <= 0;
 
-              attack_test_valid <= 0;
+              evaluate_go <= 0;
               attack_test_white_in_check <= white_in_check;
               attack_test_black_in_check <= black_in_check;
               attack_test_white_is_attacking <= white_is_attacking;
@@ -969,8 +972,8 @@ module all_moves #
        endcase
 
    /* board_attack AUTO_TEMPLATE (
-    .board (attack_test[]),
-    .board_valid (attack_test_valid),
+    .board (evaluate_board[]),
+    .board_valid (evaluate_go),
     );*/
    board_attack board_attack
      (/*AUTOINST*/
@@ -985,13 +988,14 @@ module all_moves #
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
-      .board                            (attack_test[`BOARD_WIDTH-1:0]), // Templated
-      .board_valid                      (attack_test_valid),     // Templated
+      .board                            (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
+      .board_valid                      (evaluate_go),           // Templated
       .clear_attack                     (clear_attack));
 
    /* evaluate AUTO_TEMPLATE (
-    .board_in (attack_test[]),
-    .board_valid (attack_test_valid),
+    .board_in (evaluate_board[]),
+    .white_to_move (evaluate_white_to_move),
+    .board_valid (evaluate_go),
     );*/
    evaluate #
      (
@@ -1009,13 +1013,17 @@ module all_moves #
       .reset                            (reset),
       .use_random_bit                   (use_random_bit),
       .random_bit                       (random_bit),
-      .board_valid                      (attack_test_valid),     // Templated
+      .board_valid                      (evaluate_go),           // Templated
       .is_attacking_done                (is_attacking_done),
-      .board_in                         (attack_test[`BOARD_WIDTH-1:0]), // Templated
+      .board_in                         (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
       .clear_eval                       (clear_eval),
-      .white_to_move                    (white_to_move),
+      .white_to_move                    (evaluate_white_to_move), // Templated
       .attack_white_pop                 (attack_white_pop[5:0]),
-      .attack_black_pop                 (attack_black_pop[5:0]));
+      .attack_black_pop                 (attack_black_pop[5:0]),
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .black_is_attacking               (black_is_attacking[63:0]),
+      .white_in_check                   (white_in_check),
+      .black_in_check                   (black_in_check));
 
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),

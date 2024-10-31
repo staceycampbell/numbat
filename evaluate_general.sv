@@ -33,6 +33,8 @@ module evaluate_general #
 
    reg [2:0]                         latency;
 
+   reg                               board_valid_r;
+
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_mg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_eg [`EMPTY_POSN:`BLACK_KING][0:63];
@@ -68,6 +70,8 @@ module evaluate_general #
 
    always @(posedge clk)
      begin
+        board_valid_r <= board_valid;
+        
         for (i = 0; i < 64; i = i + 1)
           begin
              if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_PAWN ||
@@ -181,7 +185,7 @@ module evaluate_general #
            begin
               latency <= 0;
               eval_valid <= 0;
-              if (board_valid)
+              if (board_valid && ~board_valid_r)
                 state <= STATE_LATENCY;
            end
          STATE_LATENCY :

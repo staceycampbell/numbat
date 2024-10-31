@@ -19,6 +19,10 @@ module evaluate #
    
     input [5:0]                      attack_white_pop,
     input [5:0]                      attack_black_pop,
+    input [63:0]                     white_is_attacking,
+    input [63:0]                     black_is_attacking,
+    input                            white_in_check,
+    input                            black_in_check,
 
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
@@ -29,7 +33,8 @@ module evaluate #
    localparam LATENCY_COUNT = 4;
    localparam EVALUATION_COUNT = 1;
    localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
-   
+
+   reg                               board_valid_r = 0;
    reg                               local_board_valid = 0;
    reg [`BOARD_WIDTH - 1:0]          board;
    reg signed [EVAL_WIDTH - 1:0]     eval_t1;
@@ -72,6 +77,8 @@ module evaluate #
    // score = ((tree->score_mg * phase) + (tree->score_eg * (62 - phase))) / 62;
    always @(posedge clk)
      begin
+        board_valid_r <= board_valid;
+        
         if (occupied_count > 62)
           phase <= 62;
         else
@@ -103,7 +110,7 @@ module evaluate #
               local_board_valid <= 0;
               eval_valid <= 0;
               latency <= 0;
-              if (board_valid)
+              if (board_valid && ~board_valid_r)
                 state <= STATE_WAIT_ATTACKING_DONE;
            end
          STATE_WAIT_ATTACKING_DONE :
