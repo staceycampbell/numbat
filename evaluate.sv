@@ -26,13 +26,19 @@ module evaluate #
     output signed [31:0]             material
     );
 
-   localparam LATENCY_COUNT = 2;
+   localparam LATENCY_COUNT = 4;
    localparam EVALUATION_COUNT = 1;
+   localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
    
    reg                               local_board_valid = 0;
    reg [`BOARD_WIDTH - 1:0]          board;
    reg signed [EVAL_WIDTH - 1:0]     eval_t1;
    reg [2:0]                         latency;
+   reg signed [7:0]                  phase;
+   reg signed [PHASE_CALC_WIDTH - 1:0] score_mg_t1, score_eg_t1;
+   reg signed [PHASE_CALC_WIDTH - 1:0] score_t2;
+   reg signed [PHASE_CALC_WIDTH - 1:0] score_t3, score_t4;
+   reg signed [EVAL_WIDTH - 1:0]       eval_t5;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -42,18 +48,40 @@ module evaluate #
    wire signed [EVAL_WIDTH-1:0] eval_eg_general;// From evaluate_general of evaluate_general.v
    wire                 eval_general_valid;     // From evaluate_general of evaluate_general.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_general;// From evaluate_general of evaluate_general.v
+   wire [5:0]           occupied_count;         // From popcount_occupied of popcount.v
    // End of automatics
 
-   wire [EVALUATION_COUNT - 1:0]     eval_done_status = {eval_general_valid};
-   wire [EVALUATION_COUNT - 1:0]     evals_complete = ~0;
+   genvar                              c;
 
-   assign eval = eval_t1;
+   wire [63:0]                         occupied;
 
+   wire [EVALUATION_COUNT - 1:0]       eval_done_status = {eval_general_valid};
+   wire [EVALUATION_COUNT - 1:0]       evals_complete = ~0;
+
+   assign eval = eval_t5;
+
+   generate
+      for (c = 0; c < 64; c = c + 1)
+        begin : occupied_block
+           assign occupied[c] = board[c * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN;
+        end
+   endgenerate
+
+   // From crafty:
    // phase = Min(62, TotalPieces(white, occupied) + TotalPieces(black, occupied));
    // score = ((tree->score_mg * phase) + (tree->score_eg * (62 - phase))) / 62;
    always @(posedge clk)
      begin
-        eval_t1 <= (eval_eg_general + eval_mg_general) / 2;
+        if (occupied_count > 62)
+          phase <= 62;
+        else
+          phase <= occupied_count;
+        score_mg_t1 <= eval_mg_general * phase;
+        score_eg_t1 <= eval_eg_general * (62 - phase);
+        score_t2 <= score_mg_t1 + score_eg_t1;
+        score_t3 <= score_t2 * $signed(32'h100000 / 62);
+        score_t4 <= score_t3 / $signed(32'h100000);
+        eval_t5 <= score_t4;
      end
 
    localparam STATE_IDLE = 0;
@@ -131,5 +159,18 @@ module evaluate #
       .white_to_move                    (white_to_move),
       .attack_white_pop                 (attack_white_pop[5:0]),
       .attack_black_pop                 (attack_black_pop[5:0]));
+
+   /* popcount AUTO_TEMPLATE (
+    .population (occupied_count[]),
+    .x0 (occupied[]),
+    );*/
+   popcount popcount_occupied
+     (/*AUTOINST*/
+      // Outputs
+      .population                       (occupied_count[5:0]),   // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .x0                               (occupied[63:0]));        // Templated
 
 endmodule
