@@ -8,7 +8,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define FIXED_TIME 15
+#define FIXED_TIME 30
 
 #define MAX_DEPTH 30
 #define LARGE_EVAL (1 << 20)
@@ -102,7 +102,7 @@ static int32_t
 nm_load_positions(board_t boards[MAX_POSITIONS])
 {
         int32_t i;
-        uint32_t moves_ready, status, move_count;
+        uint32_t moves_ready, move_count;
 
         vchess_status(0, &moves_ready, 0, 0, 0, 0, 0);
         if (!moves_ready)
@@ -116,20 +116,8 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
                 xil_printf("%s: no moves available (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return -2;
         }
-        if (move_count >= MAX_POSITIONS)
-        {
-                xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                while (1);
-        }
         for (i = 0; i < move_count; ++i)
-        {
-                status = vchess_read_board(&boards[i], i);
-                if (status)
-                {
-                        xil_printf("%s: problem with vchess_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                        return -3;
-                }
-        }
+                vchess_read_board(&boards[i], i);
         return move_count;
 }
 
@@ -156,7 +144,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         uint32_t mate, stalemate, thrice_rep, fifty_move;
         int32_t value;
         int32_t alpha_orig;
-        uint32_t status, quiescence;
+        uint32_t quiescence;
         uint32_t collision;
         trans_t trans;
         XTime t_now;
@@ -183,17 +171,15 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 fen_print(board);
                 while (1);
         }
-        if (! quiescence && move_count == 0)       // mate, stalemate, or thrice repetition
+        if (! quiescence && move_count == 0)
         {
+                ++terminal_nodes;
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
                 if (stalemate || thrice_rep || fifty_move)
                         return 0;
-                // mate
-                ++terminal_nodes;
                 return value;
         }
 
-        // transposition table lookup
         trans_lookup(&trans, &collision);
         trans_collision += collision;
 
@@ -223,7 +209,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 }
                 if (ply > quiescence_ply_reached)
                         quiescence_ply_reached = ply;
-                if (ply == MAX_DEPTH - 1)       // hard limit on quiescese search depth
+                if (ply == MAX_DEPTH - 1)
                 {
                         ++q_hard_cutoff;
                         return alpha;
@@ -237,17 +223,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         for (index = 0; index < move_count; ++index)
         {
-                status = vchess_read_board(&board_stack[ply][index], index);
-                if (status)
-                {
-                        xil_printf("%s: problem reading boards (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                        while (1);
-                }
-                if (quiescence && !board_stack[ply][index].capture)
-                {
-                        xil_printf("%s: problem with capture and quiescense, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                        while (1);
-                }
+                vchess_read_board(&board_stack[ply][index], index);
                 board_ptr[index] = &board_stack[ply][index];
         }
 

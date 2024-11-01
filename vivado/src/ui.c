@@ -60,6 +60,11 @@ uci_move(char *p)
         uint32_t piece, promotion, piece_type;
         board_t *previous_board, next_board;
 
+        if (game_moves == 0)
+        {
+                printf("%s: no game has been started, ignoring %s\n", __PRETTY_FUNCTION__, p);
+                return -3;
+        }
         previous_board = &game[game_moves - 1];
         next_board = *previous_board;
         next_board.capture = 0;
@@ -161,12 +166,12 @@ uci_move(char *p)
                 vchess_place(&next_board, row_from, 5, BLACK_ROOK);
                 vchess_place(&next_board, row_from, 6, BLACK_KING);
         }
-        else if (piece == BLACK_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 2)
+        else if (piece == BLACK_KING && row_from == 7 && row_to == 7 && col_from == 4 && col_to == 2)
         {
                 vchess_place(&next_board, row_from, 0, EMPTY_POSN);
                 vchess_place(&next_board, row_from, 1, EMPTY_POSN);
-                vchess_place(&next_board, row_from, 3, WHITE_ROOK);
-                vchess_place(&next_board, row_from, 2, WHITE_KING);
+                vchess_place(&next_board, row_from, 3, BLACK_ROOK);
+                vchess_place(&next_board, row_from, 2, BLACK_KING);
         }
         // en-passant target
         else if (piece == WHITE_PAWN && row_from == 1 && row_to == 3)
@@ -228,10 +233,10 @@ uci_print_game(uint32_t result)
 {
         uint32_t i;
         char uci_str[6];
-	static const char *result_str[4] = {"1/2-1/2", "1-0", "0-1", ""};
+        static const char *result_str[4] = { "1/2-1/2", "1-0", "0-1", "" };
 
-	if (game_moves <= 1)
-		return;
+        if (game_moves <= 1)
+                return;
         for (i = 1; i < game_moves; ++i)
         {
                 vchess_uci_string(&game[i].uci, uci_str);
@@ -239,11 +244,11 @@ uci_print_game(uint32_t result)
                 if (i % 16 == 0)
                         printf("\n");
         }
-	if (result >= sizeof(result_str) / sizeof(result_str[0]))
-	{
-		printf("%s: Bad result value!\n", __PRETTY_FUNCTION__);
-		return;
-	}
+        if (result >= sizeof(result_str) / sizeof(result_str[0]))
+        {
+                printf("%s: Bad result value!\n", __PRETTY_FUNCTION__);
+                return;
+        }
         printf("%s\n", result_str[result]);
 }
 
@@ -294,7 +299,6 @@ fen_print(board_t * board)
                         xil_printf("/");
         }
         xil_printf(" ");
-// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
         if (board->white_to_move)
                 xil_printf("w");
         else
@@ -444,7 +448,6 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
                 xil_printf("%s: bad FEN data %s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
                 return 1;
         }
-// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
         if (!(buffer[i] == '-' || (buffer[i] >= 'a' && buffer[i] <= 'h')))
         {
                 xil_printf("%s: bad FEN data %s (%s %d)\n", __PRETTY_FUNCTION__, buffer, __FILE__, __LINE__);
@@ -557,13 +560,13 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 board.full_move_number = 0;
                 game[0] = board;
         }
-	else if (strcmp((char *)str, "print") == 0)
-	{
-		if (game_moves > 0)
-			vchess_print_board(&game[game_moves - 1], 1);
-		else
-			xil_printf("No positions to print.\n");
-	}
+        else if (strcmp((char *)str, "print") == 0)
+        {
+                if (game_moves > 0)
+                        vchess_print_board(&game[game_moves - 1], 1);
+                else
+                        xil_printf("No positions to print.\n");
+        }
         else if (strcmp((char *)str, "sample") == 0)
         {
                 trans_clear_table();
@@ -582,7 +585,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "dump") == 0)
         {
-		uci_print_game(RESULT_NONE);
+                uci_print_game(RESULT_NONE);
         }
         else if (strcmp((char *)str, "tclear") == 0)
         {
@@ -622,13 +625,13 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 }
                 hash = vchess_trans_hash(&hash_extra);
                 status = book_move(hash_extra, hash, BOOK_RANDOM_COMMON, &uci);
-                if (! status)
+                if (!status)
                         xil_printf("no book move found\n");
         }
-	else if (strcmp((char *)str, "rand") == 0)
-	{
-		xil_printf("%08X\n", vchess_random());
-	}
+        else if (strcmp((char *)str, "rand") == 0)
+        {
+                xil_printf("%08X\n", vchess_random());
+        }
         else
         {
                 char *uci_ptr, *c;
