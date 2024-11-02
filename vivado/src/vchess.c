@@ -106,33 +106,32 @@ vchess_print_board(board_t * board, uint32_t initial_board)
         uint32_t piece;
         int32_t eval, material;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
-        static const char *to_move[2] = { "Black", "White" };
 
         for (y = 7; y >= 0; --y)
         {
-		printf("%c%c%c%c %c ", 27,  91,  50, 109, '1' + y); // dim
-		printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109); // sgr0
+                printf("%c%c%c%c %c ", 27, 91, 50, 109, '1' + y);       // dim
+                printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);        // sgr0
                 for (x = 0; x < 8; ++x)
                 {
                         piece = vchess_get_piece(board, y, x);
                         rev = (y ^ x) & 1;
                         if (rev)
-                                printf("%c%c%c%c%c", 27,  91,  52,  55, 109); // setb 7, light bg
-			else
-                                printf("%c%c%c%c%c", 27,  91,  52,  48, 109); // setb 0, black bg
+                                printf("%c%c%c%c%c", 27, 91, 52, 55, 109);      // setb 7, light bg
+                        else
+                                printf("%c%c%c%c%c", 27, 91, 52, 48, 109);      // setb 0, black bg
                         if ((piece & (1 << BLACK_BIT)) != 0)
-                                printf("%c%c%c%c%c", 27,  91,  51,  50, 109); // green
-			else
-				printf("%c%c%c%c%c", 27,  91,  51,  49, 109); // red
+                                printf("%c%c%c%c%c", 27, 91, 51, 50, 109);      // green
+                        else
+                                printf("%c%c%c%c%c", 27, 91, 51, 49, 109);      // red
                         printf(" %c ", piece_char[piece]);
-                        printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109); // sgr0
+                        printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);        // sgr0
                 }
                 printf("\n");
         }
-	printf("   %c%c%c%c", 27,  91,  50, 109); // dim
-	for (x = 0; x < 8; ++x)
-		printf(" %c ", 'a' + x);
-	printf("%c%c%c%c%c%c\n", 27, 40, 66, 27, 91, 109); // sgr0
+        printf("   %c%c%c%c", 27, 91, 50, 109); // dim
+        for (x = 0; x < 8; ++x)
+                printf(" %c ", 'a' + x);
+        printf("%c%c%c%c%c%c\n", 27, 40, 66, 27, 91, 109);      // sgr0
         if (initial_board)
         {
                 eval = vchess_initial_eval();
@@ -144,11 +143,8 @@ vchess_print_board(board_t * board, uint32_t initial_board)
                 eval = board->eval;
                 material = 0;
         }
-        printf("%s to move, en passant col: %1X, castle mask: %1X\n", to_move[board->white_to_move], board->en_passant_col, board->castle_mask);
         if (!initial_board)
-        {
                 printf("capture: %d, thrice rep: %d, half move: %d", board->capture, board->thrice_rep, board->half_move_clock);
-        }
         else
         {
                 printf("mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);

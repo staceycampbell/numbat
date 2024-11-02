@@ -276,7 +276,7 @@ nm_move_sort_compare(const void *p1, const void *p2)
 board_t
 nm_top(board_t game[GAME_MAX], uint32_t game_moves)
 {
-        int32_t i, status, game_index;
+        int32_t i, game_index;
         uint32_t ply;
         uint32_t move_count;
         uint64_t elapsed_ticks;
@@ -292,9 +292,12 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 xil_printf("%s: no moves in game (%s %d)!", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return best_board;
         }
+
         XTime_GetTime(&t_start);
+
         game_index = game_moves - 1;
         best_board = game[game_index];
+
         nodes_visited = 0;
         terminal_nodes = 0;
         q_hard_cutoff = 0;
@@ -308,7 +311,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         nm_load_rep_table(game, game_index, 0, 0, 0);
         vchess_write_board_basic(&game[game_index]);
         vchess_write_board_wait(&game[game_index]);
-
         vchess_capture_moves(0);
         move_count = vchess_move_count();
         if (move_count == 0)
@@ -317,13 +319,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
                 return best_board;
         }
 
-        status = nm_load_positions(root_node_boards);
-        if (status != move_count)
-        {
-                xil_printf("%s: bad call to nm_load_positions (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                return best_board;
-        }
-
+        nm_load_positions(root_node_boards);
         best_board = root_node_boards[0];
         if (move_count == 1)
                 return best_board;
@@ -384,7 +380,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f, move_count=%u\n",
                overall_best, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
         printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u, q_depth=%d\n",
-               ++depth_limit, q_hard_cutoff, q_end, valid_quiescence_ply_reached);
+               depth_limit, q_hard_cutoff, q_end, valid_quiescence_ply_reached);
         printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
                ((double)trans_collision * 100.0) / (double)nodes_visited);

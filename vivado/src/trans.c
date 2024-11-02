@@ -7,11 +7,7 @@
 
 #pragma GCC optimize ("O3")
 
-#define TABLE_SIZE_LOG2 25
-#define TABLE_SIZE (1 << TABLE_SIZE_LOG2)
-#define TABLE_WORD64_COUNT (TABLE_SIZE * (512 / (8 * 8)))
-
-static void
+static inline void
 trans_wait_idle(const char *func, const char *file, int line)
 {
         uint32_t i;
@@ -24,7 +20,7 @@ trans_wait_idle(const char *func, const char *file, int line)
                 vchess_trans_read(0, 0, 0, 0, 0, &trans_idle);
                 ++i;
         }
-        while (!trans_idle && i < 3000);
+        while (!trans_idle && i < 1000);
         if (!trans_idle)
         {
 		transaction = vchess_read(253);

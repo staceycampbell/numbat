@@ -171,6 +171,9 @@ main(void)
         // ip_status = 0;
         com_status = 0;
 
+        trans_clear_table();
+        uci_init();
+
         xil_printf("ready\n");
 
         while (1)
