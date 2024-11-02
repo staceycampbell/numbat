@@ -1,7 +1,8 @@
 CFLAGS := -Wall -O2
 SRC := display_board.sv is_attacking.sv display_is_attacking.sv board_attack.sv all_moves.sv \
-	evaluate.sv rep_det.sv popcount.sv move_sort.sv mram.sv evaluate_general.sv
-EVALHEADERS := evaluate_general.vh
+	evaluate.sv rep_det.sv popcount.sv move_sort.sv mram.sv evaluate_general.sv \
+	evaluate_pawns.sv
+EVALHEADERS := evaluate_general.vh evaluate_pawns.vh
 
 all: tb tbtrans
 

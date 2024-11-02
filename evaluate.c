@@ -167,18 +167,32 @@ static const int kval[2][64] = {
     -40, -40, -40, -40, -40, -40, -40, -40 }
 };
 
+static const int pawn_isolated[2][8] = {
+  {14, 21, 23, 23, 23, 23, 21, 14},
+  { 5,  7,  8,  8,  8,  8,  7,  5}
+};
+
 int
 main(void)
 {
         int32_t c, i;
         static const char *c_str[2] = {"BLACK", "WHITE"};
 	static const int32_t sign[2] = {-1, 1};
-        fileinfo_t fileinfo[1] = {
-                {"evaluate_general.vh", 0}};
+        fileinfo_t fileinfo[] = {
+                {"evaluate_general.vh", 0},
+                {"evaluate_pawns.vh", 0}
+        };
         static const int eval_general = 0;
+        static const int eval_pawns = 1;
 
         for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)
                 assert((fileinfo[i].fp = fopen(fileinfo[i].fn, "w")) != 0);
+
+        for (i = 0; i < 8; ++i)
+        {
+                fprintf(fileinfo[eval_pawns].fp, "pawns_isolated_mg[%d] = %2d;\n", i, pawn_isolated[0][i]);
+                fprintf(fileinfo[eval_pawns].fp, "pawns_isolated_eg[%d] = %2d;\n", i, pawn_isolated[1][i]);
+        }
         
         fprintf(fileinfo[eval_general].fp, "value[`EMPTY_POSN] = 0;\n");
         fprintf(fileinfo[eval_general].fp, "value[`WHITE_PAWN] = %d;\n", PAWN_VALUE);

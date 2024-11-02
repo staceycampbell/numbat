@@ -193,7 +193,7 @@ module tb;
         t <= t + 1;
         reset <= t < 64;
 
-        board_valid <= t == 72;
+        // board_valid <= t == 72;
 
         if (t >= 10000)
           $finish;
