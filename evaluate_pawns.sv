@@ -23,14 +23,21 @@ module evaluate_pawns #
     output reg                       eval_valid
     );
 
-   localparam LATENCY_COUNT = 8;
+   localparam LATENCY_COUNT = 7;
 
    reg                               board_valid_r;
    reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;
+
+   reg [3:0]                             doubled_distance_t2 [0:63];
+   
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_mg [0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_eg [0:7];
+   reg signed [EVAL_WIDTH - 1:0]         pawns_doubled_mg [0:7][1:5];
+   reg signed [EVAL_WIDTH - 1:0]         pawns_doubled_eg [0:7][1:5];
+   
    reg [63:0]                            board_neutral_t1;
    reg [7:0]                             col_with_pawn_t1;
+   
    reg signed [EVAL_WIDTH - 1:0]         isolated_mg_t2 [0:63];
    reg signed [EVAL_WIDTH - 1:0]         isolated_eg_t2 [0:63];
    reg signed [EVAL_WIDTH - 1:0]         isolated_mg_t3 [0:15];
@@ -39,23 +46,39 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]         isolated_eg_t4 [0:3];
    reg signed [EVAL_WIDTH - 1:0]         isolated_mg_t5;
    reg signed [EVAL_WIDTH - 1:0]         isolated_eg_t5;
-   reg signed [EVAL_WIDTH - 1:0]         eval_mg_t6;
-   reg signed [EVAL_WIDTH - 1:0]         eval_eg_t6;
+
+   reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t4 [0:7];
+   reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t4 [0:7];
+   reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t5 [0:1];
+   reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t5 [0:1];
+   reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t6;
+   reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t6;
+   
+   reg signed [EVAL_WIDTH - 1:0]         eval_mg_t7;
+   reg signed [EVAL_WIDTH - 1:0]         eval_eg_t7;
 
    reg [2:0]                             row_flip [0:1][0:7];
 
-   integer                               i, row, col;
+   integer                               i, row, col, row_adv;
 
    wire [`PIECE_WIDTH - 1:0]             pawn = white_to_move ? `BLACK_PAWN : `WHITE_PAWN;
 
-   assign eval_mg = white_to_move ? -eval_mg_t6 : eval_mg_t6;
-   assign eval_eg = white_to_move ? -eval_eg_t6 : eval_eg_t6;
+   assign eval_mg = white_to_move ? -eval_mg_t7 : eval_mg_t7;
+   assign eval_eg = white_to_move ? -eval_eg_t7 : eval_eg_t7;
 
    initial
      begin
-        // $dumpfile("wave.vcd");
-        // for (i = 0; i < 4; i = i + 1)
-        //  $dumpvars(0, isolated_mg_t4[i]);
+        if (0)
+          begin
+             $dumpfile("wave.vcd");
+             for (i = 0; i < 8; i = i + 1)
+               begin
+                  $dumpvars(0, doubled_mg_t4[i]);
+                  $dumpvars(0, doubled_eg_t4[i]);
+               end
+          end
      end
 
    always @(posedge clk)
@@ -66,13 +89,59 @@ module evaluate_pawns #
         for (row = 0; row < 8; row = row + 1)
           for (col = 0; col < 8; col = col + 1)
             begin
-               board_neutral_t1[(row_flip[white_to_move][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn;
-               if (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn)
-                 col_with_pawn_t1[col] <= 1;
+               if (row != 0 && row != 7)
+                 begin
+                    board_neutral_t1[(row_flip[white_to_move][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn;
+                    if (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn)
+                      col_with_pawn_t1[col] <= 1;
+                 end
+               else
+                 begin // keep x's out of sim, tossed by optimizer
+                    board_neutral_t1[row << 3 | col] <= 0;
+                    col_with_pawn_t1[col] <= 0;
+                 end
             end
 
-        eval_mg_t6 <= isolated_mg_t5;
-        eval_eg_t6 <= isolated_eg_t5;
+        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6;
+        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6;
+     end
+
+   // doubled pawns
+   always @(posedge clk)
+     begin
+        for (row = 0; row < 8; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            doubled_distance_t2[row << 3 | col] <= 0; // overridden below
+        for (row = 1; row < 6; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            if (board_neutral_t1[row << 3 | col])
+              for (row_adv = row + 1; row_adv < 7; row_adv = row_adv + 1)
+                if (board_neutral_t1[row_adv << 3 | col])
+                  doubled_distance_t2[row << 3 | col] <= row_adv - row;
+        for (row = 1; row < 6; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            if (doubled_distance_t2[row << 3 | col])
+              begin
+                 doubled_mg_t3[row << 3 | col] <= pawns_doubled_mg[col][doubled_distance_t2[row << 3 | col]];
+                 doubled_eg_t3[row << 3 | col] <= pawns_doubled_eg[col][doubled_distance_t2[row << 3 | col]];
+              end
+            else
+              begin
+                 doubled_mg_t3[row << 3 | col] <= 0;
+                 doubled_eg_t3[row << 3 | col] <= 0;
+              end
+        for (i = 8; i < 40; i = i + 4)
+          begin
+             doubled_mg_t4[(i - 8) / 4] <= doubled_mg_t3[i + 0] +  doubled_mg_t3[i + 1] + doubled_mg_t3[i + 2] +  doubled_mg_t3[i + 3];
+             doubled_eg_t4[(i - 8) / 4] <= doubled_eg_t3[i + 0] +  doubled_eg_t3[i + 1] + doubled_eg_t3[i + 2] +  doubled_eg_t3[i + 3];
+          end
+        for (i = 0; i < 2; i = i + 1)
+          begin
+             doubled_mg_t5[i] <= doubled_mg_t4[i * 4 + 0] + doubled_mg_t4[i * 4 + 1] + doubled_mg_t4[i * 4 + 2] + doubled_mg_t4[i * 4 + 3];
+             doubled_eg_t5[i] <= doubled_eg_t4[i * 4 + 0] + doubled_eg_t4[i * 4 + 1] + doubled_eg_t4[i * 4 + 2] + doubled_eg_t4[i * 4 + 3];
+          end
+        doubled_mg_t6 <= doubled_mg_t5[0] + doubled_mg_t5[1];
+        doubled_eg_t6 <= doubled_eg_t5[0] + doubled_eg_t5[1];
      end
 
    // isloated pawns
@@ -137,7 +206,7 @@ module evaluate_pawns #
        case (state)
          STATE_IDLE :
            begin
-              latency <= 0;
+              latency <= 1;
               eval_valid <= 0;
               if (board_valid && ~board_valid_r)
                 state <= STATE_LATENCY;
@@ -146,18 +215,18 @@ module evaluate_pawns #
            begin
               latency <= latency + 1;
               if (latency == LATENCY_COUNT - 1)
-                state <= STATE_WAIT_CLEAR;
+                begin
+                   eval_valid <= 1;
+                   state <= STATE_WAIT_CLEAR;
+                end
            end
          STATE_WAIT_CLEAR :
-           begin
-              eval_valid <= 1;
-              if (clear_eval)
-                state <= STATE_IDLE;
-           end
+           if (clear_eval)
+             state <= STATE_IDLE;
          default :
            state <= STATE_IDLE;
        endcase
-
+   
    initial
      begin
         for (i = 0; i < 8; i = i + 1)
