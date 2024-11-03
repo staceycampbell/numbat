@@ -73,10 +73,10 @@ module evaluate_pawns #
         if (0)
           begin
              $dumpfile("wave.vcd");
-             for (i = 0; i < 8; i = i + 1)
+             for (i = 0; i < 64; i = i + 1)
                begin
-                  $dumpvars(0, doubled_mg_t4[i]);
-                  $dumpvars(0, doubled_eg_t4[i]);
+                  $dumpvars(0, isolated_mg_t2[i]);
+                  $dumpvars(0, isolated_eg_t2[i]);
                end
           end
      end
@@ -96,10 +96,7 @@ module evaluate_pawns #
                       col_with_pawn_t1[col] <= 1;
                  end
                else
-                 begin // keep x's out of sim, tossed by optimizer
-                    board_neutral_t1[row << 3 | col] <= 0;
-                    col_with_pawn_t1[col] <= 0;
-                 end
+                 board_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
             end
 
         eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6;
