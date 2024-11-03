@@ -43,35 +43,35 @@ module tb;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                               am_idle;                // From all_moves of all_moves.v
-   wire [MAX_POSITIONS_LOG2-1:0]      am_move_count; // From all_moves of all_moves.v
-   wire                               am_move_ready;          // From all_moves of all_moves.v
-   wire                               am_moves_ready;         // From all_moves of all_moves.v
-   wire [5:0]                         attack_black_pop_out;   // From all_moves of all_moves.v
-   wire [5:0]                         attack_white_pop_out;   // From all_moves of all_moves.v
-   wire                               black_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]                        black_is_attacking_out; // From all_moves of all_moves.v
-   wire [`BOARD_WIDTH-1:0]            board_out;           // From all_moves of all_moves.v
-   wire                               capture_out;            // From all_moves of all_moves.v
-   wire [3:0]                         castle_mask_out;        // From all_moves of all_moves.v
-   wire                               display_done;           // From display_board of display_board.v
-   wire [3:0]                         en_passant_col_out;     // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0]       eval_out;       // From all_moves of all_moves.v
-   wire                               fifty_move_out;         // From all_moves of all_moves.v
-   wire [HALF_MOVE_WIDTH-1:0]         half_move_out;    // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0]       initial_eval;   // From all_moves of all_moves.v
-   wire                               initial_fifty_move;     // From all_moves of all_moves.v
-   wire                               initial_insufficient_material;// From all_moves of all_moves.v
-   wire                               initial_mate;           // From all_moves of all_moves.v
-   wire signed [31:0]                 initial_material;       // From all_moves of all_moves.v
-   wire                               initial_stalemate;      // From all_moves of all_moves.v
-   wire                               initial_thrice_rep;     // From all_moves of all_moves.v
-   wire                               insufficient_material_out;// From all_moves of all_moves.v
-   wire                               thrice_rep_out;         // From all_moves of all_moves.v
-   wire [UCI_WIDTH-1:0]               uci_out;                // From all_moves of all_moves.v
-   wire                               white_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]                        white_is_attacking_out; // From all_moves of all_moves.v
-   wire                               white_to_move_out;      // From all_moves of all_moves.v
+   wire                 am_idle;                // From all_moves of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
+   wire                 am_move_ready;          // From all_moves of all_moves.v
+   wire                 am_moves_ready;         // From all_moves of all_moves.v
+   wire [5:0]           attack_black_pop_out;   // From all_moves of all_moves.v
+   wire [5:0]           attack_white_pop_out;   // From all_moves of all_moves.v
+   wire                 black_in_check_out;     // From all_moves of all_moves.v
+   wire [63:0]          black_is_attacking_out; // From all_moves of all_moves.v
+   wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
+   wire                 capture_out;            // From all_moves of all_moves.v
+   wire [3:0]           castle_mask_out;        // From all_moves of all_moves.v
+   wire                 display_done;           // From display_board of display_board.v
+   wire [3:0]           en_passant_col_out;     // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves of all_moves.v
+   wire                 fifty_move_out;         // From all_moves of all_moves.v
+   wire [HALF_MOVE_WIDTH-1:0] half_move_out;    // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
+   wire                 initial_fifty_move;     // From all_moves of all_moves.v
+   wire                 initial_insufficient_material;// From all_moves of all_moves.v
+   wire                 initial_mate;           // From all_moves of all_moves.v
+   wire signed [31:0]   initial_material;       // From all_moves of all_moves.v
+   wire                 initial_stalemate;      // From all_moves of all_moves.v
+   wire                 initial_thrice_rep;     // From all_moves of all_moves.v
+   wire                 insufficient_material_out;// From all_moves of all_moves.v
+   wire                 thrice_rep_out;         // From all_moves of all_moves.v
+   wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
+   wire                 white_in_check_out;     // From all_moves of all_moves.v
+   wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
+   wire                 white_to_move_out;      // From all_moves of all_moves.v
    // End of automatics
    
    wire [3:0]                         uci_promotion;
@@ -100,12 +100,13 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
-        // connected pawns 7k/4p3/5p2/6p1/8/8/8/1K6 w - - 0 1
-        // isolated pawn 7k/1p6/5p2/6p1/8/8/8/1K6 w - - 0 1
+        // pawns doubled 1 square 7k/1p6/1p6/8/2p5/8/8/1K6 w - - 0 1 (-19 -8)
+        // no pawns doubled 7k/1p6/p7/8/2p5/8/8/1K6 w - - 0 1 (0 0)
+        // pawns doubled 5 squares 7k/1p6/8/8/2p5/8/1p6/1K6 w - - 0 1 (-4 -2)
         board[7 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        board[6 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[5 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[4 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[6 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[3 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[1 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
         board[0 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
         white_to_move = 1;
         castle_mask = 4'h0;

@@ -16,7 +16,7 @@ module evaluate #
     input [`BOARD_WIDTH - 1:0]       board_in,
     input                            clear_eval,
     input                            white_to_move,
-   
+
     input [5:0]                      attack_white_pop,
     input [5:0]                      attack_black_pop,
     input [63:0]                     white_is_attacking,
@@ -31,7 +31,7 @@ module evaluate #
     );
 
    localparam LATENCY_COUNT = 4;
-   localparam EVALUATION_COUNT = 2;
+   localparam EVALUATION_COUNT = 3;
    localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
 
    reg                               board_valid_r = 0;
@@ -41,10 +41,10 @@ module evaluate #
    reg [2:0]                         latency;
    reg signed [7:0]                  phase;
    reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_mg_t1, eval_eg_t1;
-   reg signed [PHASE_CALC_WIDTH - 1:0] score_mg_t2, score_eg_t2;
-   reg signed [PHASE_CALC_WIDTH - 1:0] score_t3;
-   reg signed [PHASE_CALC_WIDTH - 1:0] score_t4, score_t5;
-   reg signed [EVAL_WIDTH - 1:0]       eval_t6;
+   reg signed [PHASE_CALC_WIDTH - 1:0]              score_mg_t2, score_eg_t2;
+   reg signed [PHASE_CALC_WIDTH - 1:0]              score_t3;
+   reg signed [PHASE_CALC_WIDTH - 1:0]              score_t4, score_t5;
+   reg signed [EVAL_WIDTH - 1:0]                    eval_t6;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -52,20 +52,23 @@ module evaluate #
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire signed [EVAL_WIDTH-1:0] eval_eg_general;// From evaluate_general of evaluate_general.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_pawns;  // From evaluate_pawns of evaluate_pawns.v
+   wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_black;// From evaluate_pawns_black of evaluate_pawns.v
+   wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
    wire                 eval_general_valid;     // From evaluate_general of evaluate_general.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_general;// From evaluate_general of evaluate_general.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_pawns;  // From evaluate_pawns of evaluate_pawns.v
-   wire                 eval_pawns_valid;       // From evaluate_pawns of evaluate_pawns.v
+   wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_black;// From evaluate_pawns_black of evaluate_pawns.v
+   wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
+   wire                 eval_pawns_black_valid; // From evaluate_pawns_black of evaluate_pawns.v
+   wire                 eval_pawns_white_valid; // From evaluate_pawns_white of evaluate_pawns.v
    wire [5:0]           occupied_count;         // From popcount_occupied of popcount.v
    // End of automatics
 
-   genvar                              c;
+   genvar                                           c;
 
-   wire [63:0]                         occupied;
+   wire [63:0]                                      occupied;
 
-   wire [EVALUATION_COUNT - 1:0]       eval_done_status = {eval_pawns_valid, eval_general_valid};
-   wire [EVALUATION_COUNT - 1:0]       evals_complete = ~0;
+   wire [EVALUATION_COUNT - 1:0]                    eval_done_status = {eval_pawns_black_valid, eval_pawns_white_valid, eval_general_valid};
+   wire [EVALUATION_COUNT - 1:0]                    evals_complete = ~0;
 
    assign eval = eval_t6;
 
@@ -82,13 +85,13 @@ module evaluate #
    always @(posedge clk)
      begin
         board_valid_r <= board_valid;
-        
+
         if (occupied_count > 62)
           phase <= 62;
         else
           phase <= occupied_count;
-        eval_mg_t1 <= eval_mg_general + eval_mg_pawns;
-        eval_eg_t1 <= eval_eg_general + eval_eg_pawns;
+        eval_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black;
+        eval_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black;
         score_mg_t2 <= eval_mg_t1 * phase;
         score_eg_t2 <= eval_eg_t1 * (62 - phase);
         score_t3 <= score_mg_t2 + score_eg_t2;
@@ -174,29 +177,52 @@ module evaluate #
       .white_to_move                    (white_to_move),
       .attack_white_pop                 (attack_white_pop[5:0]),
       .attack_black_pop                 (attack_black_pop[5:0]));
-   
+
    /* evaluate_pawns AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_pawns_valid),
-    .eval_\([me]\)g (eval_\1g_pawns[]),
+    .eval_valid (eval_pawns_white_valid),
+    .eval_\([me]\)g (eval_\1g_pawns_white[]),
     );*/
    evaluate_pawns #
      (
-      .EVAL_WIDTH (EVAL_WIDTH)
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .WHITE_PAWNS (1)
       )
-   evaluate_pawns
+   evaluate_pawns_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_mg_pawns[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_pawns[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_pawns_valid),      // Templated
+      .eval_mg                          (eval_mg_pawns_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg                          (eval_eg_pawns_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid                       (eval_pawns_white_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval),
-      .white_to_move                    (white_to_move));
+      .clear_eval                       (clear_eval));
+
+   /* evaluate_pawns AUTO_TEMPLATE (
+    .board_valid (local_board_valid),
+    .eval_valid (eval_pawns_black_valid),
+    .eval_\([me]\)g (eval_\1g_pawns_black[]),
+    );*/
+   evaluate_pawns #
+     (
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .WHITE_PAWNS (0)
+      )
+   evaluate_pawns_black
+     (/*AUTOINST*/
+      // Outputs
+      .eval_mg                          (eval_mg_pawns_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg                          (eval_eg_pawns_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid                       (eval_pawns_black_valid), // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (local_board_valid),     // Templated
+      .board                            (board[`BOARD_WIDTH-1:0]),
+      .clear_eval                       (clear_eval));
 
    /* popcount AUTO_TEMPLATE (
     .population (occupied_count[]),

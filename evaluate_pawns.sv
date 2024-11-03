@@ -1,13 +1,13 @@
 `include "vchess.vh"
 
-// notes:
-// - if white_to_move is set then we are evaluating black moves in anticipation of white to move
+// note:
 // - black/white pawn evaluation is symmetric, so for black flip rows as though white and negate
 //   eval on output
 
 module evaluate_pawns #
   (
-   parameter EVAL_WIDTH = 0
+   parameter EVAL_WIDTH = 0,
+   parameter WHITE_PAWNS = 0
    )
    (
     input                            clk,
@@ -16,7 +16,6 @@ module evaluate_pawns #
     input                            board_valid,
     input [`BOARD_WIDTH - 1:0]       board,
     input                            clear_eval,
-    input                            white_to_move,
 
     output signed [EVAL_WIDTH - 1:0] eval_mg,
     output signed [EVAL_WIDTH - 1:0] eval_eg,
@@ -63,10 +62,10 @@ module evaluate_pawns #
 
    integer                               i, row, col, row_adv;
 
-   wire [`PIECE_WIDTH - 1:0]             pawn = white_to_move ? `BLACK_PAWN : `WHITE_PAWN;
+   wire [`PIECE_WIDTH - 1:0]             pawn = WHITE_PAWNS ? `WHITE_PAWN : `BLACK_PAWN;
 
-   assign eval_mg = white_to_move ? -eval_mg_t7 : eval_mg_t7;
-   assign eval_eg = white_to_move ? -eval_eg_t7 : eval_eg_t7;
+   assign eval_mg = WHITE_PAWNS ? eval_mg_t7 : -eval_mg_t7;
+   assign eval_eg = WHITE_PAWNS ? eval_eg_t7 : -eval_eg_t7;
 
    initial
      begin
@@ -75,8 +74,7 @@ module evaluate_pawns #
              $dumpfile("wave.vcd");
              for (i = 0; i < 64; i = i + 1)
                begin
-                  $dumpvars(0, isolated_mg_t2[i]);
-                  $dumpvars(0, isolated_eg_t2[i]);
+                  $dumpvars(0, doubled_distance_t2[i]);
                end
           end
      end
@@ -91,7 +89,7 @@ module evaluate_pawns #
             begin
                if (row != 0 && row != 7)
                  begin
-                    board_neutral_t1[(row_flip[white_to_move][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn;
+                    board_neutral_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn;
                     if (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn)
                       col_with_pawn_t1[col] <= 1;
                  end
@@ -228,8 +226,8 @@ module evaluate_pawns #
      begin
         for (i = 0; i < 8; i = i + 1)
           begin
-             row_flip[0][i] = i;
-             row_flip[1][i] = 7 - i;
+             row_flip[0][i] = 7 - i;
+             row_flip[1][i] = i;
           end
 
 `include "evaluate_pawns.vh"
