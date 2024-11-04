@@ -100,14 +100,15 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
-        // pawns doubled 1 square 7k/1p6/1p6/8/2p5/8/8/1K6 w - - 0 1 (-19 -8)
-        // no pawns doubled 7k/1p6/p7/8/2p5/8/8/1K6 w - - 0 1 (0 0)
-        // pawns doubled 5 squares 7k/1p6/8/8/2p5/8/1p6/1K6 w - - 0 1 (-4 -2)
+        // connected 7k/2p5/3p4/4p3/8/4P3/1P1P4/K7 w - - 0 1
         board[7 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        board[6 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[3 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[1 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[0 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        board[6 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[4 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
         white_to_move = 1;
         castle_mask = 4'h0;
         en_passant_col = 4'h0;

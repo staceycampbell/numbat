@@ -33,6 +33,8 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_eg [0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_doubled_mg [0:7][1:5];
    reg signed [EVAL_WIDTH - 1:0]         pawns_doubled_eg [0:7][1:5];
+   reg signed [EVAL_WIDTH - 1:0]         pawns_connected_mg [0:7][0:7];
+   reg signed [EVAL_WIDTH - 1:0]         pawns_connected_eg [0:7][0:7];
    
    reg [63:0]                            board_neutral_t1;
    reg [7:0]                             col_with_pawn_t1;
@@ -54,6 +56,16 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t5 [0:1];
    reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t6;
+
+   reg [63:0]                            connected_t2;
+   reg signed [EVAL_WIDTH - 1:0]         connected_mg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]         connected_eg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]         connected_mg_t4 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         connected_eg_t4 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         connected_mg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         connected_eg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         connected_mg_t6;
+   reg signed [EVAL_WIDTH - 1:0]         connected_eg_t6;
    
    reg signed [EVAL_WIDTH - 1:0]         eval_mg_t7;
    reg signed [EVAL_WIDTH - 1:0]         eval_eg_t7;
@@ -97,8 +109,50 @@ module evaluate_pawns #
                  board_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
             end
 
-        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6;
-        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6;
+        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6;
+        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6;
+     end
+
+   // connected pawns (per crafty masking)
+   always @(posedge clk)
+     begin
+        for (row = 0; row < 8; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            connected_t2[row << 3 | col] <= 0;
+        for (row = 1; row < 7; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            if (board_neutral_t1[row << 3 | col])
+              if (col == 0 && (board_neutral_t1[row << 3 | 1] || board_neutral_t1[(row - 1) << 3 | 1]))
+                connected_t2[row << 3 | col] <= 1;
+              else if (col == 7 && (board_neutral_t1[row << 3 | 6] || board_neutral_t1[(row - 1) << 3 | 6]))
+                connected_t2[row << 3 | col] <= 1;
+              else if (board_neutral_t1[row << 3 | (col - 1)] || board_neutral_t1[row << 3 | (col + 1)] ||
+                       board_neutral_t1[(row - 1) << 3 | (col - 1)] || board_neutral_t1[(row - 1) << 3 | (col + 1)])
+                connected_t2[row << 3 | col] <= 1;
+        for (row = 0; row < 8; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            if (connected_t2[row << 3 | col])
+              begin
+                 connected_mg_t3[row << 3 | col] <= pawns_connected_mg[row][col];
+                 connected_eg_t3[row << 3 | col] <= pawns_connected_eg[row][col];
+              end
+            else
+              begin
+                 connected_mg_t3[row << 3 | col] <= 0;
+                 connected_eg_t3[row << 3 | col] <= 0;
+              end
+        for (i = 0; i < 16; i = i + 1)
+          begin
+             connected_mg_t4[i] <= connected_mg_t3[i * 4 + 0] + connected_mg_t3[i * 4 + 1] + connected_mg_t3[i * 4 + 2] + connected_mg_t3[i * 4 + 3];
+             connected_eg_t4[i] <= connected_eg_t3[i * 4 + 0] + connected_eg_t3[i * 4 + 1] + connected_eg_t3[i * 4 + 2] + connected_eg_t3[i * 4 + 3];
+          end
+        for (i = 0; i < 4; i = i + 1)
+          begin
+             connected_mg_t5[i] <= connected_mg_t4[i * 4 + 0] + connected_mg_t4[i * 4 + 1] + connected_mg_t4[i * 4 + 2] + connected_mg_t4[i * 4 + 3];
+             connected_eg_t5[i] <= connected_eg_t4[i * 4 + 0] + connected_eg_t4[i * 4 + 1] + connected_eg_t4[i * 4 + 2] + connected_eg_t4[i * 4 + 3];
+          end
+        connected_mg_t6 <= connected_mg_t5[0] + connected_mg_t5[1] + connected_mg_t5[2] + connected_mg_t5[3];
+        connected_eg_t6 <= connected_eg_t5[0] + connected_eg_t5[1] + connected_eg_t5[2] + connected_eg_t5[3];
      end
 
    // doubled pawns

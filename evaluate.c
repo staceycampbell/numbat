@@ -184,6 +184,26 @@ static const int pawn_doubled[2][8] = {
         {22, 19, 19, 19, 19, 19, 19, 22}
 };
 
+static const int pawn_connected[2][8][8] = {
+  {{  0,  0,  0,  0,  0,  0,  0,  0 },
+   {  0,  1,  1,  2,  2,  1,  1,  0 },
+   {  1,  2,  2,  3,  3,  2,  2,  1 },
+   {  3,  5,  6, 10, 10,  6,  5,  3 },  /* [mg][file][rank] */
+   { 12, 14, 17, 22, 22, 17, 14, 12 },
+   { 27, 29, 31, 35, 35, 31, 29, 27 },
+   { 54, 63, 65, 70, 70, 65, 63, 54 },
+   {  0,  0,  0,  0,  0,  0,  0,  0 }},
+
+  {{  0,  0,  0,  0,  0,  0,  0,  0 },
+   {  1,  3,  3,  3,  3,  3,  1,  1 },
+   {  3,  6,  6,  6,  6,  6,  6,  1 },
+   {  6, 10, 10, 10, 10, 10, 10,  3 },  /* [eg][file][rank] */
+   { 13, 17, 17, 17, 17, 17, 17, 13 },
+   { 32, 38, 38, 38, 38, 38, 38, 32 },
+   { 76, 87, 87, 87, 87, 87, 87, 76 },
+   {  0,  0,  0,  0,  0,  0,  0,  0 }}
+};
+
 int
 main(void)
 {
@@ -207,6 +227,11 @@ main(void)
                 {
                         fprintf(fileinfo[eval_pawns].fp, "pawns_doubled_mg[%d][%d] = %3.0f;\n", i, j, -((double)pawn_doubled[mg][i] / (double)j));
                         fprintf(fileinfo[eval_pawns].fp, "pawns_doubled_eg[%d][%d] = %3.0f;\n", i, j, -((double)pawn_doubled[eg][i] / (double)j));
+                }
+                for (j = 0; j < 8; ++j)
+                {
+                        fprintf(fileinfo[eval_pawns].fp, "pawns_connected_mg[%d][%d] = %3d;\n", i, j, pawn_connected[mg][i][j]);
+                        fprintf(fileinfo[eval_pawns].fp, "pawns_connected_eg[%d][%d] = %3d;\n", i, j, pawn_connected[eg][i][j]);
                 }
         }
 
