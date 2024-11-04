@@ -20,8 +20,6 @@ static int32_t depth_limit;
 static int32_t quiescence_ply_reached, valid_quiescence_ply_reached;
 static XTime time_limit;
 static uint32_t time_limit_exceeded;
-static uint64_t ticks_per_op;
-static uint64_t ops;
 
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply)
@@ -150,7 +148,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         uint32_t collision;
         trans_t trans;
         XTime t_now;
-	XTime profile_start, profile_stop;
         board_t *board_ptr[MAX_POSITIONS];
 
         ++nodes_visited;
@@ -160,13 +157,9 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, board_vert, ply, quiescence);
-	XTime_GetTime(&profile_start);
         vchess_write_board_basic(board);
-	XTime_GetTime(&profile_stop);
         vchess_capture_moves(quiescence);
         vchess_write_board_wait(board);
-	ticks_per_op += profile_stop - profile_start;
-	++ops;
 
         value = nm_eval(board->white_to_move, ply);
 
@@ -299,7 +292,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         XTime t_end, t_start;
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
-	static int32_t profile_init = 0;
 
         if (game_moves == 0)
         {
@@ -318,13 +310,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         q_end = 0;
         no_trans = 0;
         trans_collision = 0;
-
-	if (! profile_init)
-	{
-		ticks_per_op = 0;
-		ops = 0;
-		profile_init = 1;
-	}
 
         trans_clear_table();    // for easier debug
 
@@ -404,7 +389,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves)
         printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
                ((double)trans_collision * 100.0) / (double)nodes_visited);
-	printf("ticks_per_op average=%.3f\n", (double)ticks_per_op / (double)ops);
 
         return best_board;
 }
