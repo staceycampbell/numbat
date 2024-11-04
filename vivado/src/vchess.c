@@ -159,13 +159,17 @@ vchess_print_board(board_t * board, uint32_t initial_board)
 }
 
 void
-vchess_write_board_basic(board_t * board)
+vchess_write_board_basic(const board_t * board)
 {
-        int32_t i;
-
         vchess_reset_all_moves();
-        for (i = 0; i < 8; ++i)
-                vchess_write_board_row(i, board->board[i]);
+	vchess_write_board_row(0, board->board[0]);
+	vchess_write_board_row(1, board->board[1]);
+	vchess_write_board_row(2, board->board[2]);
+	vchess_write_board_row(3, board->board[3]);
+	vchess_write_board_row(4, board->board[4]);
+	vchess_write_board_row(5, board->board[5]);
+	vchess_write_board_row(6, board->board[6]);
+	vchess_write_board_row(7, board->board[7]);
         vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
         vchess_write_half_move(board->half_move_clock);
 }

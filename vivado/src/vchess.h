@@ -486,7 +486,7 @@ extern uint32_t cmd_transfer_data(uint8_t cmdbuf[512], uint32_t *index);
 extern void vchess_init(void);
 extern uint32_t vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
 extern void vchess_init_board(board_t *board);
-extern void vchess_write_board_basic(board_t *board);
+extern void vchess_write_board_basic(const board_t *board);
 extern void vchess_write_board_wait(board_t *board);
 extern void vchess_init_board(board_t *board);
 extern void vchess_print_board(board_t *board, uint32_t initial_board);
