@@ -162,14 +162,10 @@ void
 vchess_write_board_basic(const board_t * board)
 {
         vchess_reset_all_moves();
-	vchess_write_board_row(0, board->board[0]);
-	vchess_write_board_row(1, board->board[1]);
-	vchess_write_board_row(2, board->board[2]);
-	vchess_write_board_row(3, board->board[3]);
-	vchess_write_board_row(4, board->board[4]);
-	vchess_write_board_row(5, board->board[5]);
-	vchess_write_board_row(6, board->board[6]);
-	vchess_write_board_row(7, board->board[7]);
+	vchess_write_board_two_rows(0, board->board[0], board->board[1]);
+	vchess_write_board_two_rows(2, board->board[2], board->board[3]);
+	vchess_write_board_two_rows(4, board->board[4], board->board[5]);
+	vchess_write_board_two_rows(6, board->board[6], board->board[7]);
         vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
         vchess_write_half_move(board->half_move_clock);
 }

@@ -111,6 +111,15 @@ vchess_write(uint32_t reg, uint32_t val)
         *ptr = val;
 }
 
+static inline void
+vchess_write64(uint32_t reg, uint64_t val)
+{
+        volatile uint64_t *ptr;
+
+        ptr = (volatile uint64_t *)(uint64_t)(XPAR_CTRL0_AXI_BASEADDR + reg * 4);
+        *ptr = val;
+}
+
 static inline uint32_t
 vchess_read(uint32_t reg)
 {
@@ -286,6 +295,15 @@ vchess_write_board_row(uint32_t row, uint32_t row_pieces)
         vchess_write(8 + row, row_pieces);
 }
 
+static inline void
+vchess_write_board_two_rows(uint32_t row0, uint64_t row_pieces0, uint64_t row_pieces1)
+{
+	uint64_t row_pieces;
+
+	row_pieces = row_pieces1 << (uint64_t)32 | row_pieces0;
+        vchess_write64(8 + row0, row_pieces);
+}
+
 static inline uint32_t
 vchess_status(uint32_t *move_ready, uint32_t *moves_ready, uint32_t *mate, uint32_t *stalemate,
               uint32_t *thrice_rep, uint32_t *am_idle, uint32_t *fifty_move)
@@ -434,12 +452,18 @@ vchess_repdet_castle_mask(uint32_t castle_mask)
 }
 
 static inline void
-vchess_repdet_board(uint32_t board[8])
+vchess_repdet_board(const uint32_t board[8])
 {
         uint32_t i;
+	uint64_t row_pieces0, row_pieces1, row_pieces;
         
-        for (i = 0; i < 8; ++i)
-                vchess_write(0x18 + i, board[i]);
+        for (i = 0; i < 8; i += 2)
+	{
+		row_pieces0 = board[i + 0];
+		row_pieces1 = board[i + 1];
+		row_pieces = row_pieces1 << (uint64_t)32 | row_pieces0;
+                vchess_write64(0x18 + i, row_pieces);
+	}
 }
 
 static inline void
