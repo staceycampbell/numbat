@@ -4,7 +4,7 @@
 #include <xil_printf.h>
 #include "vchess.h"
 
-#pragma GCC optimize ("O3")
+#pragma GCC optimize ("O2")
 
 static char piece_char[1 << PIECE_BITS];
 
