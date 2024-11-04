@@ -27,14 +27,14 @@ module evaluate_pawns #
    reg                               board_valid_r;
    reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;
 
-   reg [3:0]                             doubled_distance_t2 [0:63];
-   
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_mg [0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_eg [0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_doubled_mg [0:7][1:5];
    reg signed [EVAL_WIDTH - 1:0]         pawns_doubled_eg [0:7][1:5];
    reg signed [EVAL_WIDTH - 1:0]         pawns_connected_mg [0:7][0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_connected_eg [0:7][0:7];
+   reg signed [EVAL_WIDTH - 1:0]         pawns_backward_mg [0:7];
+   reg signed [EVAL_WIDTH - 1:0]         pawns_backward_eg [0:7];
    
    reg [63:0]                            board_neutral_t1;
    reg [7:0]                             col_with_pawn_t1;
@@ -48,6 +48,7 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]         isolated_mg_t5;
    reg signed [EVAL_WIDTH - 1:0]         isolated_eg_t5;
 
+   reg [3:0]                             doubled_distance_t2 [0:63];
    reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t4 [0:7];
@@ -66,6 +67,16 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]         connected_eg_t5 [0:3];
    reg signed [EVAL_WIDTH - 1:0]         connected_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]         connected_eg_t6;
+
+   reg [63:0]                            backward_t2;
+   reg signed [EVAL_WIDTH - 1:0]         backward_mg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]         backward_eg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]         backward_mg_t4 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         backward_eg_t4 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         backward_mg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         backward_eg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         backward_mg_t6;
+   reg signed [EVAL_WIDTH - 1:0]         backward_eg_t6;
    
    reg signed [EVAL_WIDTH - 1:0]         eval_mg_t7;
    reg signed [EVAL_WIDTH - 1:0]         eval_eg_t7;
@@ -86,7 +97,7 @@ module evaluate_pawns #
              $dumpfile("wave.vcd");
              for (i = 0; i < 64; i = i + 1)
                begin
-                  $dumpvars(0, doubled_distance_t2[i]);
+                  $dumpvars(0, backward_mg_t3[i]);
                end
           end
      end
@@ -109,8 +120,57 @@ module evaluate_pawns #
                  board_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
             end
 
-        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6;
-        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6;
+        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6;
+        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6;
+     end
+
+   // backward pawns (no adjacent or rear supporting pawn)
+   always @(posedge clk)
+     begin
+        for (row = 0; row < 8; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            backward_t2[row << 3 | col] <= 0;
+        for (row = 1; row < 7; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            if (board_neutral_t1[row << 3 | col])
+              if (col == 0 && col_with_pawn_t1[1] != 0) // exclude isolated, penalized elsewhere
+                begin
+                   if (board_neutral_t1[(row - 1) << 3 | 1] == 0 && board_neutral_t1[row << 3 | 1] == 0)
+                     backward_t2[row << 3 | col] <= 1;
+                end
+              else if (col == 7 && col_with_pawn_t1[6] != 0) // exclude isolated
+                begin
+                   if (board_neutral_t1[(row - 1) << 3 | 6] == 0 && board_neutral_t1[row << 3 | 6] == 0)
+                     backward_t2[row << 3 | col] <= 1;
+                end
+              else if (col_with_pawn_t1[col - 1] != 0 || col_with_pawn_t1[col + 1] != 0) // exclude isolated
+                if (board_neutral_t1[(row - 1) << 3 | (col - 1)] == 0 && board_neutral_t1[(row - 1) << 3 | (col + 1)] == 0 &&
+                    board_neutral_t1[row << 3 | (col - 1)] == 0 && board_neutral_t1[row << 3 | (col + 1)] == 0)
+                  backward_t2[row << 3 | col] <= 1;
+        for (row = 0; row < 8; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            if (backward_t2[row << 3 | col] && doubled_distance_t2[row << 3 | col] == 0) // exclude doubled, penalized elsewhere
+              begin
+                 backward_mg_t3[row << 3 | col] <= pawns_backward_mg[col];
+                 backward_eg_t3[row << 3 | col] <= pawns_backward_eg[col];
+              end
+            else
+              begin
+                 backward_mg_t3[row << 3 | col] <= 0;
+                 backward_eg_t3[row << 3 | col] <= 0;
+              end
+        for (i = 0; i < 16; i = i + 1)
+          begin
+             backward_mg_t4[i] <= backward_mg_t3[i * 4 + 0] + backward_mg_t3[i * 4 + 1] + backward_mg_t3[i * 4 + 2] + backward_mg_t3[i * 4 + 3];
+             backward_eg_t4[i] <= backward_eg_t3[i * 4 + 0] + backward_eg_t3[i * 4 + 1] + backward_eg_t3[i * 4 + 2] + backward_eg_t3[i * 4 + 3];
+          end
+        for (i = 0; i < 4; i = i + 1)
+          begin
+             backward_mg_t5[i] <= backward_mg_t4[i * 4 + 0] + backward_mg_t4[i * 4 + 1] + backward_mg_t4[i * 4 + 2] + backward_mg_t4[i * 4 + 3];
+             backward_eg_t5[i] <= backward_eg_t4[i * 4 + 0] + backward_eg_t4[i * 4 + 1] + backward_eg_t4[i * 4 + 2] + backward_eg_t4[i * 4 + 3];
+          end
+        backward_mg_t6 <= backward_mg_t5[0] + backward_mg_t5[1] + backward_mg_t5[2] + backward_mg_t5[3];
+        backward_eg_t6 <= backward_eg_t5[0] + backward_eg_t5[1] + backward_eg_t5[2] + backward_eg_t5[3];
      end
 
    // connected pawns (per crafty masking)
