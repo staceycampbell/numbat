@@ -57,7 +57,7 @@ trans_clear_table(void)
         }
 }
 
-static void
+static inline void
 trans_test_idle(const char *func, const char *file, int line)
 {
         uint32_t trans_idle;
@@ -82,7 +82,7 @@ trans_lookup(trans_t * trans, uint32_t * collision)
 }
 
 void
-trans_store(trans_t * trans)
+trans_store(const trans_t * trans)
 {
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         vchess_trans_store(trans->depth, trans->flag, trans->eval);

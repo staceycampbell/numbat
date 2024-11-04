@@ -9,7 +9,7 @@
 static char piece_char[1 << PIECE_BITS];
 
 uint32_t
-vchess_get_piece(board_t * board, uint32_t row, uint32_t col)
+vchess_get_piece(const board_t * board, uint32_t row, uint32_t col)
 {
         uint32_t row_contents, shift, piece;
 
@@ -60,7 +60,7 @@ vchess_read_uci(uci_t * uci)
 }
 
 void
-vchess_uci_string(uci_t * uci, char *str)
+vchess_uci_string(const uci_t * uci, char *str)
 {
         char ch;
         uint32_t promotion_type;
@@ -99,7 +99,7 @@ vchess_uci_string(uci_t * uci, char *str)
 }
 
 void
-vchess_print_board(board_t * board, uint32_t initial_board)
+vchess_print_board(const board_t * board, uint32_t initial_board)
 {
         int y, x, rev;
         char uci_str[6];
@@ -171,7 +171,7 @@ vchess_write_board_basic(const board_t * board)
 }
 
 void
-vchess_write_board_wait(board_t * board)
+vchess_write_board_wait(const board_t * board)
 {
         int32_t i;
         uint32_t moves_ready, move_count;

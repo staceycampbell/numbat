@@ -56,7 +56,7 @@ book_compare(const void *p1, const void *p2)
 }
 
 uint32_t
-book_game_move(board_t *board)
+book_game_move(const board_t *board)
 {
         int32_t trans_idle;
 	uint64_t hash;

@@ -253,7 +253,7 @@ uci_print_game(uint32_t result)
 }
 
 void
-fen_print(board_t * board)
+fen_print(const board_t * board)
 {
         int row, col, empty, i;
         uint32_t piece;

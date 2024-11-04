@@ -511,15 +511,15 @@ extern void vchess_init(void);
 extern uint32_t vchess_move_piece(board_t *board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
 extern void vchess_init_board(board_t *board);
 extern void vchess_write_board_basic(const board_t *board);
-extern void vchess_write_board_wait(board_t *board);
+extern void vchess_write_board_wait(const board_t *board);
 extern void vchess_init_board(board_t *board);
-extern void vchess_print_board(board_t *board, uint32_t initial_board);
+extern void vchess_print_board(const board_t *board, uint32_t initial_board);
 extern uint32_t vchess_read_board(board_t *board, uint32_t index);
 extern void vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece);
-extern uint32_t vchess_get_piece(board_t *board, uint32_t row, uint32_t col);
+extern uint32_t vchess_get_piece(const board_t *board, uint32_t row, uint32_t col);
 extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask);
 extern void vchess_read_uci(uci_t *uci);
-extern void vchess_uci_string(uci_t *uci, char *str);
+extern void vchess_uci_string(const uci_t *uci, char *str);
 
 extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves);
 
@@ -527,7 +527,7 @@ extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);
 
 extern void process_cmd(uint8_t cmd[BUF_SIZE]);
-extern void fen_print(board_t *board);
+extern void fen_print(const board_t *board);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 
 extern void uci_init(void);
@@ -536,11 +536,11 @@ extern void uci_print_game(uint32_t result);
 
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t *trans, uint32_t *collision);
-extern void trans_store(trans_t *trans);
+extern void trans_store(const trans_t *trans);
 
 extern void book_build(void);
 extern void book_format_media(void);
 extern int32_t book_open(void);
 extern uint32_t book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t *uci);
-extern uint32_t book_game_move(board_t *board);
+extern uint32_t book_game_move(const board_t *board);
 extern void book_print_entry(book_t *entry);
