@@ -9,6 +9,7 @@
 #pragma GCC optimize ("O2")
 
 #define FIXED_TIME 30
+#define MID_GAME_HALF_MOVES 50
 
 #define MAX_DEPTH 30
 #define LARGE_EVAL (1 << 20)
@@ -280,12 +281,13 @@ nm_move_sort_compare(const void *p1, const void *p2)
 }
 
 board_t
-nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t *tc)
+nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
 {
         int32_t i, game_index;
         uint32_t ply;
         uint32_t move_count;
         uint64_t elapsed_ticks;
+        int64_t duration_seconds;
         double elapsed_time, nps;
         int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
         board_t best_board = { 0 };
@@ -325,15 +327,32 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t *tc)
                 return best_board;
         }
 
+        tc_display(tc);
+        printf(" - %s to move - ", best_board.white_to_move ? "white" : "black");
+
         nm_load_positions(root_node_boards);
         best_board = root_node_boards[0];
         if (move_count == 1)
+        {
+                printf("one move possible\n");
                 return best_board;
+        }
 
         for (i = 0; i < move_count; ++i)
                 board_ptr[i] = &root_node_boards[i];
 
-        time_limit = t_start + UINT64_C(FIXED_TIME) * UINT64_C(COUNTS_PER_SECOND);
+        if (!tc->valid)
+                duration_seconds = UINT64_C(FIXED_TIME);
+        else
+        {
+		duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES / 25.0) * (double)move_count + 0.5;
+		if (duration_seconds * 5 > tc->main_remaining[tc->side])
+			duration_seconds /= 8;
+                if (duration_seconds <= 0)
+                        duration_seconds = 1;
+        }
+        printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
+        time_limit = t_start + duration_seconds * UINT64_C(COUNTS_PER_SECOND);
         time_limit_exceeded = 0;
 
         quiescence_ply_reached = 0;
@@ -370,21 +389,14 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t *tc)
         }
         best_board.full_move_number = 1 + game_moves / 2;
 
-        vchess_reset_all_moves();
-        nm_load_rep_table(game, game_moves, 0, 0, 0);
-        vchess_write_board_basic(&best_board);
-        vchess_write_board_wait(&best_board);
-        vchess_capture_moves(0);
-        move_count = vchess_move_count();
-
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         nps = (double)nodes_visited / elapsed_time;
         trans_hit = nodes_visited - no_trans;
 
-        printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f, move_count=%u\n",
-               overall_best, nodes_visited, terminal_nodes, elapsed_time, nps, move_count);
+        printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f\n",
+               overall_best, nodes_visited, terminal_nodes, elapsed_time, nps);
         printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u, q_depth=%d\n", depth_limit, q_hard_cutoff, q_end, valid_quiescence_ply_reached);
         printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
@@ -392,3 +404,4 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t *tc)
 
         return best_board;
 }
+

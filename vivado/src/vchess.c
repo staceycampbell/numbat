@@ -123,6 +123,8 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
                                 printf("%c%c%c%c%c", 27, 91, 51, 50, 109);      // green
                         else
                                 printf("%c%c%c%c%c", 27, 91, 51, 49, 109);      // red
+			if (y == board->uci.row_to && x == board->uci.col_to)
+				printf("%c%c%c%c", 27,  91,  49, 109);          // bold
                         printf(" %c ", piece_char[piece]);
                         printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);        // sgr0
                 }

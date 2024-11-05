@@ -562,3 +562,4 @@ extern void book_print_entry(book_t *entry);
 extern void tc_init(tc_t *tc, int32_t main, int32_t increment);
 extern uint32_t tc_clock_toggle(tc_t *tc);
 extern void tc_ignore(tc_t *tc);
+extern void tc_display(const tc_t *tc);

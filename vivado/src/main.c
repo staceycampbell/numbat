@@ -55,7 +55,7 @@ do_both(void)
         XTime_GetTime(&t_start);
 
         book_open();
-	tc_init(&tc, 15, 0);
+	tc_init(&tc, 15 * 60, 0);
 
         do
         {
@@ -106,6 +106,7 @@ do_both(void)
 	}
         else
         {
+		xil_printf("white clock: %d, black clock %d\n", tc.main_remaining[0], tc.main_remaining[1]);
                 xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n\n", mate, stalemate, thrice_rep, fifty_move);
                 if (mate)
                         if (best_board.white_in_check)
