@@ -14,6 +14,7 @@
 
 board_t game[GAME_MAX];
 uint32_t game_moves;
+static tc_t tc;
 
 #if 0
 extern volatile int TcpFastTmrFlag;
@@ -49,10 +50,12 @@ do_both(void)
         XTime t_end, t_start;
         uint64_t elapsed_ticks;
         double elapsed_time;
+	uint32_t tc_status;
 
         XTime_GetTime(&t_start);
 
         book_open();
+	tc_init(&tc, 15, 0);
 
         do
         {
@@ -70,7 +73,7 @@ do_both(void)
                 }
                 else
                 {
-                        best_board = nm_top(game, game_moves);
+                        best_board = nm_top(game, game_moves, &tc);
                         vchess_write_board_basic(&best_board);
                         vchess_write_board_wait(&best_board);
                         move_count = vchess_move_count();
@@ -79,6 +82,7 @@ do_both(void)
                         game[game_moves] = best_board;
                         ++game_moves;
                 }
+		tc_status = tc_clock_toggle(&tc);
                 if (game_moves >= GAME_MAX)
                 {
                         xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
@@ -90,13 +94,16 @@ do_both(void)
                 xil_printf("\n");
                 key_hit = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
         }
-        while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move) && !key_hit);
+        while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move) && tc_status == TC_OK && !key_hit);
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         printf("total elapsed time: %.1f\n", elapsed_time);
         if (key_hit)
+	{
                 xil_printf("Abort\n");
+		tc_ignore(&tc);
+	}
         else
         {
                 xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n\n", mate, stalemate, thrice_rep, fifty_move);

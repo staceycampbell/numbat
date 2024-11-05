@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <assert.h>
+#include <xtime_l.h>
 
 #if ! defined(EXCLUDE_VITIS)
 #include <xparameters.h>
@@ -63,6 +64,19 @@
 #define RESULT_WHITE_WIN 1
 #define RESULT_BLACK_WIN 2
 #define RESULT_NONE 3
+
+#define TC_OK 0
+#define TC_EXPIRED 1
+
+typedef struct tc_t {
+	uint32_t valid;
+	uint32_t side;
+	int32_t main;
+	int32_t increment;
+	int32_t move_number;
+	int32_t main_remaining[2];
+	XTime control_start;
+} tc_t;
 
 typedef struct uci_t {
 	uint8_t row_from;
@@ -521,7 +535,7 @@ extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t cast
 extern void vchess_read_uci(uci_t *uci);
 extern void vchess_uci_string(const uci_t *uci, char *str);
 
-extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves);
+extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t *tc);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);
@@ -544,3 +558,7 @@ extern int32_t book_open(void);
 extern uint32_t book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t *uci);
 extern uint32_t book_game_move(const board_t *board);
 extern void book_print_entry(book_t *entry);
+
+extern void tc_init(tc_t *tc, int32_t main, int32_t increment);
+extern uint32_t tc_clock_toggle(tc_t *tc);
+extern void tc_ignore(tc_t *tc);

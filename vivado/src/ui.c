@@ -515,9 +515,12 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "nm") == 0)
         {
+		tc_t tc;
+		
                 if (game_moves > 0)
                 {
-                        best_board = nm_top(game, game_moves);
+			tc_ignore(&tc);
+                        best_board = nm_top(game, game_moves, &tc);
                         vchess_write_board_basic(&best_board);
                         vchess_write_board_wait(&best_board);
                         vchess_print_board(&best_board, 1);

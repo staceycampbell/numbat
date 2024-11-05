@@ -280,7 +280,7 @@ nm_move_sort_compare(const void *p1, const void *p2)
 }
 
 board_t
-nm_top(board_t game[GAME_MAX], uint32_t game_moves)
+nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t *tc)
 {
         int32_t i, game_index;
         uint32_t ply;
