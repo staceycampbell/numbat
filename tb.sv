@@ -59,6 +59,7 @@ module tb;
    wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves of all_moves.v
    wire                 fifty_move_out;         // From all_moves of all_moves.v
    wire [HALF_MOVE_WIDTH-1:0] half_move_out;    // From all_moves of all_moves.v
+   wire                 initial_board_check;    // From all_moves of all_moves.v
    wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
    wire                 initial_fifty_move;     // From all_moves of all_moves.v
    wire                 initial_insufficient_material;// From all_moves of all_moves.v
@@ -271,6 +272,7 @@ module tb;
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
       .initial_material                 (initial_material[31:0]),
+      .initial_board_check              (initial_board_check),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
       .am_move_ready                    (am_move_ready),
