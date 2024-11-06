@@ -13,6 +13,8 @@
 
 board_t game[GAME_MAX];
 uint32_t game_moves;
+uint32_t tc_main = 15; // minutes
+uint32_t tc_increment = 0; // seconds
 static tc_t tc;
 
 #if 0
@@ -54,7 +56,7 @@ do_both(void)
         XTime_GetTime(&t_start);
 
         book_open();
-	tc_init(&tc, 15 * 60, 0);
+	tc_init(&tc, tc_main * 60, tc_increment);
 
         do
         {

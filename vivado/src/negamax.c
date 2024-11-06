@@ -348,6 +348,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         else
         {
 		duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES / 25.0) * (double)move_count + 0.5;
+		duration_seconds += (double)tc->increment * 2.0 / 3.0 + 0.5;
 		if (duration_seconds * 5 > tc->main_remaining[tc->side])
 			duration_seconds /= 8;
                 if (duration_seconds <= 0)

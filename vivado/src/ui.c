@@ -12,6 +12,7 @@
 
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
+extern uint32_t tc_main, tc_increment;
 
 void
 uci_init(void)
@@ -635,6 +636,17 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 xil_printf("%08X\n", vchess_random());
         }
+	else if (strcmp((char *)str, "tc") == 0)
+	{
+		if (arg1 <= 0 || arg2 < 0)
+			printf("usage: tc minutes seconds\n");
+		else
+		{
+			tc_main = arg1;
+			tc_increment = arg2;
+			printf("time control now main %d minutes, %d seconds increment\n", tc_main, tc_increment);
+		}
+	}
         else
         {
                 char *uci_ptr, *c;
