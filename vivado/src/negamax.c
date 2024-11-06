@@ -21,6 +21,8 @@ static int32_t depth_limit;
 static int32_t quiescence_ply_reached, valid_quiescence_ply_reached;
 static XTime time_limit;
 static uint32_t time_limit_exceeded;
+static uint64_t ops_time;
+static uint64_t ops;
 
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply)
@@ -149,6 +151,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         uint32_t collision;
         trans_t trans;
         XTime t_now;
+	XTime op_start, op_stop;
         board_t *board_ptr[MAX_POSITIONS];
 
         ++nodes_visited;
@@ -187,7 +190,11 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         if (alpha >= beta)
                 return alpha;
 
+	XTime_GetTime(&op_start);
         trans_lookup(&trans, &collision);
+	XTime_GetTime(&op_stop);
+	++ops;
+	ops_time += op_stop - op_start;
         trans_collision += collision;
 
         if (trans.entry_valid && trans.depth >= depth)
@@ -294,6 +301,13 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         XTime t_end, t_start;
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
+	static int ops_init = 0;
+
+	if (ops_init == 0)
+	{
+		ops_time = 0;
+		ops = 0;
+	}
 
         if (game_moves == 0)
         {
@@ -398,9 +412,10 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f\n",
                overall_best, nodes_visited, terminal_nodes, elapsed_time, nps);
         printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u, q_depth=%d\n", depth_limit, q_hard_cutoff, q_end, valid_quiescence_ply_reached);
-        printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
+        printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%), lookup_ticks=%.3f\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
-               ((double)trans_collision * 100.0) / (double)nodes_visited);
+               ((double)trans_collision * 100.0) / (double)nodes_visited,
+	       (double)ops_time / (double)ops);
 
         return best_board;
 }

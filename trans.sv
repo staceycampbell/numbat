@@ -8,10 +8,10 @@ module trans #
     input                         clk,
     input                         reset,
 
-    input                         entry_lookup_in,
-    input                         entry_store_in,
-    input                         hash_only_in,
-    input                         clear_trans_in,
+    (* mark_debug = "true" *) input                         entry_lookup_in,
+    (* mark_debug = "true" *) input                         entry_store_in,
+    (* mark_debug = "true" *) input                         hash_only_in,
+    (* mark_debug = "true" *) input                         clear_trans_in,
    
     input [`BOARD_WIDTH - 1:0]    board_in,
     input                         white_to_move_in,
@@ -22,13 +22,18 @@ module trans #
     input [EVAL_WIDTH - 1:0]      eval_in,
     input [7:0]                   depth_in,
 
-    output                        trans_idle_out,
+    (* mark_debug = "true" *) output                        trans_idle_out,
 
-    output reg                    entry_valid_out,
-    output reg [EVAL_WIDTH - 1:0] eval_out,
-    output reg [7:0]              depth_out,
-    output reg [1:0]              flag_out,
-    output reg                    collision_out,
+    (* mark_debug = "true" *) output reg                    entry_valid_out,
+    (* mark_debug = "true" *) output reg [EVAL_WIDTH - 1:0] eval_out,
+    (* mark_debug = "true" *) output reg [7:0]              depth_out,
+    (* mark_debug = "true" *) output reg [1:0]              flag_out,
+    (* mark_debug = "true" *) output reg                    collision_out,
+
+    (* mark_debug = "true" *) output reg                    cache_entry_valid_out,
+    (* mark_debug = "true" *) output reg [EVAL_WIDTH - 1:0] cache_eval_out,
+    (* mark_debug = "true" *) output reg [7:0]              cache_depth_out,
+    (* mark_debug = "true" *) output reg [1:0]              cache_flag_out,
 
     output reg [79:0]             hash_out,
    
@@ -79,6 +84,9 @@ module trans #
    localparam TABLE_SIZE = 1 << TABLE_SIZE_LOG2;
    localparam BURST_TICK_TOTAL = TABLE_SIZE;
    localparam BURST_COUNTER_WIDTH = $clog2(BURST_TICK_TOTAL) + 1;
+   localparam CACHE_COUNT_LOG2 = 17; // capacity of single clock RAM on FPGA
+   localparam CACHE_COUNT = 1 << CACHE_COUNT_LOG2;
+   localparam URAM_PORT_X2 = 144;
 
    localparam STATE_IDLE = 0;
    localparam STATE_CLEAR_TRANS_INIT = 1;
@@ -98,13 +106,22 @@ module trans #
    localparam STATE_LOOKUP_WAIT_ADDR = 15;
    localparam STATE_LOOKUP_VALIDATE = 16;
    
-   reg [4:0]                      state = STATE_IDLE;
+   (* mark_debug = "true" *) reg [4:0]                      state = STATE_IDLE;
 
    reg [79:0]                     hash_0 [63:0];
    reg [79:0]                     hash_1 [15:0];
    reg [79:0]                     hash_2 [ 3:0];
    reg [79:0]                     hash_side;
    reg [79:0]                     hash;
+   (* mark_debug = "true" *) reg hash_ready;
+   reg hash_ready_r;
+
+   (* ram_style = "ultra" *) reg [URAM_PORT_X2 - 1:0] cache [0:CACHE_COUNT - 1];
+   reg [CACHE_COUNT_LOG2 - 1:0]   cache_addr_t0, cache_addr_t1;
+   reg                            cache_wr_en_t0, cache_wr_en_t1;
+   reg [URAM_PORT_X2 - 1:0]       cache_wr_data_t0, cache_wr_data_t1;
+   reg [URAM_PORT_X2 - 1:0]       cache_rd_data_t2, cache_rd_data_t3, cache_rd_data_t4;
+   reg [1:0]                      cache_rd_ws;
 
    reg                            entry_store, entry_lookup, hash_only, clear_trans;
    reg                            clear_trans_r;
@@ -138,12 +155,19 @@ module trans #
    wire [7:0]                      lookup_depth;
    wire                            lookup_valid;
 
+   wire [79:0]                     cache_hash;
+   wire [1:0]                      cache_flag;
+   wire [EVAL_WIDTH - 1:0]         cache_eval;
+   wire [7:0]                      cache_depth;
+   wire                            cache_valid;
+   
    wire [MEM_ADDR_WIDTH - 1:0]     hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
    wire [127:0]                    store = {valid_wr, depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0], hash[79:0]};
 
    wire                            clear_wlast = burst_counter[7:0] == 8'hFF;
 
    assign {lookup_valid, lookup_depth[7:0], lookup_flag[1:0], lookup_eval[EVAL_WIDTH - 1:0], lookup_hash[79:0]} = lookup;
+   assign {cache_valid, cache_depth[7:0], cache_flag[1:0], cache_eval[EVAL_WIDTH - 1:0], cache_hash[79:0]} = cache_rd_data_t4;
    
    assign trans_idle_out = state == STATE_IDLE;
 
@@ -170,6 +194,82 @@ module trans #
    
    assign trans_axi_arregion = 4'b0; // unused
    assign trans_axi_awregion = 4'b0; // unused
+   
+   always @(posedge clk)
+     begin
+        cache_wr_en_t1 <= cache_wr_en_t0;
+        cache_wr_data_t1 <= cache_wr_data_t0;
+        cache_addr_t1 <= cache_addr_t0;
+        
+        cache_rd_data_t3 <= cache_rd_data_t2;
+        cache_rd_data_t4 <= cache_rd_data_t3;
+     end
+   
+   always @(posedge clk)
+     begin
+        if (cache_wr_en_t1)
+          cache[cache_addr_t1] <= cache_wr_data_t1;
+        cache_rd_data_t2 <= cache[cache_addr_t1];
+     end
+
+   localparam ST_CACHE_IDLE = 0;
+   localparam ST_CACHE_LOOKUP = 1;
+   localparam ST_CACHE_STORE = 2;
+   localparam ST_CACHE_CLEAR = 3;
+
+   (* mark_debug = "true" *) reg [1:0] st_cache = ST_CACHE_IDLE;
+
+   always @(posedge clk)
+     if (reset)
+       st_cache <= ST_CACHE_IDLE;
+     else
+       case (st_cache)
+         ST_CACHE_IDLE :
+           begin
+              cache_addr_t0 <= 0;
+              cache_wr_en_t0 <= 0;
+              cache_wr_data_t0 <= 0;
+              cache_rd_ws <= 0;
+              if ((entry_store_in && ~entry_store_in_z) || (entry_lookup_in && ~entry_lookup_in_z))
+                cache_entry_valid_out <= 0;
+              if (clear_trans && ~clear_trans_r)
+                begin
+                   cache_wr_en_t0 <= 1;
+                   st_cache <= ST_CACHE_CLEAR;
+                end
+              if (hash_ready && ~hash_ready_r)
+                begin
+                   cache_addr_t0 <= hash[CACHE_COUNT_LOG2 - 1:0];
+                   cache_wr_data_t0 <= store;
+                   if (entry_store)
+                     st_cache <= ST_CACHE_STORE;
+                   else if (entry_lookup)
+                     st_cache <= ST_CACHE_LOOKUP;
+                end
+           end
+         ST_CACHE_LOOKUP :
+           begin
+              cache_rd_ws <= cache_rd_ws + 1;
+              if (cache_rd_ws == 2'b11)
+                begin
+                   cache_entry_valid_out <= cache_valid && cache_hash == hash;
+                   st_cache <= ST_CACHE_IDLE;
+                end
+           end
+         ST_CACHE_STORE :
+           begin
+              cache_wr_en_t0 <= 1;
+              st_cache <= ST_CACHE_IDLE;
+           end
+         ST_CACHE_CLEAR :
+           begin
+              cache_addr_t0 <= cache_addr_t0 + 1;
+              if (cache_addr_t0 == CACHE_COUNT - 1)
+                st_cache <= ST_CACHE_IDLE;
+           end
+         default :
+           st_cache <= ST_CACHE_IDLE;
+       endcase
 
    always @(posedge clk)
      begin
@@ -179,6 +279,7 @@ module trans #
         clear_trans_in_z <= clear_trans_in;
 
         clear_trans_r <= clear_trans;
+        hash_ready_r <= hash_ready;
 
         trans_axi_wdata <= store;
         trans_axi_awaddr <= hash_address;
@@ -198,6 +299,10 @@ module trans #
         depth_out <= lookup_depth;
         flag_out <= lookup_flag;
         hash_out <= hash;
+        
+        cache_eval_out <= cache_eval;
+        cache_depth_out <= cache_depth;
+        cache_flag_out <= cache_flag;
      end
 
    always @(posedge clk)
@@ -223,6 +328,7 @@ module trans #
               local_wvalid <= 0;
               trans_axi_awvalid <= 0;
 
+              hash_ready <= 0;
               entry_store <= 0;
               entry_lookup <= 0;
               hash_only <= 0;
@@ -306,6 +412,7 @@ module trans #
          STATE_HASH_4 :
            begin
               trans_trans <= trans_trans + 1;
+              hash_ready <= 1;
               hash <= hash_side ^ zob_rand_en_passant_col[en_passant_col] ^ zob_rand_castle_mask[castle_mask];
               if (entry_store)
                 state <= STATE_STORE;
@@ -388,7 +495,7 @@ module trans #
            end
          default :
            state <= STATE_IDLE;
-       endcase // case (state)
+       endcase
 
    initial
      begin

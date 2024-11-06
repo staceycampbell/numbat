@@ -145,6 +145,10 @@ module vchess_top
    wire [15:0]          trans_axi_wstrb;        // From trans of trans.v
    wire                 trans_axi_wvalid;       // From trans of trans.v
    wire [`BOARD_WIDTH-1:0] trans_board_in;      // From control of control.v
+   wire [7:0]           trans_cache_depth_out;  // From trans of trans.v
+   wire                 trans_cache_entry_valid_out;// From trans of trans.v
+   wire [EVAL_WIDTH-1:0] trans_cache_eval_out;  // From trans of trans.v
+   wire [1:0]           trans_cache_flag_out;   // From trans of trans.v
    wire [3:0]           trans_castle_mask_in;   // From control of control.v
    wire                 trans_clear_trans_in;   // From control of control.v
    wire                 trans_collision_out;    // From trans of trans.v
@@ -302,6 +306,10 @@ module vchess_top
       .depth_out                        (trans_depth_out[7:0]),  // Templated
       .flag_out                         (trans_flag_out[1:0]),   // Templated
       .collision_out                    (trans_collision_out),   // Templated
+      .cache_entry_valid_out            (trans_cache_entry_valid_out), // Templated
+      .cache_eval_out                   (trans_cache_eval_out[EVAL_WIDTH-1:0]), // Templated
+      .cache_depth_out                  (trans_cache_depth_out[7:0]), // Templated
+      .cache_flag_out                   (trans_cache_flag_out[1:0]), // Templated
       .hash_out                         (trans_hash_out[79:0]),  // Templated
       .trans_axi_araddr                 (trans_axi_araddr[31:0]), // Templated
       .trans_axi_arburst                (trans_axi_arburst[1:0]), // Templated
@@ -415,6 +423,10 @@ module vchess_top
       .trans_collision_in               (trans_collision_out),   // Templated
       .trans_hash_in                    (trans_hash_out[79:0]),  // Templated
       .trans_trans                      (trans_trans[31:0]),
+      .trans_cache_depth_in             (trans_cache_depth_out[7:0]), // Templated
+      .trans_cache_entry_valid_in       (trans_cache_entry_valid_out), // Templated
+      .trans_cache_eval_in              (trans_cache_eval_out[EVAL_WIDTH-1:0]), // Templated
+      .trans_cache_flag_in              (trans_cache_flag_out[1:0]), // Templated
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
