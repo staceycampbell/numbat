@@ -45,7 +45,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
         int32_t sel, index;
         uint32_t am_idle;
 
-        vchess_status(0, 0, 0, 0, 0, &am_idle, 0);
+        vchess_status(0, 0, 0, 0, 0, &am_idle, 0, 0, 0);
         if (!am_idle)
         {
                 xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -105,7 +105,7 @@ nm_load_positions(board_t boards[MAX_POSITIONS])
         int32_t i;
         uint32_t moves_ready, move_count;
 
-        vchess_status(0, &moves_ready, 0, 0, 0, 0, 0);
+        vchess_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
         if (!moves_ready)
         {
                 xil_printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -142,7 +142,7 @@ static int32_t
 negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply)
 {
         uint32_t move_count, index;
-        uint32_t mate, stalemate, thrice_rep, fifty_move;
+        uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
         int32_t value;
         int32_t alpha_orig;
         uint32_t quiescence;
@@ -161,6 +161,9 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         vchess_write_board_basic(board);
         vchess_capture_moves(quiescence);
         vchess_write_board_wait(board);
+	vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
+
+	quiescence = quiescence || check;
 
         value = nm_eval(board->white_to_move, ply);
 
@@ -175,8 +178,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         if (!quiescence && move_count == 0)
         {
                 ++terminal_nodes;
-                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
-                if (stalemate || thrice_rep || fifty_move)
+                if (stalemate || thrice_rep || fifty_move || insufficient)
                         return 0;
                 return value;
         }

@@ -61,6 +61,7 @@ module control #
     input                                 initial_fifty_move,
     input                                 initial_insufficient_material,
     input signed [31:0]                   initial_material,
+    input                                 initial_board_check,
 
     input                                 am_idle,
     input                                 am_moves_ready, // all moves now calculated
@@ -196,6 +197,7 @@ module control #
                     ctrl0_axi_rdata[7] <= am_idle;
                     ctrl0_axi_rdata[8] <= initial_fifty_move;
                     ctrl0_axi_rdata[9] <= initial_insufficient_material;
+                    ctrl0_axi_rdata[10] <= initial_board_check;
                     ctrl0_axi_rdata[30] <= use_random_bit;
                     ctrl0_axi_rdata[31] <= soft_reset;
                  end

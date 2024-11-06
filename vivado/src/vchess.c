@@ -106,7 +106,9 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
         uint32_t piece;
         int32_t eval, material;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
+	uint32_t btm;
 
+	btm = board->white_to_move; // move from board to display is inverse of next to move
         for (y = 7; y >= 0; --y)
         {
                 printf("%c%c%c%c %c ", 27, 91, 50, 109, '1' + y);       // dim
@@ -119,13 +121,18 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
                                 printf("%c%c%c%c%c", 27, 91, 52, 55, 109);      // setb 7, light bg
                         else
                                 printf("%c%c%c%c%c", 27, 91, 52, 48, 109);      // setb 0, black bg
-                        if ((piece & (1 << BLACK_BIT)) != 0)
+                        if ((piece & (1 << BLACK_BIT)) != 0 ||
+			    (btm && y == board->uci.row_from && x == board->uci.col_from))
                                 printf("%c%c%c%c%c", 27, 91, 51, 50, 109);      // green
                         else
                                 printf("%c%c%c%c%c", 27, 91, 51, 49, 109);      // red
-			if (y == board->uci.row_to && x == board->uci.col_to)
-				printf("%c%c%c%c", 27,  91,  49, 109);          // bold
-                        printf(" %c ", piece_char[piece]);
+                        if ((y == board->uci.row_to && x == board->uci.col_to) ||
+                            (y == board->uci.row_from && x == board->uci.col_from))
+                                printf("%c%c%c%c", 27,  91,  49, 109);          // bold
+                        if (y == board->uci.row_from && x == board->uci.col_from)
+                                printf(" . ");
+                        else
+                                printf(" %c ", piece_char[piece]);
                         printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);        // sgr0
                 }
                 printf("\n");
@@ -137,7 +144,7 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
         if (initial_board)
         {
                 eval = vchess_initial_eval();
-                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
+                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
                 material = vchess_initial_material();
         }
         else
@@ -164,10 +171,10 @@ void
 vchess_write_board_basic(const board_t * board)
 {
         vchess_reset_all_moves();
-	vchess_write_board_two_rows(0, board->board[0], board->board[1]);
-	vchess_write_board_two_rows(2, board->board[2], board->board[3]);
-	vchess_write_board_two_rows(4, board->board[4], board->board[5]);
-	vchess_write_board_two_rows(6, board->board[6], board->board[7]);
+        vchess_write_board_two_rows(0, board->board[0], board->board[1]);
+        vchess_write_board_two_rows(2, board->board[2], board->board[3]);
+        vchess_write_board_two_rows(4, board->board[4], board->board[5]);
+        vchess_write_board_two_rows(6, board->board[6], board->board[7]);
         vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
         vchess_write_half_move(board->half_move_clock);
 }
@@ -183,7 +190,7 @@ vchess_write_board_wait(const board_t * board)
         i = 0;
         do
         {
-                vchess_status(0, &moves_ready, 0, 0, 0, 0, 0);
+                vchess_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
                 ++i;
         }
         while (i < 5000 && !moves_ready);
@@ -216,7 +223,7 @@ vchess_read_board(board_t * board, uint32_t index)
                 xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
-        status = vchess_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0);
+        status = vchess_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
         if (!moves_ready)
         {
                 xil_printf("moves_ready not set\n");
@@ -228,7 +235,7 @@ vchess_read_board(board_t * board, uint32_t index)
                 return 1;
         }
         vchess_move_index(index);
-        status = vchess_status(&move_ready, 0, 0, 0, 0, 0, 0);
+        status = vchess_status(&move_ready, 0, 0, 0, 0, 0, 0, 0, 0);
         if (!move_ready)
         {
                 xil_printf("move_ready not set: 0x%X\n", status);

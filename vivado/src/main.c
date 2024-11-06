@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <xparameters.h>
 #include <netif/xadapter.h>
-#include <xil_printf.h>
 #include <lwip/tcp.h>
 #include <lwip/priv/tcp_priv.h>
 #include <lwip/init.h>
@@ -28,7 +27,7 @@ static void
 print_ip(char *msg, ip_addr_t * ip)
 {
         print(msg);
-        xil_printf("%d.%d.%d.%d\n\r", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
+        printf("%d.%d.%d.%d\n\r", ip4_addr1(ip), ip4_addr2(ip), ip4_addr3(ip), ip4_addr4(ip));
 }
 
 static void
@@ -46,7 +45,7 @@ do_both(void)
         uint32_t move_count, key_hit, game_result;
         uint32_t book_move_found;
         board_t best_board;
-        uint32_t mate, stalemate, thrice_rep, fifty_move;
+        uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient;
         XTime t_end, t_start;
         uint64_t elapsed_ticks;
         double elapsed_time;
@@ -62,12 +61,13 @@ do_both(void)
                 book_move_found = book_game_move(&game[game_moves - 1]);
                 if (book_move_found)
                 {
-                        xil_printf("book move\n");
+                        printf("book move\n");
 
                         mate = 0;
                         stalemate = 0;
                         thrice_rep = 0;
                         fifty_move = 0;
+			insufficient = 0;
                         move_count = 1;
                         best_board = game[game_moves - 1];
                 }
@@ -77,7 +77,7 @@ do_both(void)
                         vchess_write_board_basic(&best_board);
                         vchess_write_board_wait(&best_board);
                         move_count = vchess_move_count();
-                        vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
+                        vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, 0);
                         vchess_reset_all_moves();
                         game[game_moves] = best_board;
                         ++game_moves;
@@ -85,29 +85,30 @@ do_both(void)
 		tc_status = tc_clock_toggle(&tc);
                 if (game_moves >= GAME_MAX)
                 {
-                        xil_printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
+                        printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
                                    game_moves, GAME_MAX, __FILE__, __LINE__);
                         while (1);
                 }
                 vchess_print_board(&best_board, 1);
                 fen_print(&best_board);
-                xil_printf("\n");
+                printf("\n");
                 key_hit = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
         }
-        while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move) && tc_status == TC_OK && !key_hit);
+        while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move || insufficient) && tc_status == TC_OK && !key_hit);
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         printf("total elapsed time: %.1f\n", elapsed_time);
         if (key_hit)
 	{
-                xil_printf("Abort\n");
+                printf("Abort\n");
 		tc_ignore(&tc);
 	}
         else
         {
-		xil_printf("white clock: %d, black clock %d\n", tc.main_remaining[0], tc.main_remaining[1]);
-                xil_printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d\n\n", mate, stalemate, thrice_rep, fifty_move);
+		printf("white clock: %d, black clock %d\n", tc.main_remaining[0], tc.main_remaining[1]);
+                printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d, insufficient: %d\n\n",
+			   mate, stalemate, thrice_rep, fifty_move, insufficient);
                 if (mate)
                         if (best_board.white_in_check)
                                 game_result = RESULT_BLACK_WIN;
@@ -126,7 +127,8 @@ process_serial_port(uint8_t cmdbuf[BUF_SIZE], uint32_t * index)
         uint32_t status;
 
         c = inbyte();
-        xil_printf("%c", c);
+        printf("%c", c);
+	fflush(stdout);
         status = c == '\r' || c == '\n' || *index == BUF_SIZE - 1;
         if (status)
                 cmdbuf[*index] = '\0';
@@ -161,7 +163,7 @@ main(void)
 
         if (!xemac_add(cmd_netif, &ipaddr, &netmask, &gw, mac_ethernet_address, PLATFORM_EMAC_BASEADDR))
         {
-                xil_printf("Error adding N/W interface\n\r");
+                printf("Error adding N/W interface\n\r");
                 return -1;
         }
         netif_set_default(cmd_netif);
@@ -182,7 +184,7 @@ main(void)
         trans_clear_table();
         uci_init();
 
-        xil_printf("ready\n");
+        printf("ready\n");
 
         while (1)
         {

@@ -39,6 +39,7 @@ module all_moves #
     output reg                           initial_fifty_move = 0,
     output reg                           initial_insufficient_material = 0,
     output reg signed [31:0]             initial_material,
+    output reg                           initial_board_check,
 
     output reg                           am_idle,
     output reg                           am_moves_ready,
@@ -71,8 +72,6 @@ module all_moves #
    // insufficient material, white/black pop counts, UCI, fifty move, half move, thrice rep, eval, is-attacking white/black,
    // white in check, black in check, capture, initial width
    localparam LEGAL_RAM_WIDTH = 1 + 6 + 6 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
-
-   reg                                   initial_board_check;
 
    reg [RAM_WIDTH - 1:0]                 move_ram [0:`MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]                 ram_rd_data;

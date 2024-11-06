@@ -497,11 +497,11 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 
         if (strcmp((char *)str, "status") == 0)
         {
-                uint32_t move_ready, moves_ready, mate, stalemate, thrice_rep, fifty_move;
+                uint32_t move_ready, moves_ready, mate, stalemate, thrice_rep, fifty_move, insufficient, check;
 
-                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep, 0, &fifty_move);
-                xil_printf("moves_ready=%d, mate=%d, stalemate=%d, thrice_rep=%d, fifty_move=%d",
-                           moves_ready, mate, stalemate, thrice_rep, fifty_move);
+                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
+                xil_printf("moves_ready=%d, mate=%d, stalemate=%d, thrice_rep=%d, fifty_move=%d, insufficient=%d, check=%d",
+                           moves_ready, mate, stalemate, thrice_rep, fifty_move, insufficient, check);
                 if (moves_ready)
                         xil_printf(", moves=%d, eval=%d", vchess_move_count(), vchess_initial_eval());
                 xil_printf("\n");
