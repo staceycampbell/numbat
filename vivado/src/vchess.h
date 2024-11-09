@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <xtime_l.h>
+#include <xuartps.h>
 
 #if ! defined(EXCLUDE_VITIS)
 #include <xparameters.h>
@@ -521,6 +522,16 @@ uci_match(const uci_t * a, const uci_t * b)
                 a->col_to == b->col_to && a->promotion == b->promotion;
 
         return ret;
+}
+
+static inline uint32_t
+ui_data_available(void)
+{
+	uint32_t status;
+
+	status = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR) || XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR);
+
+	return status;
 }
 
 extern void print_app_header(void);
