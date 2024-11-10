@@ -388,22 +388,22 @@ module trans #
            end
          default :
            state <= STATE_IDLE;
-       endcase // case (state)
+       endcase
 
    initial
      begin
-        zob_piece_lookup[ 1] =  0;
-        zob_piece_lookup[ 2] =  1;
-        zob_piece_lookup[ 3] =  2;
-        zob_piece_lookup[ 4] =  3;
-        zob_piece_lookup[ 5] =  4;
-        zob_piece_lookup[ 6] =  5;
-        zob_piece_lookup[ 9] =  6;
-        zob_piece_lookup[10] =  7;
-        zob_piece_lookup[11] =  8;
-        zob_piece_lookup[12] =  9;
-        zob_piece_lookup[13] = 10;
-        zob_piece_lookup[14] = 11;
+        zob_piece_lookup[`WHITE_QUEN] =  0;
+        zob_piece_lookup[`WHITE_ROOK] =  1;
+        zob_piece_lookup[`WHITE_BISH] =  2;
+        zob_piece_lookup[`WHITE_PAWN] =  3;
+        zob_piece_lookup[`WHITE_KNIT] =  4;
+        zob_piece_lookup[`WHITE_KING] =  5;
+        zob_piece_lookup[`BLACK_QUEN] =  6;
+        zob_piece_lookup[`BLACK_ROOK] =  7;
+        zob_piece_lookup[`BLACK_BISH] =  8;
+        zob_piece_lookup[`BLACK_PAWN] =  9;
+        zob_piece_lookup[`BLACK_KNIT] = 10;
+        zob_piece_lookup[`BLACK_KING] = 11;
 
         zob_rand_board[  0] = 'hc3a8fbbf9e7102cb133b;
         zob_rand_board[  1] = 'h64cbfd810893ba926f23;
