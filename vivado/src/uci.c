@@ -18,29 +18,82 @@ extern uint32_t tc_main, tc_increment;
 static char uci_input_buffer[UCI_INPUT_BUFFER_SIZE];
 static uint32_t uci_input_index;
 
-void
-uci_input_reset(void)
+static void
+uci_reply(const char *str)
 {
-	memset(uci_input_buffer, 0, UCI_INPUT_BUFFER_SIZE);
-	uci_input_index = 0;
+        int32_t len, i;
+
+        len = strlen(str);
+        for (i = 0; i < len; ++i)
+                XUartPs_SendByte(XPAR_XUARTPS_1_BASEADDR, str[i]);
+        XUartPs_SendByte(XPAR_XUARTPS_1_BASEADDR, '\n');
+}
+
+static uint32_t
+uci_dispatch(void)
+{
+        char *p, *next;
+        uint32_t uci_search_action;
+
+        uci_search_action = UCI_SEARCH_STOP;
+        p = uci_input_buffer;
+        next = p;
+        p = strsep(&next, " \n\t\r");
+        if (strlen(p) <= 1)
+                return UCI_SEARCH_CONT;
+        if (strcmp(p, "uci") == 0)
+        {
+                uci_reply("id name fpgachess");
+                uci_reply("id author Stacey Campbell");
+                uci_reply("option name OwnBook type check default true");
+        }
+        else if (strcmp(p, "isready") == 0)
+        {
+                uci_search_action = UCI_SEARCH_CONT;
+                uci_reply("readyok");
+        }
+	else if (strcmp(p, "ucinewgame") == 0)
+	{
+                trans_clear_table();
+                uci_init();
+	}
+	else if (strcmp(p, "position") == 0)
+	{
+	}
+
+        return uci_search_action;
 }
 
 void
+uci_input_reset(void)
+{
+        memset(uci_input_buffer, 0, UCI_INPUT_BUFFER_SIZE);
+        uci_input_index = 0;
+}
+
+uint32_t
 uci_input_poll(void)
 {
-	char c;
-	
+        char c;
+        uint32_t uci_search_action;
+
         if (!XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR))
-                return;
-	c = XUartPs_ReadReg(XPAR_XUARTPS_1_BASEADDR, XUARTPS_FIFO_OFFSET);
-	uci_input_buffer[uci_input_index] = c;
-	uci_input_buffer[uci_input_index + 1] = '\0';
-	++uci_input_index;
-	if (uci_input_index >= UCI_INPUT_BUFFER_SIZE - 1)
-	{
-		printf("%s: input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
-		while(1);
-	}
+                return UCI_SEARCH_CONT;
+        c = XUartPs_ReadReg(XPAR_XUARTPS_1_BASEADDR, XUARTPS_FIFO_OFFSET);
+        uci_input_buffer[uci_input_index] = c;
+        uci_input_buffer[uci_input_index + 1] = '\0';
+        ++uci_input_index;
+        if (uci_input_index >= UCI_INPUT_BUFFER_SIZE - 1)
+        {
+                printf("%s: input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
+                while (1);
+        }
+        if (c != '\n')
+                return UCI_SEARCH_CONT;
+        uci_search_action = uci_dispatch();
+        uci_input_reset();
+
+        return uci_search_action;
 }
 
 void

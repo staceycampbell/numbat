@@ -69,6 +69,9 @@
 #define TC_OK 0
 #define TC_EXPIRED 1
 
+#define UCI_SEARCH_STOP 0
+#define UCI_SEARCH_CONT 1
+
 typedef struct tc_t
 {
         uint32_t valid;
@@ -529,7 +532,7 @@ ui_data_available(void)
 {
 	uint32_t status;
 
-	status = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR) || XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR);
+	status = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
 
 	return status;
 }
@@ -564,6 +567,8 @@ extern void process_cmd(uint8_t cmd[BUF_SIZE]);
 extern void fen_print(const board_t * board);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 
+extern void uci_input_reset(void);
+extern uint32_t uci_input_poll(void);
 extern void uci_init(void);
 extern int32_t uci_move(char *p);
 extern void uci_print_game(uint32_t result);

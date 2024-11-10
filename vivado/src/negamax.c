@@ -22,6 +22,7 @@ static int32_t quiescence_ply_reached, valid_quiescence_ply_reached;
 static XTime time_limit;
 static uint32_t time_limit_exceeded;
 static uint32_t ui_data_stop;
+static uint32_t uci_data_stop;
 
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply)
@@ -229,7 +230,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         XTime_GetTime(&t_now);
         time_limit_exceeded = t_now > time_limit;
         ui_data_stop = ui_data_available();
-        if (time_limit_exceeded || ui_data_stop)
+	uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
+        if (time_limit_exceeded || ui_data_stop || uci_data_stop)
                 return value;
 
         for (index = 0; index < move_count; ++index)
@@ -360,23 +362,24 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         time_limit = t_start + duration_seconds * UINT64_C(COUNTS_PER_SECOND);
         time_limit_exceeded = 0;
         ui_data_stop = 0;
+        uci_data_stop = 0;
 
         quiescence_ply_reached = 0;
         valid_quiescence_ply_reached = 0;
 
         overall_best = -LARGE_EVAL;
         depth_limit = 2;        // top nodes already sorted in all_moves.sv
-        while (depth_limit < MAX_DEPTH - 1 && !time_limit_exceeded && !ui_data_stop)
+        while (depth_limit < MAX_DEPTH - 1 && !time_limit_exceeded && !ui_data_stop && !uci_data_stop)
         {
                 ply = 0;
                 i = 0;
                 best_evaluation = -LARGE_EVAL;
-                while (i < move_count && !time_limit_exceeded && !ui_data_stop)
+                while (i < move_count && !time_limit_exceeded && !ui_data_stop && !uci_data_stop)
                 {
                         board_vert[ply] = board_ptr[i];
                         evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply);
                         board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
-                        if (!time_limit_exceeded && !ui_data_stop && evaluate_move > best_evaluation)
+                        if (!time_limit_exceeded && !ui_data_stop && evaluate_move > best_evaluation && !uci_data_stop)
                         {
                                 best_board = *board_ptr[i];
                                 best_evaluation = evaluate_move;
@@ -384,7 +387,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                         }
                         ++i;
                 }
-                if (!time_limit_exceeded && !ui_data_stop)
+                if (!time_limit_exceeded && !ui_data_stop && !uci_data_stop)
                 {
                         qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
                         ++depth_limit;

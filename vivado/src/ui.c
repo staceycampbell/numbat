@@ -26,13 +26,10 @@ do_both(void)
         XTime t_end, t_start;
         uint64_t elapsed_ticks;
         double elapsed_time;
-	uint32_t tc_status;
+        uint32_t tc_status;
 
         XTime_GetTime(&t_start);
-
-        book_open();
-	tc_init(&tc, tc_main * 60, tc_increment);
-
+        tc_init(&tc, tc_main * 60, tc_increment);
         do
         {
                 book_move_found = book_game_move(&game[game_moves - 1]);
@@ -44,7 +41,7 @@ do_both(void)
                         stalemate = 0;
                         thrice_rep = 0;
                         fifty_move = 0;
-			insufficient = 0;
+                        insufficient = 0;
                         move_count = 1;
                         best_board = game[game_moves - 1];
                 }
@@ -59,17 +56,17 @@ do_both(void)
                         game[game_moves] = best_board;
                         ++game_moves;
                 }
-		tc_status = tc_clock_toggle(&tc);
+                tc_status = tc_clock_toggle(&tc);
                 if (game_moves >= GAME_MAX)
                 {
                         printf("%s: game_moves (%d) >= GAME_MAX (%d), stopping here %s %d\n", __PRETTY_FUNCTION__,
-                                   game_moves, GAME_MAX, __FILE__, __LINE__);
+                               game_moves, GAME_MAX, __FILE__, __LINE__);
                         while (1);
                 }
                 vchess_print_board(&best_board, 1);
                 fen_print(&best_board);
                 printf("\n");
-                key_hit = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
+                key_hit = ui_data_available();
         }
         while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move || insufficient) && tc_status == TC_OK && !key_hit);
         XTime_GetTime(&t_end);
@@ -77,15 +74,15 @@ do_both(void)
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         printf("total elapsed time: %.1f\n", elapsed_time);
         if (key_hit)
-	{
+        {
                 printf("Abort\n");
-		tc_ignore(&tc);
-	}
+                tc_ignore(&tc);
+        }
         else
         {
-		printf("white clock: %d, black clock %d\n", tc.main_remaining[0], tc.main_remaining[1]);
+                printf("white clock: %d, black clock %d\n", tc.main_remaining[0], tc.main_remaining[1]);
                 printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d, insufficient: %d\n\n",
-			   mate, stalemate, thrice_rep, fifty_move, insufficient);
+                       mate, stalemate, thrice_rep, fifty_move, insufficient);
                 if (mate)
                         if (best_board.white_in_check)
                                 game_result = RESULT_BLACK_WIN;
@@ -360,11 +357,11 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "nm") == 0)
         {
-		tc_t tc;
-		
+                tc_t tc;
+
                 if (game_moves > 0)
                 {
-			tc_ignore(&tc);
+                        tc_ignore(&tc);
                         best_board = nm_top(game, game_moves, &tc);
                         vchess_write_board_basic(&best_board);
                         vchess_write_board_wait(&best_board);
@@ -480,17 +477,17 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 xil_printf("%08X\n", vchess_random());
         }
-	else if (strcmp((char *)str, "tc") == 0)
-	{
-		if (arg1 <= 0 || arg2 < 0)
-			printf("usage: tc minutes seconds\n");
-		else
-		{
-			tc_main = arg1;
-			tc_increment = arg2;
-			printf("time control now main %d minutes, %d seconds increment\n", tc_main, tc_increment);
-		}
-	}
+        else if (strcmp((char *)str, "tc") == 0)
+        {
+                if (arg1 <= 0 || arg2 < 0)
+                        printf("usage: tc minutes seconds\n");
+                else
+                {
+                        tc_main = arg1;
+                        tc_increment = arg2;
+                        printf("time control now main %d minutes, %d seconds increment\n", tc_main, tc_increment);
+                }
+        }
         else
         {
                 char *uci_ptr, *c;

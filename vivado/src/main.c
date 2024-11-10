@@ -13,8 +13,8 @@
 
 board_t game[GAME_MAX];
 uint32_t game_moves;
-uint32_t tc_main = 15; // minutes
-uint32_t tc_increment = 0; // seconds
+uint32_t tc_main = 15;          // minutes
+uint32_t tc_increment = 0;      // seconds
 
 #if 0
 extern volatile int TcpFastTmrFlag;
@@ -48,7 +48,7 @@ process_serial_port(uint8_t cmdbuf[BUF_SIZE], uint32_t * index)
 
         c = inbyte();
         printf("%c", c);
-	fflush(stdout);
+        fflush(stdout);
         status = c == '\r' || c == '\n' || *index == BUF_SIZE - 1;
         if (status)
                 cmdbuf[*index] = '\0';
@@ -95,14 +95,16 @@ main(void)
         start_application();
 #endif
 
-        vchess_init();
 
         index = 0;
         // ip_status = 0;
         com_status = 0;
 
+        vchess_init();
         trans_clear_table();
         uci_init();
+        uci_input_reset();
+        book_open();
 
         printf("ready\n");
 
@@ -110,6 +112,7 @@ main(void)
         {
                 if (XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR))
                         com_status = process_serial_port(cmdbuf, &index);
+                uci_input_poll();
 #if 0
                 if (TcpFastTmrFlag)
                 {
