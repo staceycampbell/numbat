@@ -60,45 +60,6 @@ vchess_read_uci(uci_t * uci)
 }
 
 void
-vchess_uci_string(const uci_t * uci, char *str)
-{
-        char ch;
-        uint32_t promotion_type;
-
-        str[0] = uci->col_from + 'a';
-        str[1] = uci->row_from + '1';
-        str[2] = uci->col_to + 'a';
-        str[3] = uci->row_to + '1';
-
-        if (uci->promotion != EMPTY_POSN)
-        {
-                promotion_type = uci->promotion & ~(1 << BLACK_BIT);
-                switch (promotion_type)
-                {
-                case PIECE_QUEN:
-                        ch = 'Q';
-                        break;
-                case PIECE_ROOK:
-                        ch = 'R';
-                        break;
-                case PIECE_BISH:
-                        ch = 'B';
-                        break;
-                case PIECE_KNIT:
-                        ch = 'N';
-                        break;
-                default:
-                        ch = '?';
-                        break;
-                }
-                str[4] = ch;
-                str[5] = '\0';
-        }
-        else
-                str[4] = '\0';
-}
-
-void
 vchess_print_board(const board_t * board, uint32_t initial_board)
 {
         int y, x, rev;
@@ -159,7 +120,7 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
                 printf("mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
                 printf("material: %.2f", (double)material / 100.0);
         }
-        vchess_uci_string(&board->uci, uci_str);
+        uci_string(&board->uci, uci_str);
         printf(", eval: %d, uci: %s\n", eval, uci_str);
         if (board->black_in_check)
                 printf("Black in check\n");

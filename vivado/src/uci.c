@@ -29,17 +29,52 @@ uci_reply(const char *str)
         XUartPs_SendByte(XPAR_XUARTPS_1_BASEADDR, '\n');
 }
 
+static void
+uci_go(tc_t * tc)
+{
+        uint32_t book_move_found;
+        board_t best_board;
+	static uint32_t search_running = 0;
+
+	if (search_running)
+		return; // this is not the place for recursion
+
+	search_running = 1;
+        book_move_found = book_game_move(&game[game_moves - 1]);
+        if (! book_move_found)
+	{
+		best_board = nm_top(game, game_moves, tc);
+		game[game_moves] = best_board;
+		++game_moves;
+	}
+	search_running = 0;
+}
+
 static uint32_t
 uci_dispatch(void)
 {
+        int32_t i, len;
         char *p, *next;
         uint32_t uci_search_action;
 
-        uci_search_action = UCI_SEARCH_STOP;
+        uci_search_action = UCI_SEARCH_STOP;    // default action for UCI protocol, overridden below
         p = uci_input_buffer;
         next = p;
-        p = strsep(&next, " \n\t\r");
-        if (strlen(p) <= 1)
+
+        len = strnlen(p, UCI_INPUT_BUFFER_SIZE - 1);
+        if (len >= UCI_INPUT_BUFFER_SIZE - 1)
+        {
+                printf("%s: uci input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
+                while (1);
+        }
+        for (i = 0; i < len; ++i)
+                if (p[i] == '\n' || p[i] == '\r')
+                        p[i] = '\0';
+                else if (p[i] == '\t')
+                        p[i] = ' ';
+
+        p = strsep(&next, " ");
+        if (!p || strlen(p) <= 1)
                 return UCI_SEARCH_CONT;
         if (strcmp(p, "uci") == 0)
         {
@@ -52,14 +87,118 @@ uci_dispatch(void)
                 uci_search_action = UCI_SEARCH_CONT;
                 uci_reply("readyok");
         }
-	else if (strcmp(p, "ucinewgame") == 0)
-	{
+        else if (strcmp(p, "ucinewgame") == 0)
+        {
                 trans_clear_table();
                 uci_init();
-	}
-	else if (strcmp(p, "position") == 0)
-	{
-	}
+        }
+        else if (strcmp(p, "position") == 0)
+        {
+                p = strsep(&next, " ");
+                if (!p)
+                        return UCI_SEARCH_CONT;
+                if (strcmp(p, "fen") == 0)
+                {
+                        fen_board((uint8_t *) next, &game[0]);
+                        game_moves = 1;
+                }
+                else if (strcmp(p, "startpos") == 0)
+                {
+                        trans_clear_table();
+                        uci_init();
+                }
+                p = strstr(next, "moves");
+                if (!p)
+                        return UCI_SEARCH_CONT;
+                p += strlen("moves ");
+                next = p;
+                while ((p = strsep(&next, " ")) != 0)
+                        if (uci_move(p))
+                        {
+                                xil_printf("%s: unkown uci move %s\n", __PRETTY_FUNCTION__, p);
+                                return UCI_SEARCH_CONT;
+                        }
+        }
+        else if (strcmp(p, "go") == 0)
+        {
+                int32_t main, increment;
+                int32_t w_main, w_increment;
+                int32_t b_main, b_increment;
+                uint32_t side;
+		char uci_str[6];
+		char best_move[128];
+                static tc_t tc;
+
+		if (game_moves < 1)
+		{
+			printf("%s: attempt to use uninitialized game, stopping (%s %d).\n",
+			       __PRETTY_FUNCTION__, __FILE__, __LINE__);
+			while (1);
+		}
+                if (game[game_moves - 1].white_to_move)
+                        side = 0;
+                else
+                        side = 1;
+                next = p;
+                w_main = 30;
+                w_increment = 0;
+                w_main = 30;
+                b_increment = 0;
+                while ((p = strsep(&next, " ")) != 0)
+                {
+                        if (strcmp(p, "wtime") == 0)
+                        {
+                                p = strsep(&next, " ");
+                                if (!p)
+                                        return UCI_SEARCH_CONT;
+                                w_main = strtoul(p, 0, 0);
+                        }
+                        else if (strcmp(p, "winc") == 0)
+                        {
+                                p = strsep(&next, " ");
+                                if (!p)
+                                        return UCI_SEARCH_CONT;
+                                w_increment = strtoul(p, 0, 0);
+                        }
+                        if (strcmp(p, "btime") == 0)
+                        {
+                                p = strsep(&next, " ");
+                                if (!p)
+                                        return UCI_SEARCH_CONT;
+                                b_main = strtoul(p, 0, 0);
+                        }
+                        else if (strcmp(p, "binc") == 0)
+                        {
+                                p = strsep(&next, " ");
+                                if (!p)
+                                        return UCI_SEARCH_CONT;
+                                b_increment = strtoul(p, 0, 0);
+                        }
+                        else if (strcmp(p, "infinite") == 0)
+                        {
+                                w_main = 3600 * 1000;;
+                                w_increment = 0;
+                                b_main = 3600 * 1000;;
+                                b_increment = 0;
+                        }
+                }
+                if (side == 0)
+                {
+                        main = w_main / 1000;
+                        increment = w_increment / 1000;
+                }
+                else
+                {
+                        main = b_main / 1000;
+                        increment = b_increment / 1000;
+                }
+                tc_set(&tc, side, main, increment);
+                uci_go(&tc);
+		uci_string(&game[game_moves - 1].uci, uci_str);
+		strcpy(best_move, "bestmove ");
+		strcat(best_move, uci_str);
+		uci_reply(best_move);
+        }
 
         return uci_search_action;
 }
@@ -322,7 +461,7 @@ uci_print_game(uint32_t result)
                 return;
         for (i = 1; i < game_moves; ++i)
         {
-                vchess_uci_string(&game[i].uci, uci_str);
+                uci_string(&game[i].uci, uci_str);
                 printf("%s ", uci_str);
                 if (i % 16 == 0)
                         printf("\n");
@@ -333,4 +472,43 @@ uci_print_game(uint32_t result)
                 return;
         }
         printf("%s\n", result_str[result]);
+}
+
+void
+uci_string(const uci_t * uci, char *str)
+{
+        char ch;
+        uint32_t promotion_type;
+
+        str[0] = uci->col_from + 'a';
+        str[1] = uci->row_from + '1';
+        str[2] = uci->col_to + 'a';
+        str[3] = uci->row_to + '1';
+
+        if (uci->promotion != EMPTY_POSN)
+        {
+                promotion_type = uci->promotion & ~(1 << BLACK_BIT);
+                switch (promotion_type)
+                {
+                case PIECE_QUEN:
+                        ch = 'Q';
+                        break;
+                case PIECE_ROOK:
+                        ch = 'R';
+                        break;
+                case PIECE_BISH:
+                        ch = 'B';
+                        break;
+                case PIECE_KNIT:
+                        ch = 'N';
+                        break;
+                default:
+                        ch = '?';
+                        break;
+                }
+                str[4] = ch;
+                str[5] = '\0';
+        }
+        else
+                str[4] = '\0';
 }

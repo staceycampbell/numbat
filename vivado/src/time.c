@@ -37,6 +37,17 @@ tc_init(tc_t *tc, int32_t main, int32_t increment)
 	XTime_GetTime(&tc->control_start);
 }
 
+void
+tc_set(tc_t *tc, uint32_t side, int32_t main_remaining, int32_t increment)
+{
+	tc->valid = 1;
+	tc->side = side;
+	tc->main = main_remaining;
+	tc->main_remaining[side] = main_remaining;
+	tc->increment = increment;
+	XTime_GetTime(&tc->control_start);
+}
+
 uint32_t
 tc_clock_toggle(tc_t *tc)
 {

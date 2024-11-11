@@ -32,7 +32,7 @@ book_print_entry(book_t *entry)
 
         hash_high = entry->hash >> 32;
         hash_low = entry->hash << 32 >> 32;
-        vchess_uci_string(&entry->uci, str);
+        uci_string(&entry->uci, str);
         printf("hash_extra=%4X hash=%08X%08X count=%6d %s\n", entry->hash_extra, hash_high, hash_low, entry->count, str);
 }
 
@@ -85,6 +85,7 @@ book_game_move(const board_t *board)
 	if (move_count == 0)
 		return 0; // game is over
 
+	// test for hash collision which could result in an illegal move
 	confirmed = 0;
 	i = 0;
 	do
@@ -106,7 +107,7 @@ book_game_move(const board_t *board)
 		return 0;
 	}
 
-	vchess_uci_string(&uci, uci_str);
+	uci_string(&uci, uci_str);
 	uci_move(uci_str);
 
 	return 1;

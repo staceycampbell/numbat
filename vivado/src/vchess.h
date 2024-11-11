@@ -556,7 +556,6 @@ extern void vchess_place(board_t * board, uint32_t row, uint32_t col, uint32_t p
 extern uint32_t vchess_get_piece(const board_t * board, uint32_t row, uint32_t col);
 extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask);
 extern void vchess_read_uci(uci_t * uci);
-extern void vchess_uci_string(const uci_t * uci, char *str);
 
 extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc);
 
@@ -572,6 +571,7 @@ extern uint32_t uci_input_poll(void);
 extern void uci_init(void);
 extern int32_t uci_move(char *p);
 extern void uci_print_game(uint32_t result);
+extern void uci_string(const uci_t * uci, char *str);
 
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t * trans, uint32_t * collision);
@@ -588,3 +588,4 @@ extern void tc_init(tc_t * tc, int32_t main, int32_t increment);
 extern uint32_t tc_clock_toggle(tc_t * tc);
 extern void tc_ignore(tc_t * tc);
 extern void tc_display(const tc_t * tc);
+extern void tc_set(tc_t *tc, uint32_t side, int32_t main_remaining, int32_t increment);
