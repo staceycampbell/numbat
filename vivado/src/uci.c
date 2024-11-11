@@ -81,6 +81,7 @@ uci_dispatch(void)
                 uci_reply("id name fpgachess");
                 uci_reply("id author Stacey Campbell");
                 uci_reply("option name OwnBook type check default true");
+                uci_reply("uciok");
         }
         else if (strcmp(p, "isready") == 0)
         {
@@ -199,6 +200,10 @@ uci_dispatch(void)
 		strcat(best_move, uci_str);
 		uci_reply(best_move);
         }
+	else if (strcmp(p, "stop") == 0)
+	{
+		uci_search_action = UCI_SEARCH_STOP; // redundant, here for clarity
+	}
 
         return uci_search_action;
 }
