@@ -72,11 +72,12 @@ set_blocking(int fd, int should_block)
 int
 main(int argc, char *argv[])
 {
-        int opt;
+        int opt, i;
         char *portname;
-        FILE *comfp;
         struct pollfd fds[2];
         char buffer[4096];
+        FILE *logfp;
+        ssize_t count;
 
         portname = "/dev/ttyUSB1";
         while ((opt = getopt(argc, argv, "d:")) != EOF)
@@ -95,12 +96,6 @@ main(int argc, char *argv[])
                 fprintf(stderr, "%s: error %d opening %s: %s", argv[0], errno, portname, strerror(errno));
                 return 1;
         }
-        comfp = fdopen(fds[0].fd, "r+");
-        if (comfp == 0)
-        {
-                fprintf(stderr, "%s: unable to create stream from tty fd\n", argv[0]);
-                return 1;
-        }
 
         set_interface_attribs(fds[0].fd, B115200, 0);   // set speed to 115,200 bps, 8n1 (no parity)
         set_blocking(fds[0].fd, 1);     // set blocking
@@ -109,20 +104,40 @@ main(int argc, char *argv[])
         fds[1].fd = fileno(stdin);
         fds[1].events = POLLIN;
 
+        logfp = fopen("debug.log", "w");
+        if (logfp == 0)
+        {
+                fprintf(stderr, "%s: cannot open debug.log\n", argv[0]);
+                exit(1);
+        }
+
         while (poll(fds, 2, -1) != -1)
         {
                 if (fds[0].revents == POLLIN)
-                        if (fgets(buffer, sizeof(buffer), comfp))
+                {
+                        if ((count = read(fds[0].fd, buffer, sizeof(buffer))) != 0)
                         {
-                                fprintf(stdout, "%s", buffer);
-                                fflush(stdout);
+                                fprintf(logfp, "to GUI: %s", buffer);
+                                fflush(logfp);
+                                write(fileno(stdout), buffer, count);
                         }
+                }
                 if (fds[1].revents == POLLIN)
-                        if (fgets(buffer, sizeof(buffer), stdin))
+                {
+                        if ((count = read(fds[1].fd, buffer, sizeof(buffer))) != 0)
                         {
-                                fprintf(comfp, "%s", buffer);
-                                fflush(comfp);
+                                fprintf(logfp, "to ENG: ");
+                                i = 0;
+                                while (i < count)
+                                {
+                                        fputc(buffer[i], logfp);
+                                        write(fds[0].fd, &buffer[i], 1);
+                                        usleep(1000);
+                                        ++i;
+                                }
+                                fflush(logfp);
                         }
+                }
         }
         return 0;
 }

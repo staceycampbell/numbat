@@ -3,4 +3,4 @@ CFLAGS := -Wall -g
 all:: vchesscomm
 
 clean::
-	rm -f vchesscomm
+	rm -f vchesscomm debug.log
