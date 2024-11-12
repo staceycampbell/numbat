@@ -1,15 +1,17 @@
-#include <errno.h>
-#include <fcntl.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <getopt.h>
+#include <poll.h>
 
 // https://stackoverflow.com/a/6947758
 
-int
+static int
 set_interface_attribs(int fd, int speed, int parity)
 {
         struct termios tty;
@@ -49,7 +51,7 @@ set_interface_attribs(int fd, int speed, int parity)
         return 0;
 }
 
-void
+static void
 set_blocking(int fd, int should_block)
 {
         struct termios tty;
@@ -64,30 +66,63 @@ set_blocking(int fd, int should_block)
         tty.c_cc[VTIME] = 5;    // 0.5 seconds read timeout
 
         if (tcsetattr(fd, TCSANOW, &tty) != 0)
-                fprintf(stderr, "%s: error %d setting term attributes",  __PRETTY_FUNCTION__, errno);
+                fprintf(stderr, "%s: error %d setting term attributes", __PRETTY_FUNCTION__, errno);
 }
 
 int
 main(int argc, char *argv[])
 {
-        char *portname = "/dev/ttyUSB1";
-	int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+        int opt;
+        char *portname;
+        FILE *comfp;
+        struct pollfd fds[2];
+        char buffer[4096];
 
-        if (fd < 0)
+        portname = "/dev/ttyUSB1";
+        while ((opt = getopt(argc, argv, "d:")) != EOF)
+                switch (opt)
+                {
+                case 'd':
+                        portname = optarg;
+                        break;
+                default:
+                        fprintf(stderr, "%s: unknown option %c\n", argv[0], opt);
+                        exit(1);
+                }
+        fds[0].fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+        if (fds[0].fd < 0)
         {
                 fprintf(stderr, "%s: error %d opening %s: %s", argv[0], errno, portname, strerror(errno));
                 return 1;
         }
+        comfp = fdopen(fds[0].fd, "r+");
+        if (comfp == 0)
+        {
+                fprintf(stderr, "%s: unable to create stream from tty fd\n", argv[0]);
+                return 1;
+        }
 
-        set_interface_attribs(fd, B115200, 0);  // set speed to 115,200 bps, 8n1 (no parity)
-        set_blocking(fd, 0);    // set no blocking
+        set_interface_attribs(fds[0].fd, B115200, 0);   // set speed to 115,200 bps, 8n1 (no parity)
+        set_blocking(fds[0].fd, 1);     // set blocking
+        fds[0].events = POLLIN;
 
-        write(fd, "hello!\n", 7);       // send 7 character greeting
+        fds[1].fd = fileno(stdin);
+        fds[1].events = POLLIN;
 
-        usleep((7 + 25) * 100); // sleep enough to transmit the 7 plus
-        // receive 25:  approx 100 uS per char transmit
-        char buf[100];
-        int n = read(fd, buf, sizeof buf);      // read up to 100 characters if ready to read
-
+        while (poll(fds, 2, -1) != -1)
+        {
+                if (fds[0].revents == POLLIN)
+                        if (fgets(buffer, sizeof(buffer), comfp))
+                        {
+                                fprintf(stdout, "%s", buffer);
+                                fflush(stdout);
+                        }
+                if (fds[1].revents == POLLIN)
+                        if (fgets(buffer, sizeof(buffer), stdin))
+                        {
+                                fprintf(comfp, "%s", buffer);
+                                fflush(comfp);
+                        }
+        }
         return 0;
 }
