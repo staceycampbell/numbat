@@ -117,7 +117,9 @@ main(int argc, char *argv[])
                 {
                         if ((count = read(fds[0].fd, buffer, sizeof(buffer))) != 0)
                         {
-                                fprintf(logfp, "to GUI: %s", buffer);
+                                fprintf(logfp, "to GUI: ");
+                                for (i = 0; i < count; ++i)
+                                        fputc(buffer[i], logfp);
                                 fflush(logfp);
                                 write(fileno(stdout), buffer, count);
                         }
@@ -127,6 +129,7 @@ main(int argc, char *argv[])
                         if ((count = read(fds[1].fd, buffer, sizeof(buffer))) != 0)
                         {
                                 fprintf(logfp, "to ENG: ");
+                                fflush(logfp);
                                 i = 0;
                                 while (i < count)
                                 {

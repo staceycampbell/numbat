@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <xparameters.h>
 #include <netif/xadapter.h>
 #include <lwip/tcp.h>
@@ -18,6 +20,13 @@ extern uint32_t tc_main, tc_increment;
 static char uci_input_buffer[UCI_INPUT_BUFFER_SIZE];
 static uint32_t uci_input_index;
 
+static inline void
+uci_outbyte(char c)
+{
+        XUartPs_SendByte(XPAR_XUARTPS_1_BASEADDR, c);
+        usleep(1000);           // 1ms delay per char tx seems to be ok
+}
+
 static void
 uci_reply(const char *str)
 {
@@ -25,8 +34,9 @@ uci_reply(const char *str)
 
         len = strlen(str);
         for (i = 0; i < len; ++i)
-                XUartPs_SendByte(XPAR_XUARTPS_1_BASEADDR, str[i]);
-        XUartPs_SendByte(XPAR_XUARTPS_1_BASEADDR, '\n');
+                uci_outbyte(str[i]);
+        uci_outbyte('\n');
+        printf("uci out: %s\n", str);
 }
 
 static void
@@ -34,20 +44,20 @@ uci_go(tc_t * tc)
 {
         uint32_t book_move_found;
         board_t best_board;
-	static uint32_t search_running = 0;
+        static uint32_t search_running = 0;
 
-	if (search_running)
-		return; // this is not the place for recursion
+        if (search_running)
+                return;         // this is not the place for recursion
 
-	search_running = 1;
+        search_running = 1;
         book_move_found = book_game_move(&game[game_moves - 1]);
-        if (! book_move_found)
-	{
-		best_board = nm_top(game, game_moves, tc);
-		game[game_moves] = best_board;
-		++game_moves;
-	}
-	search_running = 0;
+        if (!book_move_found)
+        {
+                best_board = nm_top(game, game_moves, tc);
+                game[game_moves] = best_board;
+                ++game_moves;
+        }
+        search_running = 0;
 }
 
 static uint32_t
@@ -72,6 +82,8 @@ uci_dispatch(void)
                         p[i] = '\0';
                 else if (p[i] == '\t')
                         p[i] = ' ';
+
+        printf("uci in: %s\n", uci_input_buffer);
 
         p = strsep(&next, " ");
         if (!p || strlen(p) <= 1)
@@ -126,33 +138,34 @@ uci_dispatch(void)
                 int32_t w_main, w_increment;
                 int32_t b_main, b_increment;
                 uint32_t side;
-		char uci_str[6];
-		char best_move[128];
+                char uci_str[6];
+                char best_move[128];
                 static tc_t tc;
 
-		if (game_moves < 1)
-		{
-			printf("%s: attempt to use uninitialized game, stopping (%s %d).\n",
-			       __PRETTY_FUNCTION__, __FILE__, __LINE__);
-			while (1);
-		}
+                if (game_moves < 1)
+                {
+                        printf("%s: attempt to use uninitialized game, stopping (%s %d).\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        while (1);
+                }
                 if (game[game_moves - 1].white_to_move)
                         side = 0;
                 else
                         side = 1;
-                next = p;
-                w_main = 30;
+                w_main = 30 * 1000;
                 w_increment = 0;
-                w_main = 30;
+                w_main = 30 * 1000;
                 b_increment = 0;
                 while ((p = strsep(&next, " ")) != 0)
                 {
                         if (strcmp(p, "wtime") == 0)
                         {
+                                printf("%s: go %s ", __PRETTY_FUNCTION__, p);
+                                fflush(stdout);
                                 p = strsep(&next, " ");
                                 if (!p)
                                         return UCI_SEARCH_CONT;
                                 w_main = strtoul(p, 0, 0);
+                                printf("wtime=%d\n", w_main);
                         }
                         else if (strcmp(p, "winc") == 0)
                         {
@@ -163,10 +176,13 @@ uci_dispatch(void)
                         }
                         if (strcmp(p, "btime") == 0)
                         {
+                                printf("%s: go %s ", __PRETTY_FUNCTION__, p);
+                                fflush(stdout);
                                 p = strsep(&next, " ");
                                 if (!p)
                                         return UCI_SEARCH_CONT;
                                 b_main = strtoul(p, 0, 0);
+                                printf("btime=%d\n", b_main);
                         }
                         else if (strcmp(p, "binc") == 0)
                         {
@@ -195,15 +211,15 @@ uci_dispatch(void)
                 }
                 tc_set(&tc, side, main, increment);
                 uci_go(&tc);
-		uci_string(&game[game_moves - 1].uci, uci_str);
-		strcpy(best_move, "bestmove ");
-		strcat(best_move, uci_str);
-		uci_reply(best_move);
+                uci_string(&game[game_moves - 1].uci, uci_str);
+                strcpy(best_move, "bestmove ");
+                strcat(best_move, uci_str);
+                uci_reply(best_move);
         }
-	else if (strcmp(p, "stop") == 0)
-	{
-		uci_search_action = UCI_SEARCH_STOP; // redundant, here for clarity
-	}
+        else if (strcmp(p, "stop") == 0)
+        {
+                uci_search_action = UCI_SEARCH_STOP;    // redundant, here for clarity
+        }
 
         return uci_search_action;
 }
