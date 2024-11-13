@@ -159,13 +159,10 @@ uci_dispatch(void)
                 {
                         if (strcmp(p, "wtime") == 0)
                         {
-                                printf("%s: go %s ", __PRETTY_FUNCTION__, p);
-                                fflush(stdout);
                                 p = strsep(&next, " ");
                                 if (!p)
                                         return UCI_SEARCH_CONT;
                                 w_main = strtoul(p, 0, 0);
-                                printf("wtime=%d\n", w_main);
                         }
                         else if (strcmp(p, "winc") == 0)
                         {
@@ -176,13 +173,10 @@ uci_dispatch(void)
                         }
                         if (strcmp(p, "btime") == 0)
                         {
-                                printf("%s: go %s ", __PRETTY_FUNCTION__, p);
-                                fflush(stdout);
                                 p = strsep(&next, " ");
                                 if (!p)
                                         return UCI_SEARCH_CONT;
                                 b_main = strtoul(p, 0, 0);
-                                printf("btime=%d\n", b_main);
                         }
                         else if (strcmp(p, "binc") == 0)
                         {
