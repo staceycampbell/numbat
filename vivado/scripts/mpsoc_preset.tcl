@@ -125,6 +125,7 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:ddr4:2.2\
+xilinx.com:ip:clk_wiz:6.0\
 xilinx.com:ip:proc_sys_reset:5.0\
 xilinx.com:ip:zynq_ultra_ps_e:3.4\
 "
@@ -276,7 +277,7 @@ proc create_root_design { parentCell } {
   # Create instance: ddr4_0, and set properties
   set ddr4_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 ddr4_0 ]
   set_property -dict [ list \
-   CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {375} \
+   CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {None} \
    CONFIG.C0.BANK_GROUP_WIDTH {1} \
    CONFIG.C0.DDR4_AxiAddressWidth {31} \
    CONFIG.C0.DDR4_AxiDataWidth {512} \
@@ -290,6 +291,36 @@ proc create_root_design { parentCell } {
    CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_062} \
    CONFIG.RESET_BOARD_INTERFACE {Custom} \
  ] $ddr4_0
+
+  # Create instance: digclk_gen, and set properties
+  set digclk_gen [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 digclk_gen ]
+  set_property -dict [ list \
+   CONFIG.AUTO_PRIMITIVE {PLL} \
+   CONFIG.CLKIN1_JITTER_PS {33.330000000000005} \
+   CONFIG.CLKOUT1_DRIVES {Buffer} \
+   CONFIG.CLKOUT1_JITTER {112.486} \
+   CONFIG.CLKOUT1_PHASE_ERROR {104.307} \
+   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {325} \
+   CONFIG.CLKOUT2_DRIVES {Buffer} \
+   CONFIG.CLKOUT3_DRIVES {Buffer} \
+   CONFIG.CLKOUT4_DRIVES {Buffer} \
+   CONFIG.CLKOUT5_DRIVES {Buffer} \
+   CONFIG.CLKOUT6_DRIVES {Buffer} \
+   CONFIG.CLKOUT7_DRIVES {Buffer} \
+   CONFIG.CLK_OUT1_PORT {digclk} \
+   CONFIG.FEEDBACK_SOURCE {FDBK_AUTO} \
+   CONFIG.MMCM_BANDWIDTH {OPTIMIZED} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {13} \
+   CONFIG.MMCM_CLKIN1_PERIOD {3.333} \
+   CONFIG.MMCM_CLKIN2_PERIOD {10.0} \
+   CONFIG.MMCM_CLKOUT0_DIVIDE_F {3} \
+   CONFIG.MMCM_COMPENSATION {AUTO} \
+   CONFIG.MMCM_DIVCLK_DIVIDE {4} \
+   CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
+   CONFIG.PRIMITIVE {Auto} \
+   CONFIG.USE_LOCKED {false} \
+   CONFIG.USE_RESET {false} \
+ ] $digclk_gen
 
   # Create instance: rst_ddr4_0_300M, and set properties
   set rst_ddr4_0_300M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ddr4_0_300M ]
@@ -1013,8 +1044,8 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Create port connections
   connect_bd_net -net ARESETN_1 [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins rst_ps8_0_99M/peripheral_aresetn]
   connect_bd_net -net S01_ARESETN_1 [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins rst_ddr4_0_375M/peripheral_aresetn]
-  connect_bd_net -net ddr4_0_addn_ui_clkout1 [get_bd_ports digclk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins ddr4_0/addn_ui_clkout1] [get_bd_pins rst_ddr4_0_375M/slowest_sync_clk]
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_ports c0_ddr4_ui_clk] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins ddr4_0/c0_ddr4_ui_clk] [get_bd_pins rst_ddr4_0_300M/slowest_sync_clk]
+  connect_bd_net -net ddr4_0_addn_ui_clkout1 [get_bd_ports digclk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins digclk_gen/digclk] [get_bd_pins rst_ddr4_0_375M/slowest_sync_clk]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_ports c0_ddr4_ui_clk] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins ddr4_0/c0_ddr4_ui_clk] [get_bd_pins digclk_gen/clk_in1] [get_bd_pins rst_ddr4_0_300M/slowest_sync_clk]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_ports c0_ddr4_ui_clk_sync_rst] [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins rst_ddr4_0_300M/ext_reset_in] [get_bd_pins rst_ddr4_0_375M/ext_reset_in]
   connect_bd_net -net ddr4_0_c0_init_calib_complete [get_bd_ports c0_init_calib_complete] [get_bd_pins ddr4_0/c0_init_calib_complete]
   connect_bd_net -net rst_ddr4_0_300M_peripheral_aresetn [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins ddr4_0/c0_ddr4_aresetn] [get_bd_pins rst_ddr4_0_300M/peripheral_aresetn]
