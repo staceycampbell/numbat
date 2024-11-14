@@ -46,6 +46,7 @@ main(void)
                                                 for (fj = 0; fj < 8; ++fj)
                                                         attack_array[idx][fi][fj] = 0; // default is "don't care"
                                 idx = 0;
+                                // rook horizontal
                                 for (j = col - 1; j >= 0; j = j - 1)
                                 {
                                         attack_array[idx][row][j] = attack_rook[color];

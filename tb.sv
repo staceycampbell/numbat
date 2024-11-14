@@ -190,7 +190,7 @@ module tb;
 
         if (t >= 10000)
           $finish;
-        if (tb.all_moves.state == 24)
+        if (0 && tb.all_moves.state == 24)
           begin
              $display("stopping sim at sort moves init\n");
              $finish;

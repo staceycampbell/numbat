@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <assert.h>
-#include <xtime_l.h>
-#include <xuartps.h>
 
 #if ! defined(EXCLUDE_VITIS)
+#include <xtime_l.h>
+#include <xuartps.h>
 #include <xparameters.h>
 #else
 #define XPAR_CTRL0_AXI_BASEADDR 0
@@ -80,7 +80,9 @@ typedef struct tc_t
         int32_t increment;
         int32_t move_number;
         int32_t main_remaining[2];
+#if ! defined(EXCLUDE_VITIS)
         XTime control_start;
+#endif
 } tc_t;
 
 typedef struct uci_t
@@ -521,8 +523,7 @@ uci_match(const uci_t * a, const uci_t * b)
 {
         uint32_t ret;
 
-        ret = a->row_from == b->row_from && a->row_to == b->row_to && a->col_from == b->col_from &&
-                a->col_to == b->col_to && a->promotion == b->promotion;
+        ret = a->row_from == b->row_from && a->row_to == b->row_to && a->col_from == b->col_from && a->col_to == b->col_to && a->promotion == b->promotion;
 
         return ret;
 }
@@ -530,11 +531,15 @@ uci_match(const uci_t * a, const uci_t * b)
 static inline uint32_t
 ui_data_available(void)
 {
-	uint32_t status;
+        uint32_t status;
 
-	status = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
+#if ! defined(EXCLUDE_VITIS)
+        status = XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR);
+#else
+        status = 0;
+#endif
 
-	return status;
+        return status;
 }
 
 extern void print_app_header(void);
@@ -588,4 +593,4 @@ extern void tc_init(tc_t * tc, int32_t main, int32_t increment);
 extern uint32_t tc_clock_toggle(tc_t * tc);
 extern void tc_ignore(tc_t * tc);
 extern void tc_display(const tc_t * tc);
-extern void tc_set(tc_t *tc, uint32_t side, int32_t main_remaining, int32_t increment);
+extern void tc_set(tc_t * tc, uint32_t side, int32_t main_remaining, int32_t increment);
