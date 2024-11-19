@@ -126,6 +126,48 @@ do_bishop(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
         return b_idx;
 }
 
+static uint32_t
+do_rook(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
+{
+        int32_t i, r_idx, r_row, r_col, ri, rj;
+        uint32_t opp_idx;
+        uint16_t mobility[8][8];
+        static const offset_t roff[4] = { {0, -1}, {0, +1}, {-1, 0}, {+1, 0} };
+        static const offset_t inv_roff[4] = { {0, +1}, {0, -1}, {+1, 0}, {-1, 0} };
+
+        fprintf(data_fp, "if (ATTACKING_PIECE == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
+        r_idx = 0;
+        for (i = 0; i < 4; ++i)
+        {
+                r_row = row + roff[i].y;
+                r_col = col + roff[i].x;
+                while (r_row >= 0 && r_row < 8 && r_col >= 0 && r_col < 8)
+                {
+                        clear_array(mobility);
+                        mobility[row][col] = attack_rook[side];
+                        for (opp_idx = 0; opp_idx < 7; ++opp_idx)
+                        {
+                                mobility[r_row][r_col] = opponents[side][opp_idx];
+                                ri = r_row + inv_roff[i].y;
+                                rj = r_col + inv_roff[i].x;
+                                while (inv_roff[i].y == 0 ? rj != col : ri != row)
+                                {
+                                        mobility[ri][rj] = 1 << EMPTY_POSN;
+                                        ri += inv_roff[i].y;
+                                        rj += inv_roff[i].x;
+                                }
+                                print_data(data_fp, r_idx, mobility);
+                                ++r_idx;
+                        }
+                        r_row += roff[i].y;
+                        r_col += roff[i].x;
+                }
+        }
+        fprintf(data_fp, "end\n");
+
+        return r_idx;
+}
+
 int
 main(void)
 {
@@ -133,7 +175,6 @@ main(void)
         uint32_t idx, largest_mobility_list;
         uint32_t side;
         FILE *data_fp, *head_fp;
-        static const char *attack_side[2] = {"WHITE", "BLACK"};
 
         assert((data_fp = fopen("mobility_mask.vh", "w")) != 0);
         assert((head_fp = fopen("mobility_head.vh", "w")) != 0);
@@ -188,9 +229,14 @@ main(void)
                                 idx = do_bishop(attacker[side][PIECE_BISH], data_fp, side, row, col);
                                 if (idx > largest_mobility_list)
                                         largest_mobility_list = idx;
+                                idx = do_rook(attacker[side][PIECE_ROOK], data_fp, side, row, col);
+                                if (idx > largest_mobility_list)
+                                        largest_mobility_list = idx;
                         }
         }
         fprintf(head_fp, "localparam MOBILITY_LIST_COUNT = %d;\n", largest_mobility_list);
         fclose(data_fp);
         fclose(head_fp);
+
+        return 0;
 }
