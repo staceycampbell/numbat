@@ -9,3 +9,7 @@ amt_board.vh
 tbtrans
 evaluate
 evaluate_*.vh
+mobility_head.vh
+mobility_mask.vh
+nbrq_mobility
+                        
