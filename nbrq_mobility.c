@@ -21,8 +21,6 @@ static char *attacker[2][1 << BLACK_BIT];
 
 static uint16_t opponents[2][7];
 
-#define MOBILITY_COUNT 75
-
 static void
 clear_array(uint16_t mobility[8][8])
 {
@@ -63,7 +61,7 @@ do_knight(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
         uint16_t mobility[8][8];
         static const offset_t n_off[] = { {-2, -1}, {-1, -2}, {+1, -2}, {+2, -1}, {+2, +1}, {+1, +2}, {-1, +2}, {-2, +1} };
 
-        fprintf(data_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
+        fprintf(data_fp, "if (ATTACKING_PIECE == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
         n_idx = 0;
         for (i = 0; i < 8; ++i)
         {
@@ -95,7 +93,7 @@ do_bishop(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
         static const offset_t boff[4] = { {-1, -1}, {-1, +1}, {+1, -1}, {+1, +1} };
         static const offset_t inv_boff[4] = { {+1, +1}, {+1, -1}, {-1, +1}, {-1, -1} };
 
-        fprintf(data_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
+        fprintf(data_fp, "if (ATTACKING_PIECE == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
         b_idx = 0;
         for (i = 0; i < 4; ++i)
         {
@@ -132,9 +130,10 @@ int
 main(void)
 {
         int32_t row, col;
-        uint32_t idx;
+        uint32_t idx, largest_mobility_list;
         uint32_t side;
         FILE *data_fp, *head_fp;
+        static const char *attack_side[2] = {"WHITE", "BLACK"};
 
         assert((data_fp = fopen("mobility_mask.vh", "w")) != 0);
         assert((head_fp = fopen("mobility_head.vh", "w")) != 0);
@@ -177,23 +176,21 @@ main(void)
         opponents[BLACK_ATTACK][5] = 1 << WHITE_PAWN;
         opponents[BLACK_ATTACK][6] = 1 << EMPTY_POSN;
 
+        largest_mobility_list = 0;
         for (side = 0; side <= 1; ++side)
         {
                 for (row = 0; row < 8; ++row)
                         for (col = 0; col < 8; ++col)
                         {
-                                fprintf(head_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker[side][PIECE_KNIT], row, col);
                                 idx = do_knight(attacker[side][PIECE_KNIT], data_fp, side, row, col);
-                                fprintf(head_fp, "localparam MOBILITY_LIST_COUNT = %d;\n", idx);
-                                fprintf(head_fp, "end\n");
-
-                                fprintf(head_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker[side][PIECE_BISH], row, col);
+                                if (idx > largest_mobility_list)
+                                        largest_mobility_list = idx;
                                 idx = do_bishop(attacker[side][PIECE_BISH], data_fp, side, row, col);
-                                fprintf(head_fp, "localparam MOBILITY_LIST_COUNT = %d;\n", idx);
-                                fprintf(head_fp, "end\n");
-
+                                if (idx > largest_mobility_list)
+                                        largest_mobility_list = idx;
                         }
         }
+        fprintf(head_fp, "localparam MOBILITY_LIST_COUNT = %d;\n", largest_mobility_list);
         fclose(data_fp);
         fclose(head_fp);
 }
