@@ -19,10 +19,9 @@ static uint16_t attack_king[2];
 static uint16_t attack_pawn[2];
 static char *attacker[2][1 << BLACK_BIT];
 
-static uint16_t opponents[2][6];
+static uint16_t opponents[2][7];
 
 #define MOBILITY_COUNT 75
-#define EMPTY_POSN2 (1 << EMPTY_POSN)
 
 static void
 clear_array(uint16_t mobility[8][8])
@@ -35,11 +34,11 @@ clear_array(uint16_t mobility[8][8])
 }
 
 void
-print_data(FILE *data_fp, int32_t idx, uint16_t mobility[8][8])
+print_data(FILE * data_fp, int32_t idx, uint16_t mobility[8][8])
 {
         int32_t row, col;
 
-        fprintf(data_fp, "mobility_mask[%3d] = {\n", idx);
+        fprintf(data_fp, "mobility_mask[%2d] = {\n", idx);
         for (row = 7; row >= 0; --row)
         {
                 for (col = 7; col >= 0; --col)
@@ -57,7 +56,7 @@ print_data(FILE *data_fp, int32_t idx, uint16_t mobility[8][8])
 }
 
 static uint32_t
-do_knight(char *attacker, FILE *head_fp, FILE *data_fp, uint32_t side, int row, int col)
+do_knight(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
 {
         int32_t i, n_idx, n_row, n_col;
         uint32_t opp_idx;
@@ -65,26 +64,25 @@ do_knight(char *attacker, FILE *head_fp, FILE *data_fp, uint32_t side, int row, 
         static const n_off_t n_off[] = { {-2, -1}, {-1, -2}, {+1, -2}, {+2, -1}, {+2, +1}, {+1, +2}, {-1, +2}, {-2, +1} };
 
         assert(attacker);
-        n_idx = 0;
         fprintf(data_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
-        fprintf(head_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
+        n_idx = 0;
         for (i = 0; i < 8; ++i)
         {
                 clear_array(mobility);
                 n_row = row + n_off[i].y;
                 n_col = col + n_off[i].x;
                 if (n_row >= 0 && n_row < 8 && n_col >= 0 && n_col < 8)
-                        for (opp_idx = 0; opp_idx < 6; ++opp_idx)
+                {
+                        for (opp_idx = 0; opp_idx < 7; ++opp_idx)
                         {
                                 mobility[row][col] = attack_knit[side];
                                 mobility[n_row][n_col] = opponents[side][opp_idx];
                                 print_data(data_fp, n_idx, mobility);
                                 ++n_idx;
                         }
-                fprintf(head_fp, "localparam MOBILITY_LIST_COUNT = %d;\n", n_idx);
+                }
         }
         fprintf(data_fp, "end\n");
-        fprintf(head_fp, "end\n");
 
         return n_idx;
 }
@@ -93,6 +91,7 @@ int
 main(void)
 {
         int32_t row, col;
+        uint32_t idx;
         uint32_t side;
         FILE *data_fp, *head_fp;
 
@@ -127,6 +126,7 @@ main(void)
         opponents[WHITE_ATTACK][3] = 1 << BLACK_QUEN;
         opponents[WHITE_ATTACK][4] = 1 << BLACK_KING;
         opponents[WHITE_ATTACK][5] = 1 << BLACK_PAWN;
+        opponents[WHITE_ATTACK][6] = 1 << EMPTY_POSN;
 
         opponents[BLACK_ATTACK][0] = 1 << WHITE_ROOK;
         opponents[BLACK_ATTACK][1] = 1 << WHITE_KNIT;
@@ -134,13 +134,19 @@ main(void)
         opponents[BLACK_ATTACK][3] = 1 << WHITE_QUEN;
         opponents[BLACK_ATTACK][4] = 1 << WHITE_KING;
         opponents[BLACK_ATTACK][5] = 1 << WHITE_PAWN;
+        opponents[BLACK_ATTACK][6] = 1 << EMPTY_POSN;
 
         for (side = 0; side <= 1; ++side)
+        {
                 for (row = 0; row < 8; ++row)
                         for (col = 0; col < 8; ++col)
                         {
-                                do_knight(attacker[side][PIECE_KNIT], head_fp, data_fp, side, row, col);
+                                fprintf(head_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker[side][PIECE_KNIT], row, col);
+                                idx = do_knight(attacker[side][PIECE_KNIT], data_fp, side, row, col);
+                                fprintf(head_fp, "localparam MOBILITY_LIST_COUNT = %d;\n", idx);
+                                fprintf(head_fp, "end\n");
                         }
+        }
         fclose(data_fp);
         fclose(head_fp);
 }
