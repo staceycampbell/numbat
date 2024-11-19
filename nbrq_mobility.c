@@ -5,11 +5,11 @@
 #define EXCLUDE_VITIS 1
 #include "vivado/src/vchess.h"
 
-typedef struct n_off_t
+typedef struct offset_t
 {
         int32_t y;
         int32_t x;
-} n_off_t;
+} offset_t;
 
 static uint16_t attack_rook[2];
 static uint16_t attack_knit[2];
@@ -61,9 +61,8 @@ do_knight(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
         int32_t i, n_idx, n_row, n_col;
         uint32_t opp_idx;
         uint16_t mobility[8][8];
-        static const n_off_t n_off[] = { {-2, -1}, {-1, -2}, {+1, -2}, {+2, -1}, {+2, +1}, {+1, +2}, {-1, +2}, {-2, +1} };
+        static const offset_t n_off[] = { {-2, -1}, {-1, -2}, {+1, -2}, {+2, -1}, {+2, +1}, {+1, +2}, {-1, +2}, {-2, +1} };
 
-        assert(attacker);
         fprintf(data_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
         n_idx = 0;
         for (i = 0; i < 8; ++i)
@@ -85,6 +84,48 @@ do_knight(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
         fprintf(data_fp, "end\n");
 
         return n_idx;
+}
+
+static uint32_t
+do_bishop(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
+{
+        int32_t i, b_idx, b_row, b_col, bi, bj;
+        uint32_t opp_idx;
+        uint16_t mobility[8][8];
+        static const offset_t boff[4] = { {-1, -1}, {-1, +1}, {+1, -1}, {+1, +1} };
+        static const offset_t inv_boff[4] = { {+1, +1}, {+1, -1}, {-1, +1}, {-1, -1} };
+
+        fprintf(data_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
+        b_idx = 0;
+        for (i = 0; i < 4; ++i)
+        {
+                b_row = row + boff[i].y;
+                b_col = col + boff[i].x;
+                while (b_row >= 0 && b_row < 8 && b_col >= 0 && b_col < 8)
+                {
+                        clear_array(mobility);
+                        mobility[row][col] = attack_bish[side];
+                        for (opp_idx = 0; opp_idx < 7; ++opp_idx)
+                        {
+                                mobility[b_row][b_col] = opponents[side][opp_idx];
+                                bi = b_row + inv_boff[i].y;
+                                bj = b_col + inv_boff[i].x;
+                                while (bi != row && bj != col)
+                                {
+                                        mobility[bi][bj] = 1 << EMPTY_POSN;
+                                        bi += inv_boff[i].y;
+                                        bj += inv_boff[i].x;
+                                }
+                                print_data(data_fp, b_idx, mobility);
+                                ++b_idx;
+                        }
+                        b_row += boff[i].y;
+                        b_col += boff[i].x;
+                }
+        }
+        fprintf(data_fp, "end\n");
+
+        return b_idx;
 }
 
 int
@@ -145,6 +186,12 @@ main(void)
                                 idx = do_knight(attacker[side][PIECE_KNIT], data_fp, side, row, col);
                                 fprintf(head_fp, "localparam MOBILITY_LIST_COUNT = %d;\n", idx);
                                 fprintf(head_fp, "end\n");
+
+                                fprintf(head_fp, "if (ATTACKER == %s && ROW == %d && COL == %d)\nbegin\n", attacker[side][PIECE_BISH], row, col);
+                                idx = do_bishop(attacker[side][PIECE_BISH], data_fp, side, row, col);
+                                fprintf(head_fp, "localparam MOBILITY_LIST_COUNT = %d;\n", idx);
+                                fprintf(head_fp, "end\n");
+
                         }
         }
         fclose(data_fp);
