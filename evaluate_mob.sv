@@ -5,22 +5,78 @@ module evaluate_mob #
    parameter EVAL_WIDTH = 0
    )
    (
-    input                            clk,
-    input                            reset,
+    input                                clk,
+    input                                reset,
 
-    input                            board_valid,
-    input [`BOARD_WIDTH - 1:0]       board,
-    input                            clear_eval,
+    input                                board_valid,
+    input [`BOARD_WIDTH - 1:0]           board,
+    input                                clear_eval,
 
-    output signed [EVAL_WIDTH - 1:0] eval_mg,
-    output signed [EVAL_WIDTH - 1:0] eval_eg,
-    output reg                       eval_valid
+    output reg signed [EVAL_WIDTH - 1:0] eval_mg,
+    output reg signed [EVAL_WIDTH - 1:0] eval_eg,
+    output reg                           eval_valid
     );
    
    localparam LATENCY_COUNT = 7;
 
-   reg                               board_valid_r;
+   reg                                   board_valid_r;
    reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;
+   
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitebish_eg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitebish_mg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiteknit_eg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiteknit_mg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackbish_eg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackbish_mg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackknit_eg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackknit_mg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackquen_eg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackquen_mg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackrook_eg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackrook_mg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitequen_eg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitequen_mg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiterook_eg_t1 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiterook_mg_t1 [0:15];
+   
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitebish_eg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitebish_mg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiteknit_eg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiteknit_mg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackbish_eg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackbish_mg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackknit_eg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackknit_mg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackquen_eg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackquen_mg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackrook_eg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackrook_mg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitequen_eg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitequen_mg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiterook_eg_t2 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiterook_mg_t2 [0:3];
+   
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitebish_eg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitebish_mg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiteknit_eg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiteknit_mg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackbish_eg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackbish_mg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackknit_eg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackknit_mg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackquen_eg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackquen_mg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackrook_eg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_blackrook_mg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitequen_eg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_whitequen_mg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiterook_eg_t3;
+   reg signed [EVAL_WIDTH - 1:0]         eval_whiterook_mg_t3;
+   
+   reg signed [EVAL_WIDTH - 1:0]         eval_white_mg_t4;
+   reg signed [EVAL_WIDTH - 1:0]         eval_white_eg_t4;
+   reg signed [EVAL_WIDTH - 1:0]         eval_black_mg_t4;
+   reg signed [EVAL_WIDTH - 1:0]         eval_black_eg_t4;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -28,6 +84,7 @@ module evaluate_mob #
    /*AUTOWIRE*/
 
    genvar                                row, col;
+   integer                               i;
    
    wire signed [EVAL_WIDTH-1:0]          eval_whitebish_eg [0:63];
    wire signed [EVAL_WIDTH-1:0]          eval_whitebish_mg [0:63];
@@ -86,8 +143,81 @@ module evaluate_mob #
              state <= STATE_IDLE;
          default :
            state <= STATE_IDLE;
-       endcase // case (state)
-   
+       endcase
+
+   always @(posedge clk)
+     for (i = 0; i < 16; i = i + 1)
+       begin
+          eval_whitebish_eg_t1[i] <= eval_whitebish_eg[i*4+0] + eval_whitebish_eg[i*4+1] + eval_whitebish_eg[i*4+2] + eval_whitebish_eg[i*4+3];
+          eval_whitebish_mg_t1[i] <= eval_whitebish_mg[i*4+0] + eval_whitebish_mg[i*4+1] + eval_whitebish_mg[i*4+2] + eval_whitebish_mg[i*4+3];
+          eval_whiteknit_eg_t1[i] <= eval_whiteknit_eg[i*4+0] + eval_whiteknit_eg[i*4+1] + eval_whiteknit_eg[i*4+2] + eval_whiteknit_eg[i*4+3];
+          eval_whiteknit_mg_t1[i] <= eval_whiteknit_mg[i*4+0] + eval_whiteknit_mg[i*4+1] + eval_whiteknit_mg[i*4+2] + eval_whiteknit_mg[i*4+3];
+          eval_blackbish_eg_t1[i] <= eval_blackbish_eg[i*4+0] + eval_blackbish_eg[i*4+1] + eval_blackbish_eg[i*4+2] + eval_blackbish_eg[i*4+3];
+          eval_blackbish_mg_t1[i] <= eval_blackbish_mg[i*4+0] + eval_blackbish_mg[i*4+1] + eval_blackbish_mg[i*4+2] + eval_blackbish_mg[i*4+3];
+          eval_blackknit_eg_t1[i] <= eval_blackknit_eg[i*4+0] + eval_blackknit_eg[i*4+1] + eval_blackknit_eg[i*4+2] + eval_blackknit_eg[i*4+3];
+          eval_blackknit_mg_t1[i] <= eval_blackknit_mg[i*4+0] + eval_blackknit_mg[i*4+1] + eval_blackknit_mg[i*4+2] + eval_blackknit_mg[i*4+3];
+          eval_blackquen_eg_t1[i] <= eval_blackquen_eg[i*4+0] + eval_blackquen_eg[i*4+1] + eval_blackquen_eg[i*4+2] + eval_blackquen_eg[i*4+3];
+          eval_blackquen_mg_t1[i] <= eval_blackquen_mg[i*4+0] + eval_blackquen_mg[i*4+1] + eval_blackquen_mg[i*4+2] + eval_blackquen_mg[i*4+3];
+          eval_blackrook_eg_t1[i] <= eval_blackrook_eg[i*4+0] + eval_blackrook_eg[i*4+1] + eval_blackrook_eg[i*4+2] + eval_blackrook_eg[i*4+3];
+          eval_blackrook_mg_t1[i] <= eval_blackrook_mg[i*4+0] + eval_blackrook_mg[i*4+1] + eval_blackrook_mg[i*4+2] + eval_blackrook_mg[i*4+3];
+          eval_whitequen_eg_t1[i] <= eval_whitequen_eg[i*4+0] + eval_whitequen_eg[i*4+1] + eval_whitequen_eg[i*4+2] + eval_whitequen_eg[i*4+3];
+          eval_whitequen_mg_t1[i] <= eval_whitequen_mg[i*4+0] + eval_whitequen_mg[i*4+1] + eval_whitequen_mg[i*4+2] + eval_whitequen_mg[i*4+3];
+          eval_whiterook_eg_t1[i] <= eval_whiterook_eg[i*4+0] + eval_whiterook_eg[i*4+1] + eval_whiterook_eg[i*4+2] + eval_whiterook_eg[i*4+3];
+          eval_whiterook_mg_t1[i] <= eval_whiterook_mg[i*4+0] + eval_whiterook_mg[i*4+1] + eval_whiterook_mg[i*4+2] + eval_whiterook_mg[i*4+3];
+       end
+
+   always @(posedge clk)
+     for (i = 0; i < 4; i = i + 1)
+       begin
+          eval_whitebish_eg_t2[i] <= eval_whitebish_eg_t1[i*4+0] + eval_whitebish_eg_t1[i*4+1] + eval_whitebish_eg_t1[i*4+2] + eval_whitebish_eg_t1[i*4+3];
+          eval_whitebish_mg_t2[i] <= eval_whitebish_mg_t1[i*4+0] + eval_whitebish_mg_t1[i*4+1] + eval_whitebish_mg_t1[i*4+2] + eval_whitebish_mg_t1[i*4+3];
+          eval_whiteknit_eg_t2[i] <= eval_whiteknit_eg_t1[i*4+0] + eval_whiteknit_eg_t1[i*4+1] + eval_whiteknit_eg_t1[i*4+2] + eval_whiteknit_eg_t1[i*4+3];
+          eval_whiteknit_mg_t2[i] <= eval_whiteknit_mg_t1[i*4+0] + eval_whiteknit_mg_t1[i*4+1] + eval_whiteknit_mg_t1[i*4+2] + eval_whiteknit_mg_t1[i*4+3];
+          eval_blackbish_eg_t2[i] <= eval_blackbish_eg_t1[i*4+0] + eval_blackbish_eg_t1[i*4+1] + eval_blackbish_eg_t1[i*4+2] + eval_blackbish_eg_t1[i*4+3];
+          eval_blackbish_mg_t2[i] <= eval_blackbish_mg_t1[i*4+0] + eval_blackbish_mg_t1[i*4+1] + eval_blackbish_mg_t1[i*4+2] + eval_blackbish_mg_t1[i*4+3];
+          eval_blackknit_eg_t2[i] <= eval_blackknit_eg_t1[i*4+0] + eval_blackknit_eg_t1[i*4+1] + eval_blackknit_eg_t1[i*4+2] + eval_blackknit_eg_t1[i*4+3];
+          eval_blackknit_mg_t2[i] <= eval_blackknit_mg_t1[i*4+0] + eval_blackknit_mg_t1[i*4+1] + eval_blackknit_mg_t1[i*4+2] + eval_blackknit_mg_t1[i*4+3];
+          eval_blackquen_eg_t2[i] <= eval_blackquen_eg_t1[i*4+0] + eval_blackquen_eg_t1[i*4+1] + eval_blackquen_eg_t1[i*4+2] + eval_blackquen_eg_t1[i*4+3];
+          eval_blackquen_mg_t2[i] <= eval_blackquen_mg_t1[i*4+0] + eval_blackquen_mg_t1[i*4+1] + eval_blackquen_mg_t1[i*4+2] + eval_blackquen_mg_t1[i*4+3];
+          eval_blackrook_eg_t2[i] <= eval_blackrook_eg_t1[i*4+0] + eval_blackrook_eg_t1[i*4+1] + eval_blackrook_eg_t1[i*4+2] + eval_blackrook_eg_t1[i*4+3];
+          eval_blackrook_mg_t2[i] <= eval_blackrook_mg_t1[i*4+0] + eval_blackrook_mg_t1[i*4+1] + eval_blackrook_mg_t1[i*4+2] + eval_blackrook_mg_t1[i*4+3];
+          eval_whitequen_eg_t2[i] <= eval_whitequen_eg_t1[i*4+0] + eval_whitequen_eg_t1[i*4+1] + eval_whitequen_eg_t1[i*4+2] + eval_whitequen_eg_t1[i*4+3];
+          eval_whitequen_mg_t2[i] <= eval_whitequen_mg_t1[i*4+0] + eval_whitequen_mg_t1[i*4+1] + eval_whitequen_mg_t1[i*4+2] + eval_whitequen_mg_t1[i*4+3];
+          eval_whiterook_eg_t2[i] <= eval_whiterook_eg_t1[i*4+0] + eval_whiterook_eg_t1[i*4+1] + eval_whiterook_eg_t1[i*4+2] + eval_whiterook_eg_t1[i*4+3];
+          eval_whiterook_mg_t2[i] <= eval_whiterook_mg_t1[i*4+0] + eval_whiterook_mg_t1[i*4+1] + eval_whiterook_mg_t1[i*4+2] + eval_whiterook_mg_t1[i*4+3];
+       end
+
+   always @(posedge clk)
+     begin
+        eval_whitebish_eg_t3 <= eval_whitebish_eg_t2[0] + eval_whitebish_eg_t2[1] + eval_whitebish_eg_t2[2] + eval_whitebish_eg_t2[3];
+        eval_whitebish_mg_t3 <= eval_whitebish_mg_t2[0] + eval_whitebish_mg_t2[1] + eval_whitebish_mg_t2[2] + eval_whitebish_mg_t2[3];
+        eval_whiteknit_eg_t3 <= eval_whiteknit_eg_t2[0] + eval_whiteknit_eg_t2[1] + eval_whiteknit_eg_t2[2] + eval_whiteknit_eg_t2[3];
+        eval_whiteknit_mg_t3 <= eval_whiteknit_mg_t2[0] + eval_whiteknit_mg_t2[1] + eval_whiteknit_mg_t2[2] + eval_whiteknit_mg_t2[3];
+        eval_blackbish_eg_t3 <= eval_blackbish_eg_t2[0] + eval_blackbish_eg_t2[1] + eval_blackbish_eg_t2[2] + eval_blackbish_eg_t2[3];
+        eval_blackbish_mg_t3 <= eval_blackbish_mg_t2[0] + eval_blackbish_mg_t2[1] + eval_blackbish_mg_t2[2] + eval_blackbish_mg_t2[3];
+        eval_blackknit_eg_t3 <= eval_blackknit_eg_t2[0] + eval_blackknit_eg_t2[1] + eval_blackknit_eg_t2[2] + eval_blackknit_eg_t2[3];
+        eval_blackknit_mg_t3 <= eval_blackknit_mg_t2[0] + eval_blackknit_mg_t2[1] + eval_blackknit_mg_t2[2] + eval_blackknit_mg_t2[3];
+        eval_blackquen_eg_t3 <= eval_blackquen_eg_t2[0] + eval_blackquen_eg_t2[1] + eval_blackquen_eg_t2[2] + eval_blackquen_eg_t2[3];
+        eval_blackquen_mg_t3 <= eval_blackquen_mg_t2[0] + eval_blackquen_mg_t2[1] + eval_blackquen_mg_t2[2] + eval_blackquen_mg_t2[3];
+        eval_blackrook_eg_t3 <= eval_blackrook_eg_t2[0] + eval_blackrook_eg_t2[1] + eval_blackrook_eg_t2[2] + eval_blackrook_eg_t2[3];
+        eval_blackrook_mg_t3 <= eval_blackrook_mg_t2[0] + eval_blackrook_mg_t2[1] + eval_blackrook_mg_t2[2] + eval_blackrook_mg_t2[3];
+        eval_whitequen_eg_t3 <= eval_whitequen_eg_t2[0] + eval_whitequen_eg_t2[1] + eval_whitequen_eg_t2[2] + eval_whitequen_eg_t2[3];
+        eval_whitequen_mg_t3 <= eval_whitequen_mg_t2[0] + eval_whitequen_mg_t2[1] + eval_whitequen_mg_t2[2] + eval_whitequen_mg_t2[3];
+        eval_whiterook_eg_t3 <= eval_whiterook_eg_t2[0] + eval_whiterook_eg_t2[1] + eval_whiterook_eg_t2[2] + eval_whiterook_eg_t2[3];
+        eval_whiterook_mg_t3 <= eval_whiterook_mg_t2[0] + eval_whiterook_mg_t2[1] + eval_whiterook_mg_t2[2] + eval_whiterook_mg_t2[3];
+     end
+
+   always @(posedge clk)
+     begin
+        eval_white_eg_t4 <= eval_whitebish_eg_t3 + eval_whiteknit_eg_t3 + eval_whitequen_eg_t3 + eval_whiterook_eg_t3;
+        eval_white_mg_t4 <= eval_whitebish_mg_t3 + eval_whiteknit_mg_t3 + eval_whitequen_mg_t3 + eval_whiterook_mg_t3;
+        eval_black_eg_t4 <= eval_blackbish_eg_t3 + eval_blackknit_eg_t3 + eval_blackquen_eg_t3 + eval_blackrook_eg_t3;
+        eval_black_mg_t4 <= eval_blackbish_mg_t3 + eval_blackknit_mg_t3 + eval_blackquen_mg_t3 + eval_blackrook_mg_t3;
+
+        eval_eg <= eval_white_eg_t4 + eval_black_eg_t4;
+        eval_mg <= eval_white_mg_t4 + eval_black_mg_t4;
+     end
+
    generate
       for (row = 0; row < 8; row = row + 1)
         begin : row_attacking_blk

@@ -186,8 +186,6 @@ module tb;
         t <= t + 1;
         reset <= t < 64;
 
-        // board_valid <= t == 72;
-
         if (t >= 10000)
           $finish;
         if (0 && tb.all_moves.state == 24)
@@ -195,7 +193,7 @@ module tb;
              $display("stopping sim at sort moves init\n");
              $finish;
           end
-     end // always @ (posedge clk)
+     end
 
    localparam STATE_IDLE = 0;
    localparam STATE_DISP_INIT = 1;

@@ -18,6 +18,8 @@ module evaluate_mob_square #
     output reg signed [EVAL_WIDTH - 1:0] eval_eg
     );
 
+   localparam MAX_MOBILITY = 32; // queen + extra
+
 `include "mobility_head.vh"
    
    localparam PIECE_WIDTH2 = `PIECE_MASK_BITS;
@@ -26,7 +28,7 @@ module evaluate_mob_square #
 
    reg [BOARD_WIDTH2 - 1:0]              mobility_mask [0:MOBILITY_LIST_COUNT - 1];
    reg [63:0]                            mobility_t1;
-   reg signed [EVAL_WIDTH - 1:0]         score_mg [0:63], score_eg [0:63];
+   reg signed [EVAL_WIDTH - 1:0]         score_mg [0:MAX_MOBILITY - 1], score_eg [0:MAX_MOBILITY - 1];
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -74,7 +76,7 @@ module evaluate_mob_square #
      begin
         for (i = 0; i < MOBILITY_LIST_COUNT; i = i + 1)
           mobility_mask[i] = 0; // don't care
-        for (i = 0; i < 64; i = i + 1)
+        for (i = 0; i < MAX_MOBILITY; i = i + 1)
           begin
              score_mg[i] = 0;
              score_eg[i] = 0;
@@ -94,6 +96,5 @@ module evaluate_mob_square #
       .clk                              (clk),
       .reset                            (reset),
       .x0                               (mobility_t1[63:0]));     // Templated
-
 
 endmodule
