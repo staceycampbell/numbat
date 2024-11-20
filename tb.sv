@@ -101,14 +101,13 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
-        // 8/8/K7/4q3/k7/8/8/8 w - - 0 1 queen in 4 4
+        // 8/8/K7/4q3/k7/8/8/8 w - - 0 1 black queen in 4 4
         // 8/8/K7/8/k7/8/8/n7 w - - 0 1 knight at 0 0
         // 8/8/K7/8/8/1k6/8/n7 w - - 2 2 knight at 0 0, blocked with k
         // 8/8/K7/8/8/1k6/2p5/n7 b - - 0 1 knight at 0 0, completely blocked
         board[5 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-        board[2 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        board[1 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+        board[4 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_QUEN;
+        board[3 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
         white_to_move = 0;
         castle_mask = 4'h0;
         en_passant_col = 4'h0;
