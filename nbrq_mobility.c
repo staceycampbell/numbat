@@ -15,8 +15,6 @@ static uint16_t attack_rook[2];
 static uint16_t attack_knit[2];
 static uint16_t attack_bish[2];
 static uint16_t attack_quen[2];
-static uint16_t attack_king[2];
-static uint16_t attack_pawn[2];
 static char *attacker[2][1 << BLACK_BIT];
 
 static uint16_t opponents[2][7];
@@ -168,6 +166,48 @@ do_rook(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
         return r_idx;
 }
 
+static uint32_t
+do_queen(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
+{
+        int32_t i, q_idx, q_row, q_col, qi, qj;
+        uint32_t opp_idx;
+        uint16_t mobility[8][8];
+        static const offset_t qoff[8] =     { {0, -1}, {0, +1}, {-1, 0}, {+1, 0}, {-1, -1}, {-1, +1}, {+1, -1}, {+1, +1} };
+        static const offset_t inv_qoff[8] = { {0, +1}, {0, -1}, {+1, 0}, {-1, 0}, {+1, +1}, {+1, -1}, {-1, +1}, {-1, -1} };
+
+        fprintf(data_fp, "if (ATTACKING_PIECE == %s && ROW == %d && COL == %d)\nbegin\n", attacker, row, col);
+        q_idx = 0;
+        for (i = 0; i < 8; ++i)
+        {
+                q_row = row + qoff[i].y;
+                q_col = col + qoff[i].x;
+                while (q_row >= 0 && q_row < 8 && q_col >= 0 && q_col < 8)
+                {
+                        clear_array(mobility);
+                        mobility[row][col] = attack_quen[side];
+                        for (opp_idx = 0; opp_idx < 7; ++opp_idx)
+                        {
+                                mobility[q_row][q_col] = opponents[side][opp_idx];
+                                qi = q_row + inv_qoff[i].y;
+                                qj = q_col + inv_qoff[i].x;
+                                while (inv_qoff[i].y == 0 ? qj != col : inv_qoff[i].x == 0 ? qi != row : qi != row && qj != col)
+                                {
+                                        mobility[qi][qj] = 1 << EMPTY_POSN;
+                                        qi += inv_qoff[i].y;
+                                        qj += inv_qoff[i].x;
+                                }
+                                print_data(data_fp, q_idx, mobility);
+                                ++q_idx;
+                        }
+                        q_row += qoff[i].y;
+                        q_col += qoff[i].x;
+                }
+        }
+        fprintf(data_fp, "end\n");
+
+        return q_idx;
+}
+
 int
 main(void)
 {
@@ -187,8 +227,6 @@ main(void)
         attack_knit[WHITE_ATTACK] = 1 << WHITE_KNIT;
         attack_bish[WHITE_ATTACK] = 1 << WHITE_BISH;
         attack_quen[WHITE_ATTACK] = 1 << WHITE_QUEN;
-        attack_king[WHITE_ATTACK] = 1 << WHITE_KING;
-        attack_pawn[WHITE_ATTACK] = 1 << WHITE_PAWN;
 
         attacker[BLACK_ATTACK][PIECE_KNIT] = "`BLACK_KNIT";
         attacker[BLACK_ATTACK][PIECE_BISH] = "`BLACK_BISH";
@@ -198,8 +236,6 @@ main(void)
         attack_knit[BLACK_ATTACK] = 1 << BLACK_KNIT;
         attack_bish[BLACK_ATTACK] = 1 << BLACK_BISH;
         attack_quen[BLACK_ATTACK] = 1 << BLACK_QUEN;
-        attack_king[BLACK_ATTACK] = 1 << BLACK_KING;
-        attack_pawn[BLACK_ATTACK] = 1 << BLACK_PAWN;
 
         opponents[WHITE_ATTACK][0] = 1 << BLACK_ROOK;
         opponents[WHITE_ATTACK][1] = 1 << BLACK_KNIT;
@@ -230,6 +266,9 @@ main(void)
                                 if (idx > largest_mobility_list)
                                         largest_mobility_list = idx;
                                 idx = do_rook(attacker[side][PIECE_ROOK], data_fp, side, row, col);
+                                if (idx > largest_mobility_list)
+                                        largest_mobility_list = idx;
+                                idx = do_queen(attacker[side][PIECE_QUEN], data_fp, side, row, col);
                                 if (idx > largest_mobility_list)
                                         largest_mobility_list = idx;
                         }
