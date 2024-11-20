@@ -8,14 +8,14 @@ module evaluate_mob_square #
    parameter EVAL_WIDTH = 0
    )
    (
-    input                            clk,
-    input                            reset,
+    input                                clk,
+    input                                reset,
    
-    input [`BOARD_WIDTH - 1:0]       board,
-    input                            board_valid,
+    input [`BOARD_WIDTH - 1:0]           board,
+    input                                board_valid,
 
-    output signed [EVAL_WIDTH - 1:0] eval_mg,
-    output signed [EVAL_WIDTH - 1:0] eval_eg
+    output reg signed [EVAL_WIDTH - 1:0] eval_mg,
+    output reg signed [EVAL_WIDTH - 1:0] eval_eg
     );
 
 `include "mobility_head.vh"
@@ -24,8 +24,9 @@ module evaluate_mob_square #
    localparam SIDE_WIDTH2 = PIECE_WIDTH2 * 8;
    localparam BOARD_WIDTH2 = SIDE_WIDTH2 * 8;
 
-   reg [BOARD_WIDTH2 - 1:0]          mobility_mask [0:MOBILITY_LIST_COUNT - 1];
-   reg [63:0]                        mobility_t1;
+   reg [BOARD_WIDTH2 - 1:0]              mobility_mask [0:MOBILITY_LIST_COUNT - 1];
+   reg [63:0]                            mobility_t1;
+   reg signed [EVAL_WIDTH - 1:0]         score_mg [0:63], score_eg [0:63];
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -35,10 +36,10 @@ module evaluate_mob_square #
    wire [5:0]           population;             // From popcount of popcount.v
    // End of automatics
 
-   integer                           i, j;
-   genvar                            gen_i;
+   integer                               i, j;
+   genvar                                gen_i;
 
-   wire [BOARD_WIDTH2 - 1:0]         board2_t0;
+   wire [BOARD_WIDTH2 - 1:0]             board2_t0;
    
    generate
       for (gen_i = 0; gen_i < 64; gen_i = gen_i + 1)
@@ -47,8 +48,17 @@ module evaluate_mob_square #
         end
    endgenerate
 
-   assign eval_mg = (ATTACKING_PIECE & (1 << `BLACK_BIT)) == 0 ? population : -population;
-   assign eval_eg = (ATTACKING_PIECE & (1 << `BLACK_BIT)) == 0 ? population : -population;
+   always @(posedge clk)
+     if ((ATTACKING_PIECE & (1 << `BLACK_BIT)) == 0)
+       begin
+          eval_mg <= score_mg[population];
+          eval_eg <= score_eg[population];
+       end
+     else
+       begin
+          eval_mg <= -score_mg[population];
+          eval_eg <= -score_eg[population];
+       end
 
    always @(posedge clk)
      begin
@@ -64,6 +74,11 @@ module evaluate_mob_square #
      begin
         for (i = 0; i < MOBILITY_LIST_COUNT; i = i + 1)
           mobility_mask[i] = 0; // don't care
+        for (i = 0; i < 64; i = i + 1)
+          begin
+             score_mg[i] = 0;
+             score_eg[i] = 0;
+          end
         
 `include "mobility_mask.vh"
      end

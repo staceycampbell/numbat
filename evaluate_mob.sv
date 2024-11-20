@@ -45,7 +45,6 @@ module evaluate_mob #
    wire signed [EVAL_WIDTH-1:0]          eval_whitequen_mg [0:63];
    wire signed [EVAL_WIDTH-1:0]          eval_whiterook_eg [0:63];
    wire signed [EVAL_WIDTH-1:0]          eval_whiterook_mg [0:63];
-
    
    localparam STATE_IDLE = 0;
    localparam STATE_LATENCY = 1;
