@@ -99,7 +99,7 @@ do_knight(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
                 {
                         mobility[row][col] = 0; // don't care, was attack_knit[side];
                         mobility[n_row][n_col] = 0; // don't care, was opponents[side][opp_idx];
-                        fprintf(data_fp, "landing[%2d] = %2d;\n", n_idx, n_row << 3 | n_col);
+                        fprintf(data_fp, "landing[%2d] = %2d;\nlanding_valid[%2d] = 1'b1;\n", n_idx, n_row << 3 | n_col, n_idx);
                         print_data(data_fp, n_idx, mobility);
                         ++n_idx;
                 }
@@ -128,7 +128,7 @@ do_bishop(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
                         clear_array(mobility);
                         mobility[row][col] = 0; // don't care, was attack_bish[side];
                         mobility[b_row][b_col] = 0;     // don't care, was opponents[side][opp_idx];
-                        fprintf(data_fp, "landing[%2d] = %2d;\n", b_idx, b_row << 3 | b_col);
+                        fprintf(data_fp, "landing[%2d] = %2d;\nlanding_valid[%2d] = 1'b1;\n", b_idx, b_row << 3 | b_col, b_idx);
                         bi = b_row + inv_boff[i].y;
                         bj = b_col + inv_boff[i].x;
                         while (bi != row && bj != col)
@@ -167,7 +167,7 @@ do_rook(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
                         clear_array(mobility);
                         mobility[row][col] = 0; // don't care, was attack_rook[side];
                         mobility[r_row][r_col] = 0;     // don't care, was opponents[side][opp_idx];
-                        fprintf(data_fp, "landing[%2d] = %2d;\n", r_idx, r_row << 3 | r_col);
+                        fprintf(data_fp, "landing[%2d] = %2d;\nlanding_valid[%2d] = 1'b1;\n", r_idx, r_row << 3 | r_col, r_idx);
                         ri = r_row + inv_roff[i].y;
                         rj = r_col + inv_roff[i].x;
                         while (inv_roff[i].y == 0 ? rj != col : ri != row)
@@ -206,7 +206,7 @@ do_queen(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
                         clear_array(mobility);
                         mobility[row][col] = 0; // don't care, was attack_quen[side];
                         mobility[q_row][q_col] = 0;     // don't care, was opponents[side][opp_idx];
-                        fprintf(data_fp, "landing[%2d] = %2d;\n", q_idx, q_row << 3 | q_col);
+                        fprintf(data_fp, "landing[%2d] = %2d;\nlanding_valid[%2d] = 1'b1;\n", q_idx, q_row << 3 | q_col, q_idx);
                         qi = q_row + inv_qoff[i].y;
                         qj = q_col + inv_qoff[i].x;
                         while (inv_qoff[i].y == 0 ? qj != col : inv_qoff[i].x == 0 ? qi != row : qi != row && qj != col)

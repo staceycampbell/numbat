@@ -28,6 +28,7 @@ module evaluate_mob_square #
 
    reg [BOARD_WIDTH2 - 1:0]              mobility_mask [0:MOBILITY_LIST_COUNT - 1];
    reg [$clog2(64) - 1:0]                landing [0:MOBILITY_LIST_COUNT - 1];
+   reg [MOBILITY_LIST_COUNT - 1:0]       landing_valid;
    reg [63:0]                            mobility_t1;
    reg signed [EVAL_WIDTH - 1:0]         score_mg [0:MAX_MOBILITY - 1], score_eg [0:MAX_MOBILITY - 1];
    reg [`PIECE_WIDTH - 1:0]              piece_t1;
@@ -78,7 +79,7 @@ module evaluate_mob_square #
      begin
         mobility_t1 <= 0;
         for (i = 0; i < MOBILITY_LIST_COUNT; i = i + 1)
-          if ((board2_t0 & mobility_mask[i]) == mobility_mask[i] &&
+          if ((board2_t0 & mobility_mask[i]) == mobility_mask[i] && landing_valid[i] &&
               (board[landing[i] * `PIECE_WIDTH+:`PIECE_WIDTH] == `EMPTY_POSN || // landing is empty
                (board[landing[i] * `PIECE_WIDTH+:`PIECE_WIDTH] & (1 << `BLACK_BIT) != (ATTACKING_PIECE & (1 << `BLACK_BIT))) // opponent in landing
                ))
@@ -90,7 +91,11 @@ module evaluate_mob_square #
    initial
      begin
         for (i = 0; i < MOBILITY_LIST_COUNT; i = i + 1)
-          mobility_mask[i] = 0; // don't care
+          begin
+             mobility_mask[i] = 0; // don't care
+             landing[i] = 0;
+             landing_valid[i] = 1'b0;
+          end
         for (i = 0; i < MAX_MOBILITY; i = i + 1)
           begin
              score_mg[i] = 0;
