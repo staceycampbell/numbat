@@ -3,9 +3,11 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../axi4lite_write.sv
 ../board_attack.sv
 ../control.sv
-../evaluate.sv
 ../evaluate_general.sv
+../evaluate_mob_square.sv
+../evaluate_mob.sv
 ../evaluate_pawns.sv
+../evaluate.sv
 ../is_attacking.sv
 ../move_sort.sv
 ../mram.sv
