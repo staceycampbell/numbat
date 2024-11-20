@@ -78,12 +78,12 @@ module evaluate_mob_square #
      begin
         mobility_t1 <= 0;
         for (i = 0; i < MOBILITY_LIST_COUNT; i = i + 1)
-          if (mobility_mask[i] != 0 && (board2_t0 & mobility_mask[i]) == mobility_mask[i] &&
+          if ((board2_t0 & mobility_mask[i]) == mobility_mask[i] &&
               (board[landing[i] * `PIECE_WIDTH+:`PIECE_WIDTH] == `EMPTY_POSN || // landing is empty
                (board[landing[i] * `PIECE_WIDTH+:`PIECE_WIDTH] & (1 << `BLACK_BIT) != (ATTACKING_PIECE & (1 << `BLACK_BIT))) // opponent in landing
                ))
             for (j = 0; j < 64; j = j + 1)
-              if (mobility_mask[i][j * PIECE_WIDTH2+:PIECE_WIDTH2] != 0 && j != (ROW << 3 | COL))
+              if (mobility_mask[i][j * PIECE_WIDTH2+:PIECE_WIDTH2] != 0 || j == landing[i])
                 mobility_t1[j] <= 1;
      end
 

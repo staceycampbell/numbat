@@ -34,15 +34,15 @@ static char *attacker[2][1 << BLACK_BIT];
 #define MB_QUEN 3
 
 static const score_t MobilityBonus[][32] = {
-        {S(0, 0), S(-75, -76), S(-56, -54), S(-9, -26), S(-2, -10), S(6, 5), S(15, 11), // Knights
+        {S(-75, -76), S(-56, -54), S(-9, -26), S(-2, -10), S(6, 5), S(15, 11), // Knights
          S(22, 26), S(30, 28), S(36, 29)},
-        {S(0, 0), S(-48, -58), S(-21, -19), S(16, -2), S(26, 12), S(37, 22), S(51, 42), // Bishops
+        {S(-48, -58), S(-21, -19), S(16, -2), S(26, 12), S(37, 22), S(51, 42), // Bishops
          S(54, 54), S(63, 58), S(65, 63), S(71, 70), S(79, 74), S(81, 86),
          S(92, 90), S(97, 94)},
-        {S(0, 0), S(-56, -78), S(-25, -18), S(-11, 26), S(-5, 55), S(-4, 70), S(-1, 81),        // Rooks
+        {S(-56, -78), S(-25, -18), S(-11, 26), S(-5, 55), S(-4, 70), S(-1, 81),        // Rooks
          S(8, 109), S(14, 120), S(21, 128), S(23, 143), S(31, 154), S(32, 160),
          S(43, 165), S(49, 168), S(59, 169)},
-        {S(0, 0), S(-40, -35), S(-25, -12), S(2, 7), S(4, 19), S(14, 37), S(24, 55),    // Queens
+        {S(-40, -35), S(-25, -12), S(2, 7), S(4, 19), S(14, 37), S(24, 55),    // Queens
          S(25, 62), S(40, 76), S(43, 79), S(47, 87), S(54, 94), S(56, 102),
          S(60, 111), S(70, 116), S(72, 118), S(73, 122), S(75, 128), S(77, 130),
          S(85, 133), S(94, 136), S(99, 140), S(108, 157), S(112, 158), S(113, 161),
@@ -282,28 +282,28 @@ main(void)
                 for (i = 0; i < 32; ++i)
                 {
                         fprintf(data_fp, "score_mg[%2d] = %d;\n", i, MobilityBonus[MB_KNIT][i].mg);
-                        fprintf(data_fp, "score_eg[%2d] = %d;\n", i, MobilityBonus[MB_KNIT][i].mg);
+                        fprintf(data_fp, "score_eg[%2d] = %d;\n", i, MobilityBonus[MB_KNIT][i].eg);
                 }
                 fprintf(data_fp, "end\n");
                 fprintf(data_fp, "if (ATTACKING_PIECE == %s)\nbegin\n", attacker[side][PIECE_BISH]);
                 for (i = 0; i < 32; ++i)
                 {
                         fprintf(data_fp, "score_mg[%2d] = %d;\n", i, MobilityBonus[MB_BISH][i].mg);
-                        fprintf(data_fp, "score_eg[%2d] = %d;\n", i, MobilityBonus[MB_BISH][i].mg);
+                        fprintf(data_fp, "score_eg[%2d] = %d;\n", i, MobilityBonus[MB_BISH][i].eg);
                 }
                 fprintf(data_fp, "end\n");
                 fprintf(data_fp, "if (ATTACKING_PIECE == %s)\nbegin\n", attacker[side][PIECE_ROOK]);
                 for (i = 0; i < 32; ++i)
                 {
                         fprintf(data_fp, "score_mg[%2d] = %d;\n", i, MobilityBonus[MB_ROOK][i].mg);
-                        fprintf(data_fp, "score_eg[%2d] = %d;\n", i, MobilityBonus[MB_ROOK][i].mg);
+                        fprintf(data_fp, "score_eg[%2d] = %d;\n", i, MobilityBonus[MB_ROOK][i].eg);
                 }
                 fprintf(data_fp, "end\n");
                 fprintf(data_fp, "if (ATTACKING_PIECE == %s)\nbegin\n", attacker[side][PIECE_QUEN]);
                 for (i = 0; i < 32; ++i)
                 {
                         fprintf(data_fp, "score_mg[%2d] = %d;\n", i, MobilityBonus[MB_QUEN][i].mg);
-                        fprintf(data_fp, "score_eg[%2d] = %d;\n", i, MobilityBonus[MB_QUEN][i].mg);
+                        fprintf(data_fp, "score_eg[%2d] = %d;\n", i, MobilityBonus[MB_QUEN][i].eg);
                 }
                 fprintf(data_fp, "end\n");
         }
