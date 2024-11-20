@@ -23,8 +23,6 @@ static uint16_t attack_bish[2];
 static uint16_t attack_quen[2];
 static char *attacker[2][1 << BLACK_BIT];
 
-static uint16_t opponents[2][7];
-
 #define S(a, b) {a, b}
 
 // MobilityBonus[PieceType][attacked] contains bonuses for middle and end
@@ -87,7 +85,6 @@ static uint32_t
 do_knight(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
 {
         int32_t i, n_idx, n_row, n_col;
-        uint32_t opp_idx;
         uint16_t mobility[8][8];
         static const offset_t n_off[] = { {-2, -1}, {-1, -2}, {+1, -2}, {+2, -1}, {+2, +1}, {+1, +2}, {-1, +2}, {-2, +1} };
 
@@ -100,13 +97,11 @@ do_knight(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
                 n_col = col + n_off[i].x;
                 if (n_row >= 0 && n_row < 8 && n_col >= 0 && n_col < 8)
                 {
-                        for (opp_idx = 0; opp_idx < 7; ++opp_idx)
-                        {
-                                mobility[row][col] = attack_knit[side];
-                                mobility[n_row][n_col] = opponents[side][opp_idx];
-                                print_data(data_fp, n_idx, mobility);
-                                ++n_idx;
-                        }
+                        mobility[row][col] = 0; // don't care, was attack_knit[side];
+                        mobility[n_row][n_col] = 0; // don't care, was opponents[side][opp_idx];
+                        fprintf(data_fp, "landing[%2d] = %2d;\n", n_idx, n_row << 3 | n_col);
+                        print_data(data_fp, n_idx, mobility);
+                        ++n_idx;
                 }
         }
         fprintf(data_fp, "end\n");
@@ -118,7 +113,6 @@ static uint32_t
 do_bishop(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
 {
         int32_t i, b_idx, b_row, b_col, bi, bj;
-        uint32_t opp_idx;
         uint16_t mobility[8][8];
         static const offset_t boff[4] = { {-1, -1}, {-1, +1}, {+1, -1}, {+1, +1} };
         static const offset_t inv_boff[4] = { {+1, +1}, {+1, -1}, {-1, +1}, {-1, -1} };
@@ -132,21 +126,19 @@ do_bishop(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
                 while (b_row >= 0 && b_row < 8 && b_col >= 0 && b_col < 8)
                 {
                         clear_array(mobility);
-                        mobility[row][col] = attack_bish[side];
-                        for (opp_idx = 0; opp_idx < 7; ++opp_idx)
+                        mobility[row][col] = 0; // don't care, was attack_bish[side];
+                        mobility[b_row][b_col] = 0;     // don't care, was opponents[side][opp_idx];
+                        fprintf(data_fp, "landing[%2d] = %2d;\n", b_idx, b_row << 3 | b_col);
+                        bi = b_row + inv_boff[i].y;
+                        bj = b_col + inv_boff[i].x;
+                        while (bi != row && bj != col)
                         {
-                                mobility[b_row][b_col] = opponents[side][opp_idx];
-                                bi = b_row + inv_boff[i].y;
-                                bj = b_col + inv_boff[i].x;
-                                while (bi != row && bj != col)
-                                {
-                                        mobility[bi][bj] = 1 << EMPTY_POSN;
-                                        bi += inv_boff[i].y;
-                                        bj += inv_boff[i].x;
-                                }
-                                print_data(data_fp, b_idx, mobility);
-                                ++b_idx;
+                                mobility[bi][bj] = 1 << EMPTY_POSN;
+                                bi += inv_boff[i].y;
+                                bj += inv_boff[i].x;
                         }
+                        print_data(data_fp, b_idx, mobility);
+                        ++b_idx;
                         b_row += boff[i].y;
                         b_col += boff[i].x;
                 }
@@ -160,7 +152,6 @@ static uint32_t
 do_rook(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
 {
         int32_t i, r_idx, r_row, r_col, ri, rj;
-        uint32_t opp_idx;
         uint16_t mobility[8][8];
         static const offset_t roff[4] = { {0, -1}, {0, +1}, {-1, 0}, {+1, 0} };
         static const offset_t inv_roff[4] = { {0, +1}, {0, -1}, {+1, 0}, {-1, 0} };
@@ -174,21 +165,19 @@ do_rook(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
                 while (r_row >= 0 && r_row < 8 && r_col >= 0 && r_col < 8)
                 {
                         clear_array(mobility);
-                        mobility[row][col] = attack_rook[side];
-                        for (opp_idx = 0; opp_idx < 7; ++opp_idx)
+                        mobility[row][col] = 0; // don't care, was attack_rook[side];
+                        mobility[r_row][r_col] = 0;     // don't care, was opponents[side][opp_idx];
+                        fprintf(data_fp, "landing[%2d] = %2d;\n", r_idx, r_row << 3 | r_col);
+                        ri = r_row + inv_roff[i].y;
+                        rj = r_col + inv_roff[i].x;
+                        while (inv_roff[i].y == 0 ? rj != col : ri != row)
                         {
-                                mobility[r_row][r_col] = opponents[side][opp_idx];
-                                ri = r_row + inv_roff[i].y;
-                                rj = r_col + inv_roff[i].x;
-                                while (inv_roff[i].y == 0 ? rj != col : ri != row)
-                                {
-                                        mobility[ri][rj] = 1 << EMPTY_POSN;
-                                        ri += inv_roff[i].y;
-                                        rj += inv_roff[i].x;
-                                }
-                                print_data(data_fp, r_idx, mobility);
-                                ++r_idx;
+                                mobility[ri][rj] = 1 << EMPTY_POSN;
+                                ri += inv_roff[i].y;
+                                rj += inv_roff[i].x;
                         }
+                        print_data(data_fp, r_idx, mobility);
+                        ++r_idx;
                         r_row += roff[i].y;
                         r_col += roff[i].x;
                 }
@@ -202,7 +191,6 @@ static uint32_t
 do_queen(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
 {
         int32_t i, q_idx, q_row, q_col, qi, qj;
-        uint32_t opp_idx;
         uint16_t mobility[8][8];
         static const offset_t qoff[8] = { {0, -1}, {0, +1}, {-1, 0}, {+1, 0}, {-1, -1}, {-1, +1}, {+1, -1}, {+1, +1} };
         static const offset_t inv_qoff[8] = { {0, +1}, {0, -1}, {+1, 0}, {-1, 0}, {+1, +1}, {+1, -1}, {-1, +1}, {-1, -1} };
@@ -216,21 +204,19 @@ do_queen(char *attacker, FILE * data_fp, uint32_t side, int row, int col)
                 while (q_row >= 0 && q_row < 8 && q_col >= 0 && q_col < 8)
                 {
                         clear_array(mobility);
-                        mobility[row][col] = attack_quen[side];
-                        for (opp_idx = 0; opp_idx < 7; ++opp_idx)
+                        mobility[row][col] = 0; // don't care, was attack_quen[side];
+                        mobility[q_row][q_col] = 0;     // don't care, was opponents[side][opp_idx];
+                        fprintf(data_fp, "landing[%2d] = %2d;\n", q_idx, q_row << 3 | q_col);
+                        qi = q_row + inv_qoff[i].y;
+                        qj = q_col + inv_qoff[i].x;
+                        while (inv_qoff[i].y == 0 ? qj != col : inv_qoff[i].x == 0 ? qi != row : qi != row && qj != col)
                         {
-                                mobility[q_row][q_col] = opponents[side][opp_idx];
-                                qi = q_row + inv_qoff[i].y;
-                                qj = q_col + inv_qoff[i].x;
-                                while (inv_qoff[i].y == 0 ? qj != col : inv_qoff[i].x == 0 ? qi != row : qi != row && qj != col)
-                                {
-                                        mobility[qi][qj] = 1 << EMPTY_POSN;
-                                        qi += inv_qoff[i].y;
-                                        qj += inv_qoff[i].x;
-                                }
-                                print_data(data_fp, q_idx, mobility);
-                                ++q_idx;
+                                mobility[qi][qj] = 1 << EMPTY_POSN;
+                                qi += inv_qoff[i].y;
+                                qj += inv_qoff[i].x;
                         }
+                        print_data(data_fp, q_idx, mobility);
+                        ++q_idx;
                         q_row += qoff[i].y;
                         q_col += qoff[i].x;
                 }
@@ -268,22 +254,6 @@ main(void)
         attack_knit[BLACK_ATTACK] = 1 << BLACK_KNIT;
         attack_bish[BLACK_ATTACK] = 1 << BLACK_BISH;
         attack_quen[BLACK_ATTACK] = 1 << BLACK_QUEN;
-
-        opponents[WHITE_ATTACK][0] = 1 << BLACK_ROOK;
-        opponents[WHITE_ATTACK][1] = 1 << BLACK_KNIT;
-        opponents[WHITE_ATTACK][2] = 1 << BLACK_BISH;
-        opponents[WHITE_ATTACK][3] = 1 << BLACK_QUEN;
-        opponents[WHITE_ATTACK][4] = 1 << BLACK_KING;
-        opponents[WHITE_ATTACK][5] = 1 << BLACK_PAWN;
-        opponents[WHITE_ATTACK][6] = 1 << EMPTY_POSN;
-
-        opponents[BLACK_ATTACK][0] = 1 << WHITE_ROOK;
-        opponents[BLACK_ATTACK][1] = 1 << WHITE_KNIT;
-        opponents[BLACK_ATTACK][2] = 1 << WHITE_BISH;
-        opponents[BLACK_ATTACK][3] = 1 << WHITE_QUEN;
-        opponents[BLACK_ATTACK][4] = 1 << WHITE_KING;
-        opponents[BLACK_ATTACK][5] = 1 << WHITE_PAWN;
-        opponents[BLACK_ATTACK][6] = 1 << EMPTY_POSN;
 
         largest_mobility_list = 0;
         for (side = 0; side <= 1; ++side)

@@ -27,8 +27,10 @@ module evaluate_mob_square #
    localparam BOARD_WIDTH2 = SIDE_WIDTH2 * 8;
 
    reg [BOARD_WIDTH2 - 1:0]              mobility_mask [0:MOBILITY_LIST_COUNT - 1];
+   reg [$clog2(64) - 1:0]                landing [0:MOBILITY_LIST_COUNT - 1];
    reg [63:0]                            mobility_t1;
    reg signed [EVAL_WIDTH - 1:0]         score_mg [0:MAX_MOBILITY - 1], score_eg [0:MAX_MOBILITY - 1];
+   reg [`PIECE_WIDTH - 1:0]              piece_t1;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -51,22 +53,35 @@ module evaluate_mob_square #
    endgenerate
 
    always @(posedge clk)
-     if ((ATTACKING_PIECE & (1 << `BLACK_BIT)) == 0)
-       begin
-          eval_mg <= score_mg[population];
-          eval_eg <= score_eg[population];
-       end
-     else
-       begin
-          eval_mg <= -score_mg[population];
-          eval_eg <= -score_eg[population];
-       end
+     begin
+        piece_t1 <= board[(ROW << 3 | COL) * `PIECE_WIDTH+:`PIECE_WIDTH];
+
+        if (piece_t1 == ATTACKING_PIECE)
+          if ((ATTACKING_PIECE & (1 << `BLACK_BIT)) == 0)
+            begin
+               eval_mg <= score_mg[population];
+               eval_eg <= score_eg[population];
+            end
+          else
+            begin
+               eval_mg <= -score_mg[population];
+               eval_eg <= -score_eg[population];
+            end
+        else
+          begin
+             eval_mg <= 0;
+             eval_eg <= 0;
+          end
+     end
 
    always @(posedge clk)
      begin
         mobility_t1 <= 0;
         for (i = 0; i < MOBILITY_LIST_COUNT; i = i + 1)
-          if (mobility_mask[i] != 0 && (board2_t0 & mobility_mask[i]) == mobility_mask[i])
+          if (mobility_mask[i] != 0 && (board2_t0 & mobility_mask[i]) == mobility_mask[i] &&
+              (board[landing[i] * `PIECE_WIDTH+:`PIECE_WIDTH] == `EMPTY_POSN || // landing is empty
+               (board[landing[i] * `PIECE_WIDTH+:`PIECE_WIDTH] & (1 << `BLACK_BIT) != (ATTACKING_PIECE & (1 << `BLACK_BIT))) // opponent in landing
+               ))
             for (j = 0; j < 64; j = j + 1)
               if (mobility_mask[i][j * PIECE_WIDTH2+:PIECE_WIDTH2] != 0 && j != (ROW << 3 | COL))
                 mobility_t1[j] <= 1;
