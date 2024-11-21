@@ -319,8 +319,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         no_trans = 0;
         trans_collision = 0;
 
-        trans_clear_table();    // for easier debug
-
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0, 0);
         vchess_write_board_basic(&game[game_index]);

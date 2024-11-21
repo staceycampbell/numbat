@@ -11,6 +11,8 @@
 #include <xtime_l.h>
 #include "vchess.h"
 
+#pragma GCC optimize ("O2")
+
 #define UCI_INPUT_BUFFER_SIZE 4096
 
 extern board_t game[GAME_MAX];
@@ -19,6 +21,7 @@ extern uint32_t tc_main, tc_increment;
 
 static char uci_input_buffer[UCI_INPUT_BUFFER_SIZE];
 static uint32_t uci_input_index;
+static int32_t book_miss;
 
 static inline void
 uci_outbyte(char c)
@@ -50,13 +53,18 @@ uci_go(tc_t * tc)
                 return;         // this is not the place for recursion
 
         search_running = 1;
-        book_move_found = book_game_move(&game[game_moves - 1]);
+	book_move_found = 0;
+	if (book_miss < 4) // avoid further book searches after N misses
+		book_move_found = book_game_move(&game[game_moves - 1]);
         if (!book_move_found)
         {
                 best_board = nm_top(game, game_moves, tc);
                 game[game_moves] = best_board;
                 ++game_moves;
+		++book_miss;
         }
+	else
+		book_miss = 0;
         search_running = 0;
 }
 
@@ -102,6 +110,7 @@ uci_dispatch(void)
         }
         else if (strcmp(p, "ucinewgame") == 0)
         {
+		book_miss = 0;
                 trans_clear_table();
                 uci_init();
         }
@@ -117,7 +126,6 @@ uci_dispatch(void)
                 }
                 else if (strcmp(p, "startpos") == 0)
                 {
-                        trans_clear_table();
                         uci_init();
                 }
                 p = strstr(next, "moves");
@@ -153,7 +161,7 @@ uci_dispatch(void)
                         side = 1;
                 w_main = 30 * 1000;
                 w_increment = 0;
-                w_main = 30 * 1000;
+                b_main = 30 * 1000;
                 b_increment = 0;
                 while ((p = strsep(&next, " ")) != 0)
                 {
