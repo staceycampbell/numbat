@@ -1017,8 +1017,6 @@ module all_moves #
       .board_in                         (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
       .clear_eval                       (clear_eval),
       .white_to_move                    (evaluate_white_to_move), // Templated
-      .attack_white_pop                 (attack_white_pop[5:0]),
-      .attack_black_pop                 (attack_black_pop[5:0]),
       .white_is_attacking               (white_is_attacking[63:0]),
       .black_is_attacking               (black_is_attacking[63:0]),
       .white_in_check                   (white_in_check),

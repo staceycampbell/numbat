@@ -17,8 +17,6 @@ module evaluate #
     input                            clear_eval,
     input                            white_to_move,
 
-    input [5:0]                      attack_white_pop,
-    input [5:0]                      attack_black_pop,
     input [63:0]                     white_is_attacking,
     input [63:0]                     black_is_attacking,
     input                            white_in_check,
@@ -177,9 +175,7 @@ module evaluate #
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
       .clear_eval                       (clear_eval),
-      .white_to_move                    (white_to_move),
-      .attack_white_pop                 (attack_white_pop[5:0]),
-      .attack_black_pop                 (attack_black_pop[5:0]));
+      .white_to_move                    (white_to_move));
 
    /* evaluate_pawns AUTO_TEMPLATE (
     .board_valid (local_board_valid),

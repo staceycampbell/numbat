@@ -16,9 +16,6 @@ module evaluate_general #
     input                            clear_eval,
     input                            white_to_move,
    
-    input [5:0]                      attack_white_pop,
-    input [5:0]                      attack_black_pop,
-
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval_mg,
     output signed [EVAL_WIDTH - 1:0] eval_eg,
@@ -28,9 +25,6 @@ module evaluate_general #
 
    localparam LATENCY_COUNT = 5;
 
-   localparam POP_WEIGHT = 10;
-   localparam POP_SCORE_WIDTH = $clog2(POP_WEIGHT * 64) + 1; // signed
-
    reg [2:0]                         latency;
 
    reg                               board_valid_r;
@@ -39,15 +33,12 @@ module evaluate_general #
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_mg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_eg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]                  idx [0:7][0:7];
-   reg [5:0]                                         attack_white_pop_t1, attack_black_pop_t1;
-   reg signed [POP_SCORE_WIDTH - 1:0]                attack_black_pop_score_t2, attack_white_pop_score_t2;
-   reg signed [POP_SCORE_WIDTH + 1 - 1:0]            pop_score_t3;
    reg                                               insufficient_material_t3;
    
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_mg_t1 [0:7][0:7];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_eg_t1 [0:7][0:7];
-   reg signed [EVAL_WIDTH - 1:0]                     sum_a_mg_t2 [0:7][0:1];
-   reg signed [EVAL_WIDTH - 1:0]                     sum_a_eg_t2 [0:7][0:1];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] sum_a_mg_t2 [0:7][0:1];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] sum_a_eg_t2 [0:7][0:1];
    reg signed [EVAL_WIDTH - 1:0]                     sum_b_mg_t3 [0:3];
    reg signed [EVAL_WIDTH - 1:0]                     sum_b_eg_t3 [0:3];
    reg signed [EVAL_WIDTH - 1:0]                     eval_mg_t4;
@@ -121,13 +112,6 @@ module evaluate_general #
         else
           random_bit_final <= 0;
         
-        // Claude Shannon's mobility score
-        attack_black_pop_t1 <= attack_black_pop;
-        attack_white_pop_t1 <= attack_white_pop;
-        attack_black_pop_score_t2 <= -(attack_black_pop_t1 * POP_WEIGHT);
-        attack_white_pop_score_t2 <= attack_white_pop_t1 * POP_WEIGHT;
-        pop_score_t3 <= attack_black_pop_score_t2 + attack_white_pop_score_t2 + random_bit_final;
-
         for (i = 0; i < 16; i = i + 1)
           material_t1[i] <=
                  value[board[(i * 4 + 0) * `PIECE_WIDTH+:`PIECE_WIDTH]] +
@@ -162,8 +146,8 @@ module evaluate_general #
           end
         else
           begin
-             eval_mg_t4 <= pop_score_t3 + sum_b_mg_t3[0] + sum_b_mg_t3[1] + sum_b_mg_t3[2] + sum_b_mg_t3[3];
-             eval_eg_t4 <= pop_score_t3 + sum_b_eg_t3[0] + sum_b_eg_t3[1] + sum_b_eg_t3[2] + sum_b_eg_t3[3];
+             eval_mg_t4 <= sum_b_mg_t3[0] + sum_b_mg_t3[1] + sum_b_mg_t3[2] + sum_b_mg_t3[3];
+             eval_eg_t4 <= sum_b_eg_t3[0] + sum_b_eg_t3[1] + sum_b_eg_t3[2] + sum_b_eg_t3[3];
           end
      end
 
