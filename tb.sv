@@ -131,7 +131,7 @@ module tb;
         board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
         board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
         board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
-        white_to_move = 1;
+        white_to_move = 0;
         castle_mask = 4'hE;
         en_passant_col = 4'h0;
         half_move = 0;
