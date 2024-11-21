@@ -364,6 +364,21 @@ uci_move(char *p)
         // unconditionally vacate "from" square
         vchess_place(&next_board, row_from, col_from, EMPTY_POSN);
 
+        if (row_to == 0)
+        {
+                if (col_to == 7)
+                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_SHORT);
+                if (col_to == 0)
+                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_LONG);
+        }
+        if (row_to == 7)
+        {
+                if (col_to == 7)
+                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_SHORT);
+                if (col_to == 0)
+                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_LONG);
+        }
+
         if (piece == WHITE_ROOK && row_from == 0)
         {
                 if (col_from == 7)
