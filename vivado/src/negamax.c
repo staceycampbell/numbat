@@ -165,7 +165,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         vchess_write_board_wait(board);
         vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
 
-        quiescence = quiescence || check;
+        // quiescence = quiescence || check;
 
         value = nm_eval(board->white_to_move, ply);
 
@@ -230,7 +230,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         XTime_GetTime(&t_now);
         time_limit_exceeded = t_now > time_limit;
         ui_data_stop = ui_data_available();
-	uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
+        uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
         if (time_limit_exceeded || ui_data_stop || uci_data_stop)
                 return value;
 
@@ -252,20 +252,17 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-        if (value != 0)         // keep draws out of transposition table for now
-        {
-                trans.eval = value;
-                if (value <= alpha_orig)
-                        trans.flag = TRANS_UPPER_BOUND;
-                else if (value >= beta)
-                        trans.flag = TRANS_LOWER_BOUND;
-                else
-                        trans.flag = TRANS_EXACT;
-                trans.depth = depth;
-                trans.entry_valid = 1;
-                vchess_write_board_basic(board);
-                trans_store(&trans);
-        }
+        trans.eval = value;
+        if (value <= alpha_orig)
+                trans.flag = TRANS_UPPER_BOUND;
+        else if (value >= beta)
+                trans.flag = TRANS_LOWER_BOUND;
+        else
+                trans.flag = TRANS_EXACT;
+        trans.depth = depth;
+        trans.entry_valid = 1;
+        vchess_write_board_basic(board);
+        trans_store(&trans);
 
         return value;
 }
