@@ -362,9 +362,11 @@ vchess_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, ui
 static inline uint32_t
 vchess_read_move_row(uint32_t row)
 {
-        uint32_t val;
+        uint32_t val, next_val;
 
         val = vchess_read(172 + row);
+        while ((next_val = vchess_read(172 + row)) != val)
+                val = next_val;
 
         return val;
 }
