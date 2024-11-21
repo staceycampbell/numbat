@@ -2,7 +2,8 @@
 
 module evaluate #
   (
-   parameter EVAL_WIDTH = 0
+   parameter EVAL_WIDTH = 0,
+   parameter SIMULATION = 0
    )
    (
     input                            clk,
@@ -223,27 +224,38 @@ module evaluate #
       .board                            (board[`BOARD_WIDTH-1:0]),
       .clear_eval                       (clear_eval));
 
-   /* evaluate_mob AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid (eval_mob_valid),
-    .eval_\([me]\)g (eval_\1g_mob[]),
-    );*/
-   evaluate_mob #
-     (
-      .EVAL_WIDTH (EVAL_WIDTH)
-      )
-   evaluate_mob
-     (/*AUTOINST*/
-      // Outputs
-      .eval_mg                          (eval_mg_mob[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_mob[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_mob_valid),        // Templated
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
-      .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+   generate
+      if (! SIMULATION)
+        begin
+           /* evaluate_mob AUTO_TEMPLATE (
+            .board_valid (local_board_valid),
+            .eval_valid (eval_mob_valid),
+            .eval_\([me]\)g (eval_\1g_mob[]),
+            );*/
+           evaluate_mob #
+             (
+              .EVAL_WIDTH (EVAL_WIDTH)
+              )
+           evaluate_mob
+             (/*AUTOINST*/
+              // Outputs
+              .eval_mg                  (eval_mg_mob[EVAL_WIDTH-1:0]), // Templated
+              .eval_eg                  (eval_eg_mob[EVAL_WIDTH-1:0]), // Templated
+              .eval_valid               (eval_mob_valid),        // Templated
+              // Inputs
+              .clk                      (clk),
+              .reset                    (reset),
+              .board_valid              (local_board_valid),     // Templated
+              .board                    (board[`BOARD_WIDTH-1:0]),
+              .clear_eval               (clear_eval));
+        end // if (! SIMULATION)
+      else
+        begin
+           assign eval_mob_valid = 1;
+           assign eval_mg_mob = 0;
+           assign eval_eg_mob = 0;
+        end
+   endgenerate
 
    /* popcount AUTO_TEMPLATE (
     .population (occupied_count[]),

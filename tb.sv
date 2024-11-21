@@ -86,7 +86,7 @@ module tb;
    initial
      begin
         $dumpfile("wave.vcd");
-        $dumpvars(0, tb);
+        $dumpvars(4, tb);
         for (i = 0; i < (1 << `PIECE_BITS); i = i + 1)
           pawn_promotions[i] = "?";
         pawn_promotions[`EMPTY_POSN] = " ";
@@ -101,18 +101,41 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
-        // 8/8/K7/4q3/k7/8/8/8 w - - 0 1 black queen in 4 4
-        // 8/8/K7/8/k7/8/8/n7 w - - 0 1 knight at 0 0
-        // 8/8/K7/8/8/1k6/8/n7 w - - 2 2 knight at 0 0, blocked with k
-        // 8/8/K7/8/8/1k6/2p5/n7 b - - 0 1 knight at 0 0, completely blocked
-        board[5 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-        board[4 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_QUEN;
-        board[3 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        white_to_move = 0;
-        castle_mask = 4'h0;
+        // r2qkbnr/pp1bpppp/3p4/1B1QP3/5P2/2N1BN1P/PPP3P1/R3K2n w Qkq - 0 12
+        board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
+        board[7 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_QUEN;
+        board[7 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        board[7 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        board[7 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+        board[7 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
+        board[6 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[6 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[6 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        board[6 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[6 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[4 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        board[4 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_QUEN;
+        board[4 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[3 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[2 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
+        board[2 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        board[2 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
+        board[2 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[0 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
+        board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+        white_to_move = 1;
+        castle_mask = 4'hE;
         en_passant_col = 4'h0;
         half_move = 0;
-        full_move_number = 1;
+        full_move_number = 12;
 
         forever
           #1 clk = ~clk;
@@ -168,9 +191,9 @@ module tb;
         t <= t + 1;
         reset <= t < 64;
 
-        if (t >= 10000)
+        if (0 && t >= 10000)
           $finish;
-        if (tb.all_moves.state == 3)
+        if (0 && tb.all_moves.state == 3)
           begin
              $display("stopping sim at init eval\n");
              $finish;
@@ -256,7 +279,8 @@ module tb;
       .EVAL_WIDTH (EVAL_WIDTH),
       .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
-      .UCI_WIDTH (UCI_WIDTH)
+      .UCI_WIDTH (UCI_WIDTH),
+      .SIMULATION (1)
       )
    all_moves
      (/*AUTOINST*/

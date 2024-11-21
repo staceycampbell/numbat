@@ -230,7 +230,8 @@ module vchess_top
       .EVAL_WIDTH (EVAL_WIDTH),
       .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
-      .UCI_WIDTH (UCI_WIDTH)
+      .UCI_WIDTH (UCI_WIDTH),
+      .SIMULATION (0)
       )
    all_moves
      (/*AUTOINST*/

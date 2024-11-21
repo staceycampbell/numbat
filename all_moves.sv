@@ -6,7 +6,8 @@ module all_moves #
    parameter EVAL_WIDTH = 0,
    parameter REPDET_WIDTH = 0,
    parameter HALF_MOVE_WIDTH = 0,
-   parameter UCI_WIDTH = 4 + 6 + 6
+   parameter UCI_WIDTH = 4 + 6 + 6,
+   parameter SIMULATION = 0
    )
    (
     input                                clk,
@@ -226,10 +227,10 @@ module all_moves #
    assign am_move_count = am_capture_moves ? capture_move_ram_wr_addr : legal_ram_wr_addr;
    
    assign {insufficient_material_out, attack_white_pop_out, attack_black_pop_out, uci_out, fifty_move_out, half_move_out, thrice_rep_out,
-           white_is_attacking_out, black_is_attacking_out,
-           capture_out, en_passant_col_out, castle_mask_out,
-           board_out, white_to_move_out, white_in_check_out,
-           black_in_check_out, eval_out} = am_capture_moves ? capture_move_ram_rd_data : legal_ram_rd_data;
+           white_is_attacking_out, black_is_attacking_out, en_passant_col_out, castle_mask_out,
+           board_out, white_to_move_out,
+           capture_out, white_in_check_out, black_in_check_out,
+           eval_out} = am_capture_moves ? capture_move_ram_rd_data : legal_ram_rd_data;
 
    initial
      begin
@@ -321,15 +322,16 @@ module all_moves #
                                        castle_mask_ram_wr, white_to_move_ram_wr, board_ram_wr};
              ram_wr_addr <= ram_wr_addr + 1;
           end
-     end // always @ (posedge clk)
+     end
 
    wire [LEGAL_RAM_WIDTH - 1:0] legal_ram_wr_data = {legal_insufficent_material_ram_wr,
                                                      legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr, legal_uci_ram_wr,
                                                      legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
                                                      legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
-                                                     legal_capture_ram_wr, legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
+                                                     legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
                                                      legal_board_ram_wr,
                                                      legal_white_to_move_ram_wr,
+                                                     legal_capture_ram_wr,
                                                      legal_white_in_check_ram_wr,
                                                      legal_black_in_check_ram_wr,
                                                      legal_eval_ram_wr};
@@ -998,7 +1000,8 @@ module all_moves #
     );*/
    evaluate #
      (
-      .EVAL_WIDTH (EVAL_WIDTH)
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .SIMULATION (SIMULATION)
       )
    evaluate
      (/*AUTOINST*/

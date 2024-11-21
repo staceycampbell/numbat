@@ -21,20 +21,24 @@ module mram #
 
    // https://docs.amd.com/r/en-US/ug901-vivado-synthesis/Dual-Port-Block-RAM-with-Two-Write-Ports-in-Read-First-Mode-Verilog-Example
 
+   reg [RAM_WIDTH - 1:0]             port_a_rd_data_pre;
+   reg [RAM_WIDTH - 1:0]             port_b_rd_data_pre;
    reg [RAM_WIDTH - 1:0]             mram [0:`MAX_POSITIONS - 1]; // inferred dual port Xilinx Block RAM
 
    always @(posedge clk)
      begin
         if (active_port_a_wr_en)
           mram[active_port_a_addr] <= active_port_a_wr_data;
-        port_a_rd_data <= mram[active_port_a_addr];
+        port_a_rd_data_pre <= mram[active_port_a_addr];
+        port_a_rd_data <= port_a_rd_data_pre;
      end
 
    always @(posedge clk)
      begin
         if (active_port_b_wr_en)
           mram[active_port_b_addr] <= port_b_wr_data;
-        port_b_rd_data <= mram[active_port_b_addr];
+        port_b_rd_data_pre <= mram[active_port_b_addr];
+        port_b_rd_data <= port_b_rd_data_pre;
      end
 
 endmodule
