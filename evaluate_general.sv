@@ -23,7 +23,7 @@ module evaluate_general #
     output reg signed [31:0]         material
     );
 
-   localparam LATENCY_COUNT = 5;
+   localparam LATENCY_COUNT = 6;
 
    reg [2:0]                         latency;
 
@@ -33,31 +33,33 @@ module evaluate_general #
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_mg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_eg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]                  idx [0:7][0:7];
-   reg                                               insufficient_material_t3;
+   reg                                               insufficient_material_t4;
    
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_mg_t1 [0:7][0:7];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_eg_t1 [0:7][0:7];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] sum_a_mg_t2 [0:7][0:1];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] sum_a_eg_t2 [0:7][0:1];
-   reg signed [EVAL_WIDTH - 1:0]                     sum_b_mg_t3 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]                     sum_b_eg_t3 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]                     eval_mg_t4;
-   reg signed [EVAL_WIDTH - 1:0]                     eval_eg_t4;
+   reg signed [EVAL_WIDTH - 1:0]                     sum_a_mg_t3 [0:7][0:1];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_a_eg_t3 [0:7][0:1];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_b_mg_t4 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_b_eg_t4 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]                     eval_mg_t5;
+   reg signed [EVAL_WIDTH - 1:0]                     eval_eg_t5;
    
-   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 3:0] material_t1 [0:15], material_t2 [0:3];
+   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 3:0] material_t1 [0:15], material_t3 [0:3];
 
    reg [1:0]                                         isw_t1 [0:63];
    reg [1:0]                                         isb_t1 [0:63];
-   reg [8:0]                                         isw_accum_t2;
-   reg [8:0]                                         isb_accum_t2;
+   reg [8:0]                                         isw_accum_t3;
+   reg [8:0]                                         isb_accum_t3;
 
    reg   signed [2:0]                                random_bit_final;
 
    integer                                           i, ri, y, x;
 
-   assign eval_mg = eval_mg_t4;
-   assign eval_eg = eval_eg_t4;
-   assign insufficient_material = insufficient_material_t3;
+   assign eval_mg = eval_mg_t5;
+   assign eval_eg = eval_eg_t5;
+   assign insufficient_material = insufficient_material_t4;
 
    always @(posedge clk)
      begin
@@ -85,7 +87,7 @@ module evaluate_general #
                isb_t1[i] <= 2'b00;
           end
 
-        isw_accum_t2 <= isw_t1[ 0] + isw_t1[ 1] + isw_t1[ 2] + isw_t1[ 3] + isw_t1[ 4] + isw_t1[ 5] + isw_t1[ 6] + isw_t1[ 7] +
+        isw_accum_t3 <= isw_t1[ 0] + isw_t1[ 1] + isw_t1[ 2] + isw_t1[ 3] + isw_t1[ 4] + isw_t1[ 5] + isw_t1[ 6] + isw_t1[ 7] +
                         isw_t1[ 8] + isw_t1[ 9] + isw_t1[10] + isw_t1[11] + isw_t1[12] + isw_t1[13] + isw_t1[14] + isw_t1[15] +
                         isw_t1[16] + isw_t1[17] + isw_t1[18] + isw_t1[19] + isw_t1[20] + isw_t1[21] + isw_t1[22] + isw_t1[23] +
                         isw_t1[24] + isw_t1[25] + isw_t1[26] + isw_t1[27] + isw_t1[28] + isw_t1[29] + isw_t1[30] + isw_t1[31] +
@@ -94,7 +96,7 @@ module evaluate_general #
                         isw_t1[48] + isw_t1[49] + isw_t1[50] + isw_t1[51] + isw_t1[52] + isw_t1[53] + isw_t1[54] + isw_t1[55] +
                         isw_t1[56] + isw_t1[57] + isw_t1[58] + isw_t1[59] + isw_t1[60] + isw_t1[61] + isw_t1[62] + isw_t1[63];
         
-        isb_accum_t2 <= isb_t1[ 0] + isb_t1[ 1] + isb_t1[ 2] + isb_t1[ 3] + isb_t1[ 4] + isb_t1[ 5] + isb_t1[ 6] + isb_t1[ 7] +
+        isb_accum_t3 <= isb_t1[ 0] + isb_t1[ 1] + isb_t1[ 2] + isb_t1[ 3] + isb_t1[ 4] + isb_t1[ 5] + isb_t1[ 6] + isb_t1[ 7] +
                         isb_t1[ 8] + isb_t1[ 9] + isb_t1[10] + isb_t1[11] + isb_t1[12] + isb_t1[13] + isb_t1[14] + isb_t1[15] +
                         isb_t1[16] + isb_t1[17] + isb_t1[18] + isb_t1[19] + isb_t1[20] + isb_t1[21] + isb_t1[22] + isb_t1[23] +
                         isb_t1[24] + isb_t1[25] + isb_t1[26] + isb_t1[27] + isb_t1[28] + isb_t1[29] + isb_t1[30] + isb_t1[31] +
@@ -102,7 +104,7 @@ module evaluate_general #
                         isb_t1[40] + isb_t1[41] + isb_t1[42] + isb_t1[43] + isb_t1[44] + isb_t1[45] + isb_t1[46] + isb_t1[47] +
                         isb_t1[48] + isb_t1[49] + isb_t1[50] + isb_t1[51] + isb_t1[52] + isb_t1[53] + isb_t1[54] + isb_t1[55] +
                         isb_t1[56] + isb_t1[57] + isb_t1[58] + isb_t1[59] + isb_t1[60] + isb_t1[61] + isb_t1[62] + isb_t1[63];
-        insufficient_material_t3 <= ((isw_accum_t2 == 0 && isb_accum_t2 <= 1) || (isw_accum_t2 <= 1 && isb_accum_t2 == 0));
+        insufficient_material_t4 <= ((isw_accum_t3 == 0 && isb_accum_t3 <= 1) || (isw_accum_t3 <= 1 && isb_accum_t3 == 0));
         
         if (use_random_bit)
           if (white_to_move)
@@ -119,8 +121,8 @@ module evaluate_general #
                  value[board[(i * 4 + 2) * `PIECE_WIDTH+:`PIECE_WIDTH]] +
                  value[board[(i * 4 + 3) * `PIECE_WIDTH+:`PIECE_WIDTH]];
         for (i = 0; i < 4; i = i + 1)
-          material_t2[i] <= material_t1[i * 4 + 0] + material_t1[i * 4 + 1] + material_t1[i * 4 + 2] + material_t1[i * 4 + 3];
-        material <= material_t2[0] + material_t2[1] + material_t2[2] + material_t2[3];
+          material_t3[i] <= material_t1[i * 4 + 0] + material_t1[i * 4 + 1] + material_t1[i * 4 + 2] + material_t1[i * 4 + 3];
+        material <= material_t3[0] + material_t3[1] + material_t3[2] + material_t3[3];
         
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)
@@ -134,20 +136,26 @@ module evaluate_general #
                sum_a_mg_t2[y][x / 4] <= score_mg_t1[y][x + 0] + score_mg_t1[y][x + 1] + score_mg_t1[y][x + 2] + score_mg_t1[y][x + 3];
                sum_a_eg_t2[y][x / 4] <= score_eg_t1[y][x + 0] + score_eg_t1[y][x + 1] + score_eg_t1[y][x + 2] + score_eg_t1[y][x + 3];
             end
+        for (y = 0; y < 8; y = y + 1)
+          for (x = 0; x < 2; x = x + 1)
+            begin
+               sum_a_mg_t3[y][x] <= sum_a_mg_t2[y][x];
+               sum_a_eg_t3[y][x] <= sum_a_eg_t2[y][x];
+            end
         for (y = 0; y < 8; y = y + 2)
           begin
-             sum_b_mg_t3[y / 2] <= sum_a_mg_t2[y + 0][0] + sum_a_mg_t2[y + 0][1] + sum_a_mg_t2[y + 1][0] + sum_a_mg_t2[y + 1][1];
-             sum_b_eg_t3[y / 2] <= sum_a_eg_t2[y + 0][0] + sum_a_eg_t2[y + 0][1] + sum_a_eg_t2[y + 1][0] + sum_a_eg_t2[y + 1][1];
+             sum_b_mg_t4[y / 2] <= sum_a_mg_t3[y + 0][0] + sum_a_mg_t3[y + 0][1] + sum_a_mg_t3[y + 1][0] + sum_a_mg_t3[y + 1][1];
+             sum_b_eg_t4[y / 2] <= sum_a_eg_t3[y + 0][0] + sum_a_eg_t3[y + 0][1] + sum_a_eg_t3[y + 1][0] + sum_a_eg_t3[y + 1][1];
           end
-        if (insufficient_material_t3)
+        if (insufficient_material_t4)
           begin
-             eval_mg_t4 <= 0;
-             eval_eg_t4 <= 0;
+             eval_mg_t5 <= 0;
+             eval_eg_t5 <= 0;
           end
         else
           begin
-             eval_mg_t4 <= sum_b_mg_t3[0] + sum_b_mg_t3[1] + sum_b_mg_t3[2] + sum_b_mg_t3[3];
-             eval_eg_t4 <= sum_b_eg_t3[0] + sum_b_eg_t3[1] + sum_b_eg_t3[2] + sum_b_eg_t3[3];
+             eval_mg_t5 <= sum_b_mg_t4[0] + sum_b_mg_t4[1] + sum_b_mg_t4[2] + sum_b_mg_t4[3];
+             eval_eg_t5 <= sum_b_eg_t4[0] + sum_b_eg_t4[1] + sum_b_eg_t4[2] + sum_b_eg_t4[3];
           end
      end
 
