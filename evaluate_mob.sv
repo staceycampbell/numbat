@@ -17,7 +17,7 @@ module evaluate_mob #
     output reg                           eval_valid
     );
    
-   localparam LATENCY_COUNT = 9;
+   localparam LATENCY_COUNT = 10;
 
    reg                                   board_valid_r;
    reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;

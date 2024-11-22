@@ -280,7 +280,7 @@ module tb;
       .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
       .UCI_WIDTH (UCI_WIDTH),
-      .SIMULATION (1)
+      .SIMULATION (0)
       )
    all_moves
      (/*AUTOINST*/
