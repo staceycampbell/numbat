@@ -6,7 +6,8 @@ module control #
    parameter MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS),
    parameter REPDET_WIDTH = 0,
    parameter HALF_MOVE_WIDTH = 0,
-   parameter UCI_WIDTH = 4 + 6 + 6
+   parameter UCI_WIDTH = 4 + 6 + 6,
+   parameter MAX_DEPTH_LOG2 = 0
    )
    (
     input                                 reset,
@@ -32,12 +33,12 @@ module control #
     output reg                            am_clear_moves,
     output reg                            am_capture_moves,
    
-    output reg [MAX_DEPTH_LOG2 - 1:0]     killer_ply_out,
-    output reg [`BOARD_WIDTH - 1:0]       killer_board_out,
-    output reg                            killer_update_out,
-    output reg                            killer_clear_out,
-    output reg signed [EVAL_WIDTH - 1:0]  killer_bonus0_out,
-    output reg signed [EVAL_WIDTH - 1:0]  killer_bonus1_out,
+    output reg [MAX_DEPTH_LOG2 - 1:0]     am_killer_ply_out,
+    output reg [`BOARD_WIDTH - 1:0]       am_killer_board_out,
+    output reg                            am_killer_update_out,
+    output reg                            am_killer_clear_out,
+    output reg signed [EVAL_WIDTH - 1:0]  am_killer_bonus0_out,
+    output reg signed [EVAL_WIDTH - 1:0]  am_killer_bonus1_out,
    
     output [`BOARD_WIDTH - 1:0]           trans_board_out,
     output                                trans_white_to_move_out,
@@ -180,18 +181,18 @@ module control #
          520 : {trans_depth_out[7:0], trans_clear_trans_out, trans_hash_only_out, trans_flag_out[1:0],
                 trans_entry_store_out, trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
          521 : trans_eval_out <= ctrl0_wr_data;
-         1024 : killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1025 : killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1026 : killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1027 : killer_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1028 : killer_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1029 : killer_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1030 : killer_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1031 : killer_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1032 : {killer_clear_out, killer_update_out} <= ctrl0_wr_data[1:0];
-         1033 : killer_ply_out <= ctrl0_wr_data;
-         1034 : killer_bonus0_out <= ctrl0_wr_data;
-         1035 : killer_bonus1_out <= ctrl0_wr_data;
+         1024 : am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         1025 : am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         1026 : am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         1027 : am_killer_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         1028 : am_killer_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         1029 : am_killer_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         1030 : am_killer_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         1031 : am_killer_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+         1032 : {am_killer_clear_out, am_killer_update_out} <= ctrl0_wr_data[1:0];
+         1033 : am_killer_ply_out <= ctrl0_wr_data;
+         1034 : am_killer_bonus0_out <= ctrl0_wr_data;
+         1035 : am_killer_bonus1_out <= ctrl0_wr_data;
          default :
            begin
            end

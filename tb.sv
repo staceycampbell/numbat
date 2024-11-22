@@ -289,7 +289,7 @@ module tb;
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
       .UCI_WIDTH (UCI_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
-      .SIMULATION (0)
+      .EVAL_MOBILITY_DISABLE (1)
       )
    all_moves
      (/*AUTOINST*/

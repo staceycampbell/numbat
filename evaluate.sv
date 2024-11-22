@@ -4,7 +4,7 @@ module evaluate #
   (
    parameter EVAL_WIDTH = 0,
    parameter MAX_DEPTH_LOG2 = 0,
-   parameter SIMULATION = 0
+   parameter EVAL_MOBILITY_DISABLE = 0
    )
    (
     input                            clk,
@@ -240,7 +240,7 @@ module evaluate #
       .clear_eval                       (clear_eval));
 
    generate
-      if (! SIMULATION)
+      if (! EVAL_MOBILITY_DISABLE)
         begin
            /* evaluate_mob AUTO_TEMPLATE (
             .board_valid (local_board_valid),
@@ -263,7 +263,7 @@ module evaluate #
               .board_valid              (local_board_valid),     // Templated
               .board                    (board[`BOARD_WIDTH-1:0]),
               .clear_eval               (clear_eval));
-        end // if (! SIMULATION)
+        end
       else
         begin
            assign eval_mob_valid = 1;

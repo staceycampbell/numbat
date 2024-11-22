@@ -59,6 +59,12 @@ module vchess_top
    wire [HALF_MOVE_WIDTH-1:0] am_half_move_out; // From all_moves of all_moves.v
    wire                 am_idle;                // From all_moves of all_moves.v
    wire                 am_insufficient_material_out;// From all_moves of all_moves.v
+   wire [`BOARD_WIDTH-1:0] am_killer_board_in;  // From control of control.v
+   wire signed [EVAL_WIDTH-1:0] am_killer_bonus0_in;// From control of control.v
+   wire signed [EVAL_WIDTH-1:0] am_killer_bonus1_in;// From control of control.v
+   wire                 am_killer_clear_in;     // From control of control.v
+   wire [MAX_DEPTH_LOG2-1:0] am_killer_ply_in;  // From control of control.v
+   wire                 am_killer_update_in;    // From control of control.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_index; // From control of control.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -233,7 +239,7 @@ module vchess_top
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
       .UCI_WIDTH (UCI_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
-      .SIMULATION (0)
+      .EVAL_MOBILITY_DISABLE (1)
       )
    all_moves
      (/*AUTOINST*/
@@ -278,6 +284,12 @@ module vchess_top
       .castle_mask_in                   (am_castle_mask_in[3:0]), // Templated
       .en_passant_col_in                (am_en_passant_col_in[3:0]), // Templated
       .half_move_in                     (am_half_move_in[HALF_MOVE_WIDTH-1:0]), // Templated
+      .killer_ply_in                    (am_killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
+      .killer_board_in                  (am_killer_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .killer_update_in                 (am_killer_update_in),   // Templated
+      .killer_clear_in                  (am_killer_clear_in),    // Templated
+      .killer_bonus0_in                 (am_killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
+      .killer_bonus1_in                 (am_killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
       .repdet_board_in                  (am_repdet_board_in[`BOARD_WIDTH-1:0]), // Templated
       .repdet_castle_mask_in            (am_repdet_castle_mask_in[3:0]), // Templated
       .repdet_depth_in                  (am_repdet_depth_in[REPDET_WIDTH-1:0]), // Templated
@@ -369,7 +381,8 @@ module vchess_top
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
       .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
-      .UCI_WIDTH (UCI_WIDTH)
+      .UCI_WIDTH (UCI_WIDTH),
+      .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2)
       )
    control
      (/*AUTOINST*/
@@ -390,6 +403,12 @@ module vchess_top
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves),
       .am_capture_moves                 (am_capture_moves),
+      .am_killer_ply_out                (am_killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
+      .am_killer_board_out              (am_killer_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .am_killer_update_out             (am_killer_update_in),   // Templated
+      .am_killer_clear_out              (am_killer_clear_in),    // Templated
+      .am_killer_bonus0_out             (am_killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
+      .am_killer_bonus1_out             (am_killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
       .trans_board_out                  (trans_board_in[`BOARD_WIDTH-1:0]), // Templated
       .trans_white_to_move_out          (trans_white_to_move_in), // Templated
       .trans_castle_mask_out            (trans_castle_mask_in[3:0]), // Templated
