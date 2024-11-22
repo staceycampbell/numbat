@@ -294,6 +294,7 @@ module evaluate #
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
       .clear_eval                       (clear_eval),
+      .white_to_move                    (white_to_move),
       .killer_ply                       (killer_ply[MAX_DEPTH_LOG2-1:0]),
       .killer_board                     (killer_board[`BOARD_WIDTH-1:0]),
       .killer_update                    (killer_update),

@@ -12,6 +12,7 @@ module evaluate_killer #
     input                                board_valid,
     input [`BOARD_WIDTH - 1:0]           board,
     input                                clear_eval,
+    input                                white_to_move,
 
     input [MAX_DEPTH_LOG2 - 1:0]         killer_ply,
     input [`BOARD_WIDTH - 1:0]           killer_board,
@@ -24,7 +25,7 @@ module evaluate_killer #
     output reg signed [EVAL_WIDTH - 1:0] eval_eg,
     output reg                           eval_valid
     );
-   
+
    localparam LATENCY_COUNT = 3;
 
    reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;
@@ -32,17 +33,30 @@ module evaluate_killer #
    reg                                   killer_update_r;
    reg                                   board_valid_r;
    (* ram_style = "distributed" *) reg [`BOARD_WIDTH * 2 - 1:0] killer_table [0:`MAX_DEPTH - 1]; // two killer moves per ply
-   reg [`MAX_DEPTH * 2 - 1:0]            killer_valid;
+   reg [`MAX_DEPTH * 2 - 1:0]            killer_valid = 0;
+
+   reg [EVAL_WIDTH - 1:0]                bonus0, bonus1;
 
    always @(posedge clk)
      begin
         killer_clear_r <= killer_clear;
         killer_update_r <= killer_update;
         board_valid_r <= board_valid;
-        
+
+        if (white_to_move)
+          begin
+             bonus0 <= -killer_bonus0;
+             bonus1 <= -killer_bonus1;
+          end
+        else
+          begin
+             bonus0 <= killer_bonus0;
+             bonus1 <= killer_bonus1;
+          end
+
         if (killer_clear && ~killer_clear_r)
           killer_valid <= 0;
-        
+
         if (killer_update && ~killer_update_r)
           begin
              killer_table[killer_ply][`BOARD_WIDTH - 1:0] <= killer_board;
@@ -50,17 +64,17 @@ module evaluate_killer #
              killer_valid[killer_ply * 2] <= 1;
              killer_valid[killer_ply * 2 + 1] <= killer_valid[killer_ply * 2];
           end
-        
+
         if (board_valid && ~board_valid_r)
           if (killer_valid[killer_ply * 2] && board == killer_table[killer_ply][`BOARD_WIDTH - 1:0])
             begin
-               eval_mg <= killer_bonus0;
-               eval_eg <= killer_bonus0;
+               eval_mg <= bonus0;
+               eval_eg <= bonus0;
             end
           else if (killer_valid[killer_ply * 2 + 1] && board == killer_table[killer_ply][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH])
             begin
-               eval_mg <= killer_bonus1;
-               eval_eg <= killer_bonus1;
+               eval_mg <= bonus1;
+               eval_eg <= bonus1;
             end
           else
             begin
@@ -68,7 +82,7 @@ module evaluate_killer #
                eval_eg <= 0;
             end
      end
-   
+
    localparam STATE_IDLE = 0;
    localparam STATE_LATENCY = 1;
    localparam STATE_WAIT_CLEAR = 2;
@@ -105,5 +119,5 @@ module evaluate_killer #
          default :
            state <= STATE_IDLE;
        endcase
-   
+
 endmodule
