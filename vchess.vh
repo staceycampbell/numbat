@@ -46,3 +46,4 @@
 `define EN_PASSANT_VALID_BIT 3
 
 `define MAX_POSITIONS 219
+`define MAX_DEPTH 30

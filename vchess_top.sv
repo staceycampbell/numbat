@@ -26,6 +26,7 @@ module vchess_top
    localparam REPDET_WIDTH = 8;
    localparam HALF_MOVE_WIDTH = 10;
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, row/col to, row/col from
+   localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
 
    integer       i;
    
@@ -231,6 +232,7 @@ module vchess_top
       .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
       .UCI_WIDTH (UCI_WIDTH),
+      .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
       .SIMULATION (0)
       )
    all_moves

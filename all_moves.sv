@@ -7,6 +7,7 @@ module all_moves #
    parameter REPDET_WIDTH = 0,
    parameter HALF_MOVE_WIDTH = 0,
    parameter UCI_WIDTH = 4 + 6 + 6,
+   parameter MAX_DEPTH_LOG2 = 0,
    parameter SIMULATION = 0
    )
    (
@@ -22,6 +23,13 @@ module all_moves #
     input [3:0]                          castle_mask_in,
     input [3:0]                          en_passant_col_in,
     input [HALF_MOVE_WIDTH - 1:0]        half_move_in,
+    
+    input [MAX_DEPTH_LOG2 - 1:0]         killer_ply,
+    input [`BOARD_WIDTH - 1:0]           killer_board,
+    input                                killer_update,
+    input                                killer_clear,
+    input signed [EVAL_WIDTH - 1:0]      killer_bonus0,
+    input signed [EVAL_WIDTH - 1:0]      killer_bonus1,
 
     input [`BOARD_WIDTH-1:0]             repdet_board_in,
     input [3:0]                          repdet_castle_mask_in,
@@ -1004,6 +1012,7 @@ module all_moves #
    evaluate #
      (
       .EVAL_WIDTH (EVAL_WIDTH),
+      .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
       .SIMULATION (SIMULATION)
       )
    evaluate
@@ -1018,6 +1027,12 @@ module all_moves #
       .reset                            (reset),
       .use_random_bit                   (use_random_bit),
       .random_bit                       (random_bit),
+      .killer_ply                       (killer_ply[MAX_DEPTH_LOG2-1:0]),
+      .killer_board                     (killer_board[`BOARD_WIDTH-1:0]),
+      .killer_update                    (killer_update),
+      .killer_clear                     (killer_clear),
+      .killer_bonus0                    (killer_bonus0[EVAL_WIDTH-1:0]),
+      .killer_bonus1                    (killer_bonus1[EVAL_WIDTH-1:0]),
       .board_valid                      (evaluate_go),           // Templated
       .is_attacking_done                (is_attacking_done),
       .board_in                         (evaluate_board[`BOARD_WIDTH-1:0]), // Templated

@@ -25,6 +25,7 @@ static char *attacker[2][1 << BLACK_BIT];
 
 #define S(a, b) {a, b}
 
+// From old Stockfish pre-NNUE code:
 // MobilityBonus[PieceType][attacked] contains bonuses for middle and end
 // game, indexed by piece type and number of attacked squares in the MobilityArea.
 // https://www.talkchess.com/forum/viewtopic.php?t=61693

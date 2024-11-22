@@ -3,6 +3,7 @@
 module evaluate #
   (
    parameter EVAL_WIDTH = 0,
+   parameter MAX_DEPTH_LOG2 = 0,
    parameter SIMULATION = 0
    )
    (
@@ -12,6 +13,13 @@ module evaluate #
     input                            use_random_bit,
     input                            random_bit,
 
+    input [MAX_DEPTH_LOG2 - 1:0]     killer_ply,
+    input [`BOARD_WIDTH - 1:0]       killer_board,
+    input                            killer_update,
+    input                            killer_clear,
+    input signed [EVAL_WIDTH - 1:0]  killer_bonus0,
+    input signed [EVAL_WIDTH - 1:0]  killer_bonus1,
+   
     input                            board_valid,
     input                            is_attacking_done,
     input [`BOARD_WIDTH - 1:0]       board_in,
@@ -51,11 +59,14 @@ module evaluate #
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire signed [EVAL_WIDTH-1:0] eval_eg_general;// From evaluate_general of evaluate_general.v
+   wire signed [EVAL_WIDTH-1:0] eval_eg_killer; // From evaluate_killer of evaluate_killer.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_mob;    // From evaluate_mob of evaluate_mob.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_black;// From evaluate_pawns_black of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
    wire                 eval_general_valid;     // From evaluate_general of evaluate_general.v
+   wire                 eval_killer_valid;      // From evaluate_killer of evaluate_killer.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_general;// From evaluate_general of evaluate_general.v
+   wire signed [EVAL_WIDTH-1:0] eval_mg_killer; // From evaluate_killer of evaluate_killer.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_mob;    // From evaluate_mob of evaluate_mob.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_black;// From evaluate_pawns_black of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
@@ -69,7 +80,11 @@ module evaluate #
 
    wire [63:0]                                      occupied;
 
-   wire [EVALUATION_COUNT - 1:0]                    eval_done_status = {eval_mob_valid, eval_pawns_black_valid, eval_pawns_white_valid, eval_general_valid};
+   wire [EVALUATION_COUNT - 1:0]                    eval_done_status = {eval_killer_valid,
+                                                                        eval_mob_valid,
+                                                                        eval_pawns_black_valid,
+                                                                        eval_pawns_white_valid,
+                                                                        eval_general_valid};
    wire [EVALUATION_COUNT - 1:0]                    evals_complete = ~0;
 
    assign eval = eval_t6;
@@ -92,8 +107,8 @@ module evaluate #
           phase <= 62;
         else
           phase <= occupied_count;
-        eval_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black + eval_mg_mob;
-        eval_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black + eval_eg_mob;
+        eval_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black + eval_mg_mob + eval_mg_killer;
+        eval_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black + eval_eg_mob + eval_eg_killer;
         score_mg_t2 <= eval_mg_t1 * phase;
         score_eg_t2 <= eval_eg_t1 * (62 - phase);
         score_t3 <= score_mg_t2 + score_eg_t2;
@@ -256,6 +271,35 @@ module evaluate #
            assign eval_eg_mob = 0;
         end
    endgenerate
+
+   /* evaluate_killer AUTO_TEMPLATE (
+    .board_valid (local_board_valid),
+    .eval_valid (eval_killer_valid),
+    .eval_\([me]\)g (eval_\1g_killer[]),
+    );*/
+   evaluate_killer #
+     (
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2)
+      )
+   evaluate_killer
+     (/*AUTOINST*/
+      // Outputs
+      .eval_mg                          (eval_mg_killer[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg                          (eval_eg_killer[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid                       (eval_killer_valid),     // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (local_board_valid),     // Templated
+      .board                            (board[`BOARD_WIDTH-1:0]),
+      .clear_eval                       (clear_eval),
+      .killer_ply                       (killer_ply[MAX_DEPTH_LOG2-1:0]),
+      .killer_board                     (killer_board[`BOARD_WIDTH-1:0]),
+      .killer_update                    (killer_update),
+      .killer_clear                     (killer_clear),
+      .killer_bonus0                    (killer_bonus0[EVAL_WIDTH-1:0]),
+      .killer_bonus1                    (killer_bonus1[EVAL_WIDTH-1:0]));
 
    /* popcount AUTO_TEMPLATE (
     .population (occupied_count[]),
