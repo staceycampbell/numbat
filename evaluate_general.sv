@@ -23,7 +23,7 @@ module evaluate_general #
     output reg signed [31:0]         material
     );
 
-   localparam LATENCY_COUNT = 6;
+   localparam LATENCY_COUNT = 7;
 
    reg [2:0]                         latency;
 
@@ -43,8 +43,10 @@ module evaluate_general #
    reg signed [EVAL_WIDTH - 1:0]                     sum_a_eg_t3 [0:7][0:1];
    reg signed [EVAL_WIDTH - 1:0]                     sum_b_mg_t4 [0:3];
    reg signed [EVAL_WIDTH - 1:0]                     sum_b_eg_t4 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]                     eval_mg_t5;
-   reg signed [EVAL_WIDTH - 1:0]                     eval_eg_t5;
+   reg signed [EVAL_WIDTH - 1:0]                     sum_b_mg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_b_eg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]                     eval_mg_t6;
+   reg signed [EVAL_WIDTH - 1:0]                     eval_eg_t6;
    
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 3:0] material_t1 [0:15], material_t3 [0:3];
 
@@ -57,8 +59,8 @@ module evaluate_general #
 
    integer                                           i, ri, y, x;
 
-   assign eval_mg = eval_mg_t5;
-   assign eval_eg = eval_eg_t5;
+   assign eval_mg = eval_mg_t6;
+   assign eval_eg = eval_eg_t6;
    assign insufficient_material = insufficient_material_t4;
 
    always @(posedge clk)
@@ -147,15 +149,20 @@ module evaluate_general #
              sum_b_mg_t4[y / 2] <= sum_a_mg_t3[y + 0][0] + sum_a_mg_t3[y + 0][1] + sum_a_mg_t3[y + 1][0] + sum_a_mg_t3[y + 1][1];
              sum_b_eg_t4[y / 2] <= sum_a_eg_t3[y + 0][0] + sum_a_eg_t3[y + 0][1] + sum_a_eg_t3[y + 1][0] + sum_a_eg_t3[y + 1][1];
           end
+        for (y = 0; y < 4; y = y + 1)
+          begin
+             sum_b_mg_t5[y] <= sum_b_mg_t4[y];
+             sum_b_eg_t5[y] <= sum_b_eg_t4[y];
+          end
         if (insufficient_material_t4)
           begin
-             eval_mg_t5 <= 0;
-             eval_eg_t5 <= 0;
+             eval_mg_t6 <= 0;
+             eval_eg_t6 <= 0;
           end
         else
           begin
-             eval_mg_t5 <= sum_b_mg_t4[0] + sum_b_mg_t4[1] + sum_b_mg_t4[2] + sum_b_mg_t4[3];
-             eval_eg_t5 <= sum_b_eg_t4[0] + sum_b_eg_t4[1] + sum_b_eg_t4[2] + sum_b_eg_t4[3];
+             eval_mg_t6 <= sum_b_mg_t5[0] + sum_b_mg_t5[1] + sum_b_mg_t5[2] + sum_b_mg_t5[3];
+             eval_eg_t6 <= sum_b_eg_t5[0] + sum_b_eg_t5[1] + sum_b_eg_t5[2] + sum_b_eg_t5[3];
           end
      end
 
