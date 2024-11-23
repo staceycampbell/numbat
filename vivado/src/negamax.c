@@ -153,7 +153,9 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         trans_t trans;
         XTime t_now;
         board_t *board_ptr[MAX_POSITIONS];
+        uint64_t node_start, node_stop, nodes;
 
+        node_start = nodes_visited;
         ++nodes_visited;
 
         alpha_orig = alpha;
@@ -167,7 +169,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         vchess_write_board_wait(board);
         vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
 
-        // quiescence = quiescence || check;
+        quiescence = quiescence || check;
 
         value = nm_eval(board->white_to_move, ply);
 
@@ -262,9 +264,14 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 ++move_killer_found;
         }
 
-        // https://cris.maastrichtuniversity.nl/en/publications/replacement-schemes-for-transposition-tables
-        // section 4.4
-        if (!quiescence)
+        // BigAll scheme
+        node_stop = nodes_visited;
+        nodes = node_stop - node_start;
+        if (nodes >= (1 << TRANS_NODES_WIDTH))
+                nodes = (1 << TRANS_NODES_WIDTH) - 1;
+        vchess_write_board_basic(board);
+        trans_lookup(&trans, &collision);
+        if (!trans.entry_valid || trans.nodes < nodes)
         {
                 trans.eval = value;
                 if (value <= alpha_orig)
@@ -273,9 +280,9 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                         trans.flag = TRANS_LOWER_BOUND;
                 else
                         trans.flag = TRANS_EXACT;
+                trans.nodes = nodes;
                 trans.depth = depth;
                 trans.entry_valid = 1;
-                vchess_write_board_basic(board);
                 trans_store(&trans);
         }
 

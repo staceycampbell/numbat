@@ -51,12 +51,14 @@ module control #
     output reg                            trans_hash_only_out,
     output reg                            trans_clear_trans_out,
     output reg [EVAL_WIDTH - 1:0]         trans_eval_out,
+    output reg [`TRANS_NODES_WIDTH - 1:0] trans_nodes_out,
     output reg [1:0]                      trans_flag_out,
    
     input [7:0]                           trans_depth_in,
     input                                 trans_entry_valid_in,
     input [EVAL_WIDTH - 1:0]              trans_eval_in,
     input [1:0]                           trans_flag_in,
+    input [`TRANS_NODES_WIDTH - 1:0]      trans_nodes_in,
     input                                 trans_trans_idle_in,
     input                                 trans_collision_in,
     input [79:0]                          trans_hash_in,
@@ -181,6 +183,8 @@ module control #
          520 : {trans_depth_out[7:0], trans_clear_trans_out, trans_hash_only_out, trans_flag_out[1:0],
                 trans_entry_store_out, trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
          521 : trans_eval_out <= ctrl0_wr_data;
+         525 : trans_nodes_out <= ctrl0_wr_data;
+         
          1024 : am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          1025 : am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          1026 : am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
@@ -276,12 +280,27 @@ module control #
 
                512 : ctrl0_axi_rdata <= {trans_collision_in, trans_depth_in[7:0], 4'b0, trans_flag_in[1:0], trans_entry_valid_in, trans_trans_idle_in};
                514 : ctrl0_axi_rdata <= trans_eval_in;
+               515 : ctrl0_axi_rdata <= trans_nodes_in;
                520 : ctrl0_axi_rdata <= {trans_depth_out[7:0], 2'b0, trans_clear_trans_out, trans_hash_only_out,
                                          trans_flag_out[1:0], trans_entry_store_out, trans_entry_lookup_out};
                521 : ctrl0_axi_rdata <= trans_eval_out;
                522 : ctrl0_axi_rdata <= trans_hash_in[31: 0];
                523 : ctrl0_axi_rdata <= trans_hash_in[63:32];
                524 : ctrl0_axi_rdata <= trans_hash_in[79:64];
+               525 : ctrl0_axi_rdata <= trans_nodes_out;
+               
+               1024 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH]; 
+               1025 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH]; 
+               1026 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH]; 
+               1027 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH]; 
+               1028 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH]; 
+               1029 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH]; 
+               1030 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH]; 
+               1031 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH]; 
+               1032 : ctrl0_axi_rdata <= {am_killer_clear_out, am_killer_update_out};
+               1033 : ctrl0_axi_rdata <= am_killer_ply_out;
+               1034 : ctrl0_axi_rdata <= am_killer_bonus0_out;
+               1035 : ctrl0_axi_rdata <= am_killer_bonus1_out;
                
                default : ctrl0_axi_rdata <= 0;
              endcase

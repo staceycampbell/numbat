@@ -22,7 +22,7 @@ module vchess_top
    );
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 0;
+   localparam EVAL_MOBILITY_DISABLE = 1;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -171,6 +171,8 @@ module vchess_top
    wire [1:0]           trans_flag_out;         // From trans of trans.v
    wire                 trans_hash_only_in;     // From control of control.v
    wire [79:0]          trans_hash_out;         // From trans of trans.v
+   wire [`TRANS_NODES_WIDTH-1:0] trans_nodes_in;// From control of control.v
+   wire [`TRANS_NODES_WIDTH-1:0] trans_nodes_out;// From trans of trans.v
    wire [31:0]          trans_trans;            // From trans of trans.v
    wire                 trans_trans_idle_out;   // From trans of trans.v
    wire                 trans_white_to_move_in; // From control of control.v
@@ -321,6 +323,7 @@ module vchess_top
       .eval_out                         (trans_eval_out[EVAL_WIDTH-1:0]), // Templated
       .depth_out                        (trans_depth_out[7:0]),  // Templated
       .flag_out                         (trans_flag_out[1:0]),   // Templated
+      .nodes_out                        (trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
       .collision_out                    (trans_collision_out),   // Templated
       .hash_out                         (trans_hash_out[79:0]),  // Templated
       .trans_axi_araddr                 (trans_axi_araddr[31:0]), // Templated
@@ -364,6 +367,7 @@ module vchess_top
       .flag_in                          (trans_flag_in[1:0]),    // Templated
       .eval_in                          (trans_eval_in[EVAL_WIDTH-1:0]), // Templated
       .depth_in                         (trans_depth_in[7:0]),   // Templated
+      .nodes_in                         (trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
       .trans_axi_arready                (trans_axi_arready),     // Templated
       .trans_axi_awready                (trans_axi_awready),     // Templated
       .trans_axi_bresp                  (trans_axi_bresp[1:0]),  // Templated
@@ -422,6 +426,7 @@ module vchess_top
       .trans_hash_only_out              (trans_hash_only_in),    // Templated
       .trans_clear_trans_out            (trans_clear_trans_in),  // Templated
       .trans_eval_out                   (trans_eval_in[EVAL_WIDTH-1:0]), // Templated
+      .trans_nodes_out                  (trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
       .trans_flag_out                   (trans_flag_in[1:0]),    // Templated
       .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
       .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
@@ -438,6 +443,7 @@ module vchess_top
       .trans_entry_valid_in             (trans_entry_valid_out), // Templated
       .trans_eval_in                    (trans_eval_out[EVAL_WIDTH-1:0]), // Templated
       .trans_flag_in                    (trans_flag_out[1:0]),   // Templated
+      .trans_nodes_in                   (trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
       .trans_trans_idle_in              (trans_trans_idle_out),  // Templated
       .trans_collision_in               (trans_collision_out),   // Templated
       .trans_hash_in                    (trans_hash_out[79:0]),  // Templated

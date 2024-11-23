@@ -21,6 +21,7 @@ module trans #
     input [1:0]                   flag_in,
     input [EVAL_WIDTH - 1:0]      eval_in,
     input [7:0]                   depth_in,
+    input [`TRANS_NODES_WIDTH - 1:0]                  nodes_in,
 
     output                        trans_idle_out,
 
@@ -28,6 +29,7 @@ module trans #
     output reg [EVAL_WIDTH - 1:0] eval_out,
     output reg [7:0]              depth_out,
     output reg [1:0]              flag_out,
+    output reg [`TRANS_NODES_WIDTH - 1:0]             nodes_out,
     output reg                    collision_out,
 
     output reg [79:0]             hash_out,
@@ -71,6 +73,8 @@ module trans #
 
     output reg [31:0]             trans_trans = 0
     );
+
+   localparam HASH_USED = 64;
 
    localparam BASE_ADDRESS = 32'h00000000; // AXI4 byte address for base of memory
    localparam MEM_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GByte DDR4
@@ -123,6 +127,7 @@ module trans #
    reg [1:0]                      flag;
    reg [EVAL_WIDTH - 1:0]         eval;
    reg [7:0]                      depth;
+   reg [`TRANS_NODES_WIDTH - 1:0]                     nodes;
    reg                            valid_wr;
    reg                            local_wvalid;
    reg [BURST_COUNTER_WIDTH - 1:0] burst_counter;
@@ -132,18 +137,20 @@ module trans #
 
    integer                         i;
 
-   wire [79:0]                     lookup_hash;
+   wire [HASH_USED - 1:0]          lookup_hash;
    wire [1:0]                      lookup_flag;
    wire [EVAL_WIDTH - 1:0]         lookup_eval;
    wire [7:0]                      lookup_depth;
+   wire [`TRANS_NODES_WIDTH - 1:0]                     lookup_nodes;
    wire                            lookup_valid;
 
    wire [MEM_ADDR_WIDTH - 1:0]     hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
-   wire [127:0]                    store = {valid_wr, depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0], hash[79:0]};
+   wire [127:0]                    store = {valid_wr, nodes[`TRANS_NODES_WIDTH - 1:0], depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0], hash[HASH_USED - 1:0]};
 
    wire                            clear_wlast = burst_counter[7:0] == 8'hFF;
 
-   assign {lookup_valid, lookup_depth[7:0], lookup_flag[1:0], lookup_eval[EVAL_WIDTH - 1:0], lookup_hash[79:0]} = lookup;
+   assign {lookup_valid, lookup_nodes[`TRANS_NODES_WIDTH - 1:0], lookup_depth[7:0], lookup_flag[1:0],
+           lookup_eval[EVAL_WIDTH - 1:0], lookup_hash[HASH_USED - 1:0]} = lookup;
    
    assign trans_idle_out = state == STATE_IDLE;
 
@@ -196,6 +203,7 @@ module trans #
         
         eval_out <= lookup_eval;
         depth_out <= lookup_depth;
+        nodes_out <= lookup_nodes;
         flag_out <= lookup_flag;
         hash_out <= hash;
      end
@@ -219,6 +227,7 @@ module trans #
               eval <= eval_in;
               flag <= flag_in;
               depth <= depth_in;
+              nodes <= nodes_in;
 
               local_wvalid <= 0;
               trans_axi_awvalid <= 0;
@@ -382,8 +391,8 @@ module trans #
              end
          STATE_LOOKUP_VALIDATE :
            begin
-              entry_valid_out <= lookup_valid && lookup_hash == hash;
-              collision_out <= lookup_valid && lookup_hash != hash;
+              entry_valid_out <= lookup_valid && lookup_hash[HASH_USED - 1:0] == hash[HASH_USED - 1:0];
+              collision_out <= lookup_valid && lookup_hash[HASH_USED - 1:0] != hash[HASH_USED - 1:0];
               state <= STATE_IDLE;
            end
          default :

@@ -102,7 +102,8 @@ main(void)
         vchess_init();
         trans_clear_table();
         killer_clear_table();
-        killer_bonus(10000, 10000);
+        // killer_bonus(10000, 10000);
+        killer_bonus(0, 0);
         uci_init();
         uci_input_reset();
         book_open();

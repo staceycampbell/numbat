@@ -57,6 +57,8 @@
 #define TRANS_LOWER_BOUND 1
 #define TRANS_UPPER_BOUND 2
 
+#define TRANS_NODES_WIDTH 29
+
 #define BOOK_RANDOM 0
 #define BOOK_MOST_COMMON 1
 #define BOOK_RANDOM_COMMON 2
@@ -125,6 +127,7 @@ typedef struct trans_t
         int32_t depth;
         int32_t eval;
         uint32_t flag;
+	uint32_t nodes;
 } trans_t;
 
 static inline void
@@ -174,7 +177,7 @@ vchess_random(void)
 }
 
 static inline void
-vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval)
+vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes)
 {
         uint32_t val;
         uint32_t depth32;
@@ -183,11 +186,14 @@ vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval)
 
         depth_u8 = (uint8_t) depth;
         depth32 = depth_u8;
-        vchess_write(521, (uint32_t) eval);
 
-        val = depth32 << 8 | flag << 2 | entry_store;
+        vchess_write(521, (uint32_t) eval);
+	vchess_write(525, nodes);
+
+        val = depth32 << 8 | flag << 2 | entry_store; // toggle store on
         vchess_write(520, val);
-        val = depth32 << 8 | flag << 2;
+
+        val = depth32 << 8 | flag << 2; // toggle store off
         vchess_write(520, val);
 }
 
@@ -201,12 +207,14 @@ vchess_trans_lookup(void)
 }
 
 static inline void
-vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * entry_valid, uint32_t * trans_idle)
+vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * entry_valid, uint32_t * trans_idle)
 {
         uint32_t val;
 
         if (eval)
                 *eval = (int32_t) vchess_read(514);
+	if (nodes)
+		*nodes = vchess_read(515);
         val = vchess_read(512);
         if (trans_idle)
                 *trans_idle = val & 0x1;
@@ -262,7 +270,7 @@ vchess_trans_idle_wait(void)
         counter = 0;
         do
         {
-                vchess_trans_read(0, 0, 0, 0, 0, &trans_idle);
+                vchess_trans_read(0, 0, 0, 0, 0, 0, &trans_idle);
                 ++counter;
         }
         while (counter < 100 && !trans_idle);
@@ -588,7 +596,6 @@ killer_write_board(const uint32_t board[8])
 static inline void
 killer_clear_table(void)
 {
-        killer_control(0, 0);
         killer_control(1, 0);
         killer_control(0, 0);
 }
@@ -596,7 +603,6 @@ killer_clear_table(void)
 static inline void
 killer_update_table(void)
 {
-        killer_control(0, 0);
         killer_control(0, 1);
         killer_control(0, 0);
 }

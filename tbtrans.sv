@@ -55,6 +55,7 @@ module tbtrans;
    reg [1:0]                          flag_in = 0;
    reg                                hash_only_in = 0;
    reg                                clear_trans_in = 0;
+   reg [`TRANS_NODES_WIDTH - 1:0]     nodes_in = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -67,6 +68,7 @@ module tbtrans;
    wire [EVAL_WIDTH-1:0] eval_out;              // From trans of trans.v
    wire [1:0]           flag_out;               // From trans of trans.v
    wire [79:0]          hash_out;               // From trans of trans.v
+   wire [`TRANS_NODES_WIDTH-1:0] nodes_out;     // From trans of trans.v
    wire [31:0]          trans_axi_araddr;       // From trans of trans.v
    wire [1:0]           trans_axi_arburst;      // From trans of trans.v
    wire [3:0]           trans_axi_arcache;      // From trans of trans.v
@@ -74,6 +76,7 @@ module tbtrans;
    wire [0:0]           trans_axi_arlock;       // From trans of trans.v
    wire [2:0]           trans_axi_arprot;       // From trans of trans.v
    wire [3:0]           trans_axi_arqos;        // From trans of trans.v
+   wire [3:0]           trans_axi_arregion;     // From trans of trans.v
    wire [2:0]           trans_axi_arsize;       // From trans of trans.v
    wire                 trans_axi_arvalid;      // From trans of trans.v
    wire [31:0]          trans_axi_awaddr;       // From trans of trans.v
@@ -83,6 +86,7 @@ module tbtrans;
    wire [0:0]           trans_axi_awlock;       // From trans of trans.v
    wire [2:0]           trans_axi_awprot;       // From trans of trans.v
    wire [3:0]           trans_axi_awqos;        // From trans of trans.v
+   wire [3:0]           trans_axi_awregion;     // From trans of trans.v
    wire [2:0]           trans_axi_awsize;       // From trans of trans.v
    wire                 trans_axi_awvalid;      // From trans of trans.v
    wire                 trans_axi_bready;       // From trans of trans.v
@@ -92,6 +96,7 @@ module tbtrans;
    wire [15:0]          trans_axi_wstrb;        // From trans of trans.v
    wire                 trans_axi_wvalid;       // From trans of trans.v
    wire                 trans_idle_out;         // From trans of trans.v
+   wire [31:0]          trans_trans;            // From trans of trans.v
    // End of automatics
    
    wire [3:0]                         uci_promotion;
@@ -185,6 +190,7 @@ module tbtrans;
       .eval_out                         (eval_out[EVAL_WIDTH-1:0]),
       .depth_out                        (depth_out[7:0]),
       .flag_out                         (flag_out[1:0]),
+      .nodes_out                        (nodes_out[`TRANS_NODES_WIDTH-1:0]),
       .collision_out                    (collision_out),
       .hash_out                         (hash_out[79:0]),
       .trans_axi_araddr                 (trans_axi_araddr[31:0]),
@@ -211,6 +217,9 @@ module tbtrans;
       .trans_axi_wlast                  (trans_axi_wlast),
       .trans_axi_wstrb                  (trans_axi_wstrb[15:0]),
       .trans_axi_wvalid                 (trans_axi_wvalid),
+      .trans_axi_arregion               (trans_axi_arregion[3:0]),
+      .trans_axi_awregion               (trans_axi_awregion[3:0]),
+      .trans_trans                      (trans_trans[31:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -225,6 +234,7 @@ module tbtrans;
       .flag_in                          (flag_in[1:0]),
       .eval_in                          (eval_in[EVAL_WIDTH-1:0]),
       .depth_in                         (depth_in[7:0]),
+      .nodes_in                         (nodes_in[`TRANS_NODES_WIDTH-1:0]),
       .trans_axi_arready                (trans_axi_arready),
       .trans_axi_awready                (trans_axi_awready),
       .trans_axi_bresp                  (trans_axi_bresp[1:0]),
