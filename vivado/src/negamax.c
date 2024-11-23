@@ -161,7 +161,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_moves, board_vert, ply, quiescence);
-	killer_ply(ply);
+        killer_ply(ply);
         vchess_write_board_basic(board);
         vchess_capture_moves(quiescence);
         vchess_write_board_wait(board);
@@ -254,25 +254,30 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-	if (index < move_count && ! board_ptr[index - 1]->capture) // beta cutoff
-	{
-		killer_ply(ply);
-		killer_write_board(board_ptr[index - 1]->board);
-		killer_update_table();
-		++move_killer_found;
-	}
+        if (index < move_count && !board_ptr[index - 1]->capture)       // beta cutoff
+        {
+                killer_ply(ply);
+                killer_write_board(board_ptr[index - 1]->board);
+                killer_update_table();
+                ++move_killer_found;
+        }
 
-        trans.eval = value;
-        if (value <= alpha_orig)
-                trans.flag = TRANS_UPPER_BOUND;
-        else if (value >= beta)
-                trans.flag = TRANS_LOWER_BOUND;
-        else
-                trans.flag = TRANS_EXACT;
-        trans.depth = depth;
-        trans.entry_valid = 1;
-        vchess_write_board_basic(board);
-        trans_store(&trans);
+        // https://cris.maastrichtuniversity.nl/en/publications/replacement-schemes-for-transposition-tables
+        // section 4.4
+        if (!quiescence)
+        {
+                trans.eval = value;
+                if (value <= alpha_orig)
+                        trans.flag = TRANS_UPPER_BOUND;
+                else if (value >= beta)
+                        trans.flag = TRANS_LOWER_BOUND;
+                else
+                        trans.flag = TRANS_EXACT;
+                trans.depth = depth;
+                trans.entry_valid = 1;
+                vchess_write_board_basic(board);
+                trans_store(&trans);
+        }
 
         return value;
 }
@@ -285,6 +290,10 @@ nm_move_sort_compare(const void *p1, const void *p2)
         b1 = (const board_t **)p1;
         b2 = (const board_t **)p2;
 
+        if ((*b1)->capture == 1 &&  (*b2)->capture == 0)
+                return -1;
+        if ((*b1)->capture == 0 &&  (*b2)->capture == 1)
+                return 1;
         if ((*b1)->eval > (*b2)->eval)
                 return -1;
         if ((*b1)->eval < (*b2)->eval)
@@ -325,7 +334,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         q_end = 0;
         no_trans = 0;
         trans_collision = 0;
-	move_killer_found = 0;
+        move_killer_found = 0;
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0, 0);
@@ -415,8 +424,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u, q_depth=%d\n", depth_limit - 1, q_hard_cutoff, q_end, valid_quiescence_ply_reached);
         printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%), move_killer_found=%u\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
-               ((double)trans_collision * 100.0) / (double)nodes_visited,
-		move_killer_found);
+               ((double)trans_collision * 100.0) / (double)nodes_visited, move_killer_found);
 
         return best_board;
 }
