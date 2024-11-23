@@ -11,7 +11,7 @@ static inline void
 trans_wait_idle(const char *func, const char *file, int line)
 {
         uint32_t i;
-	uint32_t transaction;
+        uint32_t transaction;
         uint32_t trans_idle;
 
         i = 0;
@@ -23,9 +23,8 @@ trans_wait_idle(const char *func, const char *file, int line)
         while (!trans_idle && i < 1000);
         if (!trans_idle)
         {
-		transaction = vchess_read(253);
-                printf("%s: transaction=%d, transposition table state machine is not idle, stopping.\n(%s %d)\n",
-		       func, transaction, file, line);
+                transaction = vchess_read(253);
+                printf("%s: transaction=%d, transposition table state machine is not idle, stopping.\n(%s %d)\n", func, transaction, file, line);
                 while (1);
         }
 }
@@ -37,7 +36,7 @@ trans_clear_table(void)
         double elapsed_time;
         uint32_t trans_idle, transaction;
 
-	trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
+        trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         XTime_GetTime(&t_start);
         vchess_trans_clear_table();
         do
@@ -50,9 +49,8 @@ trans_clear_table(void)
         while (elapsed_time < 2.0 && !trans_idle);
         if (!trans_idle)
         {
-		transaction = vchess_read(253);
-                xil_printf("%s: timeout on trans_idle, transaction=%d, stopping.\n(%s %d)\n", __PRETTY_FUNCTION__,
-			   transaction, __FILE__, __LINE__);
+                transaction = vchess_read(253);
+                xil_printf("%s: timeout on trans_idle, transaction=%d, stopping.\n(%s %d)\n", __PRETTY_FUNCTION__, transaction, __FILE__, __LINE__);
                 while (1);
         }
 }

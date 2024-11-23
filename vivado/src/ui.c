@@ -380,6 +380,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "game") == 0)
         {
+                killer_clear_table();
                 trans_clear_table();
                 uci_init();
         }
@@ -399,6 +400,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 status = fen_board(cmd, &board);
                 if (status)
                         return;
+                killer_clear_table();
                 trans_clear_table();
                 game_moves = 1;
                 board.half_move_clock = 0;
@@ -414,6 +416,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "sample") == 0)
         {
+                killer_clear_table();
                 trans_clear_table();
                 game_moves = sample_game(game);
                 if (game_moves > 0)

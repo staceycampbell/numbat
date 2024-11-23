@@ -21,6 +21,9 @@ module vchess_top
    output        ddr4_sdram_062_reset_n
    );
 
+   // 1 for fast debug builds, 0 for release
+   localparam EVAL_MOBILITY_DISABLE = 0;
+
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
    localparam REPDET_WIDTH = 8;
@@ -183,7 +186,7 @@ module vchess_top
      ddr4_counter <= ddr4_counter + 1;
    
    wire [31:0]                   misc_status = {ddr4_counter_out[15:0], 14'b0, c0_ddr4_ui_clk_sync_rst_out, c0_init_calib_complete_out};
-   
+
    wire                          clk = digclk;
 
    initial

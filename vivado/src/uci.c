@@ -53,18 +53,18 @@ uci_go(tc_t * tc)
                 return;         // this is not the place for recursion
 
         search_running = 1;
-	book_move_found = 0;
-	if (book_miss < 4) // avoid further book searches after N misses
-		book_move_found = book_game_move(&game[game_moves - 1]);
+        book_move_found = 0;
+        if (book_miss < 4)      // avoid further book searches after N misses
+                book_move_found = book_game_move(&game[game_moves - 1]);
         if (!book_move_found)
         {
                 best_board = nm_top(game, game_moves, tc);
                 game[game_moves] = best_board;
                 ++game_moves;
-		++book_miss;
+                ++book_miss;
         }
-	else
-		book_miss = 0;
+        else
+                book_miss = 0;
         search_running = 0;
 }
 
@@ -110,7 +110,8 @@ uci_dispatch(void)
         }
         else if (strcmp(p, "ucinewgame") == 0)
         {
-		book_miss = 0;
+                book_miss = 0;
+                killer_clear_table();
                 trans_clear_table();
                 uci_init();
         }

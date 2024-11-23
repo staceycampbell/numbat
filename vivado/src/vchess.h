@@ -525,7 +525,8 @@ uci_match(const uci_t * a, const uci_t * b)
 {
         uint32_t ret;
 
-        ret = a->row_from == b->row_from && a->row_to == b->row_to && a->col_from == b->col_from && a->col_to == b->col_to && a->promotion == b->promotion;
+        ret = a->row_from == b->row_from && a->row_to == b->row_to && a->col_from == b->col_from && a->col_to == b->col_to
+                && a->promotion == b->promotion;
 
         return ret;
 }
@@ -542,6 +543,62 @@ ui_data_available(void)
 #endif
 
         return status;
+}
+
+static inline void
+killer_control(uint32_t clear, uint32_t update)
+{
+        uint32_t val;
+
+        val = (clear != 0) << 1 | (update != 0) << 0;
+        vchess_write(1032, val);
+}
+
+static inline void
+killer_bonus(int32_t bonus0, int32_t bonus1)
+{
+        vchess_write(134, bonus0);
+        vchess_write(135, bonus1);
+}
+
+static inline void
+killer_ply(uint32_t ply)
+{
+        vchess_write(1033, ply);
+}
+
+static inline void
+killer_write_board_two_rows(uint32_t row0, uint64_t row_pieces0, uint64_t row_pieces1)
+{
+        uint64_t row_pieces;
+
+        row_pieces = row_pieces1 << (uint64_t) 32 | row_pieces0;
+        vchess_write64(1024 + row0, row_pieces);
+}
+
+static inline void
+killer_write_board(const uint32_t board[8])
+{
+        killer_write_board_two_rows(0, board[0], board[1]);
+        killer_write_board_two_rows(2, board[2], board[3]);
+        killer_write_board_two_rows(4, board[4], board[5]);
+        killer_write_board_two_rows(6, board[6], board[7]);
+}
+
+static inline void
+killer_clear_table(void)
+{
+        killer_control(0, 0);
+        killer_control(1, 0);
+        killer_control(0, 0);
+}
+
+static inline void
+killer_update_table(void)
+{
+        killer_control(0, 0);
+        killer_control(0, 1);
+        killer_control(0, 0);
 }
 
 extern void print_app_header(void);

@@ -95,13 +95,14 @@ main(void)
         start_application();
 #endif
 
-
         index = 0;
         // ip_status = 0;
         com_status = 0;
 
         vchess_init();
         trans_clear_table();
+        killer_clear_table();
+        killer_bonus(3000, 3000);
         uci_init();
         uci_input_reset();
         book_open();
