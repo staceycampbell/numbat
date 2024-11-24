@@ -26,14 +26,17 @@ module evaluate_killer #
     output reg                           eval_valid
     );
 
-   localparam LATENCY_COUNT = 3;
+   localparam LATENCY_COUNT = 4;
 
    reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;
    reg                                   killer_clear_r;
    reg                                   killer_update_r;
    reg                                   board_valid_r;
-   (* ram_style = "distributed" *) reg [`BOARD_WIDTH * 2 - 1:0] killer_table [0:`MAX_DEPTH - 1]; // two killer moves per ply
+   reg [`BOARD_WIDTH * 2 - 1:0]          killer_table [0:`MAX_DEPTH - 1]; // two killer moves per ply
    reg [`MAX_DEPTH * 2 - 1:0]            killer_valid = 0;
+   reg signed [EVAL_WIDTH - 1:0]         eval_mg_pre;
+   reg signed [EVAL_WIDTH - 1:0]         eval_eg_pre;
+   reg [MAX_DEPTH_LOG2 - 1:0]            ply_r;
 
    reg [EVAL_WIDTH - 1:0]                bonus0, bonus1;
 
@@ -42,6 +45,7 @@ module evaluate_killer #
         killer_clear_r <= killer_clear;
         killer_update_r <= killer_update;
         board_valid_r <= board_valid;
+        ply_r <= killer_ply;
 
         if (white_to_move)
           begin
@@ -59,28 +63,30 @@ module evaluate_killer #
 
         if (killer_update && ~killer_update_r)
           begin
-             killer_table[killer_ply][`BOARD_WIDTH - 1:0] <= killer_board;
-             killer_table[killer_ply][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH] <= killer_table[killer_ply][`BOARD_WIDTH - 1:0];
-             killer_valid[killer_ply * 2] <= 1;
-             killer_valid[killer_ply * 2 + 1] <= killer_valid[killer_ply * 2];
+             killer_table[ply_r][`BOARD_WIDTH - 1:0] <= killer_board;
+             killer_table[ply_r][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH] <= killer_table[ply_r][`BOARD_WIDTH - 1:0];
+             killer_valid[ply_r * 2] <= 1;
+             killer_valid[ply_r * 2 + 1] <= killer_valid[ply_r * 2];
           end
 
         if (board_valid && ~board_valid_r)
-          if (killer_valid[killer_ply * 2] && board == killer_table[killer_ply][`BOARD_WIDTH - 1:0])
+          if (killer_valid[ply_r * 2] && board == killer_table[ply_r][`BOARD_WIDTH - 1:0])
             begin
-               eval_mg <= bonus0;
-               eval_eg <= bonus0;
+               eval_mg_pre <= bonus0;
+               eval_eg_pre <= bonus0;
             end
-          else if (killer_valid[killer_ply * 2 + 1] && board == killer_table[killer_ply][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH])
+          else if (killer_valid[ply_r * 2 + 1] && board == killer_table[ply_r][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH])
             begin
-               eval_mg <= bonus1;
-               eval_eg <= bonus1;
+               eval_mg_pre <= bonus1;
+               eval_eg_pre <= bonus1;
             end
           else
             begin
-               eval_mg <= 0;
-               eval_eg <= 0;
+               eval_mg_pre <= 0;
+               eval_eg_pre <= 0;
             end
+        eval_mg <= eval_mg_pre;
+        eval_eg <= eval_eg_pre;
      end
 
    localparam STATE_IDLE = 0;
