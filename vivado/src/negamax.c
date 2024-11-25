@@ -9,7 +9,7 @@
 #pragma GCC optimize ("O2")
 
 #define FIXED_TIME 30
-#define MID_GAME_HALF_MOVES 20
+#define MID_GAME_HALF_MOVES 30
 
 #define MAX_DEPTH 30
 #define LARGE_EVAL (1 << 20)

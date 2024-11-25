@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <poll.h>
+#include <time.h>
 
 // https://stackoverflow.com/a/6947758
 
@@ -78,6 +79,7 @@ main(int argc, char *argv[])
         char buffer[4096];
         FILE *logfp;
         ssize_t count;
+	time_t curtime;
 
         portname = "/dev/ttyUSB1";
         while ((opt = getopt(argc, argv, "d:")) != EOF)
@@ -104,12 +106,14 @@ main(int argc, char *argv[])
         fds[1].fd = fileno(stdin);
         fds[1].events = POLLIN;
 
-        logfp = fopen("debug.log", "w");
+        logfp = fopen("debug.log", "a");
         if (logfp == 0)
         {
                 fprintf(stderr, "%s: cannot open debug.log\n", argv[0]);
                 exit(1);
         }
+	time(&curtime);
+	fprintf(logfp, "\n\nDebug log started: %s\n\n", ctime(&curtime));
 
         while (poll(fds, 2, -1) != -1)
         {
@@ -117,7 +121,6 @@ main(int argc, char *argv[])
                 {
                         if ((count = read(fds[0].fd, buffer, sizeof(buffer))) != 0)
                         {
-                                fprintf(logfp, "to GUI: ");
                                 for (i = 0; i < count; ++i)
                                         fputc(buffer[i], logfp);
                                 fflush(logfp);
@@ -128,8 +131,6 @@ main(int argc, char *argv[])
                 {
                         if ((count = read(fds[1].fd, buffer, sizeof(buffer))) != 0)
                         {
-                                fprintf(logfp, "to ENG: ");
-                                fflush(logfp);
                                 i = 0;
                                 while (i < count)
                                 {
@@ -142,5 +143,6 @@ main(int argc, char *argv[])
                         }
                 }
         }
+	fclose(logfp);
         return 0;
 }

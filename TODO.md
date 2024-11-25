@@ -1,3 +1,6 @@
-- communication with FICS
+- beatable test opponent
+- bishop, queen, knight evaluations
+- check killer hueristic implementation
+- MVV-LVA sorting
 - fix en-passant and three-fold repetition
 - fix three-fold repetition and eval
