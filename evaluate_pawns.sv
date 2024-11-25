@@ -19,13 +19,10 @@ module evaluate_pawns #
 
     output signed [EVAL_WIDTH - 1:0] eval_mg,
     output signed [EVAL_WIDTH - 1:0] eval_eg,
-    output reg                       eval_valid
+    output                           eval_valid
     );
 
    localparam LATENCY_COUNT = 7;
-
-   reg                               board_valid_r;
-   reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;
 
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_mg [0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_eg [0:7];
@@ -83,6 +80,11 @@ module evaluate_pawns #
 
    reg [2:0]                             row_flip [0:1][0:7];
 
+   // should be empty
+   /*AUTOREGINPUT*/
+
+   /*AUTOWIRE*/
+
    integer                               i, row, col, row_adv;
 
    wire [`PIECE_WIDTH - 1:0]             pawn = WHITE_PAWNS ? `WHITE_PAWN : `BLACK_PAWN;
@@ -104,8 +106,6 @@ module evaluate_pawns #
 
    always @(posedge clk)
      begin
-        board_valid_r <= board_valid;
-
         col_with_pawn_t1 <= 0;
         for (row = 0; row < 8; row = row + 1)
           for (col = 0; col < 8; col = col + 1)
@@ -299,43 +299,6 @@ module evaluate_pawns #
         isolated_eg_t5 <= isolated_eg_t4[0] + isolated_eg_t4[1] + isolated_eg_t4[2] + isolated_eg_t4[3];
      end
 
-   localparam STATE_IDLE = 0;
-   localparam STATE_LATENCY = 1;
-   localparam STATE_WAIT_CLEAR = 2;
-
-   reg [1:0]                                 state = STATE_IDLE;
-
-   always @(posedge clk)
-     if (reset)
-       begin
-          state <= STATE_IDLE;
-          eval_valid <= 0;
-       end
-     else
-       case (state)
-         STATE_IDLE :
-           begin
-              latency <= 1;
-              eval_valid <= 0;
-              if (board_valid && ~board_valid_r)
-                state <= STATE_LATENCY;
-           end
-         STATE_LATENCY :
-           begin
-              latency <= latency + 1;
-              if (latency == LATENCY_COUNT - 1)
-                begin
-                   eval_valid <= 1;
-                   state <= STATE_WAIT_CLEAR;
-                end
-           end
-         STATE_WAIT_CLEAR :
-           if (clear_eval)
-             state <= STATE_IDLE;
-         default :
-           state <= STATE_IDLE;
-       endcase
-   
    initial
      begin
         for (i = 0; i < 8; i = i + 1)
@@ -346,5 +309,21 @@ module evaluate_pawns #
 
 `include "evaluate_pawns.vh"
      end
+   
+   /* latency_sm AUTO_TEMPLATE (
+    );*/
+   latency_sm #
+     (
+      .LATENCY_COUNT (LATENCY_COUNT)
+      )
+   latency_sm
+     (/*AUTOINST*/
+      // Outputs
+      .eval_valid                       (eval_valid),
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (board_valid),
+      .clear_eval                       (clear_eval));
 
 endmodule

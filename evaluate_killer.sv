@@ -23,12 +23,11 @@ module evaluate_killer #
 
     output reg signed [EVAL_WIDTH - 1:0] eval_mg,
     output reg signed [EVAL_WIDTH - 1:0] eval_eg,
-    output reg                           eval_valid
+    output                               eval_valid
     );
 
    localparam LATENCY_COUNT = 4;
 
-   reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;
    reg                                   killer_clear_r;
    reg                                   killer_update_r;
    reg                                   board_valid_r;
@@ -39,6 +38,11 @@ module evaluate_killer #
    reg [MAX_DEPTH_LOG2 - 1:0]            ply_r;
 
    reg [EVAL_WIDTH - 1:0]                bonus0, bonus1;
+
+   // should be empty
+   /*AUTOREGINPUT*/
+
+   /*AUTOWIRE*/
 
    always @(posedge clk)
      begin
@@ -88,42 +92,21 @@ module evaluate_killer #
         eval_mg <= eval_mg_pre;
         eval_eg <= eval_eg_pre;
      end
-
-   localparam STATE_IDLE = 0;
-   localparam STATE_LATENCY = 1;
-   localparam STATE_WAIT_CLEAR = 2;
-
-   reg [1:0]                                 state = STATE_IDLE;
-
-   always @(posedge clk)
-     if (reset)
-       begin
-          state <= STATE_IDLE;
-          eval_valid <= 0;
-       end
-     else
-       case (state)
-         STATE_IDLE :
-           begin
-              latency <= 1;
-              eval_valid <= 0;
-              if (board_valid && ~board_valid_r)
-                state <= STATE_LATENCY;
-           end
-         STATE_LATENCY :
-           begin
-              latency <= latency + 1;
-              if (latency == LATENCY_COUNT - 1)
-                begin
-                   eval_valid <= 1;
-                   state <= STATE_WAIT_CLEAR;
-                end
-           end
-         STATE_WAIT_CLEAR :
-           if (clear_eval)
-             state <= STATE_IDLE;
-         default :
-           state <= STATE_IDLE;
-       endcase
+   
+   /* latency_sm AUTO_TEMPLATE (
+    );*/
+   latency_sm #
+     (
+      .LATENCY_COUNT (LATENCY_COUNT)
+      )
+   latency_sm
+     (/*AUTOINST*/
+      // Outputs
+      .eval_valid                       (eval_valid),
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (board_valid),
+      .clear_eval                       (clear_eval));
 
 endmodule

@@ -14,14 +14,12 @@ module evaluate_mob #
 
     output reg signed [EVAL_WIDTH - 1:0] eval_mg,
     output reg signed [EVAL_WIDTH - 1:0] eval_eg,
-    output reg                           eval_valid
+   
+    output                               eval_valid
     );
    
    localparam LATENCY_COUNT = 10;
 
-   reg                                   board_valid_r;
-   reg [$clog2(LATENCY_COUNT) + 1 - 1:0] latency;
-   
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitebish_eg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitebish_mg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whiteknit_eg_t1 [0:15];
@@ -120,48 +118,6 @@ module evaluate_mob #
    wire signed [EVAL_WIDTH - 1:0]        eval_whiterook_eg [0:63];
    wire signed [EVAL_WIDTH - 1:0]        eval_whiterook_mg [0:63];
    
-   localparam STATE_IDLE = 0;
-   localparam STATE_LATENCY = 1;
-   localparam STATE_WAIT_CLEAR = 2;
-
-   reg [1:0]                             state = STATE_IDLE;
-   
-   always @(posedge clk)
-     begin
-        board_valid_r <= board_valid;
-     end
-
-   always @(posedge clk)
-     if (reset)
-       begin
-          state <= STATE_IDLE;
-          eval_valid <= 0;
-       end
-     else
-       case (state)
-         STATE_IDLE :
-           begin
-              latency <= 1;
-              eval_valid <= 0;
-              if (board_valid && ~board_valid_r)
-                state <= STATE_LATENCY;
-           end
-         STATE_LATENCY :
-           begin
-              latency <= latency + 1;
-              if (latency == LATENCY_COUNT - 1)
-                begin
-                   eval_valid <= 1;
-                   state <= STATE_WAIT_CLEAR;
-                end
-           end
-         STATE_WAIT_CLEAR :
-           if (clear_eval)
-             state <= STATE_IDLE;
-         default :
-           state <= STATE_IDLE;
-       endcase
-
    always @(posedge clk)
      for (i = 0; i < 16; i = i + 1)
        begin
@@ -406,9 +362,24 @@ module evaluate_mob #
                    .reset               (reset),
                    .board               (board[`BOARD_WIDTH-1:0]),
                    .board_valid         (board_valid));
-                
              end
         end
    endgenerate
+
+   /* latency_sm AUTO_TEMPLATE (
+    );*/
+   latency_sm #
+     (
+      .LATENCY_COUNT (LATENCY_COUNT)
+      )
+   latency_sm
+     (/*AUTOINST*/
+      // Outputs
+      .eval_valid                       (eval_valid),
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (board_valid),
+      .clear_eval                       (clear_eval));
 
 endmodule

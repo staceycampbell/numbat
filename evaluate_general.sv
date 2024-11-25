@@ -19,15 +19,11 @@ module evaluate_general #
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval_mg,
     output signed [EVAL_WIDTH - 1:0] eval_eg,
-    output reg                       eval_valid,
+    output                           eval_valid,
     output reg signed [31:0]         material
     );
 
    localparam LATENCY_COUNT = 7;
-
-   reg [2:0]                         latency;
-
-   reg                               board_valid_r;
 
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_mg [`EMPTY_POSN:`BLACK_KING][0:63];
@@ -57,6 +53,11 @@ module evaluate_general #
 
    reg   signed [2:0]                                random_bit_final;
 
+   // should be empty
+   /*AUTOREGINPUT*/
+
+   /*AUTOWIRE*/
+
    integer                                           i, ri, y, x;
 
    assign eval_mg = eval_mg_t6;
@@ -65,8 +66,6 @@ module evaluate_general #
 
    always @(posedge clk)
      begin
-        board_valid_r <= board_valid;
-        
         for (i = 0; i < 64; i = i + 1)
           begin
              if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_PAWN ||
@@ -166,43 +165,6 @@ module evaluate_general #
           end
      end
 
-   localparam STATE_IDLE = 0;
-   localparam STATE_LATENCY = 1;
-   localparam STATE_WAIT_CLEAR = 2;
-
-   reg [1:0]                                 state = STATE_IDLE;
-
-   always @(posedge clk)
-     if (reset)
-       begin
-          state <= STATE_IDLE;
-          eval_valid <= 0;
-       end
-     else
-       case (state)
-         STATE_IDLE :
-           begin
-              latency <= 0;
-              eval_valid <= 0;
-              if (board_valid && ~board_valid_r)
-                state <= STATE_LATENCY;
-           end
-         STATE_LATENCY :
-           begin
-              latency <= latency + 1;
-              if (latency == LATENCY_COUNT - 1)
-                state <= STATE_WAIT_CLEAR;
-           end
-         STATE_WAIT_CLEAR :
-           begin
-              eval_valid <= 1;
-              if (clear_eval)
-                state <= STATE_IDLE;
-           end
-         default :
-           state <= STATE_IDLE;
-       endcase
-
    initial
      begin
         for (y = 0; y < 8; y = y + 1)
@@ -229,5 +191,21 @@ module evaluate_general #
 `include "evaluate_general.vh"
 
      end
+   
+   /* latency_sm AUTO_TEMPLATE (
+    );*/
+   latency_sm #
+     (
+      .LATENCY_COUNT (LATENCY_COUNT)
+      )
+   latency_sm
+     (/*AUTOINST*/
+      // Outputs
+      .eval_valid                       (eval_valid),
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (board_valid),
+      .clear_eval                       (clear_eval));
 
 endmodule

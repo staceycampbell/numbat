@@ -4,6 +4,7 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../board_attack.sv
 ../control.sv
 ../evaluate_general.sv
+../evaluate_bishops.sv
 ../evaluate_killer.sv
 ../evaluate_mob_square.sv
 ../evaluate_mob.sv
@@ -13,6 +14,7 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../move_sort.sv
 ../mram.sv
 ../popcount.sv
+../latency_sm.sv
 ../rep_det.sv
 ../sync.sv
 ../trans.sv
