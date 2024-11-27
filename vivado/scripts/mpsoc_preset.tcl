@@ -304,7 +304,7 @@ proc create_root_design { parentCell } {
    CONFIG.CLKOUT2_DRIVES {Buffer} \
    CONFIG.CLKOUT2_JITTER {81.814} \
    CONFIG.CLKOUT2_PHASE_ERROR {77.836} \
-   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {300} \
+   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {100.000} \
    CONFIG.CLKOUT2_USED {false} \
    CONFIG.CLKOUT3_DRIVES {Buffer} \
    CONFIG.CLKOUT4_DRIVES {Buffer} \
@@ -312,7 +312,7 @@ proc create_root_design { parentCell } {
    CONFIG.CLKOUT6_DRIVES {Buffer} \
    CONFIG.CLKOUT7_DRIVES {Buffer} \
    CONFIG.CLK_OUT1_PORT {digclk} \
-   CONFIG.CLK_OUT2_PORT {slowclk} \
+   CONFIG.CLK_OUT2_PORT {clk_out2} \
    CONFIG.FEEDBACK_SOURCE {FDBK_AUTO} \
    CONFIG.MMCM_BANDWIDTH {OPTIMIZED} \
    CONFIG.MMCM_CLKFBOUT_MULT_F {7} \
@@ -325,6 +325,7 @@ proc create_root_design { parentCell } {
    CONFIG.NUM_OUT_CLKS {1} \
    CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
    CONFIG.PRIMITIVE {Auto} \
+   CONFIG.PRIM_SOURCE {Global_buffer} \
    CONFIG.USE_LOCKED {false} \
    CONFIG.USE_RESET {false} \
  ] $digclk_gen
