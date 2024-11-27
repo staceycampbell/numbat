@@ -5,6 +5,7 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../control.sv
 ../evaluate_general.sv
 ../evaluate_bishops.sv
+../evaluate_castling.sv
 ../evaluate_killer.sv
 ../evaluate_mob_square.sv
 ../evaluate_mob.sv

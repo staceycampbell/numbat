@@ -13,16 +13,11 @@ module evaluate #
     input                            use_random_bit,
     input                            random_bit,
 
-    input [MAX_DEPTH_LOG2 - 1:0]     killer_ply,
-    input [`BOARD_WIDTH - 1:0]       killer_board,
-    input                            killer_update,
-    input                            killer_clear,
-    input signed [EVAL_WIDTH - 1:0]  killer_bonus0,
-    input signed [EVAL_WIDTH - 1:0]  killer_bonus1,
-   
     input                            board_valid,
     input                            is_attacking_done,
     input [`BOARD_WIDTH - 1:0]       board_in,
+    input [3:0]                      castle_mask,
+    input [3:0]                      castle_mask_orig,
     input                            clear_eval,
     input                            white_to_move,
 
@@ -31,6 +26,13 @@ module evaluate #
     input                            white_in_check,
     input                            black_in_check,
 
+    input [MAX_DEPTH_LOG2 - 1:0]     killer_ply,
+    input [`BOARD_WIDTH - 1:0]       killer_board,
+    input                            killer_update,
+    input                            killer_clear,
+    input signed [EVAL_WIDTH - 1:0]  killer_bonus0,
+    input signed [EVAL_WIDTH - 1:0]  killer_bonus1,
+   
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
     output reg                       eval_valid,
@@ -38,7 +40,7 @@ module evaluate #
     );
 
    localparam LATENCY_COUNT = 5;
-   localparam EVALUATION_COUNT = 6;
+   localparam EVALUATION_COUNT = 8;
    localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
 
    reg                               board_valid_r = 0;
@@ -47,8 +49,8 @@ module evaluate #
    reg signed [EVAL_WIDTH - 1:0]     eval_t3;
    reg [2:0]                         latency;
    reg signed [7:0]                  phase;
-   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_mg_t1, eval_a_eg_t1;
-   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_b_mg_t1, eval_b_eg_t1;
+   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_mg_t1, eval_b_mg_t1, eval_c_mg_t1;
+   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_eg_t1, eval_b_eg_t1;
    reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_mg_t2, eval_eg_t2;
    reg signed [PHASE_CALC_WIDTH - 1:0]              score_mg_t3, score_eg_t3;
    reg signed [PHASE_CALC_WIDTH - 1:0]              score_t4;
@@ -62,6 +64,10 @@ module evaluate #
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 eval_bishops_black_valid;// From evaluate_bishops_black of evaluate_bishops.v
    wire                 eval_bishops_white_valid;// From evaluate_bishops_white of evaluate_bishops.v
+   wire signed [EVAL_WIDTH-1:0] eval_castling_black_mg;// From evaluate_castling_black of evaluate_castling.v
+   wire                 eval_castling_black_valid;// From evaluate_castling_black of evaluate_castling.v
+   wire signed [EVAL_WIDTH-1:0] eval_castling_white_mg;// From evaluate_castling_white of evaluate_castling.v
+   wire                 eval_castling_white_valid;// From evaluate_castling_white of evaluate_castling.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_bishops_black;// From evaluate_bishops_black of evaluate_bishops.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_bishops_white;// From evaluate_bishops_white of evaluate_bishops.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_general;// From evaluate_general of evaluate_general.v
@@ -88,7 +94,9 @@ module evaluate #
 
    wire [63:0]                                      occupied;
 
-   wire [EVALUATION_COUNT - 1:0]                    eval_done_status = {eval_bishops_black_valid,
+   wire [EVALUATION_COUNT - 1:0]                    eval_done_status = {eval_castling_black_valid,
+                                                                        eval_castling_white_valid,
+                                                                        eval_bishops_black_valid,
                                                                         eval_bishops_white_valid,
                                                                         eval_killer_valid,
                                                                         eval_mob_valid,
@@ -119,9 +127,12 @@ module evaluate #
           phase <= occupied_count;
         eval_a_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black;
         eval_b_mg_t1 <= eval_mg_mob + eval_mg_killer + eval_mg_bishops_white + eval_mg_bishops_black;
+        eval_c_mg_t1 <= eval_castling_black_mg + eval_castling_white_mg;
+        
         eval_a_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black;
         eval_b_eg_t1 <= eval_eg_mob + eval_eg_killer + eval_eg_bishops_white + eval_eg_bishops_black;
-        eval_mg_t2 <= eval_a_mg_t1 + eval_b_mg_t1;
+        
+        eval_mg_t2 <= eval_a_mg_t1 + eval_b_mg_t1 + eval_c_mg_t1;
         eval_eg_t2 <= eval_a_eg_t1 + eval_b_eg_t1;
         score_mg_t3 <= eval_mg_t2 * phase;
         score_eg_t3 <= eval_eg_t2 * (62 - phase);
@@ -361,6 +372,54 @@ module evaluate #
       .killer_clear                     (killer_clear),
       .killer_bonus0                    (killer_bonus0[EVAL_WIDTH-1:0]),
       .killer_bonus1                    (killer_bonus1[EVAL_WIDTH-1:0]));
+
+   /* evaluate_castling AUTO_TEMPLATE (
+    .board_valid (local_board_valid),
+    .eval_valid (eval_castling_white_valid),
+    .eval_mg (eval_castling_white_mg[]),
+    );*/
+   evaluate_castling #
+     (
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .WHITE_CASTLING (1)
+      )
+   evaluate_castling_white
+     (/*AUTOINST*/
+      // Outputs
+      .eval_mg                          (eval_castling_white_mg[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid                       (eval_castling_white_valid), // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (local_board_valid),     // Templated
+      .board                            (board[`BOARD_WIDTH-1:0]),
+      .castle_mask                      (castle_mask[3:0]),
+      .castle_mask_orig                 (castle_mask_orig[3:0]),
+      .clear_eval                       (clear_eval));
+
+   /* evaluate_castling AUTO_TEMPLATE (
+    .board_valid (local_board_valid),
+    .eval_valid (eval_castling_black_valid),
+    .eval_mg (eval_castling_black_mg[]),
+    );*/
+   evaluate_castling #
+     (
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .WHITE_CASTLING (0)
+      )
+   evaluate_castling_black
+     (/*AUTOINST*/
+      // Outputs
+      .eval_mg                          (eval_castling_black_mg[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid                       (eval_castling_black_valid), // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (local_board_valid),     // Templated
+      .board                            (board[`BOARD_WIDTH-1:0]),
+      .castle_mask                      (castle_mask[3:0]),
+      .castle_mask_orig                 (castle_mask_orig[3:0]),
+      .clear_eval                       (clear_eval));
 
    /* popcount AUTO_TEMPLATE (
     .population (occupied_count[]),

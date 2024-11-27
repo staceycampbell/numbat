@@ -142,6 +142,8 @@ module all_moves #
    reg [5:0]                             attack_test_attack_white_pop, attack_test_attack_black_pop;
 
    reg [`BOARD_WIDTH - 1:0]              evaluate_board;
+   reg [3:0]                             evaluate_castle_mask;
+   reg [3:0]                             evaluate_castle_mask_orig;
    reg                                   evaluate_white_to_move;
    reg                                   evaluate_go;
 
@@ -480,7 +482,9 @@ module all_moves #
               half_move <= half_move_in;
 
               evaluate_board <= board_in;
-              evaluate_white_to_move <= white_to_move;
+              evaluate_white_to_move <= white_to_move_in;
+              evaluate_castle_mask <= castle_mask_in;
+              evaluate_castle_mask_orig <= castle_mask_in;
               evaluate_go <= board_valid_in;
 
               // upstream populates thrice repetition ram while idle and
@@ -837,25 +841,30 @@ module all_moves #
          STATE_LEGAL_KING_POS :
            begin
               rd_castle_mask_in <= attack_test_castle_mask; // default, overridden below
+              evaluate_castle_mask <= attack_test_castle_mask; // default, overridden below
               if (attack_test_board[idx[0][0]+:`PIECE_WIDTH] != `WHITE_ROOK || attack_test_board[idx[0][4]+:`PIECE_WIDTH] != `WHITE_KING)
                 begin
                    attack_test_castle_mask[`CASTLE_WHITE_LONG] <= 1'b0;
                    rd_castle_mask_in[`CASTLE_WHITE_LONG] <= 1'b0;
+                   evaluate_castle_mask[`CASTLE_WHITE_LONG] <= 1'b0;
                 end
               if (attack_test_board[idx[0][7]+:`PIECE_WIDTH] != `WHITE_ROOK || attack_test_board[idx[0][4]+:`PIECE_WIDTH] != `WHITE_KING)
                 begin
                    attack_test_castle_mask[`CASTLE_WHITE_SHORT] <= 1'b0;
                    rd_castle_mask_in[`CASTLE_WHITE_SHORT] <= 1'b0;
+                   evaluate_castle_mask[`CASTLE_WHITE_SHORT] <= 1'b0;
                 end
               if (attack_test_board[idx[7][0]+:`PIECE_WIDTH] != `BLACK_ROOK || attack_test_board[idx[7][4]+:`PIECE_WIDTH] != `BLACK_KING)
                 begin
                    attack_test_castle_mask[`CASTLE_BLACK_LONG] <= 1'b0;
                    rd_castle_mask_in[`CASTLE_BLACK_LONG] <= 1'b0;
+                   evaluate_castle_mask[`CASTLE_BLACK_LONG] <= 1'b0;
                 end
               if (attack_test_board[idx[7][7]+:`PIECE_WIDTH] != `BLACK_ROOK || attack_test_board[idx[7][4]+:`PIECE_WIDTH] != `BLACK_KING)
                 begin
                    attack_test_castle_mask[`CASTLE_BLACK_SHORT] <= 1'b0;
                    rd_castle_mask_in[`CASTLE_BLACK_SHORT] <= 1'b0;
+                   evaluate_castle_mask[`CASTLE_BLACK_SHORT] <= 1'b0;
                 end
 
               rd_board_in <= attack_test_board;
@@ -1007,6 +1016,8 @@ module all_moves #
    /* evaluate AUTO_TEMPLATE (
     .board_in (evaluate_board[]),
     .white_to_move (evaluate_white_to_move),
+    .castle_mask (evaluate_castle_mask[]),
+    .castle_mask_orig (evaluate_castle_mask_orig[]),
     .board_valid (evaluate_go),
     .killer_\(.*\) (killer_\1_in[]),
     );*/
@@ -1028,21 +1039,23 @@ module all_moves #
       .reset                            (reset),
       .use_random_bit                   (use_random_bit),
       .random_bit                       (random_bit),
-      .killer_ply                       (killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
-      .killer_board                     (killer_board_in[`BOARD_WIDTH-1:0]), // Templated
-      .killer_update                    (killer_update_in),      // Templated
-      .killer_clear                     (killer_clear_in),       // Templated
-      .killer_bonus0                    (killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
-      .killer_bonus1                    (killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
       .board_valid                      (evaluate_go),           // Templated
       .is_attacking_done                (is_attacking_done),
       .board_in                         (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
+      .castle_mask                      (evaluate_castle_mask[3:0]), // Templated
+      .castle_mask_orig                 (evaluate_castle_mask_orig[3:0]), // Templated
       .clear_eval                       (clear_eval),
       .white_to_move                    (evaluate_white_to_move), // Templated
       .white_is_attacking               (white_is_attacking[63:0]),
       .black_is_attacking               (black_is_attacking[63:0]),
       .white_in_check                   (white_in_check),
-      .black_in_check                   (black_in_check));
+      .black_in_check                   (black_in_check),
+      .killer_ply                       (killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
+      .killer_board                     (killer_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .killer_update                    (killer_update_in),      // Templated
+      .killer_clear                     (killer_clear_in),       // Templated
+      .killer_bonus0                    (killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
+      .killer_bonus1                    (killer_bonus1_in[EVAL_WIDTH-1:0])); // Templated
 
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),
