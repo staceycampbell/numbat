@@ -256,7 +256,7 @@ proc create_root_design { parentCell } {
     CONFIG.ENABLE_ADVANCED_OPTIONS {0} \
     CONFIG.NUM_MI {1} \
     CONFIG.S00_HAS_DATA_FIFO {0} \
-    CONFIG.S00_HAS_REGSLICE {3} \
+    CONFIG.S00_HAS_REGSLICE {4} \
   ] $axi_interconnect_0
 
 
