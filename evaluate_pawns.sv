@@ -92,18 +92,6 @@ module evaluate_pawns #
    assign eval_mg = WHITE_PAWNS ? eval_mg_t7 : -eval_mg_t7;
    assign eval_eg = WHITE_PAWNS ? eval_eg_t7 : -eval_eg_t7;
 
-   initial
-     begin
-        if (0)
-          begin
-             $dumpfile("wave.vcd");
-             for (i = 0; i < 64; i = i + 1)
-               begin
-                  $dumpvars(0, backward_mg_t3[i]);
-               end
-          end
-     end
-
    always @(posedge clk)
      begin
         col_with_pawn_t1 <= 0;
