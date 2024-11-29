@@ -256,7 +256,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-        if (index < move_count && !board_ptr[index - 1]->capture)       // beta cutoff
+        if (index < move_count && !board_ptr[index - 1]->capture && !quiescence)        // beta cutoff
         {
                 killer_ply(ply);
                 killer_write_board(board_ptr[index - 1]->board);
@@ -297,9 +297,9 @@ nm_move_sort_compare(const void *p1, const void *p2)
         b1 = (const board_t **)p1;
         b2 = (const board_t **)p2;
 
-        if ((*b1)->capture == 1 &&  (*b2)->capture == 0)
+        if ((*b1)->capture == 1 && (*b2)->capture == 0)
                 return -1;
-        if ((*b1)->capture == 0 &&  (*b2)->capture == 1)
+        if ((*b1)->capture == 0 && (*b2)->capture == 1)
                 return 1;
         if ((*b1)->eval > (*b2)->eval)
                 return -1;
