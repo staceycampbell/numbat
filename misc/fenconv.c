@@ -11,7 +11,7 @@
 #define PIECE_KNIT 5
 #define PIECE_KING 6
 
-#define BLACK_BIT 3 // if set this is a black piece
+#define BLACK_BIT 3             // if set this is a black piece
 
 #define WHITE_PAWN PIECE_PAWN
 #define WHITE_ROOK PIECE_ROOK
@@ -41,124 +41,123 @@
 #define EN_PASSANT_VALID_BIT 3
 
 static void
-fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_mask, int *en_passant_col,
-          int *half_move_clock, int *full_move_number)
+fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_mask, int *en_passant_col, int *half_move_clock, int *full_move_number)
 {
-	int row, col, i, stop_col;
+        int row, col, i, stop_col;
 
-	row = 7;
-	col = 0;
-	i = 0;
-	while (i < 4096 && buffer[i] != '\0' && ! (buffer[i] == ' ' || buffer[i] == '\t'))
-	{
-		switch (buffer[i])
-		{
-		case 'r' :
-			board[row][col] = BLACK_ROOK;
-			++col;
-			break;
-		case 'n' :
-			board[row][col] = BLACK_KNIT;
-			++col;
-			break;
-		case 'b' :
-			board[row][col] = BLACK_BISH;
-			++col;
-			break;
-		case 'q' :
-			board[row][col] = BLACK_QUEN;
-			++col;
-			break;
-		case 'k' :
-			board[row][col] = BLACK_KING;
-			++col;
-			break;
-		case 'p' :
-			board[row][col] = BLACK_PAWN;
-			++col;
-			break;
-		case 'R' :
-			board[row][col] = WHITE_ROOK;
-			++col;
-			break;
-		case 'N' :
-			board[row][col] = WHITE_KNIT;
-			++col;
-			break;
-		case 'B' :
-			board[row][col] = WHITE_BISH;
-			++col;
-			break;
-		case 'Q' :
-			board[row][col] = WHITE_QUEN;
-			++col;
-			break;
-		case 'K' :
-			board[row][col] = WHITE_KING;
-			++col;
-			break;
-		case 'P' :
-			board[row][col] = WHITE_PAWN;
-			++col;
-			break;
-		case '/' :
-			col = 0;
-			--row;
-			break;
-		default :
-			assert(buffer[i] >= '1' && buffer[i] <= '8');
-			stop_col = col + buffer[i] - '1';
-			while (col <= stop_col)
-			{
-				board[row][col] = EMPTY_POSN;
-				++col;
-			}
-			break;
-		}
-		++i;
-	}
-	++i;
-	assert(i < 4096 && (buffer[i] == 'w' || buffer[i] == 'b'));
-	*white_to_move = buffer[i] == 'w';
-	i += 2;
-	*castle_mask = 0;
-	while (i < 4096 && buffer[i] != '\0' && ! (buffer[i] == ' ' || buffer[i] == '\t'))
-	{
-		switch (buffer[i])
-		{
-		case 'K' :
-			*castle_mask |= 1 << CASTLE_WHITE_SHORT;
-			break;
-		case 'Q' :
-			*castle_mask |= 1 << CASTLE_WHITE_LONG;
-			break;
-		case 'k' :
-			*castle_mask |= 1 << CASTLE_BLACK_SHORT;
-			break;
-		case 'q' :
-			*castle_mask |= 1 << CASTLE_BLACK_LONG;
-			break;
-		case '-' :
-			*castle_mask = 0;
-			break;
-		default :
-			assert(0);
-			break;
-		}
-		++i;
-	}
-	++i;
-	assert(i < 4096);
-// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-	assert(buffer[i] == '-' || (buffer[i] >= 'a' && buffer[i] <= 'h'));
-	if (buffer[i] == '-')
+        row = 7;
+        col = 0;
+        i = 0;
+        while (i < 4096 && buffer[i] != '\0' && !(buffer[i] == ' ' || buffer[i] == '\t'))
         {
-		*en_passant_col = 0 << EN_PASSANT_VALID_BIT;
+                switch (buffer[i])
+                {
+                case 'r':
+                        board[row][col] = BLACK_ROOK;
+                        ++col;
+                        break;
+                case 'n':
+                        board[row][col] = BLACK_KNIT;
+                        ++col;
+                        break;
+                case 'b':
+                        board[row][col] = BLACK_BISH;
+                        ++col;
+                        break;
+                case 'q':
+                        board[row][col] = BLACK_QUEN;
+                        ++col;
+                        break;
+                case 'k':
+                        board[row][col] = BLACK_KING;
+                        ++col;
+                        break;
+                case 'p':
+                        board[row][col] = BLACK_PAWN;
+                        ++col;
+                        break;
+                case 'R':
+                        board[row][col] = WHITE_ROOK;
+                        ++col;
+                        break;
+                case 'N':
+                        board[row][col] = WHITE_KNIT;
+                        ++col;
+                        break;
+                case 'B':
+                        board[row][col] = WHITE_BISH;
+                        ++col;
+                        break;
+                case 'Q':
+                        board[row][col] = WHITE_QUEN;
+                        ++col;
+                        break;
+                case 'K':
+                        board[row][col] = WHITE_KING;
+                        ++col;
+                        break;
+                case 'P':
+                        board[row][col] = WHITE_PAWN;
+                        ++col;
+                        break;
+                case '/':
+                        col = 0;
+                        --row;
+                        break;
+                default:
+                        assert(buffer[i] >= '1' && buffer[i] <= '8');
+                        stop_col = col + buffer[i] - '1';
+                        while (col <= stop_col)
+                        {
+                                board[row][col] = EMPTY_POSN;
+                                ++col;
+                        }
+                        break;
+                }
                 ++i;
         }
-	else
+        ++i;
+        assert(i < 4096 && (buffer[i] == 'w' || buffer[i] == 'b'));
+        *white_to_move = buffer[i] == 'w';
+        i += 2;
+        *castle_mask = 0;
+        while (i < 4096 && buffer[i] != '\0' && !(buffer[i] == ' ' || buffer[i] == '\t'))
         {
-		*en_passant_col = (1 << EN_PASSANT_VALID_BIT) | (buffer[i] - 'a');
+                switch (buffer[i])
+                {
+                case 'K':
+                        *castle_mask |= 1 << CASTLE_WHITE_SHORT;
+                        break;
+                case 'Q':
+                        *castle_mask |= 1 << CASTLE_WHITE_LONG;
+                        break;
+                case 'k':
+                        *castle_mask |= 1 << CASTLE_BLACK_SHORT;
+                        break;
+                case 'q':
+                        *castle_mask |= 1 << CASTLE_BLACK_LONG;
+                        break;
+                case '-':
+                        *castle_mask = 0;
+                        break;
+                default:
+                        assert(0);
+                        break;
+                }
+                ++i;
+        }
+        ++i;
+        assert(i < 4096);
+// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+        assert(buffer[i] == '-' || (buffer[i] >= 'a' && buffer[i] <= 'h'));
+        if (buffer[i] == '-')
+        {
+                *en_passant_col = 0 << EN_PASSANT_VALID_BIT;
+                ++i;
+        }
+        else
+        {
+                *en_passant_col = (1 << EN_PASSANT_VALID_BIT) | (buffer[i] - 'a');
                 i += 2;
         }
         if (sscanf((char *)&buffer[i], "%d %d", half_move_clock, full_move_number) != 2)
@@ -168,11 +167,12 @@ fen_board(char buffer[4096], int board[8][8], int *white_to_move, int *castle_ma
 int
 main(void)
 {
-	int i, row, col;
-	int board[8][8];
-	char buffer[4096];
-	int white_to_move, castle_mask, en_passant_col, half_move_clock, full_move_number;
+        int i, row, col;
+        int board[8][8];
+        char buffer[4096];
+        int white_to_move, castle_mask, en_passant_col, half_move_clock, full_move_number;
         char *defines[1 << PIECE_BITS];
+        static const char spaces[9] = "        ";
 
         for (i = 0; i < (1 << PIECE_BITS); ++i)
                 defines[i] = "EMPTY_POSN";
@@ -190,20 +190,19 @@ main(void)
         defines[BLACK_KING] = "BLACK_KING";
         defines[BLACK_QUEN] = "BLACK_QUEN";
 
-	while (fgets(buffer, sizeof(buffer), stdin))
-	{
-		fen_board(buffer, board, &white_to_move, &castle_mask, &en_passant_col, &half_move_clock, &full_move_number);
-		for (row = 7; row >= 0; --row)
+        while (fgets(buffer, sizeof(buffer), stdin))
+        {
+                fen_board(buffer, board, &white_to_move, &castle_mask, &en_passant_col, &half_move_clock, &full_move_number);
+                for (row = 7; row >= 0; --row)
                         for (col = 0; col < 8; ++col)
                                 if (board[row][col] != EMPTY_POSN)
-                                        printf("board[%d * `SIDE_WIDTH + %d * `PIECE_WIDTH+:`PIECE_WIDTH] = `%s;\n",
-                                               row, col, defines[board[row][col]]);
-		printf("white_to_move = %d;\n", white_to_move);
-		printf("castle_mask = 4'h%X;\n", castle_mask);
-		printf("en_passant_col = 4'h%X;\n", en_passant_col);
-                printf("half_move = %d;\n", half_move_clock);
-                printf("full_move_number = %d;\n", full_move_number);
-	}
+                                        printf("%sboard[%d * `SIDE_WIDTH + %d * `PIECE_WIDTH+:`PIECE_WIDTH] = `%s;\n", spaces, row, col, defines[board[row][col]]);
+                printf("%swhite_to_move = %d;\n", spaces, white_to_move);
+                printf("%scastle_mask = 4'h%X;\n", spaces, castle_mask);
+                printf("%sen_passant_col = 4'h%X;\n", spaces, en_passant_col);
+                printf("%shalf_move = %d;\n", spaces, half_move_clock);
+                printf("%sfull_move_number = %d;\n", spaces, full_move_number);
+        }
 
-	return 0;
+        return 0;
 }
