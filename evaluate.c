@@ -215,6 +215,7 @@ static const int pawn_backward[2][8] = {
 };
 
 static const int passed_pawn[8] = { 0, 0, 0, 2, 6, 12, 21, 0 };
+static const int passed_pawn_base[2] = { 4, 8 };
 
 int
 main(void)
@@ -256,6 +257,8 @@ main(void)
                 fprintf(fileinfo[eval_pawns].fp, "pawns_backward_eg[%d] = %3d;\n", i, -pawn_backward[eg][i]);
                 fprintf(fileinfo[eval_pawns].fp, "passed_pawn[%d] = %3d;\n", i, passed_pawn[i]);
         }
+        fprintf(fileinfo[eval_pawns].fp, "passed_pawn_base_mg = %d;\n", passed_pawn_base[0]);
+        fprintf(fileinfo[eval_pawns].fp, "passed_pawn_base_eg = %d;\n", passed_pawn_base[1]);
 
         for (i = 0; i < 8; ++i)
                 for (j = 0; j < 8; ++j)

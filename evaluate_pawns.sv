@@ -40,6 +40,8 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn [0:7];
    reg [63:0]                        not_passed_mask [0:63];
    reg [63:0]                        passed_pawn_path [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     passed_pawn_base_mg;
+   reg signed [EVAL_WIDTH - 1:0]     passed_pawn_base_eg;
 
    reg [63:0]                        board_neutral_t1;
    reg [63:0]                        enemy_neutral_t2;
@@ -86,6 +88,11 @@ module evaluate_pawns #
 
    reg [2:0]                         most_adv_t2 [0:7];
    reg [7:0]                         passed_pawn_t3;
+   reg signed [EVAL_WIDTH - 1:0]     score_mult_t3 [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     passed_mg_t4 [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     passed_eg_t4 [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     passed_mg_t5;
+   reg signed [EVAL_WIDTH - 1:0]     passed_eg_t5;
 
    reg signed [EVAL_WIDTH - 1:0]     eval_mg_t7;
    reg signed [EVAL_WIDTH - 1:0]     eval_eg_t7;
@@ -122,17 +129,8 @@ module evaluate_pawns #
                  end
             end
 
-        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6;
-        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6;
-     end // always @ (posedge clk)
-
-   integer di;
-
-   initial
-     begin
-        $dumpfile("wave.vcd");
-        for (di = 0; di < 8; di = di + 1)
-          $dumpvars(0, most_adv_t2[di]);
+        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6 + passed_mg_t5;
+        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6 + passed_eg_t5;
      end
 
    // passed pawns
@@ -147,10 +145,25 @@ module evaluate_pawns #
               most_adv_t2[col] <= row;
 
         for (col = 0; col < 8; col = col + 1)
-          if (most_adv_t2[col] == 0)
-            passed_pawn_t3[col] <= 1'b0;
+          if (most_adv_t2[col] != 0 && (enemy_neutral_t2[63:0] & not_passed_mask[most_adv_t2[col] << 3 | col]) == 0)
+            begin
+               passed_pawn_t3[col] <= 1'b1;
+               score_mult_t3[col] <= passed_pawn[most_adv_t2[col]];
+            end
           else
-            passed_pawn_t3[col] <= (enemy_neutral_t2[63:0] & not_passed_mask[most_adv_t2[col] << 3 | col]) == 0;
+            begin
+               passed_pawn_t3[col] <= 1'b0;
+               score_mult_t3[col] <= 0;
+            end
+        for (col = 0; col < 8; col = col + 1)
+          begin
+             passed_mg_t4[col] <= score_mult_t3[col] * passed_pawn_base_mg;
+             passed_eg_t4[col] <= score_mult_t3[col] * passed_pawn_base_eg;
+          end
+        passed_mg_t5 <= passed_mg_t4[0] + passed_mg_t4[1] + passed_mg_t4[2] + passed_mg_t4[3] +
+                        passed_mg_t4[4] + passed_mg_t4[5] + passed_mg_t4[6] + passed_mg_t4[7];
+        passed_eg_t5 <= passed_eg_t4[0] + passed_eg_t4[1] + passed_eg_t4[2] + passed_eg_t4[3] +
+                        passed_eg_t4[4] + passed_eg_t4[5] + passed_eg_t4[6] + passed_eg_t4[7];
      end
 
    // backward pawns (no adjacent or rear supporting pawn)
