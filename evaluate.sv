@@ -248,7 +248,9 @@ module evaluate #
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+      .clear_eval                       (clear_eval),
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .black_is_attacking               (black_is_attacking[63:0]));
 
    /* evaluate_pawns AUTO_TEMPLATE (
     .board_valid (local_board_valid),
@@ -271,7 +273,9 @@ module evaluate #
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+      .clear_eval                       (clear_eval),
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .black_is_attacking               (black_is_attacking[63:0]));
 
    /* evaluate_bishops AUTO_TEMPLATE (
     .board_valid (local_board_valid),

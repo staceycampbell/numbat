@@ -16,6 +16,8 @@ module evaluate_pawns #
     input                            board_valid,
     input [`BOARD_WIDTH - 1:0]       board,
     input                            clear_eval,
+    input [63:0]                     white_is_attacking,
+    input [63:0]                     black_is_attacking,
 
     output signed [EVAL_WIDTH - 1:0] eval_mg,
     output signed [EVAL_WIDTH - 1:0] eval_eg,
@@ -23,6 +25,8 @@ module evaluate_pawns #
     );
 
    localparam LATENCY_COUNT = 7;
+   
+   localparam MY_PAWN = WHITE_PAWNS ? `WHITE_PAWN : `BLACK_PAWN;
 
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_mg [0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_eg [0:7];
@@ -32,6 +36,9 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]         pawns_connected_eg [0:7][0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_backward_mg [0:7];
    reg signed [EVAL_WIDTH - 1:0]         pawns_backward_eg [0:7];
+   reg signed [EVAL_WIDTH - 1:0]         passed_pawn [0:7];
+   reg [63:0]                            not_passed_mask [0:63];
+   reg [63:0]                            passed_pawn_path [0:63];
    
    reg [63:0]                            board_neutral_t1;
    reg [7:0]                             col_with_pawn_t1;
@@ -87,8 +94,6 @@ module evaluate_pawns #
 
    integer                               i, row, col, row_adv;
 
-   wire [`PIECE_WIDTH - 1:0]             pawn = WHITE_PAWNS ? `WHITE_PAWN : `BLACK_PAWN;
-
    assign eval_mg = WHITE_PAWNS ? eval_mg_t7 : -eval_mg_t7;
    assign eval_eg = WHITE_PAWNS ? eval_eg_t7 : -eval_eg_t7;
 
@@ -100,8 +105,8 @@ module evaluate_pawns #
             begin
                if (row != 0 && row != 7)
                  begin
-                    board_neutral_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn;
-                    if (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == pawn)
+                    board_neutral_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN;
+                    if (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN)
                       col_with_pawn_t1[col] <= 1;
                  end
                else
@@ -110,6 +115,20 @@ module evaluate_pawns #
 
         eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6;
         eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6;
+     end
+
+   reg [2:0] most_adv_t2 [0:7];
+
+   // passed pawns
+   always @(posedge clk)
+     begin
+        for (col = 0; col < 8; col = col + 1)
+          most_adv_t2[col] <= 0;
+          
+        for (row = 1; row < 7; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
+            if (board[row << 3 | col] == MY_PAWN)
+              most_adv_t2[col] <= row;
      end
 
    // backward pawns (no adjacent or rear supporting pawn)

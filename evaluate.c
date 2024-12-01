@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <assert.h>
+
+#define EXCLUDE_VITIS 1
+#include "vivado/src/vchess.h"
 
 // Crafty weights, copyright 1996-2020 by Robert M. Hyatt, Ph.D.
 
@@ -209,10 +213,14 @@ static const int pawn_backward[2][8] = {
         {2, 3, 3, 3, 3, 3, 3, 2}
 };
 
+static const int passed_pawn[8] = { 0, 0, 0, 2, 6, 12, 21, 0 };
+
 int
 main(void)
 {
-        int32_t c, i, j;
+        int32_t c, i, j, row, col;
+        uint64_t not_passed_mask[8][8];
+        uint64_t passed_pawn_path[8][8];
         static const char *c_str[2] = { "BLACK", "WHITE" };
         static const int32_t sign[2] = { -1, 1 };
         fileinfo_t fileinfo[] = {
@@ -221,6 +229,7 @@ main(void)
         };
         static const int eval_general = 0;
         static const int eval_pawns = 1;
+
         for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)
                 assert((fileinfo[i].fp = fopen(fileinfo[i].fn, "w")) != 0);
 
@@ -240,7 +249,31 @@ main(void)
                 }
                 fprintf(fileinfo[eval_pawns].fp, "pawns_backward_mg[%d] = %3d;\n", i, -pawn_backward[mg][i]);
                 fprintf(fileinfo[eval_pawns].fp, "pawns_backward_eg[%d] = %3d;\n", i, -pawn_backward[eg][i]);
+                fprintf(fileinfo[eval_pawns].fp, "passed_pawn[%d] = %3d;\n", i, passed_pawn[i]);
         }
+
+        for (i = 0; i < 8; ++i)
+                for (j = 0; j < 8; ++j)
+                {
+                        not_passed_mask[i][j] = 0;
+                        passed_pawn_path[i][j] = 0;
+                }
+        for (i = 2; i < 7; ++i)
+                for (j = 0; j < 8; ++j)
+                        for (row = i + 1; row < 7; ++row)
+                        {
+                                passed_pawn_path[i][j] |= (uint64_t)(UINT64_C(1) << (uint64_t)(row << 3 | j));
+                                for (col = j - 1; col <= j + 1; ++col)
+                                        if (row >= 0 && row < 8 && col >= 0 && col < 8)
+                                                not_passed_mask[i][j] |= (uint64_t)(UINT64_C(1) << (uint64_t)(row << 3 | col));
+                        }
+        for (i = 0; i < 8; ++i)
+                for (j = 0; j < 8; ++j)
+                        fprintf(fileinfo[eval_pawns].fp, "not_passed_mask[%d << 3 | %d] = 64'h%016" PRIu64 ";\n", i, j, not_passed_mask[i][j]);
+
+        for (i = 0; i < 8; ++i)
+                for (j = 0; j < 8; ++j)
+                        fprintf(fileinfo[eval_pawns].fp, "passed_pawn_path[%d << 3 | %d] = 64'h%016" PRIu64 ";\n", i, j, passed_pawn_path[i][j]);
 
         fprintf(fileinfo[eval_general].fp, "value[`EMPTY_POSN] = 0;\n");
         fprintf(fileinfo[eval_general].fp, "value[`WHITE_PAWN] = %d;\n", PAWN_VALUE);
