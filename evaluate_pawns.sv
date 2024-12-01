@@ -25,74 +25,79 @@ module evaluate_pawns #
     );
 
    localparam LATENCY_COUNT = 7;
-   
+
    localparam MY_PAWN = WHITE_PAWNS ? `WHITE_PAWN : `BLACK_PAWN;
+   localparam OP_PAWN = WHITE_PAWNS ? `BLACK_PAWN : `WHITE_PAWN;
 
-   reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_mg [0:7];
-   reg signed [EVAL_WIDTH - 1:0]         pawns_isolated_eg [0:7];
-   reg signed [EVAL_WIDTH - 1:0]         pawns_doubled_mg [0:7][1:5];
-   reg signed [EVAL_WIDTH - 1:0]         pawns_doubled_eg [0:7][1:5];
-   reg signed [EVAL_WIDTH - 1:0]         pawns_connected_mg [0:7][0:7];
-   reg signed [EVAL_WIDTH - 1:0]         pawns_connected_eg [0:7][0:7];
-   reg signed [EVAL_WIDTH - 1:0]         pawns_backward_mg [0:7];
-   reg signed [EVAL_WIDTH - 1:0]         pawns_backward_eg [0:7];
-   reg signed [EVAL_WIDTH - 1:0]         passed_pawn [0:7];
-   reg [63:0]                            not_passed_mask [0:63];
-   reg [63:0]                            passed_pawn_path [0:63];
-   
-   reg [63:0]                            board_neutral_t1;
-   reg [7:0]                             col_with_pawn_t1;
-   
-   reg signed [EVAL_WIDTH - 1:0]         isolated_mg_t2 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         isolated_eg_t2 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         isolated_mg_t3 [0:15];
-   reg signed [EVAL_WIDTH - 1:0]         isolated_eg_t3 [0:15];
-   reg signed [EVAL_WIDTH - 1:0]         isolated_mg_t4 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]         isolated_eg_t4 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]         isolated_mg_t5;
-   reg signed [EVAL_WIDTH - 1:0]         isolated_eg_t5;
+   reg signed [EVAL_WIDTH - 1:0]     pawns_isolated_mg [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     pawns_isolated_eg [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     pawns_doubled_mg [0:7][1:5];
+   reg signed [EVAL_WIDTH - 1:0]     pawns_doubled_eg [0:7][1:5];
+   reg signed [EVAL_WIDTH - 1:0]     pawns_connected_mg [0:7][0:7];
+   reg signed [EVAL_WIDTH - 1:0]     pawns_connected_eg [0:7][0:7];
+   reg signed [EVAL_WIDTH - 1:0]     pawns_backward_mg [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     pawns_backward_eg [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     passed_pawn [0:7];
+   reg [63:0]                        not_passed_mask [0:63];
+   reg [63:0]                        passed_pawn_path [0:63];
 
-   reg [3:0]                             doubled_distance_t2 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t3 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t3 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t4 [0:7];
-   reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t4 [0:7];
-   reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t5 [0:1];
-   reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t5 [0:1];
-   reg signed [EVAL_WIDTH - 1:0]         doubled_mg_t6;
-   reg signed [EVAL_WIDTH - 1:0]         doubled_eg_t6;
+   reg [63:0]                        board_neutral_t1;
+   reg [63:0]                        enemy_neutral_t2;
+   reg [7:0]                         col_with_pawn_t1;
 
-   reg [63:0]                            connected_t2;
-   reg signed [EVAL_WIDTH - 1:0]         connected_mg_t3 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         connected_eg_t3 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         connected_mg_t4 [0:15];
-   reg signed [EVAL_WIDTH - 1:0]         connected_eg_t4 [0:15];
-   reg signed [EVAL_WIDTH - 1:0]         connected_mg_t5 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]         connected_eg_t5 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]         connected_mg_t6;
-   reg signed [EVAL_WIDTH - 1:0]         connected_eg_t6;
+   reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t2 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t2 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t3 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t3 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t4 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t4 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t5;
+   reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t5;
 
-   reg [63:0]                            backward_t2;
-   reg signed [EVAL_WIDTH - 1:0]         backward_mg_t3 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         backward_eg_t3 [0:63];
-   reg signed [EVAL_WIDTH - 1:0]         backward_mg_t4 [0:15];
-   reg signed [EVAL_WIDTH - 1:0]         backward_eg_t4 [0:15];
-   reg signed [EVAL_WIDTH - 1:0]         backward_mg_t5 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]         backward_eg_t5 [0:3];
-   reg signed [EVAL_WIDTH - 1:0]         backward_mg_t6;
-   reg signed [EVAL_WIDTH - 1:0]         backward_eg_t6;
-   
-   reg signed [EVAL_WIDTH - 1:0]         eval_mg_t7;
-   reg signed [EVAL_WIDTH - 1:0]         eval_eg_t7;
+   reg [3:0]                         doubled_distance_t2 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     doubled_eg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t4 [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     doubled_eg_t4 [0:7];
+   reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t5 [0:1];
+   reg signed [EVAL_WIDTH - 1:0]     doubled_eg_t5 [0:1];
+   reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t6;
+   reg signed [EVAL_WIDTH - 1:0]     doubled_eg_t6;
 
-   reg [2:0]                             row_flip [0:1][0:7];
+   reg [63:0]                        connected_t2;
+   reg signed [EVAL_WIDTH - 1:0]     connected_mg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     connected_eg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     connected_mg_t4 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]     connected_eg_t4 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]     connected_mg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]     connected_eg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]     connected_mg_t6;
+   reg signed [EVAL_WIDTH - 1:0]     connected_eg_t6;
+
+   reg [63:0]                        backward_t2;
+   reg signed [EVAL_WIDTH - 1:0]     backward_mg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     backward_eg_t3 [0:63];
+   reg signed [EVAL_WIDTH - 1:0]     backward_mg_t4 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]     backward_eg_t4 [0:15];
+   reg signed [EVAL_WIDTH - 1:0]     backward_mg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]     backward_eg_t5 [0:3];
+   reg signed [EVAL_WIDTH - 1:0]     backward_mg_t6;
+   reg signed [EVAL_WIDTH - 1:0]     backward_eg_t6;
+
+   reg [2:0]                         most_adv_t2 [0:7];
+   reg [7:0]                         passed_pawn_t3;
+
+   reg signed [EVAL_WIDTH - 1:0]     eval_mg_t7;
+   reg signed [EVAL_WIDTH - 1:0]     eval_eg_t7;
+
+   reg [2:0]                         row_flip [0:1][0:7];
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
 
-   integer                               i, row, col, row_adv;
+   integer                           i, row, col, row_adv;
 
    assign eval_mg = WHITE_PAWNS ? eval_mg_t7 : -eval_mg_t7;
    assign eval_eg = WHITE_PAWNS ? eval_eg_t7 : -eval_eg_t7;
@@ -106,29 +111,46 @@ module evaluate_pawns #
                if (row != 0 && row != 7)
                  begin
                     board_neutral_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN;
+                    enemy_neutral_t2[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == OP_PAWN;
                     if (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN)
                       col_with_pawn_t1[col] <= 1;
                  end
                else
-                 board_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
+                 begin
+                    board_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
+                    enemy_neutral_t2[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
+                 end
             end
 
         eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6;
         eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6;
-     end
+     end // always @ (posedge clk)
 
-   reg [2:0] most_adv_t2 [0:7];
+   integer di;
+
+   initial
+     begin
+        $dumpfile("wave.vcd");
+        for (di = 0; di < 8; di = di + 1)
+          $dumpvars(0, most_adv_t2[di]);
+     end
 
    // passed pawns
    always @(posedge clk)
      begin
         for (col = 0; col < 8; col = col + 1)
-          most_adv_t2[col] <= 0;
-          
+          most_adv_t2[col] <= 0; // row value of 0 is "no pawn" in this column
+
         for (row = 1; row < 7; row = row + 1)
           for (col = 0; col < 8; col = col + 1)
-            if (board[row << 3 | col] == MY_PAWN)
+            if (board_neutral_t1[row << 3 | col])
               most_adv_t2[col] <= row;
+
+        for (col = 0; col < 8; col = col + 1)
+          if (most_adv_t2[col] == 0)
+            passed_pawn_t3[col] <= 1'b0;
+          else
+            passed_pawn_t3[col] <= (enemy_neutral_t2[63:0] & not_passed_mask[most_adv_t2[col] << 3 | col]) == 0;
      end
 
    // backward pawns (no adjacent or rear supporting pawn)
@@ -316,7 +338,7 @@ module evaluate_pawns #
 
 `include "evaluate_pawns.vh"
      end
-   
+
    /* latency_sm AUTO_TEMPLATE (
     );*/
    latency_sm #
