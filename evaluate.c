@@ -22,7 +22,8 @@ typedef struct fileinfo_t
         FILE *fp;
 } fileinfo_t;
 
-typedef enum { mg = 0, eg = 1 } PHASE;       // mid-game, end-game
+typedef enum
+{ mg = 0, eg = 1 } PHASE;       // mid-game, end-game
 
 static const int pval[2][64] = {
         {0, 0, 0, 0, 0, 0, 0, 0,
@@ -218,7 +219,8 @@ static const int passed_pawn[8] = { 0, 0, 0, 2, 6, 12, 21, 0 };
 int
 main(void)
 {
-        int32_t c, i, j, row, col;
+        int32_t c, i, j, row, col, idx, b;
+        uint64_t shift64[64];
         uint64_t not_passed_mask[8][8];
         uint64_t passed_pawn_path[8][8];
         static const char *c_str[2] = { "BLACK", "WHITE" };
@@ -232,6 +234,9 @@ main(void)
 
         for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)
                 assert((fileinfo[i].fp = fopen(fileinfo[i].fn, "w")) != 0);
+
+        for (i = 0; i < 64; ++i)
+                shift64[i] = (uint64_t) 1 << (uint64_t) i;
 
         for (i = 0; i < 8; ++i)
         {
@@ -258,22 +263,39 @@ main(void)
                         not_passed_mask[i][j] = 0;
                         passed_pawn_path[i][j] = 0;
                 }
-        for (i = 2; i < 7; ++i)
+        for (i = 1; i < 8; ++i)
                 for (j = 0; j < 8; ++j)
-                        for (row = i + 1; row < 7; ++row)
+                        for (row = i + 1; row < 8; ++row)
                         {
-                                passed_pawn_path[i][j] |= (uint64_t)(UINT64_C(1) << (uint64_t)(row << 3 | j));
+                                idx = row << 3 | j;
+                                assert(idx >= 0 && idx < 64);
+                                passed_pawn_path[i][j] |= shift64[idx];
                                 for (col = j - 1; col <= j + 1; ++col)
-                                        if (row >= 0 && row < 8 && col >= 0 && col < 8)
-                                                not_passed_mask[i][j] |= (uint64_t)(UINT64_C(1) << (uint64_t)(row << 3 | col));
+                                        if (row >= 0 && row < 7 && col >= 0 && col < 8)
+                                        {
+                                                idx = row << 3 | col;
+                                                assert(idx >= 0 && idx < 64);
+                                                not_passed_mask[i][j] |= shift64[idx];
+                                        }
                         }
         for (i = 0; i < 8; ++i)
                 for (j = 0; j < 8; ++j)
-                        fprintf(fileinfo[eval_pawns].fp, "not_passed_mask[%d << 3 | %d] = 64'h%016" PRIu64 ";\n", i, j, not_passed_mask[i][j]);
+                {
+                        fprintf(fileinfo[eval_pawns].fp, "not_passed_mask[%d << 3 | %d] = 64'b", i, j);
+                        for (b = 63; b >= 0; --b)
+                                fprintf(fileinfo[eval_pawns].fp, "%c", (not_passed_mask[i][j] & shift64[b]) == shift64[b] ? '1' : '0');
+                        fprintf(fileinfo[eval_pawns].fp, ";\n");
+                }
+
 
         for (i = 0; i < 8; ++i)
                 for (j = 0; j < 8; ++j)
-                        fprintf(fileinfo[eval_pawns].fp, "passed_pawn_path[%d << 3 | %d] = 64'h%016" PRIu64 ";\n", i, j, passed_pawn_path[i][j]);
+                {
+                        fprintf(fileinfo[eval_pawns].fp, "passed_pawn_path[%d << 3 | %d] = 64'b", i, j);
+                        for (b = 63; b >= 0; --b)
+                                fprintf(fileinfo[eval_pawns].fp, "%c", (passed_pawn_path[i][j] & shift64[b]) == shift64[b] ? '1' : '0');
+                        fprintf(fileinfo[eval_pawns].fp, ";\n");
+                }
 
         fprintf(fileinfo[eval_general].fp, "value[`EMPTY_POSN] = 0;\n");
         fprintf(fileinfo[eval_general].fp, "value[`WHITE_PAWN] = %d;\n", PAWN_VALUE);
