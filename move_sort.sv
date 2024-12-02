@@ -29,7 +29,6 @@ module move_sort #
 
    reg                                    external_io = 0;
    reg                                    sort_start_z = 0;
-   reg                                    black_to_move;
 
    reg [MAX_POSITIONS_LOG2 - 1:0]         port_a_addr;
    reg                                    port_a_wr_en = 0;
@@ -60,19 +59,14 @@ module move_sort #
 
    wire signed [EVAL_WIDTH - 1:0]         eval_a = $signed(port_a_rd_data[EVAL_WIDTH - 1:0]);
    wire signed [EVAL_WIDTH - 1:0]         eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
-   wire                                   black_in_check_a = port_a_rd_data[EVAL_WIDTH];
-   wire                                   black_in_check_b = port_b_rd_data[EVAL_WIDTH];
-   wire                                   white_in_check_a = port_a_rd_data[EVAL_WIDTH + 1];
-   wire                                   white_in_check_b = port_b_rd_data[EVAL_WIDTH + 1];
    wire                                   capture_a = port_a_rd_data[EVAL_WIDTH + 2];
-   wire                                   capture_b = port_a_rd_data[EVAL_WIDTH + 2];
+   wire                                   capture_b = port_b_rd_data[EVAL_WIDTH + 2];
 
    assign ram_rd_data = port_b_rd_data;
 
    always @(posedge clk)
      begin
         sort_start_z <= sort_start;
-        black_to_move <= ! white_to_move;
         
         if (ram_wr_addr_init)
           ram_wr_addr <= 0;
@@ -91,6 +85,8 @@ module move_sort #
    localparam STATE_DONE = 8;
 
    reg [3:0]                              state_sort = STATE_IDLE;
+
+   wire                                   debug_compare = state_sort == STATE_COMPARE;
 
    always @(posedge clk)
      if (reset)
@@ -122,8 +118,9 @@ module move_sort #
            begin
               port_a_wr_en <= 0;
               port_b_wr_en <= 0;
-              if ((white_to_move && ((! capture_a && capture_b) || (eval_a < eval_b) || (eval_a == eval_b && ! black_in_check_a && black_in_check_b))) ||
-                  (black_to_move && ((capture_a && ! capture_b) || (eval_a > eval_b) || (eval_a == eval_b && ! white_in_check_a && white_in_check_b))))
+              if (white_to_move ?
+                  (! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 : eval_a < eval_b) :
+                  (! capture_a && capture_b ? 1'b0 : capture_a && ! capture_b ? 1'b1 : eval_a > eval_b))
                 state_sort <= STATE_SWAP;
               else
                 state_sort <= STATE_INNER;
