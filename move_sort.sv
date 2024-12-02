@@ -118,9 +118,8 @@ module move_sort #
            begin
               port_a_wr_en <= 0;
               port_b_wr_en <= 0;
-              if (white_to_move ?
-                  (! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 : eval_a < eval_b) :
-                  (! capture_a && capture_b ? 1'b0 : capture_a && ! capture_b ? 1'b1 : eval_a > eval_b))
+              if (! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 :
+                  (white_to_move ? eval_a < eval_b : eval_a > eval_b))
                 state_sort <= STATE_SWAP;
               else
                 state_sort <= STATE_INNER;
