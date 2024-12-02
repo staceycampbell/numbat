@@ -91,8 +91,10 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     score_mult_t3 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     passed_mg_t4 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     passed_eg_t4 [0:7];
-   reg signed [EVAL_WIDTH - 1:0]     passed_mg_t5;
-   reg signed [EVAL_WIDTH - 1:0]     passed_eg_t5;
+   reg signed [EVAL_WIDTH - 1:0]     passed_mg_t5 [0:1];
+   reg signed [EVAL_WIDTH - 1:0]     passed_eg_t5 [0:1];
+   reg signed [EVAL_WIDTH - 1:0]     passed_mg_t6;
+   reg signed [EVAL_WIDTH - 1:0]     passed_eg_t6;
 
    reg signed [EVAL_WIDTH - 1:0]     eval_mg_t7;
    reg signed [EVAL_WIDTH - 1:0]     eval_eg_t7;
@@ -129,8 +131,8 @@ module evaluate_pawns #
                  end
             end
 
-        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6 + passed_mg_t5;
-        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6 + passed_eg_t5;
+        eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6 + passed_mg_t6;
+        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6 + passed_eg_t6;
      end
 
    // passed pawns
@@ -160,10 +162,13 @@ module evaluate_pawns #
              passed_mg_t4[col] <= score_mult_t3[col] * passed_pawn_base_mg;
              passed_eg_t4[col] <= score_mult_t3[col] * passed_pawn_base_eg;
           end
-        passed_mg_t5 <= passed_mg_t4[0] + passed_mg_t4[1] + passed_mg_t4[2] + passed_mg_t4[3] +
-                        passed_mg_t4[4] + passed_mg_t4[5] + passed_mg_t4[6] + passed_mg_t4[7];
-        passed_eg_t5 <= passed_eg_t4[0] + passed_eg_t4[1] + passed_eg_t4[2] + passed_eg_t4[3] +
-                        passed_eg_t4[4] + passed_eg_t4[5] + passed_eg_t4[6] + passed_eg_t4[7];
+        for (i = 0; i < 2; i = i + 1)
+          begin
+             passed_mg_t5[i] <= passed_mg_t4[i * 4 + 0] + passed_mg_t4[i * 4 + 1] + passed_mg_t4[i * 4 + 2] + passed_mg_t4[i * 4 + 3];
+             passed_eg_t5[i] <= passed_eg_t4[i * 4 + 0] + passed_eg_t4[i * 4 + 1] + passed_eg_t4[i * 4 + 2] + passed_eg_t4[i * 4 + 3];
+          end
+        passed_mg_t6 <= passed_mg_t5[0] + passed_mg_t5[1];
+        passed_eg_t6 <= passed_eg_t5[0] + passed_eg_t5[1];
      end
 
    // backward pawns (no adjacent or rear supporting pawn)
