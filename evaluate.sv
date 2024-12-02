@@ -45,7 +45,7 @@ module evaluate #
 
    reg                               board_valid_r = 0;
    reg                               local_board_valid = 0;
-   reg [`BOARD_WIDTH - 1:0]          board;
+   reg [`BOARD_WIDTH - 1:0]          board, board_pre;
    reg signed [EVAL_WIDTH - 1:0]     eval_t3;
    reg [2:0]                         latency;
    reg signed [7:0]                  phase;
@@ -128,6 +128,7 @@ module evaluate #
    always @(posedge clk)
      begin
         board_valid_r <= board_valid;
+        board <= board_pre; // flopped for timing
 
         if (occupied_count > 62)
           phase <= 62;
@@ -166,12 +167,12 @@ module evaluate #
        case (state)
          STATE_IDLE :
            begin
-              board <= board_in;
+              board_pre <= board_in;
               local_board_valid <= 0;
               eval_valid <= 0;
               latency <= 0;
               if (board_valid && ~board_valid_r)
-                state <= STATE_WAIT_ATTACKING_DONE;
+                state <= STATE_WAIT_ATTACKING_DONE; // note: one ws required for board to valid, flopped for timing
            end
          STATE_WAIT_ATTACKING_DONE :
            if (is_attacking_done)
