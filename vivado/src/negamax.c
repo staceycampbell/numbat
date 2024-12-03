@@ -9,9 +9,9 @@
 #pragma GCC optimize ("O2")
 
 #define FIXED_TIME 30
-#define MID_GAME_HALF_MOVES 30
+#define MID_GAME_HALF_MOVES 40
 
-#define MAX_DEPTH 30
+#define MAX_DEPTH 40
 #define LARGE_EVAL (1 << 20)
 
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_collision, no_trans;
@@ -238,6 +238,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         if (time_limit_exceeded || ui_data_stop || uci_data_stop)
                 return value;
 
+        board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
         for (index = 0; index < move_count; ++index)
         {
                 vchess_read_board(&board_stack[ply][index], index);
@@ -247,11 +248,17 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         value = -LARGE_EVAL;
         index = 0;
         ++ply;
+        if (ply >= MAX_DEPTH)
+        {
+                printf("%s: ply out of bounds %d, stopping (%s %d)\n", __PRETTY_FUNCTION__, ply, __FILE__, __LINE__);
+                while (1);
+        }
         do
         {
                 board_vert[ply] = board_ptr[index];
-                value = valmax(value, -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply));
-                alpha = valmax(alpha, value);
+                value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply);
+                if (value > alpha)
+                        alpha = value;
                 ++index;
         }
         while (index < move_count && alpha < beta);
@@ -286,7 +293,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 trans_store(&trans);
         }
 
-        return value;
+        return alpha;
 }
 
 static int32_t
