@@ -408,7 +408,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                         board_vert[ply] = board_ptr[i];
                         evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply);
                         board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
-                        if (!time_limit_exceeded && !ui_data_stop && evaluate_move > best_evaluation && !uci_data_stop)
+                        if (evaluate_move > best_evaluation && !uci_data_stop)
                         {
                                 best_board = *board_ptr[i];
                                 best_evaluation = evaluate_move;
