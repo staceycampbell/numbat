@@ -61,6 +61,13 @@ module move_sort #
    wire signed [EVAL_WIDTH - 1:0]         eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
    wire                                   capture_a = port_a_rd_data[EVAL_WIDTH + 2];
    wire                                   capture_b = port_b_rd_data[EVAL_WIDTH + 2];
+   wire                                   white_in_check_a = port_a_rd_data[EVAL_WIDTH + 1];
+   wire                                   black_in_check_a = port_a_rd_data[EVAL_WIDTH + 0];
+   wire                                   white_in_check_b = port_b_rd_data[EVAL_WIDTH + 1];
+   wire                                   black_in_check_b = port_b_rd_data[EVAL_WIDTH + 0];
+
+   wire                                   in_check_a = white_in_check_a | black_in_check_a;
+   wire                                   in_check_b = white_in_check_b | black_in_check_b;
 
    assign ram_rd_data = port_b_rd_data;
 
@@ -119,7 +126,8 @@ module move_sort #
               port_a_wr_en <= 0;
               port_b_wr_en <= 0;
               if (! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 :
-                  (white_to_move ? eval_a < eval_b : eval_a > eval_b))
+                  ! in_check_a && in_check_b ? 1'b1 : in_check_a && ! in_check_b ? 1'b0 :
+                  white_to_move ? eval_a < eval_b : eval_a > eval_b)
                 state_sort <= STATE_SWAP;
               else
                 state_sort <= STATE_INNER;
