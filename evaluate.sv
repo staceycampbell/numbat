@@ -49,7 +49,7 @@ module evaluate #
    reg signed [EVAL_WIDTH - 1:0]     eval_t3;
    reg [2:0]                         latency;
    reg signed [7:0]                  phase;
-   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_mg_t1, eval_b_mg_t1, eval_c_mg_t1;
+   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_mg_t1, eval_b_mg_t1, eval_c_mg_t1, eval_d_mg_t1;
    reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_eg_t1, eval_b_eg_t1, eval_c_eg_t1;
    reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_mg_t2, eval_eg_t2;
    reg signed [PHASE_CALC_WIDTH - 1:0]              score_mg_t3, score_eg_t3;
@@ -77,8 +77,6 @@ module evaluate #
    wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_rooks_black;// From evaluate_rooks_black of evaluate_rooks.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_rooks_white;// From evaluate_rooks_white of evaluate_rooks.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_tropism_black;// From evaluate_tropism_black of evaluate_tropism.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_tropism_white;// From evaluate_tropism_white of evaluate_tropism.v
    wire                 eval_general_valid;     // From evaluate_general of evaluate_general.v
    wire                 eval_killer_valid;      // From evaluate_killer of evaluate_killer.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_bishops_black;// From evaluate_bishops_black of evaluate_bishops.v
@@ -145,15 +143,16 @@ module evaluate #
           phase <= 62;
         else
           phase <= occupied_count;
-        eval_a_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black + eval_mg_tropism_black;
+        eval_a_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black;
         eval_b_mg_t1 <= eval_mg_mob + eval_mg_killer + eval_mg_bishops_white + eval_mg_bishops_black;
-        eval_c_mg_t1 <= eval_castling_black_mg + eval_castling_white_mg + eval_mg_rooks_white + eval_mg_rooks_black;
+        eval_c_mg_t1 <= eval_castling_white_mg + eval_castling_black_mg + eval_mg_rooks_white + eval_mg_rooks_black;
+        eval_d_mg_t1 <= eval_mg_tropism_white + eval_mg_tropism_black;
         
-        eval_a_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black + eval_eg_tropism_black;
+        eval_a_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black;
         eval_b_eg_t1 <= eval_eg_mob + eval_eg_killer + eval_eg_bishops_white + eval_eg_bishops_black;
         eval_c_eg_t1 <= eval_eg_rooks_white + eval_eg_rooks_black;
         
-        eval_mg_t2 <= eval_a_mg_t1 + eval_b_mg_t1 + eval_c_mg_t1;
+        eval_mg_t2 <= eval_a_mg_t1 + eval_b_mg_t1 + eval_c_mg_t1 + eval_d_mg_t1;
         eval_eg_t2 <= eval_a_eg_t1 + eval_b_eg_t1 + eval_b_eg_t1;
         score_mg_t3 <= eval_mg_t2 * phase;
         score_eg_t3 <= eval_eg_t2 * (62 - phase);
@@ -506,7 +505,6 @@ module evaluate #
      (/*AUTOINST*/
       // Outputs
       .eval_mg                          (eval_mg_tropism_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_tropism_white[EVAL_WIDTH-1:0]), // Templated
       .eval_valid                       (eval_tropism_white_valid), // Templated
       // Inputs
       .clk                              (clk),
@@ -529,7 +527,6 @@ module evaluate #
      (/*AUTOINST*/
       // Outputs
       .eval_mg                          (eval_mg_tropism_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_tropism_black[EVAL_WIDTH-1:0]), // Templated
       .eval_valid                       (eval_tropism_black_valid), // Templated
       // Inputs
       .clk                              (clk),
