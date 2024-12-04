@@ -217,21 +217,36 @@ static const int pawn_backward[2][8] = {
 static const int passed_pawn[8] = { 0, 0, 0, 2, 6, 12, 21, 0 };
 static const int passed_pawn_base[2] = { 4, 8 };
 
+static const int safety_vector[16] = {
+        0, 7, 14, 21, 28, 35, 42, 49,
+        56, 63, 70, 77, 84, 91, 98, 105
+};
+
+static const int tropism_vector[16] = { 0, 1, 2, 3, 4, 5, 11, 20, 32, 47, 65, 86, 110, 137, 167, 200 };
+static const int king_tropism_n[8] = { 3, 3, 3, 2, 1, 0, 0, 0 };
+static const int king_tropism_b[8] = { 2, 2, 2, 1, 0, 0, 0, 0 };
+static const int king_tropism_r[8] = { 4, 4, 3, 2, 1, 1, 1, 1 };
+static const int king_tropism_q[8] = { 6, 6, 5, 4, 3, 2, 2, 2 };
+
 int
 main(void)
 {
         int32_t c, i, j, row, col, idx, b;
+        int32_t safety, tropism;
         uint64_t shift64[64];
         uint64_t not_passed_mask[8][8];
         uint64_t passed_pawn_path[8][8];
+        static int king_safety[16][16];
         static const char *c_str[2] = { "BLACK", "WHITE" };
         static const int32_t sign[2] = { -1, 1 };
         fileinfo_t fileinfo[] = {
                 {"evaluate_general.vh", 0},
-                {"evaluate_pawns.vh", 0}
+                {"evaluate_pawns.vh", 0},
+                {"evaluate_tropism.vh", 0}
         };
         static const int eval_general = 0;
         static const int eval_pawns = 1;
+        static const int eval_tropism = 2;
 
         for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)
                 assert((fileinfo[i].fp = fopen(fileinfo[i].fn, "w")) != 0);
@@ -328,6 +343,20 @@ main(void)
                         fprintf(fileinfo[eval_general].fp, "pst_eg[`%s_QUEN][%2d] = %3d;\n", c_str[c], i, qval[eg][c][i] * sign[c]);
                         fprintf(fileinfo[eval_general].fp, "pst_eg[`%s_KING][%2d] = %3d;\n", c_str[c], i, kval[c][i] * sign[c]);        // use mg
                 }
+
+        for (safety = 0; safety < 16; safety++)
+                for (tropism = 0; tropism < 16; tropism++)
+                {
+                        king_safety[safety][tropism] = -(180 * ((safety_vector[safety] + 100) * (tropism_vector[tropism] + 100) / 100 - 100) / 100);
+                        fprintf(fileinfo[eval_tropism].fp, "king_safety[%2d << 4 | %2d] = %4d;\n", safety, tropism, king_safety[safety][tropism]);
+                }
+        for (i = 0; i < 8; ++i)
+        {
+                fprintf(fileinfo[eval_tropism].fp, "tropism_lut[`PIECE_KNIT << 3 | %d] = %d;\n", i, king_tropism_n[i]);
+                fprintf(fileinfo[eval_tropism].fp, "tropism_lut[`PIECE_BISH << 3 | %d] = %d;\n", i, king_tropism_b[i]);
+                fprintf(fileinfo[eval_tropism].fp, "tropism_lut[`PIECE_ROOK << 3 | %d] = %d;\n", i, king_tropism_r[i]);
+                fprintf(fileinfo[eval_tropism].fp, "tropism_lut[`PIECE_QUEN << 3 | %d] = %d;\n", i, king_tropism_q[i]);
+        }
 
         for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)
                 fclose(fileinfo[i].fp);
