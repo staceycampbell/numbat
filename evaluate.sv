@@ -40,7 +40,7 @@ module evaluate #
     );
 
    localparam LATENCY_COUNT = 5;
-   localparam EVALUATION_COUNT = 10;
+   localparam EVALUATION_COUNT = 12;
    localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
 
    reg                               board_valid_r = 0;
@@ -77,6 +77,8 @@ module evaluate #
    wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_rooks_black;// From evaluate_rooks_black of evaluate_rooks.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_rooks_white;// From evaluate_rooks_white of evaluate_rooks.v
+   wire signed [EVAL_WIDTH-1:0] eval_eg_tropism_black;// From evaluate_tropism_black of evaluate_tropism.v
+   wire signed [EVAL_WIDTH-1:0] eval_eg_tropism_white;// From evaluate_tropism_white of evaluate_tropism.v
    wire                 eval_general_valid;     // From evaluate_general of evaluate_general.v
    wire                 eval_killer_valid;      // From evaluate_killer of evaluate_killer.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_bishops_black;// From evaluate_bishops_black of evaluate_bishops.v
@@ -88,11 +90,15 @@ module evaluate #
    wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_rooks_black;// From evaluate_rooks_black of evaluate_rooks.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_rooks_white;// From evaluate_rooks_white of evaluate_rooks.v
+   wire signed [EVAL_WIDTH-1:0] eval_mg_tropism_black;// From evaluate_tropism_black of evaluate_tropism.v
+   wire signed [EVAL_WIDTH-1:0] eval_mg_tropism_white;// From evaluate_tropism_white of evaluate_tropism.v
    wire                 eval_mob_valid;         // From evaluate_mob of evaluate_mob.v
    wire                 eval_pawns_black_valid; // From evaluate_pawns_black of evaluate_pawns.v
    wire                 eval_pawns_white_valid; // From evaluate_pawns_white of evaluate_pawns.v
    wire                 eval_rooks_black_valid; // From evaluate_rooks_black of evaluate_rooks.v
    wire                 eval_rooks_white_valid; // From evaluate_rooks_white of evaluate_rooks.v
+   wire                 eval_tropism_black_valid;// From evaluate_tropism_black of evaluate_tropism.v
+   wire                 eval_tropism_white_valid;// From evaluate_tropism_white of evaluate_tropism.v
    wire [5:0]           occupied_count;         // From popcount_occupied of popcount.v
    // End of automatics
 
@@ -100,17 +106,22 @@ module evaluate #
 
    wire [63:0]                                      occupied;
 
-   wire [EVALUATION_COUNT - 1:0]                    eval_done_status = {eval_castling_black_valid,
-                                                                        eval_castling_white_valid,
-                                                                        eval_bishops_black_valid,
-                                                                        eval_bishops_white_valid,
-                                                                        eval_rooks_black_valid,
-                                                                        eval_rooks_white_valid,
-                                                                        eval_killer_valid,
-                                                                        eval_mob_valid,
-                                                                        eval_pawns_black_valid,
-                                                                        eval_pawns_white_valid,
-                                                                        eval_general_valid};
+   wire [EVALUATION_COUNT - 1:0]                    eval_done_status =
+                                                    {
+                                                     eval_tropism_black_valid,
+                                                     eval_tropism_white_valid,
+                                                     eval_castling_black_valid,
+                                                     eval_castling_white_valid,
+                                                     eval_bishops_black_valid,
+                                                     eval_bishops_white_valid,
+                                                     eval_rooks_black_valid,
+                                                     eval_rooks_white_valid,
+                                                     eval_killer_valid,
+                                                     eval_mob_valid,
+                                                     eval_pawns_black_valid,
+                                                     eval_pawns_white_valid,
+                                                     eval_general_valid
+                                                     };
    wire [EVALUATION_COUNT - 1:0]                    evals_complete = ~0;
 
    assign eval = eval_t7;
@@ -134,11 +145,11 @@ module evaluate #
           phase <= 62;
         else
           phase <= occupied_count;
-        eval_a_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black;
+        eval_a_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black + eval_mg_tropism_black;
         eval_b_mg_t1 <= eval_mg_mob + eval_mg_killer + eval_mg_bishops_white + eval_mg_bishops_black;
         eval_c_mg_t1 <= eval_castling_black_mg + eval_castling_white_mg + eval_mg_rooks_white + eval_mg_rooks_black;
         
-        eval_a_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black;
+        eval_a_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black + eval_eg_tropism_black;
         eval_b_eg_t1 <= eval_eg_mob + eval_eg_killer + eval_eg_bishops_white + eval_eg_bishops_black;
         eval_c_eg_t1 <= eval_eg_rooks_white + eval_eg_rooks_black;
         
@@ -474,6 +485,52 @@ module evaluate #
       .eval_mg                          (eval_mg_rooks_black[EVAL_WIDTH-1:0]), // Templated
       .eval_eg                          (eval_eg_rooks_black[EVAL_WIDTH-1:0]), // Templated
       .eval_valid                       (eval_rooks_black_valid), // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (local_board_valid),     // Templated
+      .board                            (board[`BOARD_WIDTH-1:0]),
+      .clear_eval                       (clear_eval));
+   
+   /* evaluate_tropism AUTO_TEMPLATE (
+    .board_valid (local_board_valid),
+    .eval_valid (eval_tropism_white_valid),
+    .eval_\([me]\)g (eval_\1g_tropism_white[]),
+    );*/
+   evaluate_tropism #
+     (
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .WHITE (1)
+      )
+   evaluate_tropism_white
+     (/*AUTOINST*/
+      // Outputs
+      .eval_mg                          (eval_mg_tropism_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg                          (eval_eg_tropism_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid                       (eval_tropism_white_valid), // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (local_board_valid),     // Templated
+      .board                            (board[`BOARD_WIDTH-1:0]),
+      .clear_eval                       (clear_eval));
+
+   /* evaluate_tropism AUTO_TEMPLATE (
+    .board_valid (local_board_valid),
+    .eval_valid (eval_tropism_black_valid),
+    .eval_\([me]\)g (eval_\1g_tropism_black[]),
+    );*/
+   evaluate_tropism #
+     (
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .WHITE (0)
+      )
+   evaluate_tropism_black
+     (/*AUTOINST*/
+      // Outputs
+      .eval_mg                          (eval_mg_tropism_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg                          (eval_eg_tropism_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid                       (eval_tropism_black_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
