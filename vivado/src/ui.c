@@ -362,6 +362,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 if (game_moves > 0)
                 {
                         tc_ignore(&tc);
+			trans_clear_table(); // for ease of debug
                         best_board = nm_top(game, game_moves, &tc);
                         vchess_write_board_basic(&best_board);
                         vchess_write_board_wait(&best_board);

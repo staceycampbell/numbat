@@ -9,7 +9,7 @@
 
 #pragma GCC optimize ("O2")
 
-#define FIXED_TIME 2
+#define FIXED_TIME 15
 #define MID_GAME_HALF_MOVES 40
 
 #define MAX_DEPTH 40
@@ -26,7 +26,7 @@ static uint32_t time_limit_exceeded;
 static uint32_t ui_data_stop;
 static uint32_t uci_data_stop;
 
-static const uint32_t debug_info = 0;
+static const uint32_t debug_info = 1;
 
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply, uint32_t quiescence)
@@ -39,14 +39,16 @@ nm_eval(uint32_t wtm, uint32_t ply, uint32_t quiescence)
         if (value == GLOBAL_VALUE_KING)
         {
                 if (quiescence)
-                        value /= 2;
-                value -= ply;
+                        value = 0;
+                else
+                        value -= ply;
         }
         else if (value == -GLOBAL_VALUE_KING)
         {
                 if (quiescence)
-                        value /= 2;
-                value += ply;
+                        value = 0;
+                else
+                        value += ply;
         }
 
         return value;
@@ -166,6 +168,12 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
 
+        if (ply >= MAX_DEPTH - 1)
+        {
+                ++q_hard_cutoff;
+                return beta;
+        }
+
         node_start = nodes_visited;
         ++nodes_visited;
 
@@ -181,15 +189,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
 
         value = nm_eval(board->white_to_move, ply, quiescence);
-
         move_count = vchess_move_count();
-        if (move_count >= MAX_POSITIONS)
-        {
-                xil_printf("%s: stopping here, move_count=%d, quiescence=%d, %s %d\n", __PRETTY_FUNCTION__,
-                           move_count, quiescence, __FILE__, __LINE__);
-                fen_print(board);
-                while (1);
-        }
+
         if (!quiescence && move_count == 0)
         {
                 ++terminal_nodes;
@@ -197,28 +198,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                         return 0;
                 return value;
         }
-
-        // mate distance pruning
-        alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
-        beta = valmin(beta, GLOBAL_VALUE_KING - ply);
-        if (alpha >= beta)
-                return alpha;
-
-        trans_lookup(&trans, &collision);
-        trans_collision += collision;
-
-        if (trans.entry_valid && trans.depth >= depth)
-        {
-                if (trans.flag == TRANS_EXACT)
-                        return trans.eval;
-                else if (trans.flag == TRANS_LOWER_BOUND)
-                        alpha = valmax(alpha, trans.eval);
-                else if (trans.flag == TRANS_UPPER_BOUND)
-                        beta = valmin(beta, trans.eval);
-                if (alpha >= beta)
-                        return trans.eval;
-        }
-        ++no_trans;
 
         if (quiescence)
         {
@@ -233,11 +212,31 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 }
                 if (ply > quiescence_ply_reached)
                         quiescence_ply_reached = ply;
-                if (ply == MAX_DEPTH - 1)
-                {
-                        ++q_hard_cutoff;
+        }
+
+        if (!quiescence)
+        {
+                // mate distance pruning
+                alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
+                beta = valmin(beta, GLOBAL_VALUE_KING - ply);
+                if (alpha >= beta)
                         return alpha;
+
+                trans_lookup(&trans, &collision);
+                trans_collision += collision;
+
+                if (trans.entry_valid && trans.depth >= depth)
+                {
+                        if (trans.flag == TRANS_EXACT)
+                                return trans.eval;
+                        else if (trans.flag == TRANS_LOWER_BOUND)
+                                alpha = valmax(alpha, trans.eval);
+                        else if (trans.flag == TRANS_UPPER_BOUND)
+                                beta = valmin(beta, trans.eval);
+                        if (alpha >= beta)
+                                return trans.eval;
                 }
+                ++no_trans;
         }
 
         XTime_GetTime(&t_now);
@@ -258,11 +257,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         value = -LARGE_EVAL;
         index = 0;
         ++ply;
-        if (ply >= MAX_DEPTH)
-        {
-                printf("%s: ply out of bounds %d, stopping (%s %d)\n", __PRETTY_FUNCTION__, ply, __FILE__, __LINE__);
-                while (1);
-        }
         do
         {
                 board_vert[ply] = board_ptr[index];
@@ -281,26 +275,29 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 ++move_killer_found;
         }
 
-        // BigAll scheme
-        node_stop = nodes_visited;
-        nodes = node_stop - node_start;
-        if (nodes >= (1 << TRANS_NODES_WIDTH))
-                nodes = (1 << TRANS_NODES_WIDTH) - 1;
-        vchess_write_board_basic(board);
-        trans_lookup(&trans, &collision);
-        if (!trans.entry_valid || trans.nodes < nodes)
+        if (!quiescence)
         {
-                trans.eval = value;
-                if (value <= alpha_orig)
-                        trans.flag = TRANS_UPPER_BOUND;
-                else if (value >= beta)
-                        trans.flag = TRANS_LOWER_BOUND;
-                else
-                        trans.flag = TRANS_EXACT;
-                trans.nodes = nodes;
-                trans.depth = depth;
-                trans.entry_valid = 1;
-                trans_store(&trans);
+                // BigAll scheme
+                node_stop = nodes_visited;
+                nodes = node_stop - node_start;
+                if (nodes >= (1 << TRANS_NODES_WIDTH))
+                        nodes = (1 << TRANS_NODES_WIDTH) - 1;
+                vchess_write_board_basic(board);
+                trans_lookup(&trans, &collision);
+                if (!trans.entry_valid || trans.nodes < nodes)
+                {
+                        trans.eval = value;
+                        if (value <= alpha_orig)
+                                trans.flag = TRANS_UPPER_BOUND;
+                        else if (value >= beta)
+                                trans.flag = TRANS_LOWER_BOUND;
+                        else
+                                trans.flag = TRANS_EXACT;
+                        trans.nodes = nodes;
+                        trans.depth = depth;
+                        trans.entry_valid = 1;
+                        trans_store(&trans);
+                }
         }
 
         return alpha;
