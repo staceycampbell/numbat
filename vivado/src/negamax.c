@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <xil_printf.h>
 #include <xtime_l.h>
 #include <xil_io.h>
@@ -8,7 +9,7 @@
 
 #pragma GCC optimize ("O2")
 
-#define FIXED_TIME 30
+#define FIXED_TIME 2
 #define MID_GAME_HALF_MOVES 40
 
 #define MAX_DEPTH 40
@@ -25,8 +26,10 @@ static uint32_t time_limit_exceeded;
 static uint32_t ui_data_stop;
 static uint32_t uci_data_stop;
 
+static const uint32_t debug_info = 0;
+
 static int32_t
-nm_eval(uint32_t wtm, uint32_t ply)
+nm_eval(uint32_t wtm, uint32_t ply, uint32_t quiescence)
 {
         int32_t value;
 
@@ -34,9 +37,17 @@ nm_eval(uint32_t wtm, uint32_t ply)
         if (!wtm)
                 value = -value;
         if (value == GLOBAL_VALUE_KING)
+        {
+                if (quiescence)
+                        value /= 2;
                 value -= ply;
+        }
         else if (value == -GLOBAL_VALUE_KING)
+        {
+                if (quiescence)
+                        value /= 2;
                 value += ply;
+        }
 
         return value;
 }
@@ -169,9 +180,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         vchess_write_board_wait(board);
         vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
 
-        quiescence = quiescence || check;
-
-        value = nm_eval(board->white_to_move, ply);
+        value = nm_eval(board->white_to_move, ply, quiescence);
 
         move_count = vchess_move_count();
         if (move_count >= MAX_POSITIONS)
@@ -233,6 +242,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         XTime_GetTime(&t_now);
         time_limit_exceeded = t_now > time_limit;
+
         ui_data_stop = ui_data_available();
         uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
         if (time_limit_exceeded || ui_data_stop || uci_data_stop)
@@ -263,7 +273,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
-        if (index < move_count && !board_ptr[index - 1]->capture && !quiescence)        // beta cutoff
+        if (ply > 1 && index < move_count && !board_ptr[index - 1]->capture && !quiescence)     // beta cutoff
         {
                 killer_ply(ply);
                 killer_write_board(board_ptr[index - 1]->board);
@@ -328,6 +338,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
         board_t best_board = { 0 };
         XTime t_end, t_start;
+        char uci_str[6];
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
 
@@ -393,11 +404,25 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         ui_data_stop = 0;
         uci_data_stop = 0;
 
+        if (debug_info)
+        {
+                printf("start: ");
+                for (i = 0; i < move_count; ++i)
+                {
+                        uci_string(&board_ptr[i]->uci, uci_str);
+                        printf("%s=%d ", uci_str, board_ptr[i]->eval);
+                        if (i > 0 && i % 10 == 0 && i != move_count - 1)
+                                printf("\n");
+                }
+                printf("\n");
+                fflush(stdout);
+        }
+
         quiescence_ply_reached = 0;
         valid_quiescence_ply_reached = 0;
 
         overall_best = -LARGE_EVAL;
-        depth_limit = 2;        // top nodes already sorted in all_moves.sv
+        depth_limit = 2;
         while (depth_limit < MAX_DEPTH - 1 && !time_limit_exceeded && !ui_data_stop && !uci_data_stop)
         {
                 ply = 0;
@@ -416,13 +441,25 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                         }
                         ++i;
                 }
-                if (!time_limit_exceeded && !ui_data_stop && !uci_data_stop)
+                qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
+
+                if (debug_info)
                 {
-                        qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
-                        ++depth_limit;
-                        if (quiescence_ply_reached > valid_quiescence_ply_reached)
-                                valid_quiescence_ply_reached = quiescence_ply_reached;
+                        printf("%02d: ", depth_limit);
+                        for (i = 0; i < move_count; ++i)
+                        {
+                                uci_string(&board_ptr[i]->uci, uci_str);
+                                printf("%s=%d ", uci_str, board_ptr[i]->eval);
+                                if (i > 0 && i % 10 == 0 && i != move_count - 1)
+                                        printf("\n");
+                        }
+                        printf("\n");
+                        fflush(stdout);
                 }
+
+                ++depth_limit;
+                if (quiescence_ply_reached > valid_quiescence_ply_reached)
+                        valid_quiescence_ply_reached = quiescence_ply_reached;
 
         }
         best_board.full_move_number = 1 + game_moves / 2;
