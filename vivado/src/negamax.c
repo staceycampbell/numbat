@@ -29,7 +29,7 @@ static uint32_t uci_data_stop;
 static const uint32_t debug_info = 1;
 
 static int32_t
-nm_eval(uint32_t wtm, uint32_t ply, uint32_t quiescence)
+nm_eval(uint32_t wtm, uint32_t ply)
 {
         int32_t value;
 
@@ -37,25 +37,15 @@ nm_eval(uint32_t wtm, uint32_t ply, uint32_t quiescence)
         if (!wtm)
                 value = -value;
         if (value == GLOBAL_VALUE_KING)
-        {
-                if (quiescence)
-                        value = 0;
-                else
-                        value -= ply;
-        }
+                value -= ply;
         else if (value == -GLOBAL_VALUE_KING)
-        {
-                if (quiescence)
-                        value = 0;
-                else
-                        value += ply;
-        }
+                value += ply;
 
         return value;
 }
 
 static void
-nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_vert[MAX_DEPTH], uint32_t ply, uint32_t quiescence)
+nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_vert[MAX_DEPTH], uint32_t ply)
 {
         uint32_t entries;
         int32_t sel, index;
@@ -67,7 +57,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                 xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
-        if (game_moves == 0 || quiescence)      // mate, stalemate or quiescence (only looking at captures)
+        if (game_moves == 0)    // mate, stalemate (only looking at captures)
         {
                 vchess_repdet_write(0);
                 return;
@@ -155,13 +145,82 @@ valmin(int32_t a, int32_t b)
 }
 
 static int32_t
+quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
+{
+        uint32_t move_count, index;
+        uint32_t mate, stalemate, fifty_move;
+        int32_t value;
+        XTime t_now;
+        board_t *board_ptr[MAX_POSITIONS];
+
+        if (ply >= MAX_DEPTH - 1)
+        {
+                ++q_hard_cutoff;
+                return beta;
+        }
+
+        ++nodes_visited;
+
+        vchess_reset_all_moves();
+        vchess_repdet_write(0); // disable repetition detection
+        vchess_write_board_basic(board);
+        vchess_capture_moves(1);        // collect only capture moves
+        vchess_write_board_wait(board);
+        vchess_status(0, 0, &mate, &stalemate, 0, 0, &fifty_move, 0, 0);
+
+        value = nm_eval(board->white_to_move, ply);
+        move_count = vchess_move_count();
+
+        if (value >= beta)
+                return beta;
+        if (value > alpha)
+                alpha = value;
+        if (move_count == 0)
+        {
+                ++q_end;
+                return value;
+        }
+        if (ply > quiescence_ply_reached)
+                quiescence_ply_reached = ply;
+
+        XTime_GetTime(&t_now);
+        time_limit_exceeded = t_now > time_limit;
+
+        ui_data_stop = ui_data_available();
+        uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
+        if (time_limit_exceeded || ui_data_stop || uci_data_stop)
+                return 0; // will be ignored
+
+        board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
+        for (index = 0; index < move_count; ++index)
+        {
+                vchess_read_board(&board_stack[ply][index], index);
+                board_ptr[index] = &board_stack[ply][index];
+        }
+
+        value = -LARGE_EVAL;
+        index = 0;
+        ++ply;
+        do
+        {
+                board_vert[ply] = board_ptr[index];
+                value = -quiescence(game, game_moves, board_ptr[index], -beta, -alpha, ply);
+                if (value > alpha)
+                        alpha = value;
+                ++index;
+        }
+        while (index < move_count && alpha < beta);
+
+        return alpha;
+}
+
+static int32_t
 negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply)
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
         int32_t value;
         int32_t alpha_orig;
-        uint32_t quiescence;
         uint32_t collision;
         trans_t trans;
         XTime t_now;
@@ -178,20 +237,19 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         ++nodes_visited;
 
         alpha_orig = alpha;
-        quiescence = depth <= 0;
 
         vchess_reset_all_moves();
-        nm_load_rep_table(game, game_moves, board_vert, ply, quiescence);
+        nm_load_rep_table(game, game_moves, board_vert, ply);
         killer_ply(ply);
         vchess_write_board_basic(board);
-        vchess_capture_moves(quiescence);
+        vchess_capture_moves(0);        // collect all legal moves
         vchess_write_board_wait(board);
         vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
 
-        value = nm_eval(board->white_to_move, ply, quiescence);
+        value = nm_eval(board->white_to_move, ply);
         move_count = vchess_move_count();
 
-        if (!quiescence && move_count == 0)
+        if (move_count == 0)
         {
                 ++terminal_nodes;
                 if (stalemate || thrice_rep || fifty_move || insufficient)
@@ -199,45 +257,27 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 return value;
         }
 
-        if (quiescence)
-        {
-                if (value >= beta)
-                        return beta;
-                if (alpha < value)
-                        alpha = value;
-                if (move_count == 0)
-                {
-                        ++q_end;
-                        return alpha;
-                }
-                if (ply > quiescence_ply_reached)
-                        quiescence_ply_reached = ply;
-        }
+//        // mate distance pruning
+//        alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
+//        beta = valmin(beta, GLOBAL_VALUE_KING - ply);
+//        if (alpha >= beta)
+//                return alpha;
 
-        if (!quiescence)
+        trans_lookup(&trans, &collision);
+        trans_collision += collision;
+
+        if (trans.entry_valid && trans.depth >= depth)
         {
-                // mate distance pruning
-                alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
-                beta = valmin(beta, GLOBAL_VALUE_KING - ply);
+                if (trans.flag == TRANS_EXACT)
+                        return trans.eval;
+                else if (trans.flag == TRANS_LOWER_BOUND)
+                        alpha = valmax(alpha, trans.eval);
+                else if (trans.flag == TRANS_UPPER_BOUND)
+                        beta = valmin(beta, trans.eval);
                 if (alpha >= beta)
-                        return alpha;
-
-                trans_lookup(&trans, &collision);
-                trans_collision += collision;
-
-                if (trans.entry_valid && trans.depth >= depth)
-                {
-                        if (trans.flag == TRANS_EXACT)
-                                return trans.eval;
-                        else if (trans.flag == TRANS_LOWER_BOUND)
-                                alpha = valmax(alpha, trans.eval);
-                        else if (trans.flag == TRANS_UPPER_BOUND)
-                                beta = valmin(beta, trans.eval);
-                        if (alpha >= beta)
-                                return trans.eval;
-                }
-                ++no_trans;
+                        return trans.eval;
         }
+        ++no_trans;
 
         XTime_GetTime(&t_now);
         time_limit_exceeded = t_now > time_limit;
@@ -245,7 +285,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         ui_data_stop = ui_data_available();
         uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
         if (time_limit_exceeded || ui_data_stop || uci_data_stop)
-                return value;
+                return 0; // will be ignored
 
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
         for (index = 0; index < move_count; ++index)
@@ -260,14 +300,17 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         do
         {
                 board_vert[ply] = board_ptr[index];
-                value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply);
+                if (depth > 0)
+                        value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply);
+                else
+                        value = -quiescence(game, game_moves, board_ptr[index], -beta, -alpha, ply);
                 if (value > alpha)
                         alpha = value;
                 ++index;
         }
         while (index < move_count && alpha < beta);
 
-        if (ply > 1 && index < move_count && !board_ptr[index - 1]->capture && !quiescence)     // beta cutoff
+        if (ply > 1 && index < move_count && !board_ptr[index - 1]->capture)    // beta cutoff
         {
                 killer_ply(ply);
                 killer_write_board(board_ptr[index - 1]->board);
@@ -275,29 +318,26 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 ++move_killer_found;
         }
 
-        if (!quiescence)
+        // BigAll scheme
+        node_stop = nodes_visited;
+        nodes = node_stop - node_start;
+        if (nodes >= (1 << TRANS_NODES_WIDTH))
+                nodes = (1 << TRANS_NODES_WIDTH) - 1;
+        vchess_write_board_basic(board);
+        trans_lookup(&trans, &collision);
+        if (!trans.entry_valid || trans.nodes < nodes)
         {
-                // BigAll scheme
-                node_stop = nodes_visited;
-                nodes = node_stop - node_start;
-                if (nodes >= (1 << TRANS_NODES_WIDTH))
-                        nodes = (1 << TRANS_NODES_WIDTH) - 1;
-                vchess_write_board_basic(board);
-                trans_lookup(&trans, &collision);
-                if (!trans.entry_valid || trans.nodes < nodes)
-                {
-                        trans.eval = value;
-                        if (value <= alpha_orig)
-                                trans.flag = TRANS_UPPER_BOUND;
-                        else if (value >= beta)
-                                trans.flag = TRANS_LOWER_BOUND;
-                        else
-                                trans.flag = TRANS_EXACT;
-                        trans.nodes = nodes;
-                        trans.depth = depth;
-                        trans.entry_valid = 1;
-                        trans_store(&trans);
-                }
+                trans.eval = value;
+                if (value <= alpha_orig)
+                        trans.flag = TRANS_UPPER_BOUND;
+                else if (value >= beta)
+                        trans.flag = TRANS_LOWER_BOUND;
+                else
+                        trans.flag = TRANS_EXACT;
+                trans.nodes = nodes;
+                trans.depth = depth;
+                trans.entry_valid = 1;
+                trans_store(&trans);
         }
 
         return alpha;
@@ -359,7 +399,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         move_killer_found = 0;
 
         vchess_reset_all_moves();
-        nm_load_rep_table(game, game_index, 0, 0, 0);
+        nm_load_rep_table(game, game_index, 0, 0);
         vchess_write_board_basic(&game[game_index]);
         vchess_write_board_wait(&game[game_index]);
         vchess_capture_moves(0);
@@ -430,7 +470,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                         board_vert[ply] = board_ptr[i];
                         evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply);
                         board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
-                        if (evaluate_move > best_evaluation && !uci_data_stop)
+                        if (!time_limit_exceeded && !ui_data_stop && !uci_data_stop && evaluate_move > best_evaluation)
                         {
                                 best_board = *board_ptr[i];
                                 best_evaluation = evaluate_move;
