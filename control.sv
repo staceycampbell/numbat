@@ -70,7 +70,8 @@ module control #
     input                                 initial_thrice_rep, // root node thrice rep
     input                                 initial_fifty_move,
     input                                 initial_insufficient_material,
-    input signed [31:0]                   initial_material,
+    input signed [31:0]                   initial_material_black,
+    input signed [31:0]                   initial_material_white,
     input                                 initial_board_check,
 
     input                                 am_idle,
@@ -263,7 +264,8 @@ module control #
                138 : ctrl0_axi_rdata <= am_half_move_in;
                139 : ctrl0_axi_rdata <= {am_uci_in[15:12], 1'b0, am_uci_in[11:9], 1'b0, am_uci_in[8:6], 1'b0, am_uci_in[5:3], 1'b0, am_uci_in[2:0]};
                140 : ctrl0_axi_rdata <= {am_attack_black_pop_in[5:0], am_attack_white_pop_in[5:0]};
-               141 : ctrl0_axi_rdata <= $unsigned(initial_material);
+               141 : ctrl0_axi_rdata <= initial_material_black;
+               142 : ctrl0_axi_rdata <= initial_material_white;
 
                172 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
                173 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 1+:`SIDE_WIDTH];

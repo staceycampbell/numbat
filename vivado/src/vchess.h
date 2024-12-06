@@ -161,11 +161,21 @@ vchess_read(uint32_t reg)
 }
 
 static inline int32_t
-vchess_initial_material(void)
+vchess_initial_material_black(void)
 {
         int32_t material;
 
         material = (int32_t) vchess_read(141);
+
+        return material;
+}
+
+static inline int32_t
+vchess_initial_material_white(void)
+{
+        int32_t material;
+
+        material = (int32_t) vchess_read(142);
 
         return material;
 }

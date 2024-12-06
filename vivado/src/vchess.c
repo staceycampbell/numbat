@@ -65,7 +65,7 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
         int y, x, rev;
         char uci_str[6];
         uint32_t piece;
-        int32_t eval, material;
+        int32_t eval, material_black, material_white, material;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
 	uint32_t btm;
 
@@ -106,7 +106,9 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
         {
                 eval = vchess_initial_eval();
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
-                material = vchess_initial_material();
+                material_white = vchess_initial_material_white();
+                material_black = vchess_initial_material_white();
+		material = material_white - material_black;
         }
         else
         {
@@ -118,7 +120,7 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
         else
         {
                 printf("mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
-                printf("material: %.2f", (double)material / 100.0);
+                printf("material: %.2f - %.2f = %.2f", (double)material_white / 100.0, (double)material_black / 100, (double)material / 100.0);
         }
         uci_string(&board->uci, uci_str);
         printf(", eval: %d, uci: %s\n", eval, uci_str);

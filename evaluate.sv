@@ -36,7 +36,8 @@ module evaluate #
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
     output reg                       eval_valid,
-    output signed [31:0]             material
+    output [31:0]                    material_black,
+    output [31:0]                    material_white
     );
 
    localparam LATENCY_COUNT = 5;
@@ -227,7 +228,8 @@ module evaluate #
       .eval_mg                          (eval_mg_general[EVAL_WIDTH-1:0]), // Templated
       .eval_eg                          (eval_eg_general[EVAL_WIDTH-1:0]), // Templated
       .eval_valid                       (eval_general_valid),    // Templated
-      .material                         (material[31:0]),
+      .material_black                   (material_black[31:0]),
+      .material_white                   (material_white[31:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

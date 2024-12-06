@@ -150,7 +150,7 @@ valmin(int32_t a, int32_t b)
 static int32_t
 quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
 {
-        uint32_t move_count, index;
+        uint32_t move_count, index, endgame;
         uint32_t mate, stalemate, fifty_move;
         int32_t value;
         XTime t_now;
@@ -173,9 +173,10 @@ quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t
 
         value = nm_eval(board->white_to_move, ply);
         move_count = vchess_move_count();
+	endgame = vchess_initial_material_black() < 1700 && vchess_initial_material_white() < 1700;
 
         // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
-        if (value + Q_DELTA < alpha)
+        if (! endgame && value + Q_DELTA < alpha)
                 return alpha;
 
         if (value >= beta)

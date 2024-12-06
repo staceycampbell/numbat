@@ -47,7 +47,8 @@ module all_moves #
     output reg                           initial_thrice_rep = 0,
     output reg                           initial_fifty_move = 0,
     output reg                           initial_insufficient_material = 0,
-    output reg signed [31:0]             initial_material,
+    output reg [31:0]                    initial_material_black,
+    output reg [31:0]                    initial_material_white,
     output reg                           initial_board_check,
 
     output reg                           am_idle,
@@ -220,7 +221,8 @@ module all_moves #
    wire [LEGAL_RAM_WIDTH-1:0] legal_ram_rd_data;// From move_sort_legal of move_sort.v
    wire [MAX_POSITIONS_LOG2-1:0] legal_ram_wr_addr;// From move_sort_legal of move_sort.v
    wire                 legal_sort_complete;    // From move_sort_legal of move_sort.v
-   wire signed [31:0]   material;               // From evaluate of evaluate.v
+   wire [31:0]          material_black;         // From evaluate of evaluate.v
+   wire [31:0]          material_white;         // From evaluate of evaluate.v
    wire                 rd_thrice_rep;          // From rep_det of rep_det.v
    wire                 rd_thrice_rep_valid;    // From rep_det of rep_det.v
    wire                 white_in_check;         // From board_attack of board_attack.v
@@ -529,7 +531,9 @@ module all_moves #
 
               initial_eval <= eval;
               initial_insufficient_material <= insufficient_material;
-              initial_material <= material;
+              initial_material_black <= material_black;
+              initial_material_white <= material_white;
+              
               clear_eval <= 1;
               clear_attack <= 1;
               evaluate_go <= 0;
@@ -1033,7 +1037,8 @@ module all_moves #
       .insufficient_material            (insufficient_material),
       .eval                             (eval[EVAL_WIDTH-1:0]),
       .eval_valid                       (eval_valid),
-      .material                         (material[31:0]),
+      .material_black                   (material_black[31:0]),
+      .material_white                   (material_white[31:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
