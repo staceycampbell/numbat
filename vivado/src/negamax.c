@@ -15,6 +15,8 @@
 #define MAX_DEPTH 40
 #define LARGE_EVAL (1 << 20)
 
+#define Q_DELTA 200 // stop q search if eval + this doesn't beat alpha
+
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_collision, no_trans;
 static uint32_t move_killer_found;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
@@ -154,13 +156,13 @@ quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t
         XTime t_now;
         board_t *board_ptr[MAX_POSITIONS];
 
+        ++nodes_visited;
+
         if (ply >= MAX_DEPTH - 1)
         {
                 ++q_hard_cutoff;
                 return beta;
         }
-
-        ++nodes_visited;
 
         vchess_reset_all_moves();
         vchess_repdet_write(0); // disable repetition detection
@@ -171,6 +173,10 @@ quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t
 
         value = nm_eval(board->white_to_move, ply);
         move_count = vchess_move_count();
+
+        // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
+        if (value + Q_DELTA < alpha)
+                return alpha;
 
         if (value >= beta)
                 return beta;
