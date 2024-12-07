@@ -147,7 +147,7 @@ valmin(int32_t a, int32_t b)
 }
 
 static int32_t
-quiescence(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
+quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
 {
         uint32_t move_count, index, endgame;
         uint32_t mate, stalemate, fifty_move;
@@ -176,7 +176,7 @@ quiescence(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, i
         endgame = vchess_initial_material_black() < 1700 && vchess_initial_material_white() < 1700;
 
         // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
-        if (!endgame && value + Q_DELTA < alpha)
+        if (!endgame && value + Q_DELTA < alpha && ! (board->black_in_check || board->white_in_check))
                 return alpha;
 
         if (value >= beta)
@@ -213,7 +213,7 @@ quiescence(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, i
         do
         {
                 board_vert[ply] = board_ptr[index];
-                value = -quiescence(game, game_moves, board_ptr[index], -beta, -alpha, ply);
+                value = -quiescence(board_ptr[index], -beta, -alpha, ply);
                 if (value > alpha)
                         alpha = value;
                 ++index;
@@ -324,7 +324,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 else
                 {
                         XTime_GetTime(&q_start);
-                        value = -quiescence(game, game_moves, board_ptr[index], -beta, -alpha, ply);
+                        value = -quiescence(board_ptr[index], -beta, -alpha, ply);
                         XTime_GetTime(&q_stop);
                         q_time += q_stop - q_start;
                 }
