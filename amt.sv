@@ -7,6 +7,9 @@ module amt;
    localparam REPDET_WIDTH = 8;
    localparam HALF_MOVE_WIDTH = 10;
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, to, from
+   localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
+
+   localparam EVAL_MOBILITY_DISABLE = 1;
 
    reg clk = 0;
    reg reset = 1;
@@ -18,55 +21,62 @@ module amt;
 
    reg [`BOARD_WIDTH - 1:0] board;
    reg                      white_to_move;
-   reg [3:0]                castle_mask;
-   reg [3:0]                en_passant_col;
+   reg [3:0] 		    castle_mask;
+   reg [3:0] 		    en_passant_col;
    reg [HALF_MOVE_WIDTH - 1:0] full_move_number;
    reg [HALF_MOVE_WIDTH - 1:0] half_move;
 
    reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index = 0;
-   reg [`BOARD_WIDTH - 1:0]       repdet_board = 0;
-   reg [3:0]                      repdet_castle_mask = 0;
-   reg [REPDET_WIDTH - 1:0]       repdet_depth = 0;
-   reg [REPDET_WIDTH - 1:0]       repdet_wr_addr = 0;
+   reg [`BOARD_WIDTH - 1:0] 	  repdet_board = 0;
+   reg [3:0] 			  repdet_castle_mask = 0;
+   reg [REPDET_WIDTH - 1:0] 	  repdet_depth = 0;
+   reg [REPDET_WIDTH - 1:0] 	  repdet_wr_addr = 0;
    reg                            repdet_wr_en = 0;
    reg                            am_capture_moves = 0; // 0 - all moves to be considered for this testbench
    reg                            random_bit = 0;
    reg                            use_random_bit = 0;
+   reg [`BOARD_WIDTH-1:0] 	  killer_board = 0;
+   reg signed [EVAL_WIDTH-1:0] 	  killer_bonus0 = 0;
+   reg signed [EVAL_WIDTH-1:0] 	  killer_bonus1 = 0;
+   reg 				  killer_clear = 0;
+   reg [MAX_DEPTH_LOG2-1:0] 	  killer_ply = 0;
+   reg 				  killer_update = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 am_idle;                // From all_moves of all_moves.v
-   wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
-   wire                 am_move_ready;          // From all_moves of all_moves.v
-   wire                 am_moves_ready;         // From all_moves of all_moves.v
-   wire [5:0]           attack_black_pop_out;   // From all_moves of all_moves.v
-   wire [5:0]           attack_white_pop_out;   // From all_moves of all_moves.v
-   wire                 black_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]          black_is_attacking_out; // From all_moves of all_moves.v
-   wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
-   wire                 capture_out;            // From all_moves of all_moves.v
-   wire [3:0]           castle_mask_out;        // From all_moves of all_moves.v
-   wire [3:0]           en_passant_col_out;     // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves of all_moves.v
-   wire                 fifty_move_out;         // From all_moves of all_moves.v
-   wire [HALF_MOVE_WIDTH-1:0] half_move_out;    // From all_moves of all_moves.v
-   wire                 initial_board_check;    // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
-   wire                 initial_fifty_move;     // From all_moves of all_moves.v
-   wire                 initial_insufficient_material;// From all_moves of all_moves.v
-   wire                 initial_mate;           // From all_moves of all_moves.v
-   wire signed [31:0]   initial_material;       // From all_moves of all_moves.v
-   wire                 initial_stalemate;      // From all_moves of all_moves.v
-   wire                 initial_thrice_rep;     // From all_moves of all_moves.v
-   wire                 insufficient_material_out;// From all_moves of all_moves.v
-   wire                 thrice_rep_out;         // From all_moves of all_moves.v
-   wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
-   wire                 white_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
-   wire                 white_to_move_out;      // From all_moves of all_moves.v
+   wire			am_idle;		// From all_moves of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0] am_move_count;	// From all_moves of all_moves.v
+   wire			am_move_ready;		// From all_moves of all_moves.v
+   wire			am_moves_ready;		// From all_moves of all_moves.v
+   wire [5:0]		attack_black_pop_out;	// From all_moves of all_moves.v
+   wire [5:0]		attack_white_pop_out;	// From all_moves of all_moves.v
+   wire			black_in_check_out;	// From all_moves of all_moves.v
+   wire [63:0]		black_is_attacking_out;	// From all_moves of all_moves.v
+   wire [`BOARD_WIDTH-1:0] board_out;		// From all_moves of all_moves.v
+   wire			capture_out;		// From all_moves of all_moves.v
+   wire [3:0]		castle_mask_out;	// From all_moves of all_moves.v
+   wire [3:0]		en_passant_col_out;	// From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] eval_out;	// From all_moves of all_moves.v
+   wire			fifty_move_out;		// From all_moves of all_moves.v
+   wire [HALF_MOVE_WIDTH-1:0] half_move_out;	// From all_moves of all_moves.v
+   wire			initial_board_check;	// From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] initial_eval;	// From all_moves of all_moves.v
+   wire			initial_fifty_move;	// From all_moves of all_moves.v
+   wire			initial_insufficient_material;// From all_moves of all_moves.v
+   wire			initial_mate;		// From all_moves of all_moves.v
+   wire [31:0]		initial_material_black;	// From all_moves of all_moves.v
+   wire [31:0]		initial_material_white;	// From all_moves of all_moves.v
+   wire			initial_stalemate;	// From all_moves of all_moves.v
+   wire			initial_thrice_rep;	// From all_moves of all_moves.v
+   wire			insufficient_material_out;// From all_moves of all_moves.v
+   wire			thrice_rep_out;		// From all_moves of all_moves.v
+   wire [UCI_WIDTH-1:0]	uci_out;		// From all_moves of all_moves.v
+   wire			white_in_check_out;	// From all_moves of all_moves.v
+   wire [63:0]		white_is_attacking_out;	// From all_moves of all_moves.v
+   wire			white_to_move_out;	// From all_moves of all_moves.v
    // End of automatics
 
    initial
@@ -92,12 +102,12 @@ module amt;
      end
 
    wire [3:0]                             uci_promotion;
-   wire [2:0]                             uci_from_row, uci_from_col;
-   wire [2:0]                             uci_to_row, uci_to_col;
+   wire [2:0] 				  uci_from_row, uci_from_col;
+   wire [2:0] 				  uci_to_row, uci_to_col;
 
-   wire [7:0]                             status_char = white_in_check_out ? "W" : black_in_check_out ? "B" : "D";
+   wire [7:0] 				  status_char = white_in_check_out ? "W" : black_in_check_out ? "B" : "D";
 
-   reg [7:0]                              pawn_promotions [0:(1 << `PIECE_BITS) - 1];
+   reg [7:0] 				  pawn_promotions [0:(1 << `PIECE_BITS) - 1];
 
    initial
      begin
@@ -187,59 +197,68 @@ module amt;
       .EVAL_WIDTH (EVAL_WIDTH),
       .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
-      .UCI_WIDTH (UCI_WIDTH)
+      .UCI_WIDTH (UCI_WIDTH),
+      .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
+      .EVAL_MOBILITY_DISABLE (EVAL_MOBILITY_DISABLE)
       )
    all_moves
      (/*AUTOINST*/
       // Outputs
-      .initial_mate                     (initial_mate),
-      .initial_stalemate                (initial_stalemate),
-      .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
-      .initial_thrice_rep               (initial_thrice_rep),
-      .initial_fifty_move               (initial_fifty_move),
-      .initial_insufficient_material    (initial_insufficient_material),
-      .initial_material                 (initial_material[31:0]),
-      .initial_board_check              (initial_board_check),
-      .am_idle                          (am_idle),
-      .am_moves_ready                   (am_moves_ready),
-      .am_move_ready                    (am_move_ready),
-      .am_move_count                    (am_move_count[MAX_POSITIONS_LOG2-1:0]),
-      .board_out                        (board_out[`BOARD_WIDTH-1:0]),
-      .white_to_move_out                (white_to_move_out),
-      .castle_mask_out                  (castle_mask_out[3:0]),
-      .en_passant_col_out               (en_passant_col_out[3:0]),
-      .capture_out                      (capture_out),
-      .white_in_check_out               (white_in_check_out),
-      .black_in_check_out               (black_in_check_out),
-      .white_is_attacking_out           (white_is_attacking_out[63:0]),
-      .black_is_attacking_out           (black_is_attacking_out[63:0]),
-      .eval_out                         (eval_out[EVAL_WIDTH-1:0]),
-      .thrice_rep_out                   (thrice_rep_out),
-      .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
-      .fifty_move_out                   (fifty_move_out),
-      .uci_out                          (uci_out[UCI_WIDTH-1:0]),
-      .attack_white_pop_out             (attack_white_pop_out[5:0]),
-      .attack_black_pop_out             (attack_black_pop_out[5:0]),
-      .insufficient_material_out        (insufficient_material_out),
+      .initial_mate			(initial_mate),
+      .initial_stalemate		(initial_stalemate),
+      .initial_eval			(initial_eval[EVAL_WIDTH-1:0]),
+      .initial_thrice_rep		(initial_thrice_rep),
+      .initial_fifty_move		(initial_fifty_move),
+      .initial_insufficient_material	(initial_insufficient_material),
+      .initial_material_black		(initial_material_black[31:0]),
+      .initial_material_white		(initial_material_white[31:0]),
+      .initial_board_check		(initial_board_check),
+      .am_idle				(am_idle),
+      .am_moves_ready			(am_moves_ready),
+      .am_move_ready			(am_move_ready),
+      .am_move_count			(am_move_count[MAX_POSITIONS_LOG2-1:0]),
+      .board_out			(board_out[`BOARD_WIDTH-1:0]),
+      .white_to_move_out		(white_to_move_out),
+      .castle_mask_out			(castle_mask_out[3:0]),
+      .en_passant_col_out		(en_passant_col_out[3:0]),
+      .capture_out			(capture_out),
+      .white_in_check_out		(white_in_check_out),
+      .black_in_check_out		(black_in_check_out),
+      .white_is_attacking_out		(white_is_attacking_out[63:0]),
+      .black_is_attacking_out		(black_is_attacking_out[63:0]),
+      .eval_out				(eval_out[EVAL_WIDTH-1:0]),
+      .thrice_rep_out			(thrice_rep_out),
+      .half_move_out			(half_move_out[HALF_MOVE_WIDTH-1:0]),
+      .fifty_move_out			(fifty_move_out),
+      .uci_out				(uci_out[UCI_WIDTH-1:0]),
+      .attack_white_pop_out		(attack_white_pop_out[5:0]),
+      .attack_black_pop_out		(attack_black_pop_out[5:0]),
+      .insufficient_material_out	(insufficient_material_out),
       // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .use_random_bit                   (use_random_bit),
-      .random_bit                       (random_bit),
-      .board_valid_in                   (board_valid),           // Templated
-      .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
-      .white_to_move_in                 (white_to_move),         // Templated
-      .castle_mask_in                   (castle_mask[3:0]),      // Templated
-      .en_passant_col_in                (en_passant_col[3:0]),   // Templated
-      .half_move_in                     (half_move[HALF_MOVE_WIDTH-1:0]), // Templated
-      .repdet_board_in                  (repdet_board[`BOARD_WIDTH-1:0]), // Templated
-      .repdet_castle_mask_in            (repdet_castle_mask[3:0]), // Templated
-      .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated
-      .repdet_wr_addr_in                (repdet_wr_addr[REPDET_WIDTH-1:0]), // Templated
-      .repdet_wr_en_in                  (repdet_wr_en),          // Templated
-      .am_capture_moves                 (am_capture_moves),
-      .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
-      .am_clear_moves                   (am_clear_moves));
+      .clk				(clk),
+      .reset				(reset),
+      .use_random_bit			(use_random_bit),
+      .random_bit			(random_bit),
+      .board_valid_in			(board_valid),		 // Templated
+      .board_in				(board[`BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in			(white_to_move),	 // Templated
+      .castle_mask_in			(castle_mask[3:0]),	 // Templated
+      .en_passant_col_in		(en_passant_col[3:0]),	 // Templated
+      .half_move_in			(half_move[HALF_MOVE_WIDTH-1:0]), // Templated
+      .killer_ply_in			(killer_ply[MAX_DEPTH_LOG2-1:0]), // Templated
+      .killer_board_in			(killer_board[`BOARD_WIDTH-1:0]), // Templated
+      .killer_update_in			(killer_update),	 // Templated
+      .killer_clear_in			(killer_clear),		 // Templated
+      .killer_bonus0_in			(killer_bonus0[EVAL_WIDTH-1:0]), // Templated
+      .killer_bonus1_in			(killer_bonus1[EVAL_WIDTH-1:0]), // Templated
+      .repdet_board_in			(repdet_board[`BOARD_WIDTH-1:0]), // Templated
+      .repdet_castle_mask_in		(repdet_castle_mask[3:0]), // Templated
+      .repdet_depth_in			(repdet_depth[REPDET_WIDTH-1:0]), // Templated
+      .repdet_wr_addr_in		(repdet_wr_addr[REPDET_WIDTH-1:0]), // Templated
+      .repdet_wr_en_in			(repdet_wr_en),		 // Templated
+      .am_capture_moves			(am_capture_moves),
+      .am_move_index			(am_move_index[MAX_POSITIONS_LOG2-1:0]),
+      .am_clear_moves			(am_clear_moves));
 
 endmodule
 
