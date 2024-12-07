@@ -9,13 +9,13 @@
 
 #pragma GCC optimize ("O2")
 
-#define FIXED_TIME 15
+#define FIXED_TIME 20
 #define MID_GAME_HALF_MOVES 40
 
-#define MAX_DEPTH 40
+#define MAX_DEPTH 40            // must match verilog
 #define LARGE_EVAL (1 << 20)
 
-#define Q_DELTA 200 // stop q search if eval + this doesn't beat alpha
+#define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
 
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_collision, no_trans;
 static uint32_t move_killer_found;
@@ -25,9 +25,9 @@ static int32_t depth_limit;
 static int32_t quiescence_ply_reached, valid_quiescence_ply_reached;
 static XTime q_time;
 static XTime time_limit;
-static uint32_t time_limit_exceeded;
 static uint32_t ui_data_stop;
 static uint32_t uci_data_stop;
+static uint32_t abort_search;
 
 static const uint32_t debug_info = 1;
 
@@ -148,12 +148,13 @@ valmin(int32_t a, int32_t b)
 }
 
 static int32_t
-quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
+quiescence(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
 {
         uint32_t move_count, index, endgame;
         uint32_t mate, stalemate, fifty_move;
         int32_t value;
         XTime t_now;
+        uint32_t time_limit_exceeded;
         board_t *board_ptr[MAX_POSITIONS];
 
         ++nodes_visited;
@@ -173,10 +174,10 @@ quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t
 
         value = nm_eval(board->white_to_move, ply);
         move_count = vchess_move_count();
-	endgame = vchess_initial_material_black() < 1700 && vchess_initial_material_white() < 1700;
+        endgame = vchess_initial_material_black() < 1700 && vchess_initial_material_white() < 1700;
 
         // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
-        if (! endgame && value + Q_DELTA < alpha)
+        if (!endgame && value + Q_DELTA < alpha)
                 return alpha;
 
         if (value >= beta)
@@ -193,7 +194,8 @@ quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t
         time_limit_exceeded = t_now > time_limit;
         ui_data_stop = ui_data_available();
         uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
-        if (time_limit_exceeded || ui_data_stop || uci_data_stop)
+        abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
+        if (abort_search)
                 return 0;       // will be ignored
 
         if (ply > quiescence_ply_reached)
@@ -219,11 +221,14 @@ quiescence(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t
         }
         while (index < move_count && alpha < beta);
 
+        if (abort_search)
+                return 0;       // will be ignored
+
         return alpha;
 }
 
 static int32_t
-negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply)
+negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply)
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
@@ -232,6 +237,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         uint32_t collision;
         trans_t trans;
         XTime t_now;
+        uint32_t time_limit_exceeded;
         XTime q_start, q_stop;
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
@@ -266,11 +272,11 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                 return value;
         }
 
-//        // mate distance pruning
-//        alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
-//        beta = valmin(beta, GLOBAL_VALUE_KING - ply);
-//        if (alpha >= beta)
-//                return alpha;
+        // mate distance pruning
+        alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
+        beta = valmin(beta, GLOBAL_VALUE_KING - ply);
+        if (alpha >= beta)
+                return alpha;
 
         trans_lookup(&trans, &collision);
         trans_collision += collision;
@@ -290,10 +296,10 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
 
         XTime_GetTime(&t_now);
         time_limit_exceeded = t_now > time_limit;
-
         ui_data_stop = ui_data_available();
         uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
-        if (time_limit_exceeded || ui_data_stop || uci_data_stop)
+        abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
+        if (abort_search)
                 return 0;       // will be ignored
 
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
@@ -324,6 +330,9 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         }
         while (index < move_count && alpha < beta);
 
+        if (abort_search)
+                return 0;       // will be ignored
+
         if (ply > 1 && index < move_count && !board_ptr[index - 1]->capture)    // beta cutoff
         {
                 killer_ply(ply);
@@ -341,8 +350,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
         trans_lookup(&trans, &collision);
         if (!trans.entry_valid || trans.nodes < nodes)
         {
-                trans.eval = value;
-                if (value <= alpha_orig)
+                trans.eval = alpha;
+                if (alpha <= alpha_orig)
                         trans.flag = TRANS_UPPER_BOUND;
                 else if (value >= beta)
                         trans.flag = TRANS_LOWER_BOUND;
@@ -350,6 +359,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, board_t * board, int32_t de
                         trans.flag = TRANS_EXACT;
                 trans.nodes = nodes;
                 trans.depth = depth;
+                trans.capture = board->capture;
                 trans.entry_valid = 1;
                 trans_store(&trans);
         }
@@ -361,6 +371,7 @@ static int32_t
 nm_move_sort_compare(const void *p1, const void *p2)
 {
         const board_t **b1, **b2;
+	uint32_t b1_check, b2_check;
 
         b1 = (const board_t **)p1;
         b2 = (const board_t **)p2;
@@ -369,6 +380,12 @@ nm_move_sort_compare(const void *p1, const void *p2)
                 return -1;
         if ((*b1)->capture == 0 && (*b2)->capture == 1)
                 return 1;
+	b1_check = (*b1)->black_in_check || (*b1)->white_in_check;
+	b2_check = (*b2)->black_in_check || (*b2)->white_in_check;
+	if (b1_check && ! b2_check)
+		return -1;
+	if (! b1_check && b2_check)
+		return 1;
         if ((*b1)->eval > (*b2)->eval)
                 return -1;
         if ((*b1)->eval < (*b2)->eval)
@@ -452,7 +469,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         }
         printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
         time_limit = t_start + duration_seconds * UINT64_C(COUNTS_PER_SECOND);
-        time_limit_exceeded = 0;
+        abort_search = 0;
         ui_data_stop = 0;
         uci_data_stop = 0;
 
@@ -474,18 +491,18 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         valid_quiescence_ply_reached = 0;
 
         overall_best = -LARGE_EVAL;
-        depth_limit = 2;
-        while (depth_limit < MAX_DEPTH - 1 && !time_limit_exceeded && !ui_data_stop && !uci_data_stop)
+        depth_limit = 1;
+        while (depth_limit < MAX_DEPTH - 1 && !abort_search)
         {
                 ply = 0;
                 i = 0;
                 best_evaluation = -LARGE_EVAL;
-                while (i < move_count && !time_limit_exceeded && !ui_data_stop && !uci_data_stop)
+                while (i < move_count && !abort_search)
                 {
                         board_vert[ply] = board_ptr[i];
                         evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply);
                         board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
-                        if (!time_limit_exceeded && !ui_data_stop && !uci_data_stop && evaluate_move > best_evaluation)
+                        if (!abort_search && evaluate_move > best_evaluation)
                         {
                                 best_board = *board_ptr[i];
                                 best_evaluation = evaluate_move;

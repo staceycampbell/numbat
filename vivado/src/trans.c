@@ -17,7 +17,7 @@ trans_wait_idle(const char *func, const char *file, int line)
         i = 0;
         do
         {
-                vchess_trans_read(0, 0, 0, 0, 0, 0, &trans_idle);
+                vchess_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
                 ++i;
         }
         while (!trans_idle && i < 1000);
@@ -44,7 +44,7 @@ trans_clear_table(void)
                 XTime_GetTime(&t_end);
                 elapsed_ticks = t_end - t_start;
                 elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
-                vchess_trans_read(0, 0, 0, 0, 0, 0, &trans_idle);
+                vchess_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
         }
         while (elapsed_time < 2.0 && !trans_idle);
         if (!trans_idle)
@@ -60,7 +60,7 @@ trans_test_idle(const char *func, const char *file, int line)
 {
         uint32_t trans_idle;
 
-        vchess_trans_read(0, 0, 0, 0, 0, 0, &trans_idle);
+        vchess_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
         if (!trans_idle)
         {
                 printf("%s: transposition table state machine is not idle, stopping. (%s %d)\n", func, file, line);
@@ -76,13 +76,13 @@ trans_lookup(trans_t * trans, uint32_t * collision)
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         vchess_trans_lookup();  // lookup hash will be calculated on board in last call to vchess_write_board_basic
         trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        vchess_trans_read(collision, &trans->eval, &trans->depth, &trans->flag, &trans->nodes, &trans->entry_valid, &trans_idle);
+        vchess_trans_read(collision, &trans->eval, &trans->depth, &trans->flag, &trans->nodes, &trans->capture, &trans->entry_valid, &trans_idle);
 }
 
 void
 trans_store(const trans_t * trans)
 {
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        vchess_trans_store(trans->depth, trans->flag, trans->eval, trans->nodes);
+        vchess_trans_store(trans->depth, trans->flag, trans->eval, trans->nodes, trans->capture);
         trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
 }

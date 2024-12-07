@@ -107,7 +107,7 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
                 eval = vchess_initial_eval();
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
                 material_white = vchess_initial_material_white();
-                material_black = vchess_initial_material_white();
+                material_black = vchess_initial_material_black();
 		material = material_white - material_black;
         }
         else

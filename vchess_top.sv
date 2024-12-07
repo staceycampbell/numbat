@@ -157,6 +157,8 @@ module vchess_top
    wire [15:0]          trans_axi_wstrb;        // From trans of trans.v
    wire                 trans_axi_wvalid;       // From trans of trans.v
    wire [`BOARD_WIDTH-1:0] trans_board_in;      // From control of control.v
+   wire                 trans_capture_in;       // From control of control.v
+   wire                 trans_capture_out;      // From trans of trans.v
    wire [3:0]           trans_castle_mask_in;   // From control of control.v
    wire                 trans_clear_trans_in;   // From control of control.v
    wire                 trans_collision_out;    // From trans of trans.v
@@ -326,6 +328,7 @@ module vchess_top
       .depth_out                        (trans_depth_out[7:0]),  // Templated
       .flag_out                         (trans_flag_out[1:0]),   // Templated
       .nodes_out                        (trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .capture_out                      (trans_capture_out),     // Templated
       .collision_out                    (trans_collision_out),   // Templated
       .hash_out                         (trans_hash_out[79:0]),  // Templated
       .trans_axi_araddr                 (trans_axi_araddr[31:0]), // Templated
@@ -370,6 +373,7 @@ module vchess_top
       .eval_in                          (trans_eval_in[EVAL_WIDTH-1:0]), // Templated
       .depth_in                         (trans_depth_in[7:0]),   // Templated
       .nodes_in                         (trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .capture_in                       (trans_capture_in),      // Templated
       .trans_axi_arready                (trans_axi_arready),     // Templated
       .trans_axi_awready                (trans_axi_awready),     // Templated
       .trans_axi_bresp                  (trans_axi_bresp[1:0]),  // Templated
@@ -429,6 +433,7 @@ module vchess_top
       .trans_clear_trans_out            (trans_clear_trans_in),  // Templated
       .trans_eval_out                   (trans_eval_in[EVAL_WIDTH-1:0]), // Templated
       .trans_nodes_out                  (trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .trans_capture_out                (trans_capture_in),      // Templated
       .trans_flag_out                   (trans_flag_in[1:0]),    // Templated
       .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
       .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
@@ -446,6 +451,7 @@ module vchess_top
       .trans_eval_in                    (trans_eval_out[EVAL_WIDTH-1:0]), // Templated
       .trans_flag_in                    (trans_flag_out[1:0]),   // Templated
       .trans_nodes_in                   (trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .trans_capture_in                 (trans_capture_out),     // Templated
       .trans_trans_idle_in              (trans_trans_idle_out),  // Templated
       .trans_collision_in               (trans_collision_out),   // Templated
       .trans_hash_in                    (trans_hash_out[79:0]),  // Templated

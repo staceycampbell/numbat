@@ -57,7 +57,7 @@
 #define TRANS_LOWER_BOUND 1
 #define TRANS_UPPER_BOUND 2
 
-#define TRANS_NODES_WIDTH 29
+#define TRANS_NODES_WIDTH 28
 
 #define BOOK_RANDOM 0
 #define BOOK_MOST_COMMON 1
@@ -128,6 +128,7 @@ typedef struct trans_t
         int32_t eval;
         uint32_t flag;
 	uint32_t nodes;
+	uint32_t capture;
 } trans_t;
 
 static inline void
@@ -187,7 +188,7 @@ vchess_random(void)
 }
 
 static inline void
-vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes)
+vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
 {
         uint32_t val;
         uint32_t depth32;
@@ -197,7 +198,10 @@ vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes)
         depth_u8 = (uint8_t) depth;
         depth32 = depth_u8;
 
-        vchess_write(521, (uint32_t) eval);
+	val = (uint32_t) eval;
+	val &= ~(1 << 31);
+	val |= (capture != 0) << 31; // msbit of this reg stores capture flag
+        vchess_write(521, (uint32_t) val);
 	vchess_write(525, nodes);
 
         val = depth32 << 8 | flag << 2 | entry_store; // toggle store on
@@ -217,7 +221,8 @@ vchess_trans_lookup(void)
 }
 
 static inline void
-vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * entry_valid, uint32_t * trans_idle)
+vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
+		  uint32_t * entry_valid, uint32_t * trans_idle)
 {
         uint32_t val;
 
@@ -236,6 +241,8 @@ vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_
                 *depth = (int8_t) ((val >> 8) & 0xFF);
         if (collision)
                 *collision = (val >> 9) & 0x1;
+	if (capture)
+		*capture = (val >> 10) & 0x1;
 }
 
 static inline void
@@ -280,7 +287,7 @@ vchess_trans_idle_wait(void)
         counter = 0;
         do
         {
-                vchess_trans_read(0, 0, 0, 0, 0, 0, &trans_idle);
+                vchess_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
                 ++counter;
         }
         while (counter < 100 && !trans_idle);

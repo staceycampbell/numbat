@@ -35,7 +35,7 @@ module evaluate_killer #
    reg [`MAX_DEPTH * 2 - 1:0]            killer_valid = 0;
    reg signed [EVAL_WIDTH - 1:0]         eval_mg_pre;
    reg signed [EVAL_WIDTH - 1:0]         eval_eg_pre;
-   reg [MAX_DEPTH_LOG2 - 1:0]            ply_r;
+   (* shreg_extract = "no" *) reg [MAX_DEPTH_LOG2 - 1:0] ply_r0, ply_r1; // assist tools in avoiding timing problems
 
    reg [EVAL_WIDTH - 1:0]                bonus0, bonus1;
 
@@ -49,7 +49,8 @@ module evaluate_killer #
         killer_clear_r <= killer_clear;
         killer_update_r <= killer_update;
         board_valid_r <= board_valid;
-        ply_r <= killer_ply;
+        ply_r0 <= killer_ply;
+        ply_r1 <= ply_r0;
 
         if (white_to_move)
           begin
@@ -67,19 +68,19 @@ module evaluate_killer #
 
         if (killer_update && ~killer_update_r)
           begin
-             killer_table[ply_r][`BOARD_WIDTH - 1:0] <= killer_board;
-             killer_table[ply_r][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH] <= killer_table[ply_r][`BOARD_WIDTH - 1:0];
-             killer_valid[ply_r * 2] <= 1;
-             killer_valid[ply_r * 2 + 1] <= killer_valid[ply_r * 2];
+             killer_table[ply_r1][`BOARD_WIDTH - 1:0] <= killer_board;
+             killer_table[ply_r1][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH] <= killer_table[ply_r1][`BOARD_WIDTH - 1:0];
+             killer_valid[ply_r1 * 2] <= 1;
+             killer_valid[ply_r1 * 2 + 1] <= killer_valid[ply_r1 * 2];
           end
 
         if (board_valid && ~board_valid_r)
-          if (killer_valid[ply_r * 2] && board == killer_table[ply_r][`BOARD_WIDTH - 1:0])
+          if (killer_valid[ply_r1 * 2] && board == killer_table[ply_r1][`BOARD_WIDTH - 1:0])
             begin
                eval_mg_pre <= bonus0;
                eval_eg_pre <= bonus0;
             end
-          else if (killer_valid[ply_r * 2 + 1] && board == killer_table[ply_r][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH])
+          else if (killer_valid[ply_r1 * 2 + 1] && board == killer_table[ply_r1][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH])
             begin
                eval_mg_pre <= bonus1;
                eval_eg_pre <= bonus1;

@@ -45,7 +45,7 @@
 
 `define EN_PASSANT_VALID_BIT 3
 
-`define TRANS_NODES_WIDTH 29
+`define TRANS_NODES_WIDTH 28
 
 `define MAX_POSITIONS 219
-`define MAX_DEPTH 30
+`define MAX_DEPTH 40 // must match C code

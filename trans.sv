@@ -5,73 +5,75 @@ module trans #
    parameter EVAL_WIDTH = 0
    )
    (
-    input                         clk,
-    input                         reset,
+    input                                 clk,
+    input                                 reset,
 
-    input                         entry_lookup_in,
-    input                         entry_store_in,
-    input                         hash_only_in,
-    input                         clear_trans_in,
+    input                                 entry_lookup_in,
+    input                                 entry_store_in,
+    input                                 hash_only_in,
+    input                                 clear_trans_in,
    
-    input [`BOARD_WIDTH - 1:0]    board_in,
-    input                         white_to_move_in,
-    input [3:0]                   castle_mask_in,
-    input [3:0]                   en_passant_col_in,
+    input [`BOARD_WIDTH - 1:0]            board_in,
+    input                                 white_to_move_in,
+    input [3:0]                           castle_mask_in,
+    input [3:0]                           en_passant_col_in,
 
-    input [1:0]                   flag_in,
-    input [EVAL_WIDTH - 1:0]      eval_in,
-    input [7:0]                   depth_in,
-    input [`TRANS_NODES_WIDTH - 1:0]                  nodes_in,
+    input [1:0]                           flag_in,
+    input [EVAL_WIDTH - 1:0]              eval_in,
+    input [7:0]                           depth_in,
+    input [`TRANS_NODES_WIDTH - 1:0]      nodes_in,
+    input                                 capture_in,
 
-    output                        trans_idle_out,
+    output                                trans_idle_out,
 
-    output reg                    entry_valid_out,
-    output reg [EVAL_WIDTH - 1:0] eval_out,
-    output reg [7:0]              depth_out,
-    output reg [1:0]              flag_out,
-    output reg [`TRANS_NODES_WIDTH - 1:0]             nodes_out,
-    output reg                    collision_out,
+    output reg                            entry_valid_out,
+    output reg [EVAL_WIDTH - 1:0]         eval_out,
+    output reg [7:0]                      depth_out,
+    output reg [1:0]                      flag_out,
+    output reg [`TRANS_NODES_WIDTH - 1:0] nodes_out,
+    output reg                            capture_out,
+    output reg                            collision_out,
 
-    output reg [79:0]             hash_out,
+    output reg [79:0]                     hash_out,
    
-    input                         trans_axi_arready,
-    input                         trans_axi_awready,
-    input [1:0]                   trans_axi_bresp,
-    input                         trans_axi_bvalid,
-    input [127:0]                 trans_axi_rdata,
-    input                         trans_axi_rlast,
-    input [1:0]                   trans_axi_rresp,
-    input                         trans_axi_rvalid,
-    input                         trans_axi_wready,
+    input                                 trans_axi_arready,
+    input                                 trans_axi_awready,
+    input [1:0]                           trans_axi_bresp,
+    input                                 trans_axi_bvalid,
+    input [127:0]                         trans_axi_rdata,
+    input                                 trans_axi_rlast,
+    input [1:0]                           trans_axi_rresp,
+    input                                 trans_axi_rvalid,
+    input                                 trans_axi_wready,
    
-    output reg [31:0]             trans_axi_araddr,
-    output [1:0]                  trans_axi_arburst,
-    output [3:0]                  trans_axi_arcache,
-    output [7:0]                  trans_axi_arlen,
-    output [0:0]                  trans_axi_arlock,
-    output [2:0]                  trans_axi_arprot,
-    output [3:0]                  trans_axi_arqos,
-    output [2:0]                  trans_axi_arsize,
-    output reg                    trans_axi_arvalid,
-    output reg [31:0]             trans_axi_awaddr,
-    output [1:0]                  trans_axi_awburst,
-    output [3:0]                  trans_axi_awcache,
-    output [7:0]                  trans_axi_awlen,
-    output [0:0]                  trans_axi_awlock,
-    output [2:0]                  trans_axi_awprot,
-    output [3:0]                  trans_axi_awqos,
-    output [2:0]                  trans_axi_awsize,
-    output reg                    trans_axi_awvalid,
-    output                        trans_axi_bready,
-    output reg                    trans_axi_rready,
-    output reg [127:0]            trans_axi_wdata,
-    output                        trans_axi_wlast,
-    output [15:0]                 trans_axi_wstrb,
-    output                        trans_axi_wvalid,
-    output [3:0]                  trans_axi_arregion,
-    output [3:0]                  trans_axi_awregion,
+    output reg [31:0]                     trans_axi_araddr,
+    output [1:0]                          trans_axi_arburst,
+    output [3:0]                          trans_axi_arcache,
+    output [7:0]                          trans_axi_arlen,
+    output [0:0]                          trans_axi_arlock,
+    output [2:0]                          trans_axi_arprot,
+    output [3:0]                          trans_axi_arqos,
+    output [2:0]                          trans_axi_arsize,
+    output reg                            trans_axi_arvalid,
+    output reg [31:0]                     trans_axi_awaddr,
+    output [1:0]                          trans_axi_awburst,
+    output [3:0]                          trans_axi_awcache,
+    output [7:0]                          trans_axi_awlen,
+    output [0:0]                          trans_axi_awlock,
+    output [2:0]                          trans_axi_awprot,
+    output [3:0]                          trans_axi_awqos,
+    output [2:0]                          trans_axi_awsize,
+    output reg                            trans_axi_awvalid,
+    output                                trans_axi_bready,
+    output reg                            trans_axi_rready,
+    output reg [127:0]                    trans_axi_wdata,
+    output                                trans_axi_wlast,
+    output [15:0]                         trans_axi_wstrb,
+    output                                trans_axi_wvalid,
+    output [3:0]                          trans_axi_arregion,
+    output [3:0]                          trans_axi_awregion,
 
-    output reg [31:0]             trans_trans = 0
+    output reg [31:0]                     trans_trans = 0
     );
 
    localparam HASH_USED = 64;
@@ -102,54 +104,57 @@ module trans #
    localparam STATE_LOOKUP_WAIT_ADDR = 15;
    localparam STATE_LOOKUP_VALIDATE = 16;
    
-   reg [4:0]                      state = STATE_IDLE;
+   reg [4:0]                              state = STATE_IDLE;
 
-   reg [79:0]                     hash_0 [63:0];
-   reg [79:0]                     hash_1 [15:0];
-   reg [79:0]                     hash_2 [ 3:0];
-   reg [79:0]                     hash_side;
-   reg [79:0]                     hash;
+   reg [79:0]                             hash_0 [63:0];
+   reg [79:0]                             hash_1 [15:0];
+   reg [79:0]                             hash_2 [ 3:0];
+   reg [79:0]                             hash_side;
+   reg [79:0]                             hash;
 
-   reg                            entry_store, entry_lookup, hash_only, clear_trans;
-   reg                            clear_trans_r;
-   reg                            entry_store_in_z, entry_lookup_in_z, hash_only_in_z, clear_trans_in_z;
+   reg                                    entry_store, entry_lookup, hash_only, clear_trans;
+   reg                                    clear_trans_r;
+   reg                                    entry_store_in_z, entry_lookup_in_z, hash_only_in_z, clear_trans_in_z;
    
    (* ram_style = "distributed" *) reg [79:0] zob_rand_board [0:767];
    (* ram_style = "distributed" *) reg [79:0] zob_rand_en_passant_col [0:31];
    (* ram_style = "distributed" *) reg [3:0] zob_piece_lookup [1:14];
    (* ram_style = "distributed" *) reg [79:0] zob_rand_castle_mask [0:15];
-   reg [79:0]                     zob_rand_btm;
+   reg [79:0]                             zob_rand_btm;
 
-   reg [`BOARD_WIDTH - 1:0]       board;
-   reg                            white_to_move;
-   reg [3:0]                      castle_mask;
-   reg [3:0]                      en_passant_col;
-   reg [1:0]                      flag;
-   reg [EVAL_WIDTH - 1:0]         eval;
-   reg [7:0]                      depth;
-   reg [`TRANS_NODES_WIDTH - 1:0]                     nodes;
-   reg                            valid_wr;
-   reg                            local_wvalid;
-   reg [BURST_COUNTER_WIDTH - 1:0] burst_counter;
-   reg                             start_data;
+   reg [`BOARD_WIDTH - 1:0]               board;
+   reg                                    white_to_move;
+   reg [3:0]                              castle_mask;
+   reg [3:0]                              en_passant_col;
+   reg [1:0]                              flag;
+   reg [EVAL_WIDTH - 1:0]                 eval;
+   reg [7:0]                              depth;
+   reg [`TRANS_NODES_WIDTH - 1:0]         nodes;
+   reg                                    capture;
+   reg                                    valid_wr;
+   reg                                    local_wvalid;
+   reg [BURST_COUNTER_WIDTH - 1:0]        burst_counter;
+   reg                                    start_data;
 
-   reg [127:0]                     lookup;
+   reg [127:0]                            lookup;
 
-   integer                         i;
+   integer                                i;
 
-   wire [HASH_USED - 1:0]          lookup_hash;
-   wire [1:0]                      lookup_flag;
-   wire [EVAL_WIDTH - 1:0]         lookup_eval;
-   wire [7:0]                      lookup_depth;
-   wire [`TRANS_NODES_WIDTH - 1:0]                     lookup_nodes;
-   wire                            lookup_valid;
+   wire [HASH_USED - 1:0]                 lookup_hash;
+   wire [1:0]                             lookup_flag;
+   wire [EVAL_WIDTH - 1:0]                lookup_eval;
+   wire [7:0]                             lookup_depth;
+   wire [`TRANS_NODES_WIDTH - 1:0]        lookup_nodes;
+   wire                                   lookup_capture;
+   wire                                   lookup_valid;
 
-   wire [MEM_ADDR_WIDTH - 1:0]     hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
-   wire [127:0]                    store = {valid_wr, nodes[`TRANS_NODES_WIDTH - 1:0], depth[7:0], flag[1:0], eval[EVAL_WIDTH - 1:0], hash[HASH_USED - 1:0]};
+   wire [MEM_ADDR_WIDTH - 1:0]            hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
+   wire [127:0]                           store = {valid_wr, capture, nodes[`TRANS_NODES_WIDTH - 1:0], depth[7:0],
+                                                   flag[1:0], eval[EVAL_WIDTH - 1:0], hash[HASH_USED - 1:0]};
 
-   wire                            clear_wlast = burst_counter[7:0] == 8'hFF;
+   wire                                   clear_wlast = burst_counter[7:0] == 8'hFF;
 
-   assign {lookup_valid, lookup_nodes[`TRANS_NODES_WIDTH - 1:0], lookup_depth[7:0], lookup_flag[1:0],
+   assign {lookup_valid, lookup_capture, lookup_nodes[`TRANS_NODES_WIDTH - 1:0], lookup_depth[7:0], lookup_flag[1:0],
            lookup_eval[EVAL_WIDTH - 1:0], lookup_hash[HASH_USED - 1:0]} = lookup;
    
    assign trans_idle_out = state == STATE_IDLE;
@@ -204,6 +209,7 @@ module trans #
         eval_out <= lookup_eval;
         depth_out <= lookup_depth;
         nodes_out <= lookup_nodes;
+        capture_out <= lookup_capture;
         flag_out <= lookup_flag;
         hash_out <= hash;
      end
@@ -228,6 +234,7 @@ module trans #
               flag <= flag_in;
               depth <= depth_in;
               nodes <= nodes_in;
+              capture <= capture_in;
 
               local_wvalid <= 0;
               trans_axi_awvalid <= 0;
