@@ -21,7 +21,6 @@ static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_colli
 static uint32_t move_killer_found;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
-static int32_t depth_limit;
 static int32_t quiescence_ply_reached, valid_quiescence_ply_reached;
 static XTime q_time;
 static XTime time_limit;
@@ -232,6 +231,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
+        int32_t reduce;
         int32_t value;
         int32_t alpha_orig;
         uint32_t collision;
@@ -315,8 +315,12 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         do
         {
                 board_vert[ply] = board_ptr[index];
-                if (depth > 0)
-                        value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply);
+                if (index > 3 && depth > 2)
+                        reduce = 1;
+                else
+                        reduce = 0;
+                if (depth - 1 - reduce >= 0)
+                        value = -negamax(game, game_moves, board_ptr[index], depth - 1 - reduce, -beta, -alpha, ply);
                 else
                 {
                         XTime_GetTime(&q_start);
@@ -371,7 +375,6 @@ static int32_t
 nm_move_sort_compare(const void *p1, const void *p2)
 {
         const board_t **b1, **b2;
-	uint32_t b1_check, b2_check;
 
         b1 = (const board_t **)p1;
         b2 = (const board_t **)p2;
@@ -380,12 +383,6 @@ nm_move_sort_compare(const void *p1, const void *p2)
                 return -1;
         if ((*b1)->capture == 0 && (*b2)->capture == 1)
                 return 1;
-	b1_check = (*b1)->black_in_check || (*b1)->white_in_check;
-	b2_check = (*b2)->black_in_check || (*b2)->white_in_check;
-	if (b1_check && ! b2_check)
-		return -1;
-	if (! b1_check && b2_check)
-		return 1;
         if ((*b1)->eval > (*b2)->eval)
                 return -1;
         if ((*b1)->eval < (*b2)->eval)
@@ -398,6 +395,7 @@ board_t
 nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
 {
         int32_t i, game_index;
+        int32_t depth_limit;
         uint32_t ply;
         uint32_t move_count;
         uint64_t elapsed_ticks;
