@@ -1,6 +1,3 @@
-- beatable test opponent
-- bishop, queen, knight evaluations
-- check killer hueristic implementation
 - MVV-LVA sorting
-- fix en-passant and three-fold repetition
-- fix three-fold repetition and eval
+- automatic transposition lookup in all_moves
+- principal variation collect and deploy
