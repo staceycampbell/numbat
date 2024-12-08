@@ -184,6 +184,7 @@ module all_moves #
    reg                                   pawn_do_init;
    reg                                   pawn_do_en_passant;
    reg                                   pawn_do_promote;
+   reg                                   pawn_ws;
 
    reg [1:0]                             castle_short_legal;
    reg [1:0]                             castle_long_legal;
@@ -556,6 +557,7 @@ module all_moves #
               en_passant_col_ram_wr <= 4'b0;
               pawn_zero_half_move_ram_wr <= 0;
               slider_index <= 0;
+              pawn_ws <= 0;
               uci_from_row_ram_wr <= row;
               uci_from_col_ram_wr <= col;
               uci_promotion_ram_wr <= `EMPTY_POSN;
@@ -653,8 +655,12 @@ module all_moves #
               if (discrete_index == 8)
                 state <= STATE_NEXT;
            end
-         STATE_PAWN_INIT_0 :
-           state <= STATE_PAWN_INIT_1; // wait state
+         STATE_PAWN_INIT_0 : // wait state
+           begin
+              pawn_ws <= 1;
+              if (pawn_ws)
+                state <= STATE_PAWN_INIT_1;
+           end
          STATE_PAWN_INIT_1 :
            begin
               pawn_en_passant_count <= 0;
