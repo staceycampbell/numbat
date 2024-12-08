@@ -30,12 +30,13 @@ module evaluate_killer #
 
    reg                                   killer_clear_r;
    reg                                   killer_update_r;
-   reg                                   board_valid_r;
+   reg                                   board_valid_t1, board_valid_t2;
    reg [`BOARD_WIDTH * 2 - 1:0]          killer_table [0:`MAX_DEPTH - 1]; // two killer moves per ply
    reg [`MAX_DEPTH * 2 - 1:0]            killer_valid = 0;
    reg signed [EVAL_WIDTH - 1:0]         eval_mg_pre;
    reg signed [EVAL_WIDTH - 1:0]         eval_eg_pre;
    (* shreg_extract = "no" *) reg [MAX_DEPTH_LOG2 - 1:0] ply_r0, ply_r1; // assist tools in avoiding timing problems
+   reg                                   killer_zero, killer_one;
 
    reg [EVAL_WIDTH - 1:0]                bonus0, bonus1;
 
@@ -48,7 +49,8 @@ module evaluate_killer #
      begin
         killer_clear_r <= killer_clear;
         killer_update_r <= killer_update;
-        board_valid_r <= board_valid;
+        board_valid_t1 <= board_valid;
+        board_valid_t2 <= board_valid_t1;
         ply_r0 <= killer_ply;
         ply_r1 <= ply_r0;
 
@@ -62,6 +64,8 @@ module evaluate_killer #
              bonus0 <= killer_bonus0;
              bonus1 <= killer_bonus1;
           end
+        killer_zero <= killer_valid[ply_r1 * 2 + 0] && board == killer_table[ply_r1][`BOARD_WIDTH - 1:0];
+        killer_one  <= killer_valid[ply_r1 * 2 + 1] && board == killer_table[ply_r1][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH];
 
         if (killer_clear && ~killer_clear_r)
           killer_valid <= 0;
@@ -73,14 +77,14 @@ module evaluate_killer #
              killer_valid[ply_r1 * 2] <= 1;
              killer_valid[ply_r1 * 2 + 1] <= killer_valid[ply_r1 * 2];
           end
-
-        if (board_valid && ~board_valid_r)
-          if (killer_valid[ply_r1 * 2] && board == killer_table[ply_r1][`BOARD_WIDTH - 1:0])
+        
+        if (board_valid_t1 && ~board_valid_t2)
+          if (killer_zero)
             begin
                eval_mg_pre <= bonus0;
                eval_eg_pre <= bonus0;
             end
-          else if (killer_valid[ply_r1 * 2 + 1] && board == killer_table[ply_r1][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH])
+          else if (killer_one)
             begin
                eval_mg_pre <= bonus1;
                eval_eg_pre <= bonus1;
