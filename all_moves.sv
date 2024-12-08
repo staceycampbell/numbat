@@ -174,7 +174,6 @@ module all_moves #
    reg signed [4:0]                      pawn_row_cap_right, pawn_col_cap_right;
    reg [`PIECE_WIDTH - 1:0]              pawn_promotions [0:3];
    reg [2:0]                             pawn_adv1_mask;
-   reg [2:0]                             pawn_promote_mask;
    reg                                   pawn_adv2;
    reg [1:0]                             pawn_en_passant_mask;
    reg signed [4:0]                      pawn_en_passant_row [0:1];
@@ -184,7 +183,6 @@ module all_moves #
    reg                                   pawn_do_init;
    reg                                   pawn_do_en_passant;
    reg                                   pawn_do_promote;
-   reg                                   pawn_ws;
 
    reg [1:0]                             castle_short_legal;
    reg [1:0]                             castle_long_legal;
@@ -395,8 +393,6 @@ module all_moves #
                              board[idx[pawn_row_cap_right[2:0]][pawn_col_cap_right[2:0]] + `BLACK_BIT] != black_to_move; // contains opponent's piece
         pawn_adv2 <= board[idx[pawn_row_adv1[2:0]][pawn_col_adv1[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN &&
                      board[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN;
-        for (i = 0; i <= 2; i = i + 1)
-          pawn_promote_mask[i] <= pawn_adv1_mask[i];
 
         pawn_en_passant_mask[0] <= en_passant_col[`EN_PASSANT_VALID_BIT] &&
                                    pawn_col_cap_left >= 0 &&
@@ -557,7 +553,6 @@ module all_moves #
               en_passant_col_ram_wr <= 4'b0;
               pawn_zero_half_move_ram_wr <= 0;
               slider_index <= 0;
-              pawn_ws <= 0;
               uci_from_row_ram_wr <= row;
               uci_from_col_ram_wr <= col;
               uci_promotion_ram_wr <= `EMPTY_POSN;
@@ -656,11 +651,7 @@ module all_moves #
                 state <= STATE_NEXT;
            end
          STATE_PAWN_INIT_0 : // wait state
-           begin
-              pawn_ws <= 1;
-              if (pawn_ws)
-                state <= STATE_PAWN_INIT_1;
-           end
+           state <= STATE_PAWN_INIT_1;
          STATE_PAWN_INIT_1 :
            begin
               pawn_en_passant_count <= 0;
@@ -722,7 +713,7 @@ module all_moves #
               uci_to_row_ram_wr <= pawn_adv1_row[pawn_move_count][2:0];
               uci_to_col_ram_wr <= pawn_adv1_col[pawn_move_count][2:0];
               uci_promotion_ram_wr <= pawn_promotions[pawn_promotion_count];
-              if (pawn_promote_mask[pawn_move_count])
+              if (pawn_adv1_mask[pawn_move_count])
                 begin
                    pawn_zero_half_move_ram_wr <= 1;
                    ram_wr <= 1;
