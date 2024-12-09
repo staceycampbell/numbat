@@ -13,16 +13,21 @@
 void
 tc_display(const tc_t *tc)
 {
-	uint32_t hour_white, minute_white, second_white;
-	uint32_t hour_black, minute_black, second_black;
+        uint32_t hour_white, minute_white, second_white;
+        uint32_t hour_black, minute_black, second_black;
 
-	hour_white = tc->main_remaining[0] / (60 * 60);
-	minute_white = (tc->main_remaining[0] - hour_white * 60 * 60) / 60;
-	second_white = tc->main_remaining[0] % 60;
-	hour_black = tc->main_remaining[1] / (60 * 60);
-	minute_black = (tc->main_remaining[1] - hour_black * 60 * 60) / 60;
-	second_black = tc->main_remaining[1] % 60;
-	printf("W:%02d:%02d:%02d B:%02d:%02d:%02d", hour_white, minute_white, second_white, hour_black, minute_black, second_black);
+        if (tc->valid)
+        {
+                hour_white = tc->main_remaining[0] / (60 * 60);
+                minute_white = (tc->main_remaining[0] - hour_white * 60 * 60) / 60;
+                second_white = tc->main_remaining[0] % 60;
+                hour_black = tc->main_remaining[1] / (60 * 60);
+                minute_black = (tc->main_remaining[1] - hour_black * 60 * 60) / 60;
+                second_black = tc->main_remaining[1] % 60;
+                printf("W:%02d:%02d:%02d B:%02d:%02d:%02d", hour_white, minute_white, second_white, hour_black, minute_black, second_black);
+        }
+        else
+                printf("fixed time");
 }
 
 void

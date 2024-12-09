@@ -28,7 +28,14 @@ static uint32_t ui_data_stop;
 static uint32_t uci_data_stop;
 static uint32_t abort_search;
 
-static const uint32_t debug_info = 1;
+static const uint32_t debug_info = 0;
+static const uint32_t debug_pv_info = 1;
+
+typedef struct pvline_t
+{
+        int32_t cmove;
+        uci_t argmove[MAX_DEPTH];
+} pvline_t;
 
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply)
@@ -147,7 +154,7 @@ valmin(int32_t a, int32_t b)
 }
 
 static int32_t
-quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
+quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, pvline_t * p_pvline)
 {
         uint32_t move_count, index, endgame;
         uint32_t mate, stalemate, fifty_move;
@@ -155,11 +162,15 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
         XTime t_now;
         uint32_t time_limit_exceeded;
         board_t *board_ptr[MAX_POSITIONS];
+        pvline_t pvline;
 
         ++nodes_visited;
 
+        pvline.cmove = 0;
+
         if (ply >= MAX_DEPTH - 1)
         {
+                p_pvline->cmove = 0;
                 ++q_hard_cutoff;
                 return beta;
         }
@@ -176,15 +187,22 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
         endgame = vchess_initial_material_black() < 1700 && vchess_initial_material_white() < 1700;
 
         // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
-        if (!endgame && value + Q_DELTA < alpha && ! (board->black_in_check || board->white_in_check))
+        if (!endgame && value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
+        {
+                p_pvline->cmove = 0;
                 return alpha;
+        }
 
         if (value >= beta)
+        {
+                p_pvline->cmove = 0;
                 return beta;
+        }
         if (value > alpha)
                 alpha = value;
         if (move_count == 0)
         {
+                p_pvline->cmove = 0;
                 ++q_end;
                 return value;
         }
@@ -213,12 +231,19 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
         do
         {
                 board_vert[ply] = board_ptr[index];
-                value = -quiescence(board_ptr[index], -beta, -alpha, ply);
+                value = -quiescence(board_ptr[index], -beta, -alpha, ply, &pvline);
+                if (abort_search)
+                        return 0;
                 if (value > alpha)
+                {
+                        p_pvline->argmove[0] = board_ptr[index]->uci;
+                        memcpy(p_pvline->argmove + 1, pvline.argmove, pvline.cmove * sizeof(uci_t));
+                        p_pvline->cmove = pvline.cmove + 1;
                         alpha = value;
+                }
                 ++index;
         }
-        while (index < move_count && alpha < beta);
+        while (!abort_search && index < move_count && alpha < beta);
 
         if (abort_search)
                 return 0;       // will be ignored
@@ -227,7 +252,8 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
 }
 
 static int32_t
-negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply)
+negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply,
+        pvline_t * p_pvline)
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
@@ -241,12 +267,17 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         XTime q_start, q_stop;
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
+        pvline_t pvline;
 
         if (ply >= MAX_DEPTH - 1)
         {
-                ++q_hard_cutoff;
-                return beta;
+                printf("%s: increase MAX_DEPTH, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                while (1);
         }
+
+        if (depth == 0)
+                p_pvline->cmove = 0;
+        pvline.cmove = 0;
 
         node_start = nodes_visited;
         ++nodes_visited;
@@ -266,6 +297,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
 
         if (move_count == 0)
         {
+                p_pvline->cmove = 0;
                 ++terminal_nodes;
                 if (stalemate || thrice_rep || fifty_move || insufficient)
                         return 0;
@@ -276,7 +308,10 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
         beta = valmin(beta, GLOBAL_VALUE_KING - ply);
         if (alpha >= beta)
+        {
+                p_pvline->cmove = 0;
                 return alpha;
+        }
 
         trans_lookup(&trans, &collision);
         trans_collision += collision;
@@ -284,13 +319,19 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         if (trans.entry_valid && trans.depth >= depth)
         {
                 if (trans.flag == TRANS_EXACT)
+                {
+                        p_pvline->cmove = 0;
                         return trans.eval;
+                }
                 else if (trans.flag == TRANS_LOWER_BOUND)
                         alpha = valmax(alpha, trans.eval);
                 else if (trans.flag == TRANS_UPPER_BOUND)
                         beta = valmin(beta, trans.eval);
                 if (alpha >= beta)
+                {
+                        p_pvline->cmove = 0;
                         return trans.eval;
+                }
         }
         ++no_trans;
 
@@ -320,19 +361,27 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 else
                         reduce = 0;
                 if (depth - 1 - reduce >= 0)
-                        value = -negamax(game, game_moves, board_ptr[index], depth - 1 - reduce, -beta, -alpha, ply);
+                        value = -negamax(game, game_moves, board_ptr[index], depth - 1 - reduce, -beta, -alpha, ply, &pvline);
                 else
                 {
                         XTime_GetTime(&q_start);
-                        value = -quiescence(board_ptr[index], -beta, -alpha, ply);
+                        value = -quiescence(board_ptr[index], -beta, -alpha, ply, &pvline);
                         XTime_GetTime(&q_stop);
                         q_time += q_stop - q_start;
                 }
+                if (abort_search)
+                        return 0;       // will be ignored
                 if (value > alpha)
+                {
                         alpha = value;
+                        p_pvline->argmove[0] = board_ptr[index]->uci;
+                        memcpy(p_pvline->argmove + 1, pvline.argmove, pvline.cmove * sizeof(uci_t));
+                        p_pvline->cmove = pvline.cmove + 1;
+                }
+
                 ++index;
         }
-        while (index < move_count && alpha < beta);
+        while (!abort_search && index < move_count && alpha < beta);
 
         if (abort_search)
                 return 0;       // will be ignored
@@ -407,6 +456,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         char uci_str[6];
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
+        pvline_t pvline;
 
         if (game_moves == 0)
         {
@@ -498,7 +548,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                 while (i < move_count && !abort_search)
                 {
                         board_vert[ply] = board_ptr[i];
-                        evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply);
+                        evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, -LARGE_EVAL, LARGE_EVAL, ply, &pvline);
                         board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
                         if (!abort_search && evaluate_move > best_evaluation)
                         {
@@ -519,6 +569,19 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                                 printf("%s=%d ", uci_str, board_ptr[i]->eval);
                                 if (i > 0 && i % 10 == 0 && i != move_count - 1)
                                         printf("\n");
+                        }
+                        printf("\n");
+                        fflush(stdout);
+                }
+                if (debug_pv_info)
+                {
+                        printf("%02d (%d): ", depth_limit, pvline.cmove);
+                        uci_string(&best_board.uci, uci_str);
+                        printf("%s ", uci_str);
+                        for (i = 0; i < pvline.cmove; ++i)
+                        {
+                                uci_string(&pvline.argmove[i], uci_str);
+                                printf("%s ", uci_str);
                         }
                         printf("\n");
                         fflush(stdout);
