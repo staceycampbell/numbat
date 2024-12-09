@@ -31,7 +31,7 @@ module all_moves #
     input signed [EVAL_WIDTH - 1:0]      killer_bonus0_in,
     input signed [EVAL_WIDTH - 1:0]      killer_bonus1_in,
 
-    input [31:0]                         pv_ctrl,
+    input [31:0]                         pv_ctrl_in,
 
     input [`BOARD_WIDTH-1:0]             repdet_board_in,
     input [3:0]                          repdet_castle_mask_in,
@@ -1070,7 +1070,7 @@ module all_moves #
       .killer_clear                     (killer_clear_in),       // Templated
       .killer_bonus0                    (killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
       .killer_bonus1                    (killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
-      .pv_ctrl                          (pv_ctrl[31:0]));
+      .pv_ctrl_in                       (pv_ctrl_in[31:0]));
 
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),

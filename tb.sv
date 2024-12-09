@@ -348,7 +348,7 @@ module tb;
       .killer_clear_in                  (killer_clear),          // Templated
       .killer_bonus0_in                 (killer_bonus0[EVAL_WIDTH-1:0]), // Templated
       .killer_bonus1_in                 (killer_bonus1[EVAL_WIDTH-1:0]), // Templated
-      .pv_ctrl                          (pv_ctrl[31:0]),
+      .pv_ctrl_in                       (pv_ctrl[31:0]),         // Templated
       .repdet_board_in                  (repdet_board[`BOARD_WIDTH-1:0]), // Templated
       .repdet_castle_mask_in            (repdet_castle_mask[3:0]), // Templated
       .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated

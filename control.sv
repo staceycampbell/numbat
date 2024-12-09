@@ -32,19 +32,21 @@ module control #
     output reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index,
     output reg                            am_clear_moves,
     output reg                            am_capture_moves,
-   
+
+    output reg [31:0]                     am_pv_ctrl_out,
+
     output reg [MAX_DEPTH_LOG2 - 1:0]     am_killer_ply_out,
     output reg [`BOARD_WIDTH - 1:0]       am_killer_board_out,
     output reg                            am_killer_update_out,
     output reg                            am_killer_clear_out,
     output reg signed [EVAL_WIDTH - 1:0]  am_killer_bonus0_out,
     output reg signed [EVAL_WIDTH - 1:0]  am_killer_bonus1_out,
-   
+
     output [`BOARD_WIDTH - 1:0]           trans_board_out,
     output                                trans_white_to_move_out,
     output [3:0]                          trans_castle_mask_out,
     output [3:0]                          trans_en_passant_col_out,
-   
+
     output reg [7:0]                      trans_depth_out,
     output reg                            trans_entry_lookup_out,
     output reg                            trans_entry_store_out,
@@ -54,7 +56,7 @@ module control #
     output reg [`TRANS_NODES_WIDTH - 1:0] trans_nodes_out,
     output reg                            trans_capture_out,
     output reg [1:0]                      trans_flag_out,
-   
+
     input [7:0]                           trans_depth_in,
     input                                 trans_entry_valid_in,
     input [EVAL_WIDTH - 1:0]              trans_eval_in,
@@ -139,7 +141,7 @@ module control #
    wire [15:0]                            wr_reg_addr = ctrl0_wr_addr[15:2];
    wire [15:0]                            rd_reg_addr = ctrl0_axi_araddr[15:2];
    wire [5:0]                             board_address = wr_reg_addr - 1;
-   
+
    assign trans_board_out = am_new_board_out;
    assign trans_white_to_move_out = am_white_to_move_out;
    assign trans_castle_mask_out = am_castle_mask_out;
@@ -187,7 +189,9 @@ module control #
                 trans_entry_store_out, trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
          521 : {trans_capture_out, trans_eval_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[EVAL_WIDTH - 1:0]};
          525 : trans_nodes_out <= ctrl0_wr_data;
-         
+
+         600 : am_pv_ctrl_out <= ctrl0_wr_data;
+
          1024 : am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          1025 : am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          1026 : am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
@@ -293,20 +297,22 @@ module control #
                523 : ctrl0_axi_rdata <= trans_hash_in[63:32];
                524 : ctrl0_axi_rdata <= trans_hash_in[79:64];
                525 : ctrl0_axi_rdata <= trans_nodes_out;
-               
-               1024 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH]; 
-               1025 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH]; 
-               1026 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH]; 
-               1027 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH]; 
-               1028 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH]; 
-               1029 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH]; 
-               1030 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH]; 
-               1031 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH]; 
+
+               600 : ctrl0_axi_rdata <= am_pv_ctrl_out;
+
+               1024 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
+               1025 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
+               1026 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
+               1027 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH];
+               1028 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH];
+               1029 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
+               1030 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
+               1031 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
                1032 : ctrl0_axi_rdata <= {am_killer_clear_out, am_killer_update_out};
                1033 : ctrl0_axi_rdata <= am_killer_ply_out;
                1034 : ctrl0_axi_rdata <= am_killer_bonus0_out;
                1035 : ctrl0_axi_rdata <= am_killer_bonus1_out;
-               
+
                default : ctrl0_axi_rdata <= 0;
              endcase
              ctrl0_axi_rvalid <= 1;

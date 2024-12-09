@@ -13,7 +13,7 @@ module evaluate_pv #
     input [UCI_WIDTH - 1:0]      uci_in,
     input [MAX_DEPTH_LOG2 - 1:0] pv_ply,
     input                        clear_eval,
-    input [31:0]                 pv_ctrl,
+    input [31:0]                 pv_ctrl_in,
 
     output reg                   eval_pv_flag = 0,
     output                       eval_valid
@@ -31,19 +31,19 @@ module evaluate_pv #
 
    /*AUTOWIRE*/
 
-   wire                          pv_ctrl_table_write = pv_ctrl[31];
-   wire [UCI_WIDTH - 1:0]        pv_ctrl_table_entry = pv_ctrl[UCI_WIDTH - 1:0];
-   wire [MAX_DEPTH_LOG2 - 1:0]   pv_ctrl_ply = pv_ctrl[UCI_WIDTH+:MAX_DEPTH_LOG2];
-   wire                          pv_ctrl_entry_valid = pv_ctrl[UCI_WIDTH + MAX_DEPTH_LOG2];
+   wire                          pv_ctrl_in_table_write = pv_ctrl_in[31];
+   wire [UCI_WIDTH - 1:0]        pv_ctrl_in_table_entry = pv_ctrl_in[UCI_WIDTH - 1:0];
+   wire [MAX_DEPTH_LOG2 - 1:0]   pv_ctrl_in_ply = pv_ctrl_in[UCI_WIDTH+:MAX_DEPTH_LOG2];
+   wire                          pv_ctrl_in_entry_valid = pv_ctrl_in[UCI_WIDTH + MAX_DEPTH_LOG2];
 
    always @(posedge clk)
      begin
         board_valid_r <= board_valid;
         
-        if (pv_ctrl_table_write)
+        if (pv_ctrl_in_table_write)
           begin
-             pv_table[pv_ctrl_ply] <= pv_ctrl_table_entry;
-             pv_table_valid[pv_ctrl_ply] <= pv_ctrl_entry_valid;
+             pv_table[pv_ctrl_in_ply] <= pv_ctrl_in_table_entry;
+             pv_table_valid[pv_ctrl_in_ply] <= pv_ctrl_in_entry_valid;
           end
 
         if (board_valid && ~board_valid_r)

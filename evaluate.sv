@@ -35,7 +35,7 @@ module evaluate #
     input signed [EVAL_WIDTH - 1:0]  killer_bonus0,
     input signed [EVAL_WIDTH - 1:0]  killer_bonus1,
    
-    input [31:0]                     pv_ctrl,
+    input [31:0]                     pv_ctrl_in,
    
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
@@ -566,7 +566,7 @@ module evaluate #
       .uci_in                           (uci_in[UCI_WIDTH-1:0]),
       .pv_ply                           (killer_ply[MAX_DEPTH_LOG2-1:0]), // Templated
       .clear_eval                       (clear_eval),
-      .pv_ctrl                          (pv_ctrl[31:0]));
+      .pv_ctrl_in                       (pv_ctrl_in[31:0]));
    
    /* popcount AUTO_TEMPLATE (
     .population (occupied_count[]),
