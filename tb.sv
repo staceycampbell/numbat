@@ -47,6 +47,7 @@ module tb;
    reg                                killer_clear = 0;
    reg [MAX_DEPTH_LOG2-1:0]           killer_ply = 2;
    reg                                killer_update = 0;
+   reg [31:0]                         pv_ctrl = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -79,6 +80,7 @@ module tb;
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
    wire                 insufficient_material_out;// From all_moves of all_moves.v
+   wire                 pv_out;                 // From all_moves of all_moves.v
    wire                 thrice_rep_out;         // From all_moves of all_moves.v
    wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
    wire                 white_in_check_out;     // From all_moves of all_moves.v
@@ -143,6 +145,14 @@ module tb;
 
         forever
           #1 clk = ~clk;
+     end // initial begin
+
+   always @(posedge clk)
+     begin
+        tb.all_moves.evaluate.evaluate_pv.pv_table_valid[killer_ply] <= 1;
+        // uci_promotion=0 uci_to_row=7 uci_to_col=6 uci_from_row=6 uci_from_col=4
+        // uci_promotion_ram_wr, uci_to_row_ram_wr, uci_to_col_ram_wr, uci_from_row_ram_wr, uci_from_col_ram_wr
+        tb.all_moves.evaluate.evaluate_pv.pv_table[killer_ply] <= 0 << 12 | 7 << 9 | 6 << 6 | 6 << 3 | 4 << 0;
      end
 
    localparam LOADST_IDLE = 0;
@@ -308,6 +318,7 @@ module tb;
       .castle_mask_out                  (castle_mask_out[3:0]),
       .en_passant_col_out               (en_passant_col_out[3:0]),
       .capture_out                      (capture_out),
+      .pv_out                           (pv_out),
       .white_in_check_out               (white_in_check_out),
       .black_in_check_out               (black_in_check_out),
       .white_is_attacking_out           (white_is_attacking_out[63:0]),
@@ -337,6 +348,7 @@ module tb;
       .killer_clear_in                  (killer_clear),          // Templated
       .killer_bonus0_in                 (killer_bonus0[EVAL_WIDTH-1:0]), // Templated
       .killer_bonus1_in                 (killer_bonus1[EVAL_WIDTH-1:0]), // Templated
+      .pv_ctrl                          (pv_ctrl[31:0]),
       .repdet_board_in                  (repdet_board[`BOARD_WIDTH-1:0]), // Templated
       .repdet_castle_mask_in            (repdet_castle_mask[3:0]), // Templated
       .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated
@@ -351,6 +363,7 @@ module tb;
     .board (board_out[]),
     .castle_mask (castle_mask_out[]),
     .capture (capture_out[]),
+    .pv (pv_out[]),
     .en_passant_col (en_passant_col_out[]),
     .white_in_check (white_in_check_out),
     .black_in_check (black_in_check_out),
@@ -376,6 +389,7 @@ module tb;
       .castle_mask                      (castle_mask_out[3:0]),  // Templated
       .en_passant_col                   (en_passant_col_out[3:0]), // Templated
       .capture                          (capture_out),           // Templated
+      .pv                               (pv_out),                // Templated
       .white_in_check                   (white_in_check_out),    // Templated
       .black_in_check                   (black_in_check_out),    // Templated
       .eval                             (eval_out[EVAL_WIDTH-1:0]), // Templated

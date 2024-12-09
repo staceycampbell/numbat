@@ -63,42 +63,42 @@ module tbtrans;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                               capture_out;            // From trans of trans.v
-   wire                               collision_out;          // From trans of trans.v
-   wire [7:0]                         depth_out;              // From trans of trans.v
-   wire                               entry_valid_out;        // From trans of trans.v
-   wire [EVAL_WIDTH-1:0]              eval_out;              // From trans of trans.v
-   wire [1:0]                         flag_out;               // From trans of trans.v
-   wire [79:0]                        hash_out;               // From trans of trans.v
-   wire [`TRANS_NODES_WIDTH-1:0]      nodes_out;     // From trans of trans.v
-   wire [31:0]                        trans_axi_araddr;       // From trans of trans.v
-   wire [1:0]                         trans_axi_arburst;      // From trans of trans.v
-   wire [3:0]                         trans_axi_arcache;      // From trans of trans.v
-   wire [7:0]                         trans_axi_arlen;        // From trans of trans.v
-   wire [0:0]                         trans_axi_arlock;       // From trans of trans.v
-   wire [2:0]                         trans_axi_arprot;       // From trans of trans.v
-   wire [3:0]                         trans_axi_arqos;        // From trans of trans.v
-   wire [3:0]                         trans_axi_arregion;     // From trans of trans.v
-   wire [2:0]                         trans_axi_arsize;       // From trans of trans.v
-   wire                               trans_axi_arvalid;      // From trans of trans.v
-   wire [31:0]                        trans_axi_awaddr;       // From trans of trans.v
-   wire [1:0]                         trans_axi_awburst;      // From trans of trans.v
-   wire [3:0]                         trans_axi_awcache;      // From trans of trans.v
-   wire [7:0]                         trans_axi_awlen;        // From trans of trans.v
-   wire [0:0]                         trans_axi_awlock;       // From trans of trans.v
-   wire [2:0]                         trans_axi_awprot;       // From trans of trans.v
-   wire [3:0]                         trans_axi_awqos;        // From trans of trans.v
-   wire [3:0]                         trans_axi_awregion;     // From trans of trans.v
-   wire [2:0]                         trans_axi_awsize;       // From trans of trans.v
-   wire                               trans_axi_awvalid;      // From trans of trans.v
-   wire                               trans_axi_bready;       // From trans of trans.v
-   wire                               trans_axi_rready;       // From trans of trans.v
-   wire [127:0]                       trans_axi_wdata;        // From trans of trans.v
-   wire                               trans_axi_wlast;        // From trans of trans.v
-   wire [15:0]                        trans_axi_wstrb;        // From trans of trans.v
-   wire                               trans_axi_wvalid;       // From trans of trans.v
-   wire                               trans_idle_out;         // From trans of trans.v
-   wire [31:0]                        trans_trans;            // From trans of trans.v
+   wire                 capture_out;            // From trans of trans.v
+   wire                 collision_out;          // From trans of trans.v
+   wire [7:0]           depth_out;              // From trans of trans.v
+   wire                 entry_valid_out;        // From trans of trans.v
+   wire [EVAL_WIDTH-1:0] eval_out;              // From trans of trans.v
+   wire [1:0]           flag_out;               // From trans of trans.v
+   wire [79:0]          hash_out;               // From trans of trans.v
+   wire [`TRANS_NODES_WIDTH-1:0] nodes_out;     // From trans of trans.v
+   wire [31:0]          trans_axi_araddr;       // From trans of trans.v
+   wire [1:0]           trans_axi_arburst;      // From trans of trans.v
+   wire [3:0]           trans_axi_arcache;      // From trans of trans.v
+   wire [7:0]           trans_axi_arlen;        // From trans of trans.v
+   wire [0:0]           trans_axi_arlock;       // From trans of trans.v
+   wire [2:0]           trans_axi_arprot;       // From trans of trans.v
+   wire [3:0]           trans_axi_arqos;        // From trans of trans.v
+   wire [3:0]           trans_axi_arregion;     // From trans of trans.v
+   wire [2:0]           trans_axi_arsize;       // From trans of trans.v
+   wire                 trans_axi_arvalid;      // From trans of trans.v
+   wire [31:0]          trans_axi_awaddr;       // From trans of trans.v
+   wire [1:0]           trans_axi_awburst;      // From trans of trans.v
+   wire [3:0]           trans_axi_awcache;      // From trans of trans.v
+   wire [7:0]           trans_axi_awlen;        // From trans of trans.v
+   wire [0:0]           trans_axi_awlock;       // From trans of trans.v
+   wire [2:0]           trans_axi_awprot;       // From trans of trans.v
+   wire [3:0]           trans_axi_awqos;        // From trans of trans.v
+   wire [3:0]           trans_axi_awregion;     // From trans of trans.v
+   wire [2:0]           trans_axi_awsize;       // From trans of trans.v
+   wire                 trans_axi_awvalid;      // From trans of trans.v
+   wire                 trans_axi_bready;       // From trans of trans.v
+   wire                 trans_axi_rready;       // From trans of trans.v
+   wire [127:0]         trans_axi_wdata;        // From trans of trans.v
+   wire                 trans_axi_wlast;        // From trans of trans.v
+   wire [15:0]          trans_axi_wstrb;        // From trans of trans.v
+   wire                 trans_axi_wvalid;       // From trans of trans.v
+   wire                 trans_idle_out;         // From trans of trans.v
+   wire [31:0]          trans_trans;            // From trans of trans.v
    // End of automatics
    
    wire [3:0]                         uci_promotion;

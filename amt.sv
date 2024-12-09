@@ -42,6 +42,7 @@ module amt;
    reg 				  killer_clear = 0;
    reg [MAX_DEPTH_LOG2-1:0]       killer_ply = 0;
    reg 				  killer_update = 0;
+   reg [31:0]                     pv_ctrl = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -73,6 +74,7 @@ module amt;
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
    wire                 insufficient_material_out;// From all_moves of all_moves.v
+   wire                 pv_out;                 // From all_moves of all_moves.v
    wire                 thrice_rep_out;         // From all_moves of all_moves.v
    wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
    wire                 white_in_check_out;     // From all_moves of all_moves.v
@@ -232,6 +234,7 @@ module amt;
       .castle_mask_out                  (castle_mask_out[3:0]),
       .en_passant_col_out               (en_passant_col_out[3:0]),
       .capture_out                      (capture_out),
+      .pv_out                           (pv_out),
       .white_in_check_out               (white_in_check_out),
       .black_in_check_out               (black_in_check_out),
       .white_is_attacking_out           (white_is_attacking_out[63:0]),
@@ -261,6 +264,7 @@ module amt;
       .killer_clear_in                  (killer_clear),          // Templated
       .killer_bonus0_in                 (killer_bonus0[EVAL_WIDTH-1:0]), // Templated
       .killer_bonus1_in                 (killer_bonus1[EVAL_WIDTH-1:0]), // Templated
+      .pv_ctrl                          (pv_ctrl[31:0]),
       .repdet_board_in                  (repdet_board[`BOARD_WIDTH-1:0]), // Templated
       .repdet_castle_mask_in            (repdet_castle_mask[3:0]), // Templated
       .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated

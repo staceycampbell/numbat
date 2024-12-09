@@ -59,6 +59,8 @@ module move_sort #
 
    wire signed [EVAL_WIDTH - 1:0]         eval_a = $signed(port_a_rd_data[EVAL_WIDTH - 1:0]);
    wire signed [EVAL_WIDTH - 1:0]         eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
+   wire                                   pv_a = port_a_rd_data[EVAL_WIDTH + 3];
+   wire                                   pv_b = port_b_rd_data[EVAL_WIDTH + 3];
    wire                                   capture_a = port_a_rd_data[EVAL_WIDTH + 2];
    wire                                   capture_b = port_b_rd_data[EVAL_WIDTH + 2];
    wire                                   white_in_check_a = port_a_rd_data[EVAL_WIDTH + 1];
@@ -125,9 +127,11 @@ module move_sort #
            begin
               port_a_wr_en <= 0;
               port_b_wr_en <= 0;
-              if (! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 :
-                  ! in_check_a && in_check_b ? 1'b1 : in_check_a && ! in_check_b ? 1'b0 :
-                  white_to_move ? eval_a < eval_b : eval_a > eval_b)
+              // sort priority
+              if (! pv_a && pv_b ? 1'b1 : pv_a && ! pv_b ? 1'b0 : // principal variation 1st
+                  ! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 : // capture 2nd
+                  ! in_check_a && in_check_b ? 1'b1 : in_check_a && ! in_check_b ? 1'b0 : // check 3rd
+                  white_to_move ? eval_a < eval_b : eval_a > eval_b) // static eval 4th
                 state_sort <= STATE_SWAP;
               else
                 state_sort <= STATE_INNER;

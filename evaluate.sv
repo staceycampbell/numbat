@@ -4,7 +4,8 @@ module evaluate #
   (
    parameter EVAL_WIDTH = 0,
    parameter MAX_DEPTH_LOG2 = 0,
-   parameter EVAL_MOBILITY_DISABLE = 0
+   parameter EVAL_MOBILITY_DISABLE = 0,
+   parameter UCI_WIDTH = 0
    )
    (
     input                            clk,
@@ -16,6 +17,7 @@ module evaluate #
     input                            board_valid,
     input                            is_attacking_done,
     input [`BOARD_WIDTH - 1:0]       board_in,
+    input [UCI_WIDTH - 1:0]          uci_in,
     input [3:0]                      castle_mask,
     input [3:0]                      castle_mask_orig,
     input                            clear_eval,
@@ -33,15 +35,18 @@ module evaluate #
     input signed [EVAL_WIDTH - 1:0]  killer_bonus0,
     input signed [EVAL_WIDTH - 1:0]  killer_bonus1,
    
+    input [31:0]                     pv_ctrl,
+   
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
+    output                           eval_pv_flag,
     output reg                       eval_valid,
     output [31:0]                    material_black,
     output [31:0]                    material_white
     );
 
    localparam LATENCY_COUNT = 5;
-   localparam EVALUATION_COUNT = 12;
+   localparam EVALUATION_COUNT = 13;
    localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
 
    reg                               board_valid_r = 0;
@@ -94,6 +99,7 @@ module evaluate #
    wire                 eval_mob_valid;         // From evaluate_mob of evaluate_mob.v
    wire                 eval_pawns_black_valid; // From evaluate_pawns_black of evaluate_pawns.v
    wire                 eval_pawns_white_valid; // From evaluate_pawns_white of evaluate_pawns.v
+   wire                 eval_pv_valid;          // From evaluate_pv of evaluate_pv.v
    wire                 eval_rooks_black_valid; // From evaluate_rooks_black of evaluate_rooks.v
    wire                 eval_rooks_white_valid; // From evaluate_rooks_white of evaluate_rooks.v
    wire                 eval_tropism_black_valid;// From evaluate_tropism_black of evaluate_tropism.v
@@ -107,6 +113,7 @@ module evaluate #
 
    wire [EVALUATION_COUNT - 1:0]                    eval_done_status =
                                                     {
+                                                     eval_pv_valid,
                                                      eval_tropism_black_valid,
                                                      eval_tropism_white_valid,
                                                      eval_castling_black_valid,
@@ -536,6 +543,30 @@ module evaluate #
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
       .clear_eval                       (clear_eval));
+
+   /* evaluate_pv AUTO_TEMPLATE (
+    .board_valid (local_board_valid),
+    .eval_valid (eval_pv_valid),
+    .pv_ply (killer_ply[]), // this works for now, create a pv ply if that changes
+    );*/
+   evaluate_pv #
+     (
+      .UCI_WIDTH (UCI_WIDTH),
+      .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2)
+      )
+   evaluate_pv
+     (/*AUTOINST*/
+      // Outputs
+      .eval_pv_flag                     (eval_pv_flag),
+      .eval_valid                       (eval_pv_valid),         // Templated
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (local_board_valid),     // Templated
+      .uci_in                           (uci_in[UCI_WIDTH-1:0]),
+      .pv_ply                           (killer_ply[MAX_DEPTH_LOG2-1:0]), // Templated
+      .clear_eval                       (clear_eval),
+      .pv_ctrl                          (pv_ctrl[31:0]));
    
    /* popcount AUTO_TEMPLATE (
     .population (occupied_count[]),

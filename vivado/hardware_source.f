@@ -10,6 +10,7 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../evaluate_mob_square.sv
 ../evaluate_mob.sv
 ../evaluate_pawns.sv
+../evaluate_pv.sv
 ../evaluate_rooks.sv
 ../evaluate_tropism.sv
 ../evaluate.sv

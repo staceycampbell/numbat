@@ -23,13 +23,15 @@ module all_moves #
     input [3:0]                          castle_mask_in,
     input [3:0]                          en_passant_col_in,
     input [HALF_MOVE_WIDTH - 1:0]        half_move_in,
-   
+
     input [MAX_DEPTH_LOG2 - 1:0]         killer_ply_in,
     input [`BOARD_WIDTH - 1:0]           killer_board_in,
     input                                killer_update_in,
     input                                killer_clear_in,
     input signed [EVAL_WIDTH - 1:0]      killer_bonus0_in,
     input signed [EVAL_WIDTH - 1:0]      killer_bonus1_in,
+
+    input [31:0]                         pv_ctrl,
 
     input [`BOARD_WIDTH-1:0]             repdet_board_in,
     input [3:0]                          repdet_castle_mask_in,
@@ -61,6 +63,7 @@ module all_moves #
     output [3:0]                         castle_mask_out,
     output [3:0]                         en_passant_col_out,
     output                               capture_out,
+    output                               pv_out,
     output                               white_in_check_out,
     output                               black_in_check_out,
     output [63:0]                        white_is_attacking_out,
@@ -80,8 +83,8 @@ module all_moves #
    // white/black pop counts, UCI, initial width + capture + pawn adv (to zero-out half move)
    localparam RAM_WIDTH = 6 + 6 + UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
    // insufficient material, white/black pop counts, UCI, fifty move, half move, thrice rep, eval, is-attacking white/black,
-   // white in check, black in check, capture, initial width
-   localparam LEGAL_RAM_WIDTH = 1 + 6 + 6 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
+   // white in check, black in check, capture, pv, initial width
+   localparam LEGAL_RAM_WIDTH = 1 + 6 + 6 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1+ 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
 
    reg [RAM_WIDTH - 1:0]                 move_ram [0:`MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]                 ram_rd_data;
@@ -121,6 +124,7 @@ module all_moves #
    reg [63:0]                            legal_white_is_attacking_ram_wr;
    reg [63:0]                            legal_black_is_attacking_ram_wr;
    reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
+   reg                                   legal_eval_pv_flag_wr;
    reg                                   legal_thrice_rep_ram_wr;
    reg                                   legal_insufficent_material_ram_wr;
    reg [5:0]                             legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr;
@@ -143,6 +147,7 @@ module all_moves #
    reg [5:0]                             attack_test_attack_white_pop, attack_test_attack_black_pop;
 
    reg [`BOARD_WIDTH - 1:0]              evaluate_board;
+   reg [UCI_WIDTH - 1:0]                 evaluate_uci;
    reg [3:0]                             evaluate_castle_mask;
    reg [3:0]                             evaluate_castle_mask_orig;
    reg                                   evaluate_white_to_move;
@@ -198,7 +203,7 @@ module all_moves #
    reg                                   rd_board_valid;
    reg [3:0]                             rd_castle_mask_in;
    reg                                   rd_clear_sample;
-   
+
    reg                                   legal_sort_clear;
    reg                                   legal_sort_start;
 
@@ -214,6 +219,7 @@ module all_moves #
    wire [LEGAL_RAM_WIDTH-1:0] capture_move_ram_rd_data;// From move_sort_capture of move_sort.v
    wire [MAX_POSITIONS_LOG2-1:0] capture_move_ram_wr_addr;// From move_sort_capture of move_sort.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
+   wire                 eval_pv_flag;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 insufficient_material;  // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From board_attack of board_attack.v
@@ -236,13 +242,26 @@ module all_moves #
 
    wire                                  black_to_move = ~white_to_move;
 
-   assign am_move_count = am_capture_moves ? capture_move_ram_wr_addr : legal_ram_wr_addr;
-   
+   wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {legal_insufficent_material_ram_wr,
+                                                              legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr, legal_uci_ram_wr,
+                                                              legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
+                                                              legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
+                                                              legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
+                                                              legal_board_ram_wr,
+                                                              legal_white_to_move_ram_wr,
+                                                              legal_eval_pv_flag_wr,
+                                                              legal_capture_ram_wr,
+                                                              legal_white_in_check_ram_wr,
+                                                              legal_black_in_check_ram_wr,
+                                                              legal_eval_ram_wr};
+
    assign {insufficient_material_out, attack_white_pop_out, attack_black_pop_out, uci_out, fifty_move_out, half_move_out, thrice_rep_out,
            white_is_attacking_out, black_is_attacking_out, en_passant_col_out, castle_mask_out,
            board_out, white_to_move_out,
-           capture_out, white_in_check_out, black_in_check_out,
+           pv_out, capture_out, white_in_check_out, black_in_check_out,
            eval_out} = am_capture_moves ? capture_move_ram_rd_data : legal_ram_rd_data;
+
+   assign am_move_count = am_capture_moves ? capture_move_ram_wr_addr : legal_ram_wr_addr;
 
    initial
      begin
@@ -328,26 +347,12 @@ module all_moves #
           ram_wr_addr <= 0;
         if (ram_wr)
           begin
-             move_ram[ram_wr_addr] <= {uci_promotion_ram_wr,
-                                       uci_to_row_ram_wr, uci_to_col_ram_wr, uci_from_row_ram_wr, uci_from_col_ram_wr,
+             move_ram[ram_wr_addr] <= {uci_promotion_ram_wr, uci_to_row_ram_wr, uci_to_col_ram_wr, uci_from_row_ram_wr, uci_from_col_ram_wr,
                                        pawn_zero_half_move_ram_wr, capture_ram_wr, en_passant_col_ram_wr,
                                        castle_mask_ram_wr, white_to_move_ram_wr, board_ram_wr};
              ram_wr_addr <= ram_wr_addr + 1;
           end
      end
-
-   wire [LEGAL_RAM_WIDTH - 1:0] legal_ram_wr_data = {legal_insufficent_material_ram_wr,
-                                                     legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr, legal_uci_ram_wr,
-                                                     legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
-                                                     legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
-                                                     legal_en_passant_col_ram_wr, legal_castle_mask_ram_wr,
-                                                     legal_board_ram_wr,
-                                                     legal_white_to_move_ram_wr,
-                                                     legal_capture_ram_wr,
-                                                     legal_white_in_check_ram_wr,
-                                                     legal_black_in_check_ram_wr,
-                                                     legal_eval_ram_wr};
-
    always @(posedge clk)
      begin
         am_move_index_r <= am_move_index;
@@ -472,7 +477,7 @@ module all_moves #
          STATE_IDLE :
            begin
               am_idle <= 1;
-              
+
               am_moves_ready <= 0;
               board <= board_in;
               white_to_move <= white_to_move_in;
@@ -481,6 +486,7 @@ module all_moves #
               half_move <= half_move_in;
 
               evaluate_board <= board_in;
+              evaluate_uci <= 0; // PV flag will not be assigned
               evaluate_white_to_move <= white_to_move_in;
               evaluate_castle_mask <= castle_mask_in;
               evaluate_castle_mask_orig <= castle_mask_in;
@@ -518,7 +524,7 @@ module all_moves #
          STATE_INIT :
            begin
               am_idle <= 0;
-              
+
               // append the initial board to the thrice rep ram, but don't advance rd_ram_depth_in yet
               // as rep_det is still processing the initial board
               rd_ram_board_in <= board;
@@ -530,7 +536,7 @@ module all_moves #
               initial_insufficient_material <= insufficient_material;
               initial_material_black <= material_black;
               initial_material_white <= material_white;
-              
+
               clear_eval <= 1;
               clear_attack <= 1;
               evaluate_go <= 0;
@@ -874,6 +880,7 @@ module all_moves #
 
               evaluate_white_to_move <= attack_test_white_to_move;
               evaluate_board <= attack_test_board;
+              evaluate_uci <= attack_uci;
               evaluate_go <= 1;
 
               ram_rd_addr <= ram_rd_addr + 1;
@@ -914,6 +921,7 @@ module all_moves #
                 legal_eval_ram_wr <= 0;
               else
                 legal_eval_ram_wr <= eval;
+              legal_eval_pv_flag_wr <= eval_pv_flag;
               legal_thrice_rep_ram_wr <= rd_thrice_rep;
               legal_insufficent_material_ram_wr <= insufficient_material;
               if (attack_pawn_zero_half_move || attack_test_capture)
@@ -1016,6 +1024,7 @@ module all_moves #
 
    /* evaluate AUTO_TEMPLATE (
     .board_in (evaluate_board[]),
+    .uci_in (evaluate_uci[]),
     .white_to_move (evaluate_white_to_move),
     .castle_mask (evaluate_castle_mask[]),
     .castle_mask_orig (evaluate_castle_mask_orig[]),
@@ -1026,13 +1035,15 @@ module all_moves #
      (
       .EVAL_WIDTH (EVAL_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
-      .EVAL_MOBILITY_DISABLE (EVAL_MOBILITY_DISABLE)
+      .EVAL_MOBILITY_DISABLE (EVAL_MOBILITY_DISABLE),
+      .UCI_WIDTH (UCI_WIDTH)
       )
    evaluate
      (/*AUTOINST*/
       // Outputs
       .insufficient_material            (insufficient_material),
       .eval                             (eval[EVAL_WIDTH-1:0]),
+      .eval_pv_flag                     (eval_pv_flag),
       .eval_valid                       (eval_valid),
       .material_black                   (material_black[31:0]),
       .material_white                   (material_white[31:0]),
@@ -1044,6 +1055,7 @@ module all_moves #
       .board_valid                      (evaluate_go),           // Templated
       .is_attacking_done                (is_attacking_done),
       .board_in                         (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
+      .uci_in                           (evaluate_uci[UCI_WIDTH-1:0]), // Templated
       .castle_mask                      (evaluate_castle_mask[3:0]), // Templated
       .castle_mask_orig                 (evaluate_castle_mask_orig[3:0]), // Templated
       .clear_eval                       (clear_eval),
@@ -1057,7 +1069,8 @@ module all_moves #
       .killer_update                    (killer_update_in),      // Templated
       .killer_clear                     (killer_clear_in),       // Templated
       .killer_bonus0                    (killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
-      .killer_bonus1                    (killer_bonus1_in[EVAL_WIDTH-1:0])); // Templated
+      .killer_bonus1                    (killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
+      .pv_ctrl                          (pv_ctrl[31:0]));
 
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),
@@ -1152,7 +1165,7 @@ module all_moves #
       .ram_wr_data                      (legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
       .ram_wr                           (capture_move_ram_wr),   // Templated
       .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
-   
+
 endmodule
 
 // Local Variables:
