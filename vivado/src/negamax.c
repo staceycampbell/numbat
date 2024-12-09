@@ -374,6 +374,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 if (value > alpha)
                 {
                         alpha = value;
+                        // http://web.archive.org/web/20040427013839/brucemo.com/compchess/programming/pv.htm
                         p_pvline->argmove[0] = board_ptr[index]->uci;
                         memcpy(p_pvline->argmove + 1, pvline.argmove, pvline.cmove * sizeof(uci_t));
                         p_pvline->cmove = pvline.cmove + 1;
