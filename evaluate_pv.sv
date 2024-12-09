@@ -25,7 +25,8 @@ module evaluate_pv #
    reg [`MAX_DEPTH - 1:0]        pv_table_valid = 0;
 
    reg                           board_valid_r;
-   
+   reg                           clear_eval_r;
+
    // should be empty
    /*AUTOREGINPUT*/
 
@@ -39,12 +40,17 @@ module evaluate_pv #
    always @(posedge clk)
      begin
         board_valid_r <= board_valid;
-        
+        clear_eval_r <= clear_eval;
+
         if (pv_ctrl_in_table_write)
           begin
              pv_table[pv_ctrl_in_ply] <= pv_ctrl_in_table_entry;
              pv_table_valid[pv_ctrl_in_ply] <= pv_ctrl_in_entry_valid;
           end
+
+        // auto-clear, at most only one pv move per ply
+        if (clear_eval && ~clear_eval_r && eval_pv_flag)
+          pv_table_valid[pv_ply] <= 1'b0;
 
         if (board_valid && ~board_valid_r)
           if (pv_table_valid[pv_ply] && pv_table[pv_ply] == uci_in)

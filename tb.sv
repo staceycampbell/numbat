@@ -148,12 +148,13 @@ module tb;
      end // initial begin
 
    always @(posedge clk)
-     begin
-        tb.all_moves.evaluate.evaluate_pv.pv_table_valid[killer_ply] <= 1;
-        // uci_promotion=0 uci_to_row=7 uci_to_col=6 uci_from_row=6 uci_from_col=4
-        // uci_promotion_ram_wr, uci_to_row_ram_wr, uci_to_col_ram_wr, uci_from_row_ram_wr, uci_from_col_ram_wr
-        tb.all_moves.evaluate.evaluate_pv.pv_table[killer_ply] <= 0 << 12 | 7 << 9 | 6 << 6 | 6 << 3 | 4 << 0;
-     end
+     if (reset)
+       begin
+          tb.all_moves.evaluate.evaluate_pv.pv_table_valid[killer_ply] <= 1;
+          // uci_promotion=0 uci_to_row=7 uci_to_col=3 uci_from_row=0 uci_from_col=3
+          // move_index=20 d1d8  D
+          tb.all_moves.evaluate.evaluate_pv.pv_table[killer_ply] <= 0 << 12 | 7 << 9 | 3 << 6 | 0 << 3 | 3 << 0;
+       end
 
    localparam LOADST_IDLE = 0;
    localparam LOADST_REP = 1;
