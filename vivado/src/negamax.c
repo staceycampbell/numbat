@@ -170,7 +170,6 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, pvl
 
         if (ply >= MAX_DEPTH - 1)
         {
-                p_pvline->cmove = 0;
                 ++q_hard_cutoff;
                 return beta;
         }
@@ -194,10 +193,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, pvl
         }
 
         if (value >= beta)
-        {
-                p_pvline->cmove = 0;
                 return beta;
-        }
         if (value > alpha)
                 alpha = value;
         if (move_count == 0)
@@ -328,10 +324,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 else if (trans.flag == TRANS_UPPER_BOUND)
                         beta = valmin(beta, trans.eval);
                 if (alpha >= beta)
-                {
-                        p_pvline->cmove = 0;
                         return trans.eval;
-                }
         }
         ++no_trans;
 
