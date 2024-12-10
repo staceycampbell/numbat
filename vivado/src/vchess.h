@@ -134,12 +134,6 @@ typedef struct trans_t
         uint32_t capture;
 } trans_t;
 
-typedef struct pvline_t
-{
-        int32_t cmove;
-        uci_t argmove[MAX_DEPTH];
-} pvline_t;
-
 static inline void
 vchess_write(uint32_t reg, uint32_t val)
 {
@@ -636,6 +630,16 @@ killer_update_table(void)
         killer_control(0, 0);
 }
 
+static inline uint32_t
+uci_nonzero(const uci_t * p)
+{
+        uint32_t nonzero;
+
+        nonzero = p->promotion != 0 || p->row_from != 0 || p->col_from != 0 || p->row_to != 0 || p->col_to != 0;
+
+        return nonzero;
+}
+
 static inline void
 pv_write_ctrl(uint32_t table_write, uint32_t table_clear, const uci_t * move, uint32_t ply, uint32_t entry_valid)
 {
@@ -657,22 +661,13 @@ pv_write_ctrl(uint32_t table_write, uint32_t table_clear, const uci_t * move, ui
 }
 
 static inline void
-pv_update_table(pvline_t * p_dest, const pvline_t * p_src, const uci_t * move)
-{
-        // http://web.archive.org/web/20040427013839/brucemo.com/compchess/programming/pv.htm
-        p_dest->argmove[0] = *move;
-        memcpy(p_dest->argmove + 1, p_src->argmove, p_src->cmove * sizeof(uci_t));
-        p_dest->cmove = p_src->cmove + 1;
-}
-
-static inline void
-pv_load_table(const pvline_t * pv)
+pv_load_table(const uci_t * pv)
 {
         int32_t ply;
 
         pv_write_ctrl(0, 1, 0, 0, 0);   // clear pv table
-        for (ply = 0; ply < pv->cmove; ++ply)
-                pv_write_ctrl(1, 0, &pv->argmove[ply], ply, 1); // write entry
+        for (ply = 0; ply < MAX_DEPTH && uci_nonzero(&pv[ply]); ++ply)
+                pv_write_ctrl(1, 0, &pv[ply], ply, 1);  // write entry
         pv_write_ctrl(0, 0, 0, 0, 0);   // disable write
 }
 
