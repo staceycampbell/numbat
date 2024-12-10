@@ -21,13 +21,11 @@ static uint32_t move_killer_found;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
 static int32_t quiescence_ply_reached, valid_quiescence_ply_reached;
-static XTime q_time;
 static XTime time_limit;
 static uint32_t ui_data_stop;
 static uint32_t uci_data_stop;
 static uint32_t abort_search;
 
-static const uint32_t debug_info = 0;
 static const uint32_t debug_pv_info = 1;
 
 static int32_t
@@ -251,7 +249,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         trans_t trans;
         XTime t_now;
         uint32_t time_limit_exceeded;
-        XTime q_start, q_stop;
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
         pvline_t pvline;
@@ -340,19 +337,14 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         do
         {
                 board_vert[ply] = board_ptr[index];
-                if (index > 3 && depth > 2)
+                if (index > 1 && depth > 2)
                         reduce = 1;
                 else
                         reduce = 0;
                 if (depth - 1 - reduce >= 0)
                         value = -negamax(game, game_moves, board_ptr[index], depth - 1 - reduce, -beta, -alpha, ply, &pvline);
                 else
-                {
-                        XTime_GetTime(&q_start);
                         value = -quiescence(board_ptr[index], -beta, -alpha, ply, &pvline);
-                        XTime_GetTime(&q_stop);
-                        q_time += q_stop - q_start;
-                }
                 if (abort_search)
                         return 0;       // will be ignored
                 if (value > alpha)
@@ -431,7 +423,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         uint32_t move_count;
         uint64_t elapsed_ticks;
         int64_t duration_seconds;
-        double elapsed_time, nps, q_percent;
+        double elapsed_time, nps;
         int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
         board_t best_board = { 0 };
         XTime t_end, t_start;
@@ -455,7 +447,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         terminal_nodes = 0;
         q_hard_cutoff = 0;
         q_end = 0;
-        q_time = 0;
         no_trans = 0;
         trans_collision = 0;
         move_killer_found = 0;
@@ -503,20 +494,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         ui_data_stop = 0;
         uci_data_stop = 0;
 
-        if (debug_info)
-        {
-                printf("start: ");
-                for (i = 0; i < move_count; ++i)
-                {
-                        uci_string(&board_ptr[i]->uci, uci_str);
-                        printf("%s=%d ", uci_str, board_ptr[i]->eval);
-                        if (i > 0 && i % 10 == 0 && i != move_count - 1)
-                                printf("\n");
-                }
-                printf("\n");
-                fflush(stdout);
-        }
-
         quiescence_ply_reached = 0;
         valid_quiescence_ply_reached = 0;
 
@@ -544,19 +521,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                 if (!abort_search)
                         pv_load_table(&pvline);
 
-                if (debug_info)
-                {
-                        printf("%02d: ", depth_limit);
-                        for (i = 0; i < move_count; ++i)
-                        {
-                                uci_string(&board_ptr[i]->uci, uci_str);
-                                printf("%s=%d ", uci_str, board_ptr[i]->eval);
-                                if (i > 0 && i % 10 == 0 && i != move_count - 1)
-                                        printf("\n");
-                        }
-                        printf("\n");
-                        fflush(stdout);
-                }
                 if (debug_pv_info)
                 {
                         printf("%02d (%d): ", depth_limit, pvline.cmove);
@@ -584,12 +548,10 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         nps = (double)nodes_visited / elapsed_time;
         trans_hit = nodes_visited - no_trans;
 
-        q_percent = 100.0 * (double)q_time / (double)elapsed_ticks;
-
         printf("best_evaluation=%d, nodes_visited=%u, terminal_nodes=%u, seconds=%.2f, nps=%.0f\n",
                overall_best, nodes_visited, terminal_nodes, elapsed_time, nps);
-        printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u, q_depth=%d q_percent=%.2f%%\n",
-               depth_limit, q_hard_cutoff, q_end, valid_quiescence_ply_reached, q_percent);
+        printf("depth_limit=%d, q_hard_cutoff=%u, q_end=%u, q_depth=%d\n",
+               depth_limit, q_hard_cutoff, q_end, valid_quiescence_ply_reached);
         printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%), move_killer_found=%u\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
                ((double)trans_collision * 100.0) / (double)nodes_visited, move_killer_found);
