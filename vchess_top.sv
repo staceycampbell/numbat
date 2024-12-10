@@ -491,6 +491,7 @@ module vchess_top
       .am_attack_white_pop_in           (am_attack_white_pop_out[5:0]), // Templated
       .am_attack_black_pop_in           (am_attack_black_pop_out[5:0]), // Templated
       .am_insufficient_material_in      (am_insufficient_material_out), // Templated
+      .am_pv_in                         (am_pv_out),             // Templated
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),

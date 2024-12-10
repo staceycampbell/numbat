@@ -12,7 +12,6 @@
 #define FIXED_TIME 20
 #define MID_GAME_HALF_MOVES 40
 
-#define MAX_DEPTH 40            // must match verilog
 #define LARGE_EVAL (1 << 20)
 
 #define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
@@ -30,12 +29,6 @@ static uint32_t abort_search;
 
 static const uint32_t debug_info = 0;
 static const uint32_t debug_pv_info = 1;
-
-typedef struct pvline_t
-{
-        int32_t cmove;
-        uci_t argmove[MAX_DEPTH];
-} pvline_t;
 
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply)
@@ -71,7 +64,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                 vchess_repdet_write(0);
                 return;
         }
-        if (board_vert)         // if there's a search tree load half-moves in search tree
+        if (board_vert)         // if there's a search tree load half-moves in search path
         {
                 sel = ply;
                 index = board_vert[ply]->half_move_clock;
@@ -232,9 +225,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, pvl
                         return 0;
                 if (value > alpha)
                 {
-                        p_pvline->argmove[0] = board_ptr[index]->uci;
-                        memcpy(p_pvline->argmove + 1, pvline.argmove, pvline.cmove * sizeof(uci_t));
-                        p_pvline->cmove = pvline.cmove + 1;
+                        pv_update_table(p_pvline, &pvline, &board_ptr[index]->uci);
                         alpha = value;
                 }
                 ++index;
@@ -366,11 +357,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                         return 0;       // will be ignored
                 if (value > alpha)
                 {
+                        pv_update_table(p_pvline, &pvline, &board_ptr[index]->uci);
                         alpha = value;
-                        // http://web.archive.org/web/20040427013839/brucemo.com/compchess/programming/pv.htm
-                        p_pvline->argmove[0] = board_ptr[index]->uci;
-                        memcpy(p_pvline->argmove + 1, pvline.argmove, pvline.cmove * sizeof(uci_t));
-                        p_pvline->cmove = pvline.cmove + 1;
                 }
 
                 ++index;
@@ -553,6 +541,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                         ++i;
                 }
                 qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
+                if (!abort_search)
+                        pv_load_table(&pvline);
 
                 if (debug_info)
                 {

@@ -33,6 +33,7 @@ module evaluate_pv #
    /*AUTOWIRE*/
 
    wire                          pv_ctrl_in_table_write = pv_ctrl_in[31];
+   wire                          pv_ctrl_in_table_clear = pv_ctrl_in[30];
    wire [UCI_WIDTH - 1:0]        pv_ctrl_in_table_entry = pv_ctrl_in[UCI_WIDTH - 1:0];
    wire [MAX_DEPTH_LOG2 - 1:0]   pv_ctrl_in_ply = pv_ctrl_in[UCI_WIDTH+:MAX_DEPTH_LOG2];
    wire                          pv_ctrl_in_entry_valid = pv_ctrl_in[UCI_WIDTH + MAX_DEPTH_LOG2];
@@ -42,6 +43,8 @@ module evaluate_pv #
         board_valid_r <= board_valid;
         clear_eval_r <= clear_eval;
 
+        if (pv_ctrl_in_table_clear)
+          pv_table_valid <= 0;
         if (pv_ctrl_in_table_write)
           begin
              pv_table[pv_ctrl_in_ply] <= pv_ctrl_in_table_entry;

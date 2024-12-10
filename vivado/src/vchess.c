@@ -67,9 +67,9 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
         uint32_t piece;
         int32_t eval, material_black, material_white, material;
         uint32_t mate, stalemate, thrice_rep, fifty_move;
-	uint32_t btm;
+        uint32_t btm;
 
-	btm = board->white_to_move; // move from board to display is inverse of next to move
+        btm = board->white_to_move;     // move from board to display is inverse of next to move
         for (y = 7; y >= 0; --y)
         {
                 printf("%c%c%c%c %c ", 27, 91, 50, 109, '1' + y);       // dim
@@ -82,14 +82,12 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
                                 printf("%c%c%c%c%c", 27, 91, 52, 55, 109);      // setb 7, light bg
                         else
                                 printf("%c%c%c%c%c", 27, 91, 52, 48, 109);      // setb 0, black bg
-                        if ((piece & (1 << BLACK_BIT)) != 0 ||
-			    (btm && y == board->uci.row_from && x == board->uci.col_from))
+                        if ((piece & (1 << BLACK_BIT)) != 0 || (btm && y == board->uci.row_from && x == board->uci.col_from))
                                 printf("%c%c%c%c%c", 27, 91, 51, 50, 109);      // green
                         else
                                 printf("%c%c%c%c%c", 27, 91, 51, 49, 109);      // red
-                        if ((y == board->uci.row_to && x == board->uci.col_to) ||
-                            (y == board->uci.row_from && x == board->uci.col_from))
-                                printf("%c%c%c%c", 27,  91,  49, 109);          // bold
+                        if ((y == board->uci.row_to && x == board->uci.col_to) || (y == board->uci.row_from && x == board->uci.col_from))
+                                printf("%c%c%c%c", 27, 91, 49, 109);    // bold
                         if (y == board->uci.row_from && x == board->uci.col_from)
                                 printf(" . ");
                         else
@@ -108,7 +106,7 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
                 vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
                 material_white = vchess_initial_material_white();
                 material_black = vchess_initial_material_black();
-		material = material_white - material_black;
+                material = material_white - material_black;
         }
         else
         {
@@ -207,7 +205,7 @@ vchess_read_board(board_t * board, uint32_t index)
 
         for (y = 0; y < 8; ++y)
                 board->board[y] = vchess_read_move_row(y);
-        vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move);
+        vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move, &board->pv);
         vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
         board->eval = vchess_move_eval();
         board->half_move_clock = vchess_read_half_move();

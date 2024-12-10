@@ -74,6 +74,8 @@
 #define UCI_SEARCH_STOP 0
 #define UCI_SEARCH_CONT 1
 
+#define MAX_DEPTH 40            // must match verilog
+
 typedef struct tc_t
 {
         uint32_t valid;
@@ -118,6 +120,7 @@ typedef struct board_t
         uint32_t capture;
         uint32_t thrice_rep;
         uint32_t fifty_move;
+        uint32_t pv;
         uci_t uci;
 } board_t;
 
@@ -127,9 +130,15 @@ typedef struct trans_t
         int32_t depth;
         int32_t eval;
         uint32_t flag;
-	uint32_t nodes;
-	uint32_t capture;
+        uint32_t nodes;
+        uint32_t capture;
 } trans_t;
+
+typedef struct pvline_t
+{
+        int32_t cmove;
+        uci_t argmove[MAX_DEPTH];
+} pvline_t;
 
 static inline void
 vchess_write(uint32_t reg, uint32_t val)
@@ -198,13 +207,13 @@ vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, u
         depth_u8 = (uint8_t) depth;
         depth32 = depth_u8;
 
-	val = (uint32_t) eval;
-	val &= ~(1 << 31);
-	val |= (capture != 0) << 31; // msbit of this reg stores capture flag
+        val = (uint32_t) eval;
+        val &= ~(1 << 31);
+        val |= (capture != 0) << 31;    // msbit of this reg stores capture flag
         vchess_write(521, (uint32_t) val);
-	vchess_write(525, nodes);
+        vchess_write(525, nodes);
 
-        val = depth32 << 8 | flag << 2 | entry_store; // toggle store on
+        val = depth32 << 8 | flag << 2 | entry_store;   // toggle store on
         vchess_write(520, val);
 
         val = depth32 << 8 | flag << 2; // toggle store off
@@ -222,14 +231,14 @@ vchess_trans_lookup(void)
 
 static inline void
 vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
-		  uint32_t * entry_valid, uint32_t * trans_idle)
+                  uint32_t * entry_valid, uint32_t * trans_idle)
 {
         uint32_t val;
 
         if (eval)
                 *eval = (int32_t) vchess_read(514);
-	if (nodes)
-		*nodes = vchess_read(515);
+        if (nodes)
+                *nodes = vchess_read(515);
         val = vchess_read(512);
         if (trans_idle)
                 *trans_idle = val & 0x1;
@@ -241,8 +250,8 @@ vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_
                 *depth = (int8_t) ((val >> 8) & 0xFF);
         if (collision)
                 *collision = (val >> 9) & 0x1;
-	if (capture)
-		*capture = (val >> 10) & 0x1;
+        if (capture)
+                *capture = (val >> 10) & 0x1;
 }
 
 static inline void
@@ -423,7 +432,8 @@ vchess_read_black_is_attacking(void)
 }
 
 static inline uint32_t
-vchess_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint32_t * capture, uint32_t * thrice_rep, uint32_t * fifty_move)
+vchess_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint32_t * capture, uint32_t * thrice_rep, uint32_t * fifty_move,
+                     uint32_t * pv)
 {
         uint32_t val;
 
@@ -438,6 +448,8 @@ vchess_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint3
                 *thrice_rep = (val & (1 << 3)) != 0;
         if (fifty_move)
                 *fifty_move = (val & (1 << 4)) != 0;
+        if (pv)
+                *pv = (val & (1 << 6)) != 0;
 
         return val;
 }
@@ -622,6 +634,44 @@ killer_update_table(void)
 {
         killer_control(0, 1);
         killer_control(0, 0);
+}
+
+static inline void
+pv_write_ctrl(uint32_t table_write, uint32_t table_clear, const uci_t * move, uint32_t ply, uint32_t entry_valid)
+{
+        uint32_t val;
+        uint32_t table_entry_packed;
+
+        if (move)
+                table_entry_packed = move->promotion << 12 | move->row_to << 9 | move->col_to << 6 | move->row_from << 3 | move->col_from << 0;
+        else
+                table_entry_packed = 0;
+        val = 0;
+        val |= (table_write != 0) << 31;
+        val |= (table_clear != 0) << 30;
+        val |= (entry_valid != 0) << (16 + 6);  // UCI_WIDTH + MAX_DEPTH_LOG2
+        val |= ply << 6;        // MAX_DEPTH_LOG2
+        val |= table_entry_packed;
+}
+
+static inline void
+pv_update_table(pvline_t * p_dest, const pvline_t * p_src, const uci_t * move)
+{
+        // http://web.archive.org/web/20040427013839/brucemo.com/compchess/programming/pv.htm
+        p_dest->argmove[0] = *move;
+        memcpy(p_dest->argmove + 1, p_src->argmove, p_src->cmove * sizeof(uci_t));
+        p_dest->cmove = p_src->cmove + 1;
+}
+
+static inline void
+pv_load_table(const pvline_t * pv)
+{
+        int32_t ply;
+
+        pv_write_ctrl(0, 1, 0, 0, 0);   // clear pv table
+        for (ply = 0; ply < pv->cmove; ++ply)
+                pv_write_ctrl(1, 0, &pv->argmove[ply], ply, 1); // write entry
+        pv_write_ctrl(0, 0, 0, 0, 0);   // disable write
 }
 
 extern void print_app_header(void);
