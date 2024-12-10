@@ -650,8 +650,10 @@ pv_write_ctrl(uint32_t table_write, uint32_t table_clear, const uci_t * move, ui
         val |= (table_write != 0) << 31;
         val |= (table_clear != 0) << 30;
         val |= (entry_valid != 0) << (16 + 6);  // UCI_WIDTH + MAX_DEPTH_LOG2
-        val |= ply << 6;        // MAX_DEPTH_LOG2
+        val |= ply << 16;       // UCI_WIDTH
         val |= table_entry_packed;
+
+        vchess_write(600, val);
 }
 
 static inline void
