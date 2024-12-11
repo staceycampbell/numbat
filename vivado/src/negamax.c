@@ -166,7 +166,7 @@ local_movcpy(uci_t * p_dst, const uci_t * p_src, int32_t n)
 }
 
 static int32_t
-quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
+quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int32_t pv_index)
 {
         uint32_t move_count, index, endgame;
         uint32_t mate, stalemate, fifty_move;
@@ -174,6 +174,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
         XTime t_now;
         uint32_t time_limit_exceeded;
         board_t *board_ptr[MAX_POSITIONS];
+        int32_t pv_next_index;
 
         ++nodes_visited;
 
@@ -182,6 +183,9 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
                 ++q_hard_cutoff;
                 return beta;
         }
+
+        pv_array[pv_index] = zero_move;
+        pv_next_index = pv_index + MAX_DEPTH - ply;
 
         vchess_reset_all_moves();
         vchess_repdet_write(0); // disable repetition detection
@@ -231,11 +235,15 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply)
         do
         {
                 board_vert[ply] = board_ptr[index];
-                value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1);
+                value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                 if (abort_search)
                         return 0;
                 if (value > alpha)
+                {
+                        pv_array[pv_index] = board_ptr[index]->uci;
+                        local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
                         alpha = value;
+                }
                 ++index;
         }
         while (!abort_search && index < move_count && alpha < beta);
@@ -345,7 +353,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 if (depth - 1 - reduce >= 0)
                         value = -negamax(game, game_moves, board_ptr[index], depth - 1 - reduce, -beta, -alpha, ply + 1, pv_next_index);
                 else
-                        value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1);
+                        value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                 if (abort_search)
                         return 0;       // will be ignored
                 if (value > alpha)
