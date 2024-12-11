@@ -63,13 +63,6 @@ module move_sort #
    wire                                   pv_b = port_b_rd_data[EVAL_WIDTH + 3];
    wire                                   capture_a = port_a_rd_data[EVAL_WIDTH + 2];
    wire                                   capture_b = port_b_rd_data[EVAL_WIDTH + 2];
-   wire                                   white_in_check_a = port_a_rd_data[EVAL_WIDTH + 1];
-   wire                                   black_in_check_a = port_a_rd_data[EVAL_WIDTH + 0];
-   wire                                   white_in_check_b = port_b_rd_data[EVAL_WIDTH + 1];
-   wire                                   black_in_check_b = port_b_rd_data[EVAL_WIDTH + 0];
-
-   wire                                   in_check_a = white_in_check_a | black_in_check_a;
-   wire                                   in_check_b = white_in_check_b | black_in_check_b;
 
    assign ram_rd_data = port_b_rd_data;
 
@@ -90,7 +83,7 @@ module move_sort #
    localparam STATE_INNER = 4;
    localparam STATE_READ_WS_0 = 5;
    localparam STATE_READ_WS_1 = 6;
-   localparam STATE_OUTER_CHECK = 7;
+   localparam STATE_OUTER_TEST = 7;
    localparam STATE_DONE = 8;
 
    reg [3:0]                              state_sort = STATE_IDLE;
@@ -129,9 +122,8 @@ module move_sort #
               port_b_wr_en <= 0;
               // sort priority
               if (! pv_a && pv_b ? 1'b1 : pv_a && ! pv_b ? 1'b0 : // principal variation 1st
-                  ! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 : // capture 2nd
-                  ! in_check_a && in_check_b ? 1'b1 : in_check_a && ! in_check_b ? 1'b0 : // check 3rd
-                  white_to_move ? eval_a < eval_b : eval_a > eval_b) // static eval 4th
+                  ! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 : // captures 2nd, best captures will be higher
+                  white_to_move ? eval_a < eval_b : eval_a > eval_b) // position eval 3rd
                 state_sort <= STATE_SWAP;
               else
                 state_sort <= STATE_INNER;
@@ -152,7 +144,7 @@ module move_sort #
               port_a_addr <= port_a_addr + 1;
               port_b_addr <= port_b_addr + 1;
               if (port_b_addr == n - 1)
-                state_sort <= STATE_OUTER_CHECK;
+                state_sort <= STATE_OUTER_TEST;
               else
                 state_sort <= STATE_READ_WS_0;
            end
@@ -160,7 +152,7 @@ module move_sort #
            state_sort <= STATE_READ_WS_1;
          STATE_READ_WS_1 :
            state_sort <= STATE_COMPARE;
-         STATE_OUTER_CHECK :
+         STATE_OUTER_TEST :
            begin
               n <= newn;
               if (newn > 1)
