@@ -75,7 +75,44 @@ module all_moves #
     output [UCI_WIDTH - 1:0]             uci_out,
     output [5:0]                         attack_white_pop_out,
     output [5:0]                         attack_black_pop_out,
-    output                               insufficient_material_out
+    output                               insufficient_material_out,
+
+    input                                am_trans_rd_axi_arready,
+    input                                am_trans_rd_axi_awready,
+    input [1:0]                          am_trans_rd_axi_bresp,
+    input                                am_trans_rd_axi_bvalid,
+    input [127:0]                        am_trans_rd_axi_rdata,
+    input                                am_trans_rd_axi_rlast,
+    input [1:0]                          am_trans_rd_axi_rresp,
+    input                                am_trans_rd_axi_rvalid,
+    input                                am_trans_rd_axi_wready,
+   
+    output [31:0]                        am_trans_rd_axi_araddr,
+    output [1:0]                         am_trans_rd_axi_arburst,
+    output [3:0]                         am_trans_rd_axi_arcache,
+    output [7:0]                         am_trans_rd_axi_arlen,
+    output [0:0]                         am_trans_rd_axi_arlock,
+    output [2:0]                         am_trans_rd_axi_arprot,
+    output [3:0]                         am_trans_rd_axi_arqos,
+    output [2:0]                         am_trans_rd_axi_arsize,
+    output                               am_trans_rd_axi_arvalid,
+    output [31:0]                        am_trans_rd_axi_awaddr,
+    output [1:0]                         am_trans_rd_axi_awburst,
+    output [3:0]                         am_trans_rd_axi_awcache,
+    output [7:0]                         am_trans_rd_axi_awlen,
+    output [0:0]                         am_trans_rd_axi_awlock,
+    output [2:0]                         am_trans_rd_axi_awprot,
+    output [3:0]                         am_trans_rd_axi_awqos,
+    output [2:0]                         am_trans_rd_axi_awsize,
+    output                               am_trans_rd_axi_awvalid,
+    output                               am_trans_rd_axi_bready,
+    output                               am_trans_rd_axi_rready,
+    output [127:0]                       am_trans_rd_axi_wdata,
+    output                               am_trans_rd_axi_wlast,
+    output [15:0]                        am_trans_rd_axi_wstrb,
+    output                               am_trans_rd_axi_wvalid,
+    output [3:0]                         am_trans_rd_axi_arregion,
+    output [3:0]                         am_trans_rd_axi_awregion
     );
 
    // board + castle mask + en passant col + color to move
@@ -1165,6 +1202,59 @@ module all_moves #
       .ram_wr_data                      (legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
       .ram_wr                           (capture_move_ram_wr),   // Templated
       .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
+
+   /* am_trans AUTO_TEMPLATE (
+    );*/
+   am_trans #
+     (
+      .EVAL_WIDTH (EVAL_WIDTH)
+      )
+   am_trans
+     (/*AUTOINST*/
+      // Outputs
+      .am_trans_rd_axi_araddr           (am_trans_rd_axi_araddr[31:0]),
+      .am_trans_rd_axi_arburst          (am_trans_rd_axi_arburst[1:0]),
+      .am_trans_rd_axi_arcache          (am_trans_rd_axi_arcache[3:0]),
+      .am_trans_rd_axi_arlen            (am_trans_rd_axi_arlen[7:0]),
+      .am_trans_rd_axi_arlock           (am_trans_rd_axi_arlock[0:0]),
+      .am_trans_rd_axi_arprot           (am_trans_rd_axi_arprot[2:0]),
+      .am_trans_rd_axi_arqos            (am_trans_rd_axi_arqos[3:0]),
+      .am_trans_rd_axi_arsize           (am_trans_rd_axi_arsize[2:0]),
+      .am_trans_rd_axi_arvalid          (am_trans_rd_axi_arvalid),
+      .am_trans_rd_axi_awaddr           (am_trans_rd_axi_awaddr[31:0]),
+      .am_trans_rd_axi_awburst          (am_trans_rd_axi_awburst[1:0]),
+      .am_trans_rd_axi_awcache          (am_trans_rd_axi_awcache[3:0]),
+      .am_trans_rd_axi_awlen            (am_trans_rd_axi_awlen[7:0]),
+      .am_trans_rd_axi_awlock           (am_trans_rd_axi_awlock[0:0]),
+      .am_trans_rd_axi_awprot           (am_trans_rd_axi_awprot[2:0]),
+      .am_trans_rd_axi_awqos            (am_trans_rd_axi_awqos[3:0]),
+      .am_trans_rd_axi_awsize           (am_trans_rd_axi_awsize[2:0]),
+      .am_trans_rd_axi_awvalid          (am_trans_rd_axi_awvalid),
+      .am_trans_rd_axi_bready           (am_trans_rd_axi_bready),
+      .am_trans_rd_axi_rready           (am_trans_rd_axi_rready),
+      .am_trans_rd_axi_wdata            (am_trans_rd_axi_wdata[127:0]),
+      .am_trans_rd_axi_wlast            (am_trans_rd_axi_wlast),
+      .am_trans_rd_axi_wstrb            (am_trans_rd_axi_wstrb[15:0]),
+      .am_trans_rd_axi_wvalid           (am_trans_rd_axi_wvalid),
+      .am_trans_rd_axi_arregion         (am_trans_rd_axi_arregion[3:0]),
+      .am_trans_rd_axi_awregion         (am_trans_rd_axi_awregion[3:0]),
+      // Inputs
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid_in                   (board_valid_in),
+      .board_in                         (board_in[`BOARD_WIDTH-1:0]),
+      .white_to_move_in                 (white_to_move_in),
+      .castle_mask_in                   (castle_mask_in[3:0]),
+      .en_passant_col_in                (en_passant_col_in[3:0]),
+      .am_trans_rd_axi_arready          (am_trans_rd_axi_arready),
+      .am_trans_rd_axi_awready          (am_trans_rd_axi_awready),
+      .am_trans_rd_axi_bresp            (am_trans_rd_axi_bresp[1:0]),
+      .am_trans_rd_axi_bvalid           (am_trans_rd_axi_bvalid),
+      .am_trans_rd_axi_rdata            (am_trans_rd_axi_rdata[127:0]),
+      .am_trans_rd_axi_rlast            (am_trans_rd_axi_rlast),
+      .am_trans_rd_axi_rresp            (am_trans_rd_axi_rresp[1:0]),
+      .am_trans_rd_axi_rvalid           (am_trans_rd_axi_rvalid),
+      .am_trans_rd_axi_wready           (am_trans_rd_axi_wready));
 
 endmodule
 
