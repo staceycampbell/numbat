@@ -115,7 +115,7 @@ module vchess_top
    wire                 am_trans_rd_axi_bready; // From all_moves of all_moves.v
    wire [1:0]           am_trans_rd_axi_bresp;  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 am_trans_rd_axi_bvalid; // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [511:0]         am_trans_rd_axi_rdata;  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [127:0]         am_trans_rd_axi_rdata;  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           am_trans_rd_axi_rid;    // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 am_trans_rd_axi_rlast;  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 am_trans_rd_axi_rready; // From all_moves of all_moves.v
@@ -609,7 +609,7 @@ module vchess_top
       .am_trans_rd_axi_bid              (am_trans_rd_axi_bid[0:0]),
       .am_trans_rd_axi_bresp            (am_trans_rd_axi_bresp[1:0]),
       .am_trans_rd_axi_bvalid           (am_trans_rd_axi_bvalid),
-      .am_trans_rd_axi_rdata            (am_trans_rd_axi_rdata[511:0]),
+      .am_trans_rd_axi_rdata            (am_trans_rd_axi_rdata[127:0]),
       .am_trans_rd_axi_rid              (am_trans_rd_axi_rid[0:0]),
       .am_trans_rd_axi_rlast            (am_trans_rd_axi_rlast),
       .am_trans_rd_axi_rresp            (am_trans_rd_axi_rresp[1:0]),
@@ -680,9 +680,9 @@ module vchess_top
       .am_trans_rd_axi_awvalid          (am_trans_rd_axi_awvalid),
       .am_trans_rd_axi_bready           (am_trans_rd_axi_bready),
       .am_trans_rd_axi_rready           (am_trans_rd_axi_rready),
-      .am_trans_rd_axi_wdata            (am_trans_rd_axi_wdata[511:0]),
+      .am_trans_rd_axi_wdata            (am_trans_rd_axi_wdata[127:0]),
       .am_trans_rd_axi_wlast            (am_trans_rd_axi_wlast),
-      .am_trans_rd_axi_wstrb            (am_trans_rd_axi_wstrb[63:0]),
+      .am_trans_rd_axi_wstrb            (am_trans_rd_axi_wstrb[15:0]),
       .am_trans_rd_axi_wvalid           (am_trans_rd_axi_wvalid),
       .ctrl0_axi_arready                (ctrl0_axi_arready),
       .ctrl0_axi_awready                (ctrl0_axi_awready),
