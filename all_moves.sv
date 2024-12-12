@@ -55,7 +55,7 @@ module all_moves #
 
     output reg                           am_idle,
     output reg                           am_moves_ready,
-    output reg                           am_move_ready,
+    output                               am_move_ready,
     output [MAX_POSITIONS_LOG2 - 1:0]    am_move_count,
 
     output [`BOARD_WIDTH - 1:0]          board_out,
@@ -76,6 +76,14 @@ module all_moves #
     output [5:0]                         attack_white_pop_out,
     output [5:0]                         attack_black_pop_out,
     output                               insufficient_material_out,
+   
+    output                               trans_capture,
+    output                               trans_collision,
+    output [7:0]                         trans_depth,
+    output                               trans_entry_valid,
+    output [EVAL_WIDTH - 1:0]            trans_eval,
+    output [1:0]                         trans_flag,
+    output [`TRANS_NODES_WIDTH - 1:0]    trans_nodes,
 
     input                                am_trans_rd_axi_arready,
     input                                am_trans_rd_axi_awready,
@@ -121,7 +129,8 @@ module all_moves #
    localparam RAM_WIDTH = 6 + 6 + UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
    // insufficient material, white/black pop counts, UCI, fifty move, half move, thrice rep, eval, is-attacking white/black,
    // white in check, black in check, capture, pv, initial width
-   localparam LEGAL_RAM_WIDTH = 1 + 6 + 6 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1+ 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
+   localparam LEGAL_RAM_WIDTH = MAX_POSITIONS_LOG2 + 1 + 6 + 6 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH +
+                                64 + 64 + 1+ 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
 
    reg [RAM_WIDTH - 1:0]                 move_ram [0:`MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]                 ram_rd_data;
@@ -137,6 +146,7 @@ module all_moves #
    reg [HALF_MOVE_WIDTH - 1:0]           half_move;
 
    reg                                   legal_ram_wr_addr_init;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        legal_ram_idx;
 
    reg [`BOARD_WIDTH - 1:0]              board_ram_wr;
    reg [3:0]                             en_passant_col_ram_wr;
@@ -167,8 +177,6 @@ module all_moves #
    reg [5:0]                             legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr;
    reg [UCI_WIDTH - 1:0]                 legal_uci_ram_wr;
    reg                                   legal_ram_wr = 0;
-
-   reg [MAX_POSITIONS_LOG2 - 1:0]        am_move_index_r;
 
    reg [`BOARD_WIDTH - 1:0]              attack_test_board;
    reg [3:0]                             attack_test_en_passant_col;
@@ -243,7 +251,9 @@ module all_moves #
 
    reg                                   legal_sort_clear;
    reg                                   legal_sort_start;
-
+   
+   reg [MAX_POSITIONS_LOG2 - 1:0]        am_move_index_s0, am_move_index_s1, am_move_index_s2, am_move_index_s3, am_move_index_s4;
+   
    // should be empty
    /*AUTOREGINPUT*/
 
@@ -271,6 +281,8 @@ module all_moves #
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
+   wire [MAX_POSITIONS_LOG2 - 1:0]       trans_table_index;
+
    wire signed [4:0]                     pawn_adv1_row [0:2];
    wire signed [4:0]                     pawn_adv1_col [0:2];
    wire signed [4:0]                     pawn_enp_row[0:1];
@@ -279,7 +291,7 @@ module all_moves #
 
    wire                                  black_to_move = ~white_to_move;
 
-   wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {legal_insufficent_material_ram_wr,
+   wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {legal_ram_idx, legal_insufficent_material_ram_wr,
                                                               legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr, legal_uci_ram_wr,
                                                               legal_fifty_move_ram_wr, legal_half_move_ram_wr, legal_thrice_rep_ram_wr,
                                                               legal_white_is_attacking_ram_wr, legal_black_is_attacking_ram_wr,
@@ -292,13 +304,15 @@ module all_moves #
                                                               legal_black_in_check_ram_wr,
                                                               legal_eval_ram_wr};
 
-   assign {insufficient_material_out, attack_white_pop_out, attack_black_pop_out, uci_out, fifty_move_out, half_move_out, thrice_rep_out,
-           white_is_attacking_out, black_is_attacking_out, en_passant_col_out, castle_mask_out,
+   assign {trans_table_index, insufficient_material_out, attack_white_pop_out, attack_black_pop_out, uci_out,
+           fifty_move_out, half_move_out, thrice_rep_out, white_is_attacking_out, black_is_attacking_out,
+           en_passant_col_out, castle_mask_out,
            board_out, white_to_move_out,
            pv_out, capture_out, white_in_check_out, black_in_check_out,
            eval_out} = am_capture_moves ? capture_move_ram_rd_data : legal_ram_rd_data;
 
    assign am_move_count = am_capture_moves ? capture_move_ram_wr_addr : legal_ram_wr_addr;
+   assign am_move_ready = am_move_index == am_move_index_s4;
 
    initial
      begin
@@ -389,11 +403,20 @@ module all_moves #
                                        castle_mask_ram_wr, white_to_move_ram_wr, board_ram_wr};
              ram_wr_addr <= ram_wr_addr + 1;
           end
-     end
+     end // always @ (posedge clk)
+
    always @(posedge clk)
      begin
-        am_move_index_r <= am_move_index;
-        am_move_ready <= am_move_index == am_move_index_r;
+        am_move_index_s0 <= am_move_index;
+        am_move_index_s1 <= am_move_index_s0;
+        am_move_index_s2 <= am_move_index_s1;
+        am_move_index_s3 <= am_move_index_s2;
+        am_move_index_s4 <= am_move_index_s3;
+
+        if (legal_ram_wr_addr_init)
+          legal_ram_idx <= 0;
+        if (legal_ram_wr)
+          legal_ram_idx <= legal_ram_idx + 1;
      end
 
    assign pawn_enp_row[0] = pawn_row_cap_left;
@@ -1204,57 +1227,75 @@ module all_moves #
       .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
 
    /* am_trans AUTO_TEMPLATE (
+    .init (legal_ram_wr_addr_init),
+    .board_in (legal_board_ram_wr[]),
+    .board_valid_in (legal_ram_wr),
+    .white_to_move_in (legal_white_to_move_ram_wr),
+    .en_passant_col_in (legal_en_passant_col_ram_wr[]),
+    .castle_mask_in (legal_castle_mask_ram_wr[]),
+    .am_trans_rd_axi_\(.*\) (am_trans_rd_axi_\1[]),
+    .\(.*\)_out (trans_\1[]),
     );*/
    am_trans #
      (
-      .EVAL_WIDTH (EVAL_WIDTH)
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
       )
    am_trans
      (/*AUTOINST*/
       // Outputs
-      .am_trans_rd_axi_araddr           (am_trans_rd_axi_araddr[31:0]),
-      .am_trans_rd_axi_arburst          (am_trans_rd_axi_arburst[1:0]),
-      .am_trans_rd_axi_arcache          (am_trans_rd_axi_arcache[3:0]),
-      .am_trans_rd_axi_arlen            (am_trans_rd_axi_arlen[7:0]),
-      .am_trans_rd_axi_arlock           (am_trans_rd_axi_arlock[0:0]),
-      .am_trans_rd_axi_arprot           (am_trans_rd_axi_arprot[2:0]),
-      .am_trans_rd_axi_arqos            (am_trans_rd_axi_arqos[3:0]),
-      .am_trans_rd_axi_arsize           (am_trans_rd_axi_arsize[2:0]),
-      .am_trans_rd_axi_arvalid          (am_trans_rd_axi_arvalid),
-      .am_trans_rd_axi_awaddr           (am_trans_rd_axi_awaddr[31:0]),
-      .am_trans_rd_axi_awburst          (am_trans_rd_axi_awburst[1:0]),
-      .am_trans_rd_axi_awcache          (am_trans_rd_axi_awcache[3:0]),
-      .am_trans_rd_axi_awlen            (am_trans_rd_axi_awlen[7:0]),
-      .am_trans_rd_axi_awlock           (am_trans_rd_axi_awlock[0:0]),
-      .am_trans_rd_axi_awprot           (am_trans_rd_axi_awprot[2:0]),
-      .am_trans_rd_axi_awqos            (am_trans_rd_axi_awqos[3:0]),
-      .am_trans_rd_axi_awsize           (am_trans_rd_axi_awsize[2:0]),
-      .am_trans_rd_axi_awvalid          (am_trans_rd_axi_awvalid),
-      .am_trans_rd_axi_bready           (am_trans_rd_axi_bready),
-      .am_trans_rd_axi_rready           (am_trans_rd_axi_rready),
-      .am_trans_rd_axi_wdata            (am_trans_rd_axi_wdata[127:0]),
-      .am_trans_rd_axi_wlast            (am_trans_rd_axi_wlast),
-      .am_trans_rd_axi_wstrb            (am_trans_rd_axi_wstrb[15:0]),
-      .am_trans_rd_axi_wvalid           (am_trans_rd_axi_wvalid),
-      .am_trans_rd_axi_arregion         (am_trans_rd_axi_arregion[3:0]),
-      .am_trans_rd_axi_awregion         (am_trans_rd_axi_awregion[3:0]),
+      .entry_valid_out                  (trans_entry_valid),     // Templated
+      .eval_out                         (trans_eval[EVAL_WIDTH-1:0]), // Templated
+      .depth_out                        (trans_depth[7:0]),      // Templated
+      .flag_out                         (trans_flag[1:0]),       // Templated
+      .nodes_out                        (trans_nodes[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .capture_out                      (trans_capture),         // Templated
+      .collision_out                    (trans_collision),       // Templated
+      .am_trans_rd_axi_araddr           (am_trans_rd_axi_araddr[31:0]), // Templated
+      .am_trans_rd_axi_arburst          (am_trans_rd_axi_arburst[1:0]), // Templated
+      .am_trans_rd_axi_arcache          (am_trans_rd_axi_arcache[3:0]), // Templated
+      .am_trans_rd_axi_arlen            (am_trans_rd_axi_arlen[7:0]), // Templated
+      .am_trans_rd_axi_arlock           (am_trans_rd_axi_arlock[0:0]), // Templated
+      .am_trans_rd_axi_arprot           (am_trans_rd_axi_arprot[2:0]), // Templated
+      .am_trans_rd_axi_arqos            (am_trans_rd_axi_arqos[3:0]), // Templated
+      .am_trans_rd_axi_arsize           (am_trans_rd_axi_arsize[2:0]), // Templated
+      .am_trans_rd_axi_arvalid          (am_trans_rd_axi_arvalid), // Templated
+      .am_trans_rd_axi_awaddr           (am_trans_rd_axi_awaddr[31:0]), // Templated
+      .am_trans_rd_axi_awburst          (am_trans_rd_axi_awburst[1:0]), // Templated
+      .am_trans_rd_axi_awcache          (am_trans_rd_axi_awcache[3:0]), // Templated
+      .am_trans_rd_axi_awlen            (am_trans_rd_axi_awlen[7:0]), // Templated
+      .am_trans_rd_axi_awlock           (am_trans_rd_axi_awlock[0:0]), // Templated
+      .am_trans_rd_axi_awprot           (am_trans_rd_axi_awprot[2:0]), // Templated
+      .am_trans_rd_axi_awqos            (am_trans_rd_axi_awqos[3:0]), // Templated
+      .am_trans_rd_axi_awsize           (am_trans_rd_axi_awsize[2:0]), // Templated
+      .am_trans_rd_axi_awvalid          (am_trans_rd_axi_awvalid), // Templated
+      .am_trans_rd_axi_bready           (am_trans_rd_axi_bready), // Templated
+      .am_trans_rd_axi_rready           (am_trans_rd_axi_rready), // Templated
+      .am_trans_rd_axi_wdata            (am_trans_rd_axi_wdata[127:0]), // Templated
+      .am_trans_rd_axi_wlast            (am_trans_rd_axi_wlast), // Templated
+      .am_trans_rd_axi_wstrb            (am_trans_rd_axi_wstrb[15:0]), // Templated
+      .am_trans_rd_axi_wvalid           (am_trans_rd_axi_wvalid), // Templated
+      .am_trans_rd_axi_arregion         (am_trans_rd_axi_arregion[3:0]), // Templated
+      .am_trans_rd_axi_awregion         (am_trans_rd_axi_awregion[3:0]), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid_in                   (board_valid_in),
-      .board_in                         (board_in[`BOARD_WIDTH-1:0]),
-      .white_to_move_in                 (white_to_move_in),
-      .castle_mask_in                   (castle_mask_in[3:0]),
-      .en_passant_col_in                (en_passant_col_in[3:0]),
-      .am_trans_rd_axi_arready          (am_trans_rd_axi_arready),
-      .am_trans_rd_axi_awready          (am_trans_rd_axi_awready),
-      .am_trans_rd_axi_bresp            (am_trans_rd_axi_bresp[1:0]),
-      .am_trans_rd_axi_bvalid           (am_trans_rd_axi_bvalid),
-      .am_trans_rd_axi_rdata            (am_trans_rd_axi_rdata[127:0]),
-      .am_trans_rd_axi_rlast            (am_trans_rd_axi_rlast),
-      .am_trans_rd_axi_rresp            (am_trans_rd_axi_rresp[1:0]),
-      .am_trans_rd_axi_rvalid           (am_trans_rd_axi_rvalid),
-      .am_trans_rd_axi_wready           (am_trans_rd_axi_wready));
+      .init                             (legal_ram_wr_addr_init), // Templated
+      .trans_table_index                (trans_table_index[MAX_POSITIONS_LOG2-1:0]),
+      .board_valid_in                   (legal_ram_wr),          // Templated
+      .board_in                         (legal_board_ram_wr[`BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in                 (legal_white_to_move_ram_wr), // Templated
+      .castle_mask_in                   (legal_castle_mask_ram_wr[3:0]), // Templated
+      .en_passant_col_in                (legal_en_passant_col_ram_wr[3:0]), // Templated
+      .am_trans_rd_axi_arready          (am_trans_rd_axi_arready), // Templated
+      .am_trans_rd_axi_awready          (am_trans_rd_axi_awready), // Templated
+      .am_trans_rd_axi_bresp            (am_trans_rd_axi_bresp[1:0]), // Templated
+      .am_trans_rd_axi_bvalid           (am_trans_rd_axi_bvalid), // Templated
+      .am_trans_rd_axi_rdata            (am_trans_rd_axi_rdata[127:0]), // Templated
+      .am_trans_rd_axi_rlast            (am_trans_rd_axi_rlast), // Templated
+      .am_trans_rd_axi_rresp            (am_trans_rd_axi_rresp[1:0]), // Templated
+      .am_trans_rd_axi_rvalid           (am_trans_rd_axi_rvalid), // Templated
+      .am_trans_rd_axi_wready           (am_trans_rd_axi_wready)); // Templated
 
 endmodule
 

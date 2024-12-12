@@ -36,15 +36,15 @@ module trans #
 
     output reg [79:0]                     hash_out,
    
-    input                                 trans_axi_arready,
-    input                                 trans_axi_awready,
+(* mark_debug = "true" *)    input                                 trans_axi_arready,
+(* mark_debug = "true" *)    input                                 trans_axi_awready,
     input [1:0]                           trans_axi_bresp,
     input                                 trans_axi_bvalid,
     input [127:0]                         trans_axi_rdata,
     input                                 trans_axi_rlast,
     input [1:0]                           trans_axi_rresp,
     input                                 trans_axi_rvalid,
-    input                                 trans_axi_wready,
+(* mark_debug = "true" *)    input                                 trans_axi_wready,
    
     output reg [31:0]                     trans_axi_araddr,
     output [1:0]                          trans_axi_arburst,
@@ -54,8 +54,8 @@ module trans #
     output [2:0]                          trans_axi_arprot,
     output [3:0]                          trans_axi_arqos,
     output [2:0]                          trans_axi_arsize,
-    output reg                            trans_axi_arvalid,
-    output reg [31:0]                     trans_axi_awaddr,
+(* mark_debug = "true" *)    output reg                            trans_axi_arvalid,
+(* mark_debug = "true" *)    output reg [31:0]                     trans_axi_awaddr,
     output [1:0]                          trans_axi_awburst,
     output [3:0]                          trans_axi_awcache,
     output [7:0]                          trans_axi_awlen,
@@ -63,9 +63,9 @@ module trans #
     output [2:0]                          trans_axi_awprot,
     output [3:0]                          trans_axi_awqos,
     output [2:0]                          trans_axi_awsize,
-    output reg                            trans_axi_awvalid,
+(* mark_debug = "true" *)    output reg                            trans_axi_awvalid,
     output                                trans_axi_bready,
-    output reg                            trans_axi_rready,
+(* mark_debug = "true" *)    output reg                            trans_axi_rready,
     output reg [127:0]                    trans_axi_wdata,
     output                                trans_axi_wlast,
     output [15:0]                         trans_axi_wstrb,
@@ -104,7 +104,7 @@ module trans #
    localparam STATE_LOOKUP_WAIT_ADDR = 15;
    localparam STATE_LOOKUP_VALIDATE = 16;
    
-   reg [4:0]                              state = STATE_IDLE;
+   (* mark_debug = "true" *) reg [4:0]                              state = STATE_IDLE;
 
    reg [79:0]                             hash_0 [63:0];
    reg [79:0]                             hash_1 [15:0];

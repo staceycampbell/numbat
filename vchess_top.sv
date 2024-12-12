@@ -22,7 +22,7 @@ module vchess_top
    );
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 0;
+   localparam EVAL_MOBILITY_DISABLE = 1;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -89,6 +89,13 @@ module vchess_top
    wire [REPDET_WIDTH-1:0] am_repdet_wr_addr_in;// From control of control.v
    wire                 am_repdet_wr_en_in;     // From control of control.v
    wire                 am_thrice_rep_out;      // From all_moves of all_moves.v
+   wire                 am_trans_capture_out;   // From all_moves of all_moves.v
+   wire                 am_trans_collision_out; // From all_moves of all_moves.v
+   wire [7:0]           am_trans_depth_out;     // From all_moves of all_moves.v
+   wire                 am_trans_entry_valid_out;// From all_moves of all_moves.v
+   wire [EVAL_WIDTH-1:0] am_trans_eval_out;     // From all_moves of all_moves.v
+   wire [1:0]           am_trans_flag_out;      // From all_moves of all_moves.v
+   wire [`TRANS_NODES_WIDTH-1:0] am_trans_nodes_out;// From all_moves of all_moves.v
    wire [31:0]          am_trans_rd_axi_araddr; // From all_moves of all_moves.v
    wire [1:0]           am_trans_rd_axi_arburst;// From all_moves of all_moves.v
    wire [3:0]           am_trans_rd_axi_arcache;// From all_moves of all_moves.v
@@ -282,7 +289,7 @@ module vchess_top
    /* all_moves AUTO_TEMPLATE (
     .reset (soft_reset),
     .clk (clk),
-    .trans_clear_trans_in (trans_clear_trans_in),
+    .trans_\(.*\) (am_trans_\1_out[]),
     .\(.*\)_in (am_\1_in[]),
     .\(.*\)_out (am_\1_out[]),
     );*/
@@ -330,6 +337,13 @@ module vchess_top
       .attack_white_pop_out             (am_attack_white_pop_out[5:0]), // Templated
       .attack_black_pop_out             (am_attack_black_pop_out[5:0]), // Templated
       .insufficient_material_out        (am_insufficient_material_out), // Templated
+      .trans_capture                    (am_trans_capture_out),  // Templated
+      .trans_collision                  (am_trans_collision_out), // Templated
+      .trans_depth                      (am_trans_depth_out[7:0]), // Templated
+      .trans_entry_valid                (am_trans_entry_valid_out), // Templated
+      .trans_eval                       (am_trans_eval_out[EVAL_WIDTH-1:0]), // Templated
+      .trans_flag                       (am_trans_flag_out[1:0]), // Templated
+      .trans_nodes                      (am_trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
       .am_trans_rd_axi_araddr           (am_trans_rd_axi_araddr[31:0]),
       .am_trans_rd_axi_arburst          (am_trans_rd_axi_arburst[1:0]),
       .am_trans_rd_axi_arcache          (am_trans_rd_axi_arcache[3:0]),
@@ -572,6 +586,13 @@ module vchess_top
       .am_attack_black_pop_in           (am_attack_black_pop_out[5:0]), // Templated
       .am_insufficient_material_in      (am_insufficient_material_out), // Templated
       .am_pv_in                         (am_pv_out),             // Templated
+      .am_trans_capture_in              (am_trans_capture_out),  // Templated
+      .am_trans_collision_in            (am_trans_collision_out), // Templated
+      .am_trans_depth_in                (am_trans_depth_out[7:0]), // Templated
+      .am_trans_entry_valid_in          (am_trans_entry_valid_out), // Templated
+      .am_trans_eval_in                 (am_trans_eval_out[EVAL_WIDTH-1:0]), // Templated
+      .am_trans_flag_in                 (am_trans_flag_out[1:0]), // Templated
+      .am_trans_nodes_in                (am_trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),

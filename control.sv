@@ -101,6 +101,14 @@ module control #
     input [5:0]                           am_attack_black_pop_in,
     input                                 am_insufficient_material_in,
     input                                 am_pv_in,
+   
+    input                                 am_trans_capture_in,
+    input                                 am_trans_collision_in,
+    input [7:0]                           am_trans_depth_in,
+    input                                 am_trans_entry_valid_in,
+    input [EVAL_WIDTH - 1:0]              am_trans_eval_in,
+    input [1:0]                           am_trans_flag_in,
+    input [`TRANS_NODES_WIDTH - 1:0]      am_trans_nodes_in,
 
     input [39:0]                          ctrl0_axi_araddr,
     input [2:0]                           ctrl0_axi_arprot,
@@ -273,6 +281,11 @@ module control #
                140 : ctrl0_axi_rdata <= {am_attack_black_pop_in[5:0], am_attack_white_pop_in[5:0]};
                141 : ctrl0_axi_rdata <= initial_material_black;
                142 : ctrl0_axi_rdata <= initial_material_white;
+               
+               143 : ctrl0_axi_rdata <= {am_trans_capture_in, am_trans_collision_in, am_trans_depth_in[7:0], 4'b0,
+                                         am_trans_flag_in[1:0], am_trans_entry_valid_in, 1'b0};
+               144 : ctrl0_axi_rdata <= am_trans_eval_in;
+               145 : ctrl0_axi_rdata <= am_trans_nodes_in;
 
                172 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
                173 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
