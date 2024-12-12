@@ -111,6 +111,13 @@ module amt;
    wire                 insufficient_material_out;// From all_moves of all_moves.v
    wire                 pv_out;                 // From all_moves of all_moves.v
    wire                 thrice_rep_out;         // From all_moves of all_moves.v
+   wire                 trans_capture;          // From all_moves of all_moves.v
+   wire                 trans_collision;        // From all_moves of all_moves.v
+   wire [7:0]           trans_depth;            // From all_moves of all_moves.v
+   wire                 trans_entry_valid;      // From all_moves of all_moves.v
+   wire [EVAL_WIDTH-1:0] trans_eval;            // From all_moves of all_moves.v
+   wire [1:0]           trans_flag;             // From all_moves of all_moves.v
+   wire [`TRANS_NODES_WIDTH-1:0] trans_nodes;   // From all_moves of all_moves.v
    wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
    wire                 white_in_check_out;     // From all_moves of all_moves.v
    wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
@@ -282,6 +289,13 @@ module amt;
       .attack_white_pop_out             (attack_white_pop_out[5:0]),
       .attack_black_pop_out             (attack_black_pop_out[5:0]),
       .insufficient_material_out        (insufficient_material_out),
+      .trans_capture                    (trans_capture),
+      .trans_collision                  (trans_collision),
+      .trans_depth                      (trans_depth[7:0]),
+      .trans_entry_valid                (trans_entry_valid),
+      .trans_eval                       (trans_eval[EVAL_WIDTH-1:0]),
+      .trans_flag                       (trans_flag[1:0]),
+      .trans_nodes                      (trans_nodes[`TRANS_NODES_WIDTH-1:0]),
       .am_trans_rd_axi_araddr           (am_trans_rd_axi_araddr[31:0]),
       .am_trans_rd_axi_arburst          (am_trans_rd_axi_arburst[1:0]),
       .am_trans_rd_axi_arcache          (am_trans_rd_axi_arcache[3:0]),
