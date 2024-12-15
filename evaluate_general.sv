@@ -176,16 +176,8 @@ module evaluate_general #
              sum_b_mg_t5[y] <= sum_b_mg_t4[y];
              sum_b_eg_t5[y] <= sum_b_eg_t4[y];
           end
-        if (insufficient_material_t4)
-          begin
-             eval_mg_t6 <= 0;
-             eval_eg_t6 <= 0;
-          end
-        else
-          begin
-             eval_mg_t6 <= sum_b_mg_t5[0] + sum_b_mg_t5[1] + sum_b_mg_t5[2] + sum_b_mg_t5[3];
-             eval_eg_t6 <= sum_b_eg_t5[0] + sum_b_eg_t5[1] + sum_b_eg_t5[2] + sum_b_eg_t5[3];
-          end
+        eval_mg_t6 <= sum_b_mg_t5[0] + sum_b_mg_t5[1] + sum_b_mg_t5[2] + sum_b_mg_t5[3];
+        eval_eg_t6 <= sum_b_eg_t5[0] + sum_b_eg_t5[1] + sum_b_eg_t5[2] + sum_b_eg_t5[3];
      end
 
    initial

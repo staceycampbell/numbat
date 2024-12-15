@@ -93,7 +93,7 @@ module vchess_top
    wire                 am_trans_collision_out; // From all_moves of all_moves.v
    wire [7:0]           am_trans_depth_out;     // From all_moves of all_moves.v
    wire                 am_trans_entry_valid_out;// From all_moves of all_moves.v
-   wire [EVAL_WIDTH-1:0] am_trans_eval_out;     // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0] am_trans_eval_out;// From all_moves of all_moves.v
    wire [1:0]           am_trans_flag_out;      // From all_moves of all_moves.v
    wire [`TRANS_NODES_WIDTH-1:0] am_trans_nodes_out;// From all_moves of all_moves.v
    wire [31:0]          am_trans_rd_axi_araddr; // From all_moves of all_moves.v
@@ -133,6 +133,7 @@ module vchess_top
    wire                 am_trans_rd_axi_wready; // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [15:0]          am_trans_rd_axi_wstrb;  // From all_moves of all_moves.v
    wire                 am_trans_rd_axi_wvalid; // From all_moves of all_moves.v
+   wire [31:0]          am_trans_trans;         // From all_moves of all_moves.v
    wire [UCI_WIDTH-1:0] am_uci_out;             // From all_moves of all_moves.v
    wire                 am_white_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_white_is_attacking_out;// From all_moves of all_moves.v
@@ -221,8 +222,8 @@ module vchess_top
    wire                 trans_entry_lookup_in;  // From control of control.v
    wire                 trans_entry_store_in;   // From control of control.v
    wire                 trans_entry_valid_out;  // From trans of trans.v
-   wire [EVAL_WIDTH-1:0] trans_eval_in;         // From control of control.v
-   wire [EVAL_WIDTH-1:0] trans_eval_out;        // From trans of trans.v
+   wire signed [EVAL_WIDTH-1:0] trans_eval_in;  // From control of control.v
+   wire signed [EVAL_WIDTH-1:0] trans_eval_out; // From trans of trans.v
    wire [1:0]           trans_flag_in;          // From control of control.v
    wire [1:0]           trans_flag_out;         // From trans of trans.v
    wire                 trans_hash_only_in;     // From control of control.v
@@ -370,6 +371,7 @@ module vchess_top
       .am_trans_rd_axi_wvalid           (am_trans_rd_axi_wvalid),
       .am_trans_rd_axi_arregion         (am_trans_rd_axi_arregion[3:0]),
       .am_trans_rd_axi_awregion         (am_trans_rd_axi_awregion[3:0]),
+      .am_trans_trans                   (am_trans_trans[31:0]),
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (soft_reset),            // Templated
@@ -555,6 +557,7 @@ module vchess_top
       .trans_collision_in               (trans_collision_out),   // Templated
       .trans_hash_in                    (trans_hash_out[79:0]),  // Templated
       .trans_trans                      (trans_trans[31:0]),
+      .am_trans_trans                   (am_trans_trans[31:0]),
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),

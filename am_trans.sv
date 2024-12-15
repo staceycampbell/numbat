@@ -9,9 +9,9 @@ module am_trans #
     input                                 clk,
     input                                 reset,
 
-(* mark_debug = "true" *)    input                                 init,
+    input                                 init,
 
-(* mark_debug = "true" *)    input [MAX_POSITIONS_LOG2 - 1:0]      trans_table_index,
+    input [MAX_POSITIONS_LOG2 - 1:0]      trans_table_index,
 
     input                                 board_valid_in,
     input [`BOARD_WIDTH - 1:0]            board_in,
@@ -19,13 +19,13 @@ module am_trans #
     input [3:0]                           castle_mask_in,
     input [3:0]                           en_passant_col_in,
 
-(* mark_debug = "true" *)    output reg                            entry_valid_out,
-(* mark_debug = "true" *)    output reg [EVAL_WIDTH - 1:0]         eval_out,
-(* mark_debug = "true" *)    output reg [7:0]                      depth_out,
-(* mark_debug = "true" *)    output reg [1:0]                      flag_out,
-(* mark_debug = "true" *)    output reg [`TRANS_NODES_WIDTH - 1:0] nodes_out,
-(* mark_debug = "true" *)    output reg                            capture_out,
-(* mark_debug = "true" *)    output reg                            collision_out,
+    output reg                            entry_valid_out,
+    output reg signed [EVAL_WIDTH - 1:0]  eval_out,
+    output reg [7:0]                      depth_out,
+    output reg [1:0]                      flag_out,
+    output reg [`TRANS_NODES_WIDTH - 1:0] nodes_out,
+    output reg                            capture_out,
+    output reg                            collision_out,
 
     input                                 am_trans_rd_axi_arready,
     input                                 am_trans_rd_axi_awready,
@@ -62,7 +62,9 @@ module am_trans #
     output [15:0]                         am_trans_rd_axi_wstrb,
     output                                am_trans_rd_axi_wvalid,
     output [3:0]                          am_trans_rd_axi_arregion,
-    output [3:0]                          am_trans_rd_axi_awregion
+    output [3:0]                          am_trans_rd_axi_awregion,
+
+    output [31:0]                         am_trans_trans
     );
 
    localparam FIFO_DEPTH_LOG2 = $clog2(`MAX_POSITIONS) + 1;
@@ -72,19 +74,19 @@ module am_trans #
    localparam TABLE_WIDTH = 1 + EVAL_WIDTH + 8 + 2 + `TRANS_NODES_WIDTH + 1 + 1;
 
    reg [FIFO_WIDTH - 1:0]      fifo [0:FIFO_DEPTH - 1];
-(* mark_debug = "true" *)   reg [FIFO_DEPTH_LOG2 - 1:0] fifo_count, fifo_wr_addr, fifo_rd_addr;
-(* mark_debug = "true" *)   reg                         fifo_rd_en = 0;
+   reg [FIFO_DEPTH_LOG2 - 1:0] fifo_count, fifo_wr_addr, fifo_rd_addr;
+   reg                         fifo_rd_en = 0;
 
    reg [TABLE_WIDTH - 1:0]     trans_table [0:`MAX_POSITIONS - 1];
-(* mark_debug = "true" *)   reg [MAX_POSITIONS_LOG2 - 1:0] trans_table_wr_addr;
-(* mark_debug = "true" *)   reg                            trans_table_wr_en;
+   reg [MAX_POSITIONS_LOG2 - 1:0] trans_table_wr_addr;
+   reg                            trans_table_wr_en;
 
    reg                         board_valid_in_r;
 
    reg [`BOARD_WIDTH - 1:0] local_board;
    reg [3:0]            local_castle_mask;
    reg [3:0]            local_en_passant_col;
-(* mark_debug = "true" *)   reg                  local_entry_lookup;
+   reg                  local_entry_lookup;
    reg                  local_white_to_move;
 
    // should be empty
@@ -96,13 +98,13 @@ module am_trans #
    wire                 table_collision;        // From am_trans_rd of trans.v
    wire [7:0]           table_depth;            // From am_trans_rd of trans.v
    wire                 table_entry_valid;      // From am_trans_rd of trans.v
-   wire [EVAL_WIDTH-1:0] table_eval;            // From am_trans_rd of trans.v
+   wire signed [EVAL_WIDTH-1:0] table_eval;     // From am_trans_rd of trans.v
    wire [1:0]           table_flag;             // From am_trans_rd of trans.v
    wire [`TRANS_NODES_WIDTH-1:0] table_nodes;   // From am_trans_rd of trans.v
-(* mark_debug = "true" *)   wire                 table_trans_idle;       // From am_trans_rd of trans.v
+   wire                 table_trans_idle;       // From am_trans_rd of trans.v
    // End of automatics
 
-(* mark_debug = "true" *)   wire                 fifo_wr_en = board_valid_in && ~board_valid_in_r;
+   wire                 fifo_wr_en = board_valid_in && ~board_valid_in_r;
 
    always @(posedge clk)
      begin
@@ -150,7 +152,7 @@ module am_trans #
    localparam STATE_WAIT_LOOKUP = 4;
    localparam STATE_WRITE_TABLE = 5;
 
-(* mark_debug = "true" *)   reg [2:0] state = STATE_IDLE;
+   reg [2:0] state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -204,7 +206,7 @@ module am_trans #
     .capture_in ({@"vl-width"{1'b0}}),
     .nodes_in ({@"vl-width"{1'b0}}),
     .depth_in ({@"vl-width"{1'b0}}),
-    .trans_trans (),
+    .trans_trans (am_trans_trans[]),
     .hash_out (),
     .trans_axi_\(.*\) (am_trans_rd_axi_\1[]),
     .\(.*\)_out (table_\1[]),
@@ -252,7 +254,7 @@ module am_trans #
       .trans_axi_wvalid                 (am_trans_rd_axi_wvalid), // Templated
       .trans_axi_arregion               (am_trans_rd_axi_arregion[3:0]), // Templated
       .trans_axi_awregion               (am_trans_rd_axi_awregion[3:0]), // Templated
-      .trans_trans                      (),                      // Templated
+      .trans_trans                      (am_trans_trans[31:0]),  // Templated
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (reset),                 // Templated

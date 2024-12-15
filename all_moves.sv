@@ -81,7 +81,7 @@ module all_moves #
     output                               trans_collision,
     output [7:0]                         trans_depth,
     output                               trans_entry_valid,
-    output [EVAL_WIDTH - 1:0]            trans_eval,
+    output signed [EVAL_WIDTH - 1:0]     trans_eval,
     output [1:0]                         trans_flag,
     output [`TRANS_NODES_WIDTH - 1:0]    trans_nodes,
 
@@ -120,7 +120,9 @@ module all_moves #
     output [15:0]                        am_trans_rd_axi_wstrb,
     output                               am_trans_rd_axi_wvalid,
     output [3:0]                         am_trans_rd_axi_arregion,
-    output [3:0]                         am_trans_rd_axi_awregion
+    output [3:0]                         am_trans_rd_axi_awregion,
+
+    output [31:0]                        am_trans_trans
     );
 
    // board + castle mask + en passant col + color to move
@@ -977,10 +979,7 @@ module all_moves #
               legal_uci_ram_wr <= attack_uci;
               legal_attack_white_pop_ram_wr <= attack_test_attack_white_pop;
               legal_attack_black_pop_ram_wr <= attack_test_attack_black_pop;
-              if (rd_thrice_rep)
-                legal_eval_ram_wr <= 0;
-              else
-                legal_eval_ram_wr <= eval;
+              legal_eval_ram_wr <= eval;
               legal_eval_pv_flag_wr <= eval_pv_flag;
               legal_thrice_rep_ram_wr <= rd_thrice_rep;
               legal_insufficent_material_ram_wr <= insufficient_material;
@@ -1034,9 +1033,7 @@ module all_moves #
               clear_eval <= 0;
               clear_attack <= 0;
               rd_clear_sample <= 0;
-              if (initial_fifty_move || initial_thrice_rep || initial_insufficient_material) // forced draw
-                initial_eval <= 0;
-              else if (am_move_count == 0) // no legal moves found
+              if (am_move_count == 0) // no legal moves found
                 begin
                    if (initial_board_check)
                      if (white_to_move)
@@ -1277,6 +1274,7 @@ module all_moves #
       .am_trans_rd_axi_wvalid           (am_trans_rd_axi_wvalid), // Templated
       .am_trans_rd_axi_arregion         (am_trans_rd_axi_arregion[3:0]), // Templated
       .am_trans_rd_axi_awregion         (am_trans_rd_axi_awregion[3:0]), // Templated
+      .am_trans_trans                   (am_trans_trans[31:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

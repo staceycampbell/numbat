@@ -19,7 +19,7 @@ module trans #
     input [3:0]                           en_passant_col_in,
 
     input [1:0]                           flag_in,
-    input [EVAL_WIDTH - 1:0]              eval_in,
+    input signed [EVAL_WIDTH - 1:0]       eval_in,
     input [7:0]                           depth_in,
     input [`TRANS_NODES_WIDTH - 1:0]      nodes_in,
     input                                 capture_in,
@@ -27,7 +27,7 @@ module trans #
     output                                trans_idle_out,
 
     output reg                            entry_valid_out,
-    output reg [EVAL_WIDTH - 1:0]         eval_out,
+    output reg signed [EVAL_WIDTH - 1:0]  eval_out,
     output reg [7:0]                      depth_out,
     output reg [1:0]                      flag_out,
     output reg [`TRANS_NODES_WIDTH - 1:0] nodes_out,
@@ -36,15 +36,15 @@ module trans #
 
     output reg [79:0]                     hash_out,
    
-(* mark_debug = "true" *)    input                                 trans_axi_arready,
-(* mark_debug = "true" *)    input                                 trans_axi_awready,
+    input                                 trans_axi_arready,
+    input                                 trans_axi_awready,
     input [1:0]                           trans_axi_bresp,
     input                                 trans_axi_bvalid,
     input [127:0]                         trans_axi_rdata,
     input                                 trans_axi_rlast,
     input [1:0]                           trans_axi_rresp,
     input                                 trans_axi_rvalid,
-(* mark_debug = "true" *)    input                                 trans_axi_wready,
+    input                                 trans_axi_wready,
    
     output reg [31:0]                     trans_axi_araddr,
     output [1:0]                          trans_axi_arburst,
@@ -54,8 +54,8 @@ module trans #
     output [2:0]                          trans_axi_arprot,
     output [3:0]                          trans_axi_arqos,
     output [2:0]                          trans_axi_arsize,
-(* mark_debug = "true" *)    output reg                            trans_axi_arvalid,
-(* mark_debug = "true" *)    output reg [31:0]                     trans_axi_awaddr,
+    output reg                            trans_axi_arvalid,
+    output reg [31:0]                     trans_axi_awaddr,
     output [1:0]                          trans_axi_awburst,
     output [3:0]                          trans_axi_awcache,
     output [7:0]                          trans_axi_awlen,
@@ -63,9 +63,9 @@ module trans #
     output [2:0]                          trans_axi_awprot,
     output [3:0]                          trans_axi_awqos,
     output [2:0]                          trans_axi_awsize,
-(* mark_debug = "true" *)    output reg                            trans_axi_awvalid,
+    output reg                            trans_axi_awvalid,
     output                                trans_axi_bready,
-(* mark_debug = "true" *)    output reg                            trans_axi_rready,
+    output reg                            trans_axi_rready,
     output reg [127:0]                    trans_axi_wdata,
     output                                trans_axi_wlast,
     output [15:0]                         trans_axi_wstrb,
@@ -104,7 +104,7 @@ module trans #
    localparam STATE_LOOKUP_WAIT_ADDR = 15;
    localparam STATE_LOOKUP_VALIDATE = 16;
    
-   (* mark_debug = "true" *) reg [4:0]                              state = STATE_IDLE;
+   reg [4:0]                              state = STATE_IDLE;
 
    reg [79:0]                             hash_0 [63:0];
    reg [79:0]                             hash_1 [15:0];
@@ -127,7 +127,7 @@ module trans #
    reg [3:0]                              castle_mask;
    reg [3:0]                              en_passant_col;
    reg [1:0]                              flag;
-   reg [EVAL_WIDTH - 1:0]                 eval;
+   reg signed [EVAL_WIDTH - 1:0]          eval;
    reg [7:0]                              depth;
    reg [`TRANS_NODES_WIDTH - 1:0]         nodes;
    reg                                    capture;
@@ -142,7 +142,7 @@ module trans #
 
    wire [HASH_USED - 1:0]                 lookup_hash;
    wire [1:0]                             lookup_flag;
-   wire [EVAL_WIDTH - 1:0]                lookup_eval;
+   wire signed [EVAL_WIDTH - 1:0]         lookup_eval;
    wire [7:0]                             lookup_depth;
    wire [`TRANS_NODES_WIDTH - 1:0]        lookup_nodes;
    wire                                   lookup_capture;

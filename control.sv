@@ -52,14 +52,14 @@ module control #
     output reg                            trans_entry_store_out,
     output reg                            trans_hash_only_out,
     output reg                            trans_clear_trans_out,
-    output reg [EVAL_WIDTH - 1:0]         trans_eval_out,
+    output reg signed [EVAL_WIDTH - 1:0]  trans_eval_out,
     output reg [`TRANS_NODES_WIDTH - 1:0] trans_nodes_out,
     output reg                            trans_capture_out,
     output reg [1:0]                      trans_flag_out,
 
     input [7:0]                           trans_depth_in,
     input                                 trans_entry_valid_in,
-    input [EVAL_WIDTH - 1:0]              trans_eval_in,
+    input signed [EVAL_WIDTH - 1:0]       trans_eval_in,
     input [1:0]                           trans_flag_in,
     input [`TRANS_NODES_WIDTH - 1:0]      trans_nodes_in,
     input                                 trans_capture_in,
@@ -67,6 +67,7 @@ module control #
     input                                 trans_collision_in,
     input [79:0]                          trans_hash_in,
     input [31:0]                          trans_trans,
+    input [31:0]                          am_trans_trans,
 
     input                                 initial_mate,
     input                                 initial_stalemate,
@@ -106,7 +107,7 @@ module control #
     input                                 am_trans_collision_in,
     input [7:0]                           am_trans_depth_in,
     input                                 am_trans_entry_valid_in,
-    input [EVAL_WIDTH - 1:0]              am_trans_eval_in,
+    input signed [EVAL_WIDTH - 1:0]       am_trans_eval_in,
     input [1:0]                           am_trans_flag_in,
     input [`TRANS_NODES_WIDTH - 1:0]      am_trans_nodes_in,
 
@@ -296,6 +297,7 @@ module control #
                178 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
                179 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
 
+               252 : ctrl0_axi_rdata <= am_trans_trans;
                253 : ctrl0_axi_rdata <= trans_trans;
                254 : ctrl0_axi_rdata <= xorshift32_reg;
                255 : ctrl0_axi_rdata <= misc_status;
