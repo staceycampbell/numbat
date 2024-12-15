@@ -205,11 +205,14 @@ vchess_read_board(board_t * board, uint32_t index)
 
         for (y = 0; y < 8; ++y)
                 board->board[y] = vchess_read_move_row(y);
-        vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move, &board->pv);
+        vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep,
+			     &board->fifty_move, &board->pv);
         vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
         board->eval = vchess_move_eval();
         board->half_move_clock = vchess_read_half_move();
         vchess_read_uci(&board->uci);
+	vchess_am_trans_read(&board->trans_collision, &board->trans.eval, &board->trans.depth, &board->trans.flag,
+			     &board->trans.nodes, &board->trans.capture, &board->trans.entry_valid);
 
         return 0;
 }

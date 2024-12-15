@@ -75,6 +75,7 @@
 #define UCI_SEARCH_CONT 1
 
 #define MAX_DEPTH 40            // must match verilog
+#define PV_ARRAY_COUNT ((MAX_DEPTH * MAX_DEPTH + MAX_DEPTH) / 2)
 
 typedef struct tc_t
 {
@@ -106,6 +107,16 @@ typedef struct book_t
         uci_t uci;
 } book_t;
 
+typedef struct trans_t
+{
+        uint32_t entry_valid;
+        int32_t depth;
+        int32_t eval;
+        uint32_t flag;
+        uint32_t nodes;
+        uint32_t capture;
+} trans_t;
+
 typedef struct board_t
 {
         uint32_t board[8];
@@ -122,17 +133,9 @@ typedef struct board_t
         uint32_t fifty_move;
         uint32_t pv;
         uci_t uci;
+        trans_t trans;
+        uint32_t trans_collision;
 } board_t;
-
-typedef struct trans_t
-{
-        uint32_t entry_valid;
-        int32_t depth;
-        int32_t eval;
-        uint32_t flag;
-        uint32_t nodes;
-        uint32_t capture;
-} trans_t;
 
 static inline void
 vchess_write(uint32_t reg, uint32_t val)
@@ -224,16 +227,17 @@ vchess_trans_lookup(void)
 }
 
 static inline void
-vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
-                  uint32_t * entry_valid, uint32_t * trans_idle)
+local_trans_read(uint32_t eval_reg, uint32_t nodes_reg, uint32_t misc_reg,
+                 uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
+                 uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
 {
         uint32_t val;
 
         if (eval)
-                *eval = (int32_t) vchess_read(514);
+                *eval = (int32_t) vchess_read(eval_reg);
         if (nodes)
-                *nodes = vchess_read(515);
-        val = vchess_read(512);
+                *nodes = vchess_read(nodes_reg);
+        val = vchess_read(misc_reg);
         if (trans_idle)
                 *trans_idle = val & 0x1;
         if (entry_valid)
@@ -246,6 +250,20 @@ vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_
                 *collision = (val >> 9) & 0x1;
         if (capture)
                 *capture = (val >> 10) & 0x1;
+}
+
+static inline void
+vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
+                  uint32_t * entry_valid, uint32_t * trans_idle)
+{
+        local_trans_read(514, 515, 512, collision, eval, depth, flag, nodes, capture, entry_valid, trans_idle);
+}
+
+static inline void
+vchess_am_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
+                     uint32_t * entry_valid)
+{
+        local_trans_read(144, 145, 143, collision, eval, depth, flag, nodes, capture, entry_valid, 0);
 }
 
 static inline void
@@ -706,6 +724,7 @@ extern void uci_init(void);
 extern int32_t uci_move(char *p);
 extern void uci_print_game(uint32_t result);
 extern void uci_string(const uci_t * uci, char *str);
+extern void uci_pv(int32_t depth, int32_t score, const uci_t * ply0_move, const uci_t * pv);
 
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t * trans, uint32_t * collision);

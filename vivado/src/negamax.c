@@ -16,8 +16,6 @@
 
 #define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
 
-#define PV_ARRAY_COUNT ((MAX_DEPTH * MAX_DEPTH + MAX_DEPTH) / 2)
-
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_collision, no_trans;
 static uint32_t move_killer_found;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
@@ -34,18 +32,31 @@ static uci_t move_ply0;
 
 static const uint32_t debug_pv_info = 1;
 
+static int32_t bins [64];
+static uint32_t negvals;
+
 static int32_t
 nm_eval(uint32_t wtm, uint32_t ply)
 {
         int32_t value;
+	int32_t bindex;
 
         value = vchess_initial_eval();
+	if (value < 0 && ! wtm)
+		++negvals;
         if (!wtm)
                 value = -value;
         if (value == GLOBAL_VALUE_KING)
                 value -= ply;
         else if (value == -GLOBAL_VALUE_KING)
                 value += ply;
+
+	bindex = (value + 50) / 100 + 32;
+	if (bindex < 0)
+		bindex = 0;
+	else if (bindex >= 64)
+		bindex = 63;
+	++bins[bindex];
 
         return value;
 }
@@ -218,7 +229,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
         abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
         if (abort_search)
-                return 0;       // will be ignored
+                return 9999;       // will be ignored
 
         if (ply > quiescence_ply_reached)
                 quiescence_ply_reached = ply;
@@ -237,7 +248,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
                 board_vert[ply] = board_ptr[index];
                 value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                 if (abort_search)
-                        return 0;
+                        return 9999;
                 if (value > alpha)
                 {
                         pv_array[pv_index] = board_ptr[index]->uci;
@@ -249,7 +260,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         while (!abort_search && index < move_count && alpha < beta);
 
         if (abort_search)
-                return 0;       // will be ignored
+                return 9999;       // will be ignored
 
         return alpha;
 }
@@ -270,6 +281,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
+        // volatile uint64_t hash;
+        // volatile uint32_t trans_trans;
 
         if (ply >= MAX_DEPTH - 1)
         {
@@ -299,7 +312,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         if (move_count == 0)
         {
                 ++terminal_nodes;
-                if (stalemate || thrice_rep || fifty_move || insufficient)
+                if (stalemate)
                         return 0;
                 return value;
         }
@@ -315,6 +328,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
 
         if (trans.entry_valid && trans.depth >= depth)
         {
+                // hash = vchess_trans_hash(0);
+                // trans_trans = vchess_read(253);
                 if (trans.flag == TRANS_EXACT)
                         return trans.eval;
                 else if (trans.flag == TRANS_LOWER_BOUND)
@@ -332,7 +347,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
         abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
         if (abort_search)
-                return 0;       // will be ignored
+                return 9999;       // will be ignored
 
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
         for (index = 0; index < move_count; ++index)
@@ -355,7 +370,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 else
                         value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                 if (abort_search)
-                        return 0;       // will be ignored
+                        return 9999;       // will be ignored
                 if (value > alpha)
                 {
                         if (ply == 0)
@@ -370,7 +385,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         while (!abort_search && index < move_count && alpha < beta);
 
         if (abort_search)
-                return 0;       // will be ignored
+                return 9999;       // will be ignored
 
         if (ply > 1 && index < move_count && !board_ptr[index - 1]->capture)    // beta cutoff
         {
@@ -380,7 +395,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 ++move_killer_found;
         }
 
-        // BigAll scheme
         node_stop = nodes_visited;
         nodes = node_stop - node_start;
         if (nodes >= (1 << TRANS_NODES_WIDTH))
@@ -439,7 +453,6 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
         board_t best_board = { 0 };
         XTime t_end, t_start;
-        char uci_str[6];
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
 
@@ -512,6 +525,9 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         depth_limit = 1;
         while (depth_limit < MAX_DEPTH - 1 && !abort_search)
         {
+		for (i = 0; i < 64; ++i)
+			bins[i] = 0;
+		negvals = 0;
                 ply = 0;
                 i = 0;
                 best_evaluation = -LARGE_EVAL;
@@ -525,6 +541,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                                 best_board = *board_ptr[i];
                                 best_evaluation = evaluate_move;
                                 overall_best = evaluate_move;
+				printf("be=%d\n", best_evaluation);
                         }
                         ++i;
                 }
@@ -535,20 +552,14 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                 }
 
                 if (debug_pv_info)
-                {
-                        printf("%02d: ", depth_limit);
-                        uci_string(&move_ply0, uci_str);
-                        printf("%s ", uci_str);
-                        for (i = 0; i < PV_ARRAY_COUNT && uci_nonzero(&pv_array[i]); ++i)
-                        {
-                                uci_string(&pv_array[i], uci_str);
-                                printf("%s ", uci_str);
-                                if (i > 0 && i % 30 == 0)
-                                        printf("\n");
-                        }
-                        printf("\n");
-                        fflush(stdout);
-                }
+                        uci_pv(depth_limit, best_evaluation, &move_ply0, pv_array);
+		for (i = 0; i < 64; ++i)
+		{
+			printf("[%d]=%d ", i - 32, bins[i]);
+			if (i > 0 && i % 10 == 0)
+				printf("\n");
+		}
+		printf("\nnegvals=%d\n\n", negvals);
 
                 ++depth_limit;
                 if (quiescence_ply_reached > valid_quiescence_ply_reached)

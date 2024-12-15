@@ -228,6 +228,30 @@ uci_dispatch(void)
 }
 
 void
+uci_pv(int32_t depth, int32_t score, const uci_t * ply0_move, const uci_t * pv)
+{
+        int32_t i;
+        char depth_str[64];
+        char score_str[64];
+        char pv_str[512];
+        char uci_str[7];
+        char info_str[1024];
+
+        snprintf(depth_str, sizeof(depth_str), "%d", depth);
+        snprintf(score_str, sizeof(score_str), "%d", score);
+        uci_string(ply0_move, pv_str);
+        uci_str[0] = ' ';
+        for (i = 0; i < PV_ARRAY_COUNT && uci_nonzero(&pv[i]); ++i)
+        {
+                uci_string(&pv[i], &uci_str[1]);
+                strncat(pv_str, uci_str, sizeof(pv_str) - 1);
+        }
+        pv_str[sizeof(pv_str) - 1] = '\0';
+        snprintf(info_str, sizeof(info_str), "info depth %s score cp %s pv %s", depth_str, score_str, pv_str);
+        uci_reply(info_str);
+}
+
+void
 uci_input_reset(void)
 {
         memset(uci_input_buffer, 0, UCI_INPUT_BUFFER_SIZE);

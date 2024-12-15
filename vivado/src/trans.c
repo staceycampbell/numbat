@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <xparameters.h>
 #include <xil_printf.h>
 #include <xtime_l.h>
@@ -74,7 +75,7 @@ trans_lookup(trans_t * trans, uint32_t * collision)
         uint32_t trans_idle;
 
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        vchess_trans_lookup();  // lookup hash will be calculated on board in last call to vchess_write_board_basic
+        vchess_trans_lookup();  // lookup hash will be calculated for board in most recent call to vchess_write_board_basic
         trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         vchess_trans_read(collision, &trans->eval, &trans->depth, &trans->flag, &trans->nodes, &trans->capture, &trans->entry_valid, &trans_idle);
 }
