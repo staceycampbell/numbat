@@ -14,7 +14,7 @@
 
 #define LARGE_EVAL (1 << 20)
 
-#define Q_DELTA 100             // stop q search if eval + this doesn't beat alpha
+#define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
 
 static uint32_t nodes_visited, terminal_nodes, q_hard_cutoff, q_end, trans_collision, no_trans;
 static uint32_t move_killer_found;
@@ -61,7 +61,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                 xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
-        if (game_moves == 0)    // mate, stalemate (only looking at captures)
+        if (ply > 0 || game_moves == 0)
         {
                 vchess_repdet_write(0);
                 return;
@@ -254,7 +254,8 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 }
 
 static int32_t
-negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply, int32_t pv_index)
+negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply,
+        int32_t pv_index)
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
@@ -286,6 +287,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         nm_load_rep_table(game, game_moves, board_vert, ply);
         killer_ply(ply);
         vchess_write_board_basic(board);
+        trans_lookup_init();    // trigger transposition table lookup
         vchess_capture_moves(0);        // collect all legal moves
         vchess_write_board_wait(board);
         vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
@@ -307,7 +309,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         if (alpha >= beta)
                 return alpha;
 
-        trans_lookup(&trans, &collision);
+        trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
+        vchess_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.capture, &trans.entry_valid, 0);
         trans_collision += collision;
 
         if (trans.entry_valid && trans.depth >= depth)
@@ -342,7 +345,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         index = 0;
         do
         {
-                if (ply < 3 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
+                if (ply <= 1 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
                     (move_count >= 6 && index < move_count / 4))
                 {
                         board_vert[ply] = board_ptr[index];

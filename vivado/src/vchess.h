@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
 
@@ -297,6 +298,26 @@ vchess_trans_idle_wait(void)
         while (counter < 100 && !trans_idle);
 
         return trans_idle;
+}
+
+static inline void
+trans_test_idle(const char *func, const char *file, int line)
+{
+        uint32_t trans_idle;
+
+        vchess_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+        if (!trans_idle)
+        {
+                printf("%s: transposition table state machine is not idle, stopping. (%s %d)\n", func, file, line);
+                while (1);
+        }
+}
+
+static inline void
+trans_lookup_init(void)
+{
+        trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
+        vchess_trans_lookup();  // lookup hash will be calculated for board in most recent call to vchess_write_board_basic
 }
 
 static inline uint32_t
