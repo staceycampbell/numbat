@@ -140,7 +140,7 @@ module trans #
 
    integer                                i;
 
-(* mark_debug = "true" *)   wire [HASH_USED - 1:0]                 lookup_hash;
+   wire [HASH_USED - 1:0]                 lookup_hash;
    wire [1:0]                             lookup_flag;
    wire signed [EVAL_WIDTH - 1:0]         lookup_eval;
    wire [7:0]                             lookup_depth;

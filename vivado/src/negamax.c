@@ -254,8 +254,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 }
 
 static int32_t
-negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply,
-        int32_t pv_index, const trans_t * node_trans)
+negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply, int32_t pv_index)
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
@@ -308,9 +307,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         if (alpha >= beta)
                 return alpha;
 
-        // trans_lookup(&trans, &collision);
-        trans = *node_trans;
-        trans_collision += board->trans_collision;
+        trans_lookup(&trans, &collision);
+        trans_collision += collision;
 
         if (trans.entry_valid && trans.depth >= depth)
         {
@@ -349,8 +347,8 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 {
                         board_vert[ply] = board_ptr[index];
                         if (depth > 0)
-                                value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index,
-                                                 &board_ptr[index]->trans);
+                                value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
+
                         else if (board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check)
                                 value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                         else
@@ -541,7 +539,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                 while (i < move_count && !abort_search)
                 {
                         board_vert[ply] = board_ptr[i];
-                        evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, alpha, beta, ply, 0, &board_ptr[i]->trans);
+                        evaluate_move = -negamax(game, game_moves, board_ptr[i], depth_limit, alpha, beta, ply, 0);
                         board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
                         if (!abort_search && evaluate_move > best_evaluation)
                         {

@@ -133,9 +133,6 @@ typedef struct board_t
         uint32_t fifty_move;
         uint32_t pv;
         uci_t uci;
-        trans_t trans;
-        uint32_t trans_collision;
-	uint64_t hash;
 } board_t;
 
 static inline void
@@ -228,17 +225,16 @@ vchess_trans_lookup(void)
 }
 
 static inline void
-local_trans_read(uint32_t eval_reg, uint32_t nodes_reg, uint32_t misc_reg,
-                 uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
-                 uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
+vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
+                  uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
 {
         uint32_t val;
 
         if (eval)
-                *eval = (int32_t) vchess_read(eval_reg);
+                *eval = (int32_t) vchess_read(514);
         if (nodes)
-                *nodes = vchess_read(nodes_reg);
-        val = vchess_read(misc_reg);
+                *nodes = vchess_read(515);
+        val = vchess_read(512);
         if (trans_idle)
                 *trans_idle = val & 0x1;
         if (entry_valid)
@@ -252,26 +248,6 @@ local_trans_read(uint32_t eval_reg, uint32_t nodes_reg, uint32_t misc_reg,
         if (capture)
                 *capture = (val >> 10) & 0x1;
 }
-
-static inline void
-vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
-                  uint32_t * entry_valid, uint32_t * trans_idle)
-{
-        local_trans_read(514, 515, 512, collision, eval, depth, flag, nodes, capture, entry_valid, trans_idle);
-}
-
-//static inline void
-//vchess_am_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
-//                     uint32_t * entry_valid, uint64_t *hash)
-//{
-//        uint64_t bits_31_0, bits_63_32;
-//
-//        local_trans_read(144, 145, 143, collision, eval, depth, flag, nodes, capture, entry_valid, 0);
-//        bits_31_0 = vchess_read(146);
-//        bits_63_32 = vchess_read(147);
-//	if (hash)
-//		*hash = bits_63_32 << 32 | bits_31_0;
-//}
 
 static inline void
 vchess_trans_hash_only(void)

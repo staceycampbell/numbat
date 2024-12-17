@@ -170,45 +170,6 @@ vchess_write_board_wait(const board_t * board)
         }
 }
 
-static void
-safe_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
-                uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
-{
-        uint32_t val;
-
-        if (eval)
-                *eval = (int32_t) vchess_read(144);
-        if (nodes)
-                *nodes = vchess_read(145);
-        val = vchess_read(143);
-        if (trans_idle)
-                *trans_idle = val & 0x1;
-        if (entry_valid)
-                *entry_valid = (val >> 1) & 0x1;
-        if (flag)
-                *flag = (val >> 2) & 0x3;
-        if (depth)
-                *depth = (int8_t) ((val >> 8) & 0xFF);
-        if (collision)
-                *collision = (val >> 9) & 0x1;
-        if (capture)
-                *capture = (val >> 10) & 0x1;
-}
-
-static void
-vchess_am_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
-                     uint32_t * entry_valid, uint64_t * hash)
-{
-        uint64_t bits_31_0, bits_63_32;
-
-        bits_31_0 = vchess_read(146);
-        bits_63_32 = vchess_read(147);
-        if (hash)
-                *hash = bits_63_32 << 32 | bits_31_0;
-
-        safe_trans_read(collision, eval, depth, flag, nodes, capture, entry_valid, 0);
-}
-
 uint32_t
 vchess_read_board(board_t * board, uint32_t index)
 {
@@ -249,8 +210,7 @@ vchess_read_board(board_t * board, uint32_t index)
         board->eval = vchess_move_eval();
         board->half_move_clock = vchess_read_half_move();
         vchess_read_uci(&board->uci);
-        vchess_am_trans_read(&board->trans_collision, &board->trans.eval, &board->trans.depth, &board->trans.flag,
-                             &board->trans.nodes, &board->trans.capture, &board->trans.entry_valid, &board->hash);
+
         return 0;
 }
 
