@@ -140,7 +140,7 @@ module trans #
 
    integer                                i;
 
-   wire [HASH_USED - 1:0]                 lookup_hash;
+(* mark_debug = "true" *)   wire [HASH_USED - 1:0]                 lookup_hash;
    wire [1:0]                             lookup_flag;
    wire signed [EVAL_WIDTH - 1:0]         lookup_eval;
    wire [7:0]                             lookup_depth;
@@ -148,9 +148,11 @@ module trans #
    wire                                   lookup_capture;
    wire                                   lookup_valid;
 
+   wire [HASH_USED - 1:0]                 store_hash = hash[HASH_USED - 1:0];
+
    wire [MEM_ADDR_WIDTH - 1:0]            hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
    wire [127:0]                           store = {valid_wr, capture, nodes[`TRANS_NODES_WIDTH - 1:0], depth[7:0],
-                                                   flag[1:0], eval[EVAL_WIDTH - 1:0], hash[HASH_USED - 1:0]};
+                                                   flag[1:0], eval[EVAL_WIDTH - 1:0], store_hash[HASH_USED - 1:0]};
 
    wire                                   clear_wlast = burst_counter[7:0] == 8'hFF;
 
@@ -164,7 +166,7 @@ module trans #
    assign trans_axi_awprot = 3'b000; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
    assign trans_axi_awqos = 4'b0; // no QOS scheme
    assign trans_axi_awburst = 2'b01; // incrementing address
-   assign trans_axi_awcache = 4'b0011; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
+   assign trans_axi_awcache = 4'b0000; // non-cacheable
    assign trans_axi_awsize = 3'b100; // 128 bits (16 bytes) per beat
    assign trans_axi_bready = 1'b1; // can always accept a write response
    assign trans_axi_wstrb = 16'hffff; // all byte lanes valid always
@@ -173,7 +175,7 @@ module trans #
    assign trans_axi_wvalid = clear_trans ? start_data && burst_counter < BURST_TICK_TOTAL : local_wvalid;
 
    assign trans_axi_arburst = 2'b00; // fixed address (not incrementing burst)
-   assign trans_axi_arcache = 4'b0011; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
+   assign trans_axi_arcache = 4'b0000; // non-cacheable
    assign trans_axi_arlen = 8'h00; // one ready per transaction
    assign trans_axi_arlock = 1'b0; // normal access
    assign trans_axi_arprot = 3'b000; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
@@ -215,196 +217,190 @@ module trans #
      end
 
    always @(posedge clk)
-     if (reset)
-       begin
-          state <= STATE_IDLE;
-          trans_trans <= 0;
-       end
-     else
-       case (state)
-         STATE_IDLE :
-           begin
-              entry_lookup <= entry_lookup_in && ~entry_lookup_in_z;
-              entry_store <= entry_store_in && ~entry_store_in_z;
-              board <= board_in;
-              white_to_move <= white_to_move_in;
-              castle_mask <= castle_mask_in;
-              en_passant_col <= en_passant_col_in;
-              eval <= eval_in;
-              flag <= flag_in;
-              depth <= depth_in;
-              nodes <= nodes_in;
-              capture <= capture_in;
+     case (state)
+       STATE_IDLE :
+         begin
+            entry_lookup <= entry_lookup_in && ~entry_lookup_in_z;
+            entry_store <= entry_store_in && ~entry_store_in_z;
+            board <= board_in;
+            white_to_move <= white_to_move_in;
+            castle_mask <= castle_mask_in;
+            en_passant_col <= en_passant_col_in;
+            eval <= eval_in;
+            flag <= flag_in;
+            depth <= depth_in;
+            nodes <= nodes_in;
+            capture <= capture_in;
 
+            local_wvalid <= 0;
+            trans_axi_awvalid <= 0;
+
+            entry_store <= 0;
+            entry_lookup <= 0;
+            hash_only <= 0;
+            clear_trans <= 0;
+            start_data <= 0;
+            if (entry_store_in && ~entry_store_in_z)
+              begin
+                 entry_store <= 1;
+                 state <= STATE_HASH_0;
+              end
+            else if (entry_lookup_in && ~entry_lookup_in_z)
+              begin
+                 entry_lookup <= 1;
+                 state <= STATE_HASH_0;
+              end
+            else if (hash_only_in && ~hash_only_in_z)
+              begin
+                 hash_only <= 1;
+                 state <= STATE_HASH_0;
+              end
+            else if (clear_trans_in && ~clear_trans_in_z)
+              begin
+                 clear_trans <= 1;
+                 state <= STATE_CLEAR_TRANS_INIT;
+              end
+         end
+       STATE_CLEAR_TRANS_INIT :
+         begin
+            trans_trans <= trans_trans + 1;
+            hash <= 0;
+            trans_axi_awvalid <= 0;
+            state <= STATE_CLEAR_TRANS;
+         end
+       STATE_CLEAR_TRANS :
+         begin
+            start_data <= 1;
+            trans_axi_awvalid <= 1;
+            if (trans_axi_awvalid && trans_axi_awready)
+              if (hash >= TABLE_SIZE - 256)
+                begin
+                   trans_axi_awvalid <= 0;
+                   state <= STATE_TRANS_WAIT_DATA;
+                end
+              else
+                hash <= hash + 256;
+         end
+       STATE_TRANS_WAIT_DATA :
+         if (burst_counter >= BURST_TICK_TOTAL)
+           state <= STATE_CLEAR_TRANS_DONE;
+       STATE_CLEAR_TRANS_DONE :
+         state <= STATE_IDLE;
+       STATE_HASH_0 :
+         begin
+            for (i = 0; i < 64; i = i + 1)
+              if (board[i * `PIECE_BITS+:`PIECE_BITS] != `EMPTY_POSN)
+                hash_0[i] <= zob_rand_board[zob_piece_lookup[board[i * `PIECE_BITS+:`PIECE_BITS]] << 6 | i];
+              else
+                hash_0[i] <= 0;
+            state <= STATE_HASH_1;
+         end
+       STATE_HASH_1 :
+         begin
+            for (i = 0; i < 16; i = i + 1)
+              hash_1[i] <= hash_0[i * 4 + 0] ^ hash_0[i * 4 + 1] ^ hash_0[i * 4 + 2] ^ hash_0[i * 4 + 3];
+            state <= STATE_HASH_2;
+         end
+       STATE_HASH_2 :
+         begin
+            for (i = 0; i < 4; i = i + 1)
+              hash_2[i] <= hash_1[i * 4 + 0] ^ hash_1[i * 4 + 1] ^ hash_1[i * 4 + 2] ^ hash_1[i * 4 + 3];
+            state <= STATE_HASH_3;
+         end
+       STATE_HASH_3 :
+         begin
+            if (white_to_move)
+              hash_side <= hash_2[0] ^ hash_2[1] ^ hash_2[2] ^ hash_2[3];
+            else
+              hash_side <= hash_2[0] ^ hash_2[1] ^ hash_2[2] ^ hash_2[3] ^ zob_rand_btm;
+            state <= STATE_HASH_4;
+         end
+       STATE_HASH_4 :
+         begin
+            trans_trans <= trans_trans + 1;
+            hash <= hash_side ^ zob_rand_en_passant_col[en_passant_col] ^ zob_rand_castle_mask[castle_mask];
+            if (entry_store)
+              state <= STATE_STORE;
+            else if (entry_lookup)
+              state <= STATE_LOOKUP;
+            else
+              state <= STATE_IDLE; // hash_only
+         end
+       STATE_STORE :
+         begin
+            trans_axi_awvalid <= 1;
+            local_wvalid <= 1;
+            if (trans_axi_awvalid && trans_axi_awready && local_wvalid && trans_axi_wready)
+              begin
+                 local_wvalid <= 0;
+                 trans_axi_awvalid <= 0;
+                 state <= STATE_IDLE;
+              end
+            else if (trans_axi_awvalid && trans_axi_awready)
+              begin
+                 trans_axi_awvalid <= 0;
+                 state <= STATE_STORE_WAIT_DATA;
+              end
+            else if (local_wvalid && trans_axi_wready)
+              begin
+                 local_wvalid <= 0;
+                 state <= STATE_STORE_WAIT_ADDR;
+              end
+         end
+       STATE_STORE_WAIT_DATA :
+         if (trans_axi_wready)
+           begin
               local_wvalid <= 0;
-              trans_axi_awvalid <= 0;
-
-              entry_store <= 0;
-              entry_lookup <= 0;
-              hash_only <= 0;
-              clear_trans <= 0;
-              start_data <= 0;
-              if (entry_store_in && ~entry_store_in_z)
-                begin
-                   entry_store <= 1;
-                   state <= STATE_HASH_0;
-                end
-              else if (entry_lookup_in && ~entry_lookup_in_z)
-                begin
-                   entry_lookup <= 1;
-                   state <= STATE_HASH_0;
-                end
-              else if (hash_only_in && ~hash_only_in_z)
-                begin
-                   hash_only <= 1;
-                   state <= STATE_HASH_0;
-                end
-              else if (clear_trans_in && ~clear_trans_in_z)
-                begin
-                   clear_trans <= 1;
-                   state <= STATE_CLEAR_TRANS_INIT;
-                end
-           end
-         STATE_CLEAR_TRANS_INIT :
-           begin
-              trans_trans <= trans_trans + 1;
-              hash <= 0;
-              trans_axi_awvalid <= 0;
-              state <= STATE_CLEAR_TRANS;
-           end
-         STATE_CLEAR_TRANS :
-           begin
-              start_data <= 1;
-              trans_axi_awvalid <= 1;
-              if (trans_axi_awvalid && trans_axi_awready)
-                if (hash >= TABLE_SIZE - 256)
-                  begin
-                     trans_axi_awvalid <= 0;
-                     state <= STATE_TRANS_WAIT_DATA;
-                  end
-                else
-                  hash <= hash + 256;
-           end
-         STATE_TRANS_WAIT_DATA :
-           if (burst_counter >= BURST_TICK_TOTAL)
-             state <= STATE_CLEAR_TRANS_DONE;
-         STATE_CLEAR_TRANS_DONE :
-           state <= STATE_IDLE;
-         STATE_HASH_0 :
-           begin
-              for (i = 0; i < 64; i = i + 1)
-                if (board[i * `PIECE_BITS+:`PIECE_BITS] != `EMPTY_POSN)
-                  hash_0[i] <= zob_rand_board[zob_piece_lookup[board[i * `PIECE_BITS+:`PIECE_BITS]] << 6 | i];
-                else
-                  hash_0[i] <= 0;
-              state <= STATE_HASH_1;
-           end
-         STATE_HASH_1 :
-           begin
-              for (i = 0; i < 16; i = i + 1)
-                hash_1[i] <= hash_0[i * 4 + 0] ^ hash_0[i * 4 + 1] ^ hash_0[i * 4 + 2] ^ hash_0[i * 4 + 3];
-              state <= STATE_HASH_2;
-           end
-         STATE_HASH_2 :
-           begin
-              for (i = 0; i < 4; i = i + 1)
-                hash_2[i] <= hash_1[i * 4 + 0] ^ hash_1[i * 4 + 1] ^ hash_1[i * 4 + 2] ^ hash_1[i * 4 + 3];
-              state <= STATE_HASH_3;
-           end
-         STATE_HASH_3 :
-           begin
-              if (white_to_move)
-                hash_side <= hash_2[0] ^ hash_2[1] ^ hash_2[2] ^ hash_2[3];
-              else
-                hash_side <= hash_2[0] ^ hash_2[1] ^ hash_2[2] ^ hash_2[3] ^ zob_rand_btm;
-              state <= STATE_HASH_4;
-           end
-         STATE_HASH_4 :
-           begin
-              trans_trans <= trans_trans + 1;
-              hash <= hash_side ^ zob_rand_en_passant_col[en_passant_col] ^ zob_rand_castle_mask[castle_mask];
-              if (entry_store)
-                state <= STATE_STORE;
-              else if (entry_lookup)
-                state <= STATE_LOOKUP;
-              else
-                state <= STATE_IDLE; // hash_only
-           end
-         STATE_STORE :
-           begin
-              trans_axi_awvalid <= 1;
-              local_wvalid <= 1;
-              if (trans_axi_awvalid && trans_axi_awready && local_wvalid && trans_axi_wready)
-                begin
-                   local_wvalid <= 0;
-                   trans_axi_awvalid <= 0;
-                   state <= STATE_IDLE;
-                end
-              else if (trans_axi_awvalid && trans_axi_awready)
-                begin
-                   trans_axi_awvalid <= 0;
-                   state <= STATE_STORE_WAIT_DATA;
-                end
-              else if (local_wvalid && trans_axi_wready)
-                begin
-                   local_wvalid <= 0;
-                   state <= STATE_STORE_WAIT_ADDR;
-                end
-           end
-         STATE_STORE_WAIT_DATA :
-           if (trans_axi_wready)
-             begin
-                local_wvalid <= 0;
-                state <= STATE_IDLE;
-             end
-         STATE_STORE_WAIT_ADDR :
-           if (trans_axi_awready)
-             begin
-                trans_axi_awvalid <= 0;
-                state <= STATE_IDLE;
-             end
-         STATE_LOOKUP :
-           begin
-              trans_axi_arvalid <= 1;
-              trans_axi_rready <= 1;
-              if (trans_axi_arvalid && trans_axi_arready && trans_axi_rvalid && trans_axi_rready)
-                begin
-                   trans_axi_arvalid <= 0;
-                   trans_axi_rready <= 0;
-                   state <= STATE_LOOKUP_VALIDATE;
-                end
-              else if (trans_axi_arvalid && trans_axi_arready)
-                begin
-                   trans_axi_arvalid <= 0;
-                   state <= STATE_LOOKUP_WAIT_DATA;
-                end
-              else if (trans_axi_rvalid && trans_axi_rready)
-                begin
-                   trans_axi_rready <= 0;
-                   state <= STATE_LOOKUP_WAIT_ADDR;
-                end
-           end
-         STATE_LOOKUP_WAIT_DATA :
-           if (trans_axi_rvalid)
-             begin
-                trans_axi_rready <= 0;
-                state <= STATE_LOOKUP_VALIDATE;
-             end
-         STATE_LOOKUP_WAIT_ADDR :
-           if (trans_axi_arready)
-             begin
-                trans_axi_arvalid <= 0;
-                state <= STATE_LOOKUP_VALIDATE;
-             end
-         STATE_LOOKUP_VALIDATE :
-           begin
-              entry_valid_out <= lookup_valid && lookup_hash[HASH_USED - 1:0] == hash[HASH_USED - 1:0];
-              collision_out <= lookup_valid && lookup_hash[HASH_USED - 1:0] != hash[HASH_USED - 1:0];
               state <= STATE_IDLE;
            end
-         default :
-           state <= STATE_IDLE;
-       endcase
+       STATE_STORE_WAIT_ADDR :
+         if (trans_axi_awready)
+           begin
+              trans_axi_awvalid <= 0;
+              state <= STATE_IDLE;
+           end
+       STATE_LOOKUP :
+         begin
+            trans_axi_arvalid <= 1;
+            trans_axi_rready <= 1;
+            if (trans_axi_arvalid && trans_axi_arready && trans_axi_rvalid && trans_axi_rready)
+              begin
+                 trans_axi_arvalid <= 0;
+                 trans_axi_rready <= 0;
+                 state <= STATE_LOOKUP_VALIDATE;
+              end
+            else if (trans_axi_arvalid && trans_axi_arready)
+              begin
+                 trans_axi_arvalid <= 0;
+                 state <= STATE_LOOKUP_WAIT_DATA;
+              end
+            else if (trans_axi_rvalid && trans_axi_rready)
+              begin
+                 trans_axi_rready <= 0;
+                 state <= STATE_LOOKUP_WAIT_ADDR;
+              end
+         end
+       STATE_LOOKUP_WAIT_DATA :
+         if (trans_axi_rvalid)
+           begin
+              trans_axi_rready <= 0;
+              state <= STATE_LOOKUP_VALIDATE;
+           end
+       STATE_LOOKUP_WAIT_ADDR :
+         if (trans_axi_arready)
+           begin
+              trans_axi_arvalid <= 0;
+              state <= STATE_LOOKUP_VALIDATE;
+           end
+       STATE_LOOKUP_VALIDATE :
+         begin
+            entry_valid_out <= lookup_valid && lookup_hash[HASH_USED - 1:0] == hash[HASH_USED - 1:0];
+            collision_out <= lookup_valid && lookup_hash[HASH_USED - 1:0] != hash[HASH_USED - 1:0];
+            state <= STATE_IDLE;
+         end
+       default :
+         state <= STATE_IDLE;
+     endcase
 
    initial
      begin

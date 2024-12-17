@@ -95,6 +95,7 @@ module vchess_top
    wire                 am_trans_entry_valid_out;// From all_moves of all_moves.v
    wire signed [EVAL_WIDTH-1:0] am_trans_eval_out;// From all_moves of all_moves.v
    wire [1:0]           am_trans_flag_out;      // From all_moves of all_moves.v
+   wire [63:0]          am_trans_hash_out;      // From all_moves of all_moves.v
    wire [`TRANS_NODES_WIDTH-1:0] am_trans_nodes_out;// From all_moves of all_moves.v
    wire [31:0]          am_trans_rd_axi_araddr; // From all_moves of all_moves.v
    wire [1:0]           am_trans_rd_axi_arburst;// From all_moves of all_moves.v
@@ -345,6 +346,7 @@ module vchess_top
       .trans_eval                       (am_trans_eval_out[EVAL_WIDTH-1:0]), // Templated
       .trans_flag                       (am_trans_flag_out[1:0]), // Templated
       .trans_nodes                      (am_trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .trans_hash                       (am_trans_hash_out[63:0]), // Templated
       .am_trans_rd_axi_araddr           (am_trans_rd_axi_araddr[31:0]),
       .am_trans_rd_axi_arburst          (am_trans_rd_axi_arburst[1:0]),
       .am_trans_rd_axi_arcache          (am_trans_rd_axi_arcache[3:0]),
@@ -596,6 +598,7 @@ module vchess_top
       .am_trans_eval_in                 (am_trans_eval_out[EVAL_WIDTH-1:0]), // Templated
       .am_trans_flag_in                 (am_trans_flag_out[1:0]), // Templated
       .am_trans_nodes_in                (am_trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .am_trans_hash_in                 (am_trans_hash_out[63:0]), // Templated
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),

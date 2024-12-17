@@ -135,6 +135,7 @@ typedef struct board_t
         uci_t uci;
         trans_t trans;
         uint32_t trans_collision;
+	uint64_t hash;
 } board_t;
 
 static inline void
@@ -259,12 +260,18 @@ vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_
         local_trans_read(514, 515, 512, collision, eval, depth, flag, nodes, capture, entry_valid, trans_idle);
 }
 
-static inline void
-vchess_am_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
-                     uint32_t * entry_valid)
-{
-        local_trans_read(144, 145, 143, collision, eval, depth, flag, nodes, capture, entry_valid, 0);
-}
+//static inline void
+//vchess_am_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * capture,
+//                     uint32_t * entry_valid, uint64_t *hash)
+//{
+//        uint64_t bits_31_0, bits_63_32;
+//
+//        local_trans_read(144, 145, 143, collision, eval, depth, flag, nodes, capture, entry_valid, 0);
+//        bits_31_0 = vchess_read(146);
+//        bits_63_32 = vchess_read(147);
+//	if (hash)
+//		*hash = bits_63_32 << 32 | bits_31_0;
+//}
 
 static inline void
 vchess_trans_hash_only(void)

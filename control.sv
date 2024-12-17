@@ -110,6 +110,7 @@ module control #
     input signed [EVAL_WIDTH - 1:0]       am_trans_eval_in,
     input [1:0]                           am_trans_flag_in,
     input [`TRANS_NODES_WIDTH - 1:0]      am_trans_nodes_in,
+    input [63:0]                          am_trans_hash_in,
 
     input [39:0]                          ctrl0_axi_araddr,
     input [2:0]                           ctrl0_axi_arprot,
@@ -287,6 +288,8 @@ module control #
                                          am_trans_flag_in[1:0], am_trans_entry_valid_in, 1'b0};
                144 : ctrl0_axi_rdata <= am_trans_eval_in;
                145 : ctrl0_axi_rdata <= am_trans_nodes_in;
+               146 : ctrl0_axi_rdata <= am_trans_hash_in[31:0];
+               147 : ctrl0_axi_rdata <= am_trans_hash_in[63:32];
 
                172 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
                173 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 1+:`SIDE_WIDTH];

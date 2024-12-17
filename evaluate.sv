@@ -52,7 +52,6 @@ module evaluate #
    reg                               board_valid_r = 0;
    reg                               local_board_valid = 0;
    reg [`BOARD_WIDTH - 1:0]          board, board_pre;
-   reg signed [EVAL_WIDTH - 1:0]     eval_t3;
    reg [2:0]                         latency;
    reg signed [7:0]                  phase;
    reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_mg_t1, eval_b_mg_t1, eval_c_mg_t1, eval_d_mg_t1;

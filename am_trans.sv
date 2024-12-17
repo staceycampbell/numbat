@@ -6,87 +6,88 @@ module am_trans #
    parameter MAX_POSITIONS_LOG2 = 0
    )
    (
-    input                                 clk,
-    input                                 reset,
+    input                      clk,
+    input                      reset,
 
-    input                                 init,
+    (* mark_debug = "true" *)    input init,
 
-    input [MAX_POSITIONS_LOG2 - 1:0]      trans_table_index,
+    (* mark_debug = "true" *)    input [MAX_POSITIONS_LOG2 - 1:0] trans_table_index,
 
-    input                                 board_valid_in,
-    input [`BOARD_WIDTH - 1:0]            board_in,
-    input                                 white_to_move_in,
-    input [3:0]                           castle_mask_in,
-    input [3:0]                           en_passant_col_in,
+    (* mark_debug = "true" *)    input board_valid_in,
+    input [`BOARD_WIDTH - 1:0] board_in,
+    input                      white_to_move_in,
+    input [3:0]                castle_mask_in,
+    input [3:0]                en_passant_col_in,
 
-    output reg                            entry_valid_out,
-    output reg signed [EVAL_WIDTH - 1:0]  eval_out,
-    output reg [7:0]                      depth_out,
-    output reg [1:0]                      flag_out,
-    output reg [`TRANS_NODES_WIDTH - 1:0] nodes_out,
-    output reg                            capture_out,
-    output reg                            collision_out,
+    (* mark_debug = "true" *)    output reg entry_valid_out,
+    (* mark_debug = "true" *)    output reg signed [EVAL_WIDTH - 1:0] eval_out,
+    (* mark_debug = "true" *)    output reg [7:0] depth_out,
+    (* mark_debug = "true" *)    output reg [1:0] flag_out,
+    (* mark_debug = "true" *)    output reg [`TRANS_NODES_WIDTH - 1:0] nodes_out,
+    (* mark_debug = "true" *)    output reg capture_out,
+    (* mark_debug = "true" *)    output reg collision_out,
+    (* mark_debug = "true" *)    output reg [63:0] hash_out,
 
-    input                                 am_trans_rd_axi_arready,
-    input                                 am_trans_rd_axi_awready,
-    input [1:0]                           am_trans_rd_axi_bresp,
-    input                                 am_trans_rd_axi_bvalid,
-    input [127:0]                         am_trans_rd_axi_rdata,
-    input                                 am_trans_rd_axi_rlast,
-    input [1:0]                           am_trans_rd_axi_rresp,
-    input                                 am_trans_rd_axi_rvalid,
-    input                                 am_trans_rd_axi_wready,
+    input                      am_trans_rd_axi_arready,
+    input                      am_trans_rd_axi_awready,
+    input [1:0]                am_trans_rd_axi_bresp,
+    input                      am_trans_rd_axi_bvalid,
+    input [127:0]              am_trans_rd_axi_rdata,
+    input                      am_trans_rd_axi_rlast,
+    input [1:0]                am_trans_rd_axi_rresp,
+    input                      am_trans_rd_axi_rvalid,
+    input                      am_trans_rd_axi_wready,
 
-    output [31:0]                         am_trans_rd_axi_araddr,
-    output [1:0]                          am_trans_rd_axi_arburst,
-    output [3:0]                          am_trans_rd_axi_arcache,
-    output [7:0]                          am_trans_rd_axi_arlen,
-    output [0:0]                          am_trans_rd_axi_arlock,
-    output [2:0]                          am_trans_rd_axi_arprot,
-    output [3:0]                          am_trans_rd_axi_arqos,
-    output [2:0]                          am_trans_rd_axi_arsize,
-    output                                am_trans_rd_axi_arvalid,
-    output [31:0]                         am_trans_rd_axi_awaddr,
-    output [1:0]                          am_trans_rd_axi_awburst,
-    output [3:0]                          am_trans_rd_axi_awcache,
-    output [7:0]                          am_trans_rd_axi_awlen,
-    output [0:0]                          am_trans_rd_axi_awlock,
-    output [2:0]                          am_trans_rd_axi_awprot,
-    output [3:0]                          am_trans_rd_axi_awqos,
-    output [2:0]                          am_trans_rd_axi_awsize,
-    output                                am_trans_rd_axi_awvalid,
-    output                                am_trans_rd_axi_bready,
-    output                                am_trans_rd_axi_rready,
-    output [127:0]                        am_trans_rd_axi_wdata,
-    output                                am_trans_rd_axi_wlast,
-    output [15:0]                         am_trans_rd_axi_wstrb,
-    output                                am_trans_rd_axi_wvalid,
-    output [3:0]                          am_trans_rd_axi_arregion,
-    output [3:0]                          am_trans_rd_axi_awregion,
+    output [31:0]              am_trans_rd_axi_araddr,
+    output [1:0]               am_trans_rd_axi_arburst,
+    output [3:0]               am_trans_rd_axi_arcache,
+    output [7:0]               am_trans_rd_axi_arlen,
+    output [0:0]               am_trans_rd_axi_arlock,
+    output [2:0]               am_trans_rd_axi_arprot,
+    output [3:0]               am_trans_rd_axi_arqos,
+    output [2:0]               am_trans_rd_axi_arsize,
+    output                     am_trans_rd_axi_arvalid,
+    output [31:0]              am_trans_rd_axi_awaddr,
+    output [1:0]               am_trans_rd_axi_awburst,
+    output [3:0]               am_trans_rd_axi_awcache,
+    output [7:0]               am_trans_rd_axi_awlen,
+    output [0:0]               am_trans_rd_axi_awlock,
+    output [2:0]               am_trans_rd_axi_awprot,
+    output [3:0]               am_trans_rd_axi_awqos,
+    output [2:0]               am_trans_rd_axi_awsize,
+    output                     am_trans_rd_axi_awvalid,
+    output                     am_trans_rd_axi_bready,
+    output                     am_trans_rd_axi_rready,
+    output [127:0]             am_trans_rd_axi_wdata,
+    output                     am_trans_rd_axi_wlast,
+    output [15:0]              am_trans_rd_axi_wstrb,
+    output                     am_trans_rd_axi_wvalid,
+    output [3:0]               am_trans_rd_axi_arregion,
+    output [3:0]               am_trans_rd_axi_awregion,
 
-    output [31:0]                         am_trans_trans
+    output [31:0]              am_trans_trans
     );
 
    localparam FIFO_DEPTH_LOG2 = $clog2(`MAX_POSITIONS) + 1;
    localparam FIFO_DEPTH = 1 << FIFO_DEPTH_LOG2;
    localparam FIFO_WIDTH = `BOARD_WIDTH + 4 + 4 + 1;
 
-   localparam TABLE_WIDTH = 1 + EVAL_WIDTH + 8 + 2 + `TRANS_NODES_WIDTH + 1 + 1;
+   localparam TABLE_WIDTH = 64 + 1 + EVAL_WIDTH + 8 + 2 + `TRANS_NODES_WIDTH + 1 + 1;
 
    reg [FIFO_WIDTH - 1:0]      fifo [0:FIFO_DEPTH - 1];
-   reg [FIFO_DEPTH_LOG2 - 1:0] fifo_count, fifo_wr_addr, fifo_rd_addr;
-   reg                         fifo_rd_en = 0;
+(* mark_debug = "true" *)   reg [FIFO_DEPTH_LOG2 - 1:0] fifo_count, fifo_wr_addr, fifo_rd_addr;
+(* mark_debug = "true" *)   reg                         fifo_rd_en = 0;
 
    reg [TABLE_WIDTH - 1:0]     trans_table [0:`MAX_POSITIONS - 1];
-   reg [MAX_POSITIONS_LOG2 - 1:0] trans_table_wr_addr;
-   reg                            trans_table_wr_en;
+(* mark_debug = "true" *)   reg [MAX_POSITIONS_LOG2 - 1:0] trans_table_wr_addr;
+(* mark_debug = "true" *)   reg                            trans_table_wr_en;
 
    reg                         board_valid_in_r;
 
    reg [`BOARD_WIDTH - 1:0] local_board;
    reg [3:0]            local_castle_mask;
    reg [3:0]            local_en_passant_col;
-   reg                  local_entry_lookup;
+(* mark_debug = "true" *)   reg                  local_entry_lookup;
    reg                  local_white_to_move;
 
    // should be empty
@@ -100,6 +101,7 @@ module am_trans #
    wire                 table_entry_valid;      // From am_trans_rd of trans.v
    wire signed [EVAL_WIDTH-1:0] table_eval;     // From am_trans_rd of trans.v
    wire [1:0]           table_flag;             // From am_trans_rd of trans.v
+   wire [79:0]          table_hash;             // From am_trans_rd of trans.v
    wire [`TRANS_NODES_WIDTH-1:0] table_nodes;   // From am_trans_rd of trans.v
    wire                 table_trans_idle;       // From am_trans_rd of trans.v
    // End of automatics
@@ -112,11 +114,11 @@ module am_trans #
           trans_table_wr_addr <= 0;
         if (trans_table_wr_en)
           begin
-             trans_table[trans_table_wr_addr] <= {table_entry_valid, table_capture, table_collision, table_depth[7:0],
+             trans_table[trans_table_wr_addr] <= {table_hash[63:0], table_entry_valid, table_capture, table_collision, table_depth[7:0],
                                                   table_eval[EVAL_WIDTH - 1:0], table_flag[1:0], table_nodes[`TRANS_NODES_WIDTH - 1:0]};
              trans_table_wr_addr <= trans_table_wr_addr + 1;
           end
-        {entry_valid_out, capture_out, collision_out, depth_out[7:0],
+        {hash_out[63:0], entry_valid_out, capture_out, collision_out, depth_out[7:0],
          eval_out[EVAL_WIDTH - 1:0], flag_out[1:0], nodes_out[`TRANS_NODES_WIDTH - 1:0]} <= trans_table[trans_table_index];
      end
 
@@ -207,7 +209,6 @@ module am_trans #
     .nodes_in ({@"vl-width"{1'b0}}),
     .depth_in ({@"vl-width"{1'b0}}),
     .trans_trans (am_trans_trans[]),
-    .hash_out (),
     .trans_axi_\(.*\) (am_trans_rd_axi_\1[]),
     .\(.*\)_out (table_\1[]),
     .\(.*\)_in (local_\1[]),
@@ -227,7 +228,7 @@ module am_trans #
       .nodes_out                        (table_nodes[`TRANS_NODES_WIDTH-1:0]), // Templated
       .capture_out                      (table_capture),         // Templated
       .collision_out                    (table_collision),       // Templated
-      .hash_out                         (),                      // Templated
+      .hash_out                         (table_hash[79:0]),      // Templated
       .trans_axi_araddr                 (am_trans_rd_axi_araddr[31:0]), // Templated
       .trans_axi_arburst                (am_trans_rd_axi_arburst[1:0]), // Templated
       .trans_axi_arcache                (am_trans_rd_axi_arcache[3:0]), // Templated

@@ -84,6 +84,7 @@ module all_moves #
     output signed [EVAL_WIDTH - 1:0]     trans_eval,
     output [1:0]                         trans_flag,
     output [`TRANS_NODES_WIDTH - 1:0]    trans_nodes,
+    output [63:0]                        trans_hash,
 
     input                                am_trans_rd_axi_arready,
     input                                am_trans_rd_axi_awready,
@@ -131,8 +132,8 @@ module all_moves #
    localparam RAM_WIDTH = 6 + 6 + UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
    // insufficient material, white/black pop counts, UCI, fifty move, half move, thrice rep, eval, is-attacking white/black,
    // white in check, black in check, capture, pv, initial width
-   localparam LEGAL_RAM_WIDTH = MAX_POSITIONS_LOG2 + 1 + 6 + 6 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH +
-                                64 + 64 + 1+ 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
+   localparam LEGAL_RAM_WIDTH = 512;
+ // MAX_POSITIONS_LOG2 + 1 + 6 + 6 + UCI_WIDTH + 1 + HALF_MOVE_WIDTH + 1 + EVAL_WIDTH + 64 + 64 + 1+ 1 + 1 + 1 + 4 + 4 + 1 + `BOARD_WIDTH;
 
    reg [RAM_WIDTH - 1:0]                 move_ram [0:`MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]                 ram_rd_data;
@@ -148,7 +149,7 @@ module all_moves #
    reg [HALF_MOVE_WIDTH - 1:0]           half_move;
 
    reg                                   legal_ram_wr_addr_init;
-   reg [MAX_POSITIONS_LOG2 - 1:0]        legal_ram_idx;
+(* mark_debug = "true" *)   reg [MAX_POSITIONS_LOG2 - 1:0]        legal_ram_idx;
 
    reg [`BOARD_WIDTH - 1:0]              board_ram_wr;
    reg [3:0]                             en_passant_col_ram_wr;
@@ -529,7 +530,7 @@ module all_moves #
    localparam STATE_MOVE_SORT = 25;
    localparam STATE_DONE = 26;
 
-   reg [4:0] state = STATE_IDLE;
+(* mark_debug = "true" *)   reg [4:0] state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -1248,6 +1249,7 @@ module all_moves #
       .nodes_out                        (trans_nodes[`TRANS_NODES_WIDTH-1:0]), // Templated
       .capture_out                      (trans_capture),         // Templated
       .collision_out                    (trans_collision),       // Templated
+      .hash_out                         (trans_hash[63:0]),      // Templated
       .am_trans_rd_axi_araddr           (am_trans_rd_axi_araddr[31:0]), // Templated
       .am_trans_rd_axi_arburst          (am_trans_rd_axi_arburst[1:0]), // Templated
       .am_trans_rd_axi_arcache          (am_trans_rd_axi_arcache[3:0]), // Templated
