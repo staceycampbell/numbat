@@ -6,10 +6,6 @@ fenmove=/tmp/fenmove$$
 simout=/tmp/simout$$
 craftyout=/tmp/craftyout$$
 origpgn=/tmp/origpgn$$
-ucitrunc=/tmp/ucitrunc$$
-allmoveslist=/tmp/allmoveslist$$
-testpgn=/tmp/testpgn$$.pgn
-testresult=/tmp/testresult$$
 etdir=/tmp/et$$
 stop=0
 counter=0
@@ -32,7 +28,7 @@ do
     movecount=`expr $movecount - 1`
     moveno=`shuf -i 2-$movecount -n 1`
     tail -n+$moveno < $fenmoves | head -n1 > $fenmove
-    echo 'moveno' $moveno 'gameno' $gameno `cat $fenmove`
+    echo -n 'moveno' $moveno 'gameno' $gameno `cat $fenmove`' '
     ../misc/fenconv < $fenmove > $etdir/et_board.vh
     (cd $etdir/et && iverilog -I.. -g2012 -Wall -o et et.sv $srclist > /dev/null 2>&1)
     if [ ! -f $etdir/et/et ]
@@ -41,10 +37,35 @@ do
         exit 1
     fi
     $etdir/et/et > $simout 2>&1
+    vchessscore=`fgrep 'eval=' $simout | sed -e 's/.*=//'`
+    if [ "$vchessscore" = '' ]
+    then
+        echo $0: no vchess score 1>&2
+        exit 1
+    fi
     printf 'depth 1\nevtest %s\n' `basename $fenmove` | (cd /tmp && ~/src/crafty/src/crafty) | fgrep 'score=' > $craftyout 2>&1
+    wtmstring=`awk ' { print $1 } ' < $craftyout`
+    craftyscore=`awk ' { print $2 } ' < $craftyout | sed -e 's/.*=//'`
+    if [ "$craftyscore" = '' ]
+    then
+        echo $0: no crafty score 1>&2
+        exit 1
+    fi
+    if [ "$wtmstring" = 'wtm=0' ]
+    then
+        craftyscore=`expr $craftyscore '*' '-1'`
+    fi
+    printf "crafty=%d vchess=%d\n" $craftyscore $vchessscore
     counter=`expr $counter + 1`
-    if [ $counter -eq 2 ]
+    if [ $counter -eq 50 ]
     then
         stop=1
     fi
 done
+rm -f $fenmoves $fenmove $simout $craftyout $origpgn
+rm -f /tmp/game.* /tmp/log.*
+if [ -d $etdir ]
+then
+    rm -fr $etdir
+fi
+exit 0
