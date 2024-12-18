@@ -113,6 +113,7 @@ uci_dispatch(void)
                 book_miss = 0;
                 killer_clear_table();
                 trans_clear_table();
+                vchess_write_half_move(0);
                 uci_init();
         }
         else if (strcmp(p, "position") == 0)
@@ -127,6 +128,7 @@ uci_dispatch(void)
                 }
                 else if (strcmp(p, "startpos") == 0)
                 {
+                        vchess_write_half_move(0);
                         uci_init();
                 }
                 p = strstr(next, "moves");

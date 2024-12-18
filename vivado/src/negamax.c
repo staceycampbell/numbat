@@ -27,6 +27,7 @@ static uint32_t uci_data_stop;
 static uint32_t abort_search;
 static uci_t pv_array[PV_ARRAY_COUNT];
 static const uci_t zero_move = { 0, 0, 0, 0, 0 };
+static uint32_t abort_test_move_count;
 
 static uci_t move_ply0;
 
@@ -61,7 +62,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                 xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
-        if (ply > 0 || game_moves == 0)
+        if (game_moves == 0)
         {
                 vchess_repdet_write(0);
                 return;
@@ -211,11 +212,16 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         if (!endgame && value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
                 return alpha;
 
-        XTime_GetTime(&t_now);
-        time_limit_exceeded = t_now > time_limit;
-        ui_data_stop = ui_data_available();
-        uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
-        abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
+        ++abort_test_move_count;
+        if (abort_test_move_count >= 1000)
+        {
+                abort_test_move_count = 0;
+                XTime_GetTime(&t_now);
+                time_limit_exceeded = t_now > time_limit;
+                ui_data_stop = ui_data_available();
+                uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
+                abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
+        }
         if (abort_search)
                 return 0;       // will be ignored
 
@@ -309,6 +315,9 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         if (alpha >= beta)
                 return alpha;
 
+        if (thrice_rep || fifty_move || insufficient)
+                return 0;
+
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         vchess_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.capture, &trans.entry_valid, 0);
         trans_collision += collision;
@@ -324,13 +333,19 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 if (alpha >= beta)
                         return trans.eval;
         }
-        ++no_trans;
+        else
+                ++no_trans;
 
-        XTime_GetTime(&t_now);
-        time_limit_exceeded = t_now > time_limit;
-        ui_data_stop = ui_data_available();
-        uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
-        abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
+        ++abort_test_move_count;
+        if (abort_test_move_count > 1000)
+        {
+                abort_test_move_count = 0;
+                XTime_GetTime(&t_now);
+                time_limit_exceeded = t_now > time_limit;
+                ui_data_stop = ui_data_available();
+                uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
+                abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
+        }
         if (abort_search)
                 return 0;       // will be ignored
 
@@ -525,6 +540,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         abort_search = 0;
         ui_data_stop = 0;
         uci_data_stop = 0;
+        abort_test_move_count = 0;
 
         q_ply_reached = 0;
         valid_q_ply_reached = 0;
