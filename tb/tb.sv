@@ -534,6 +534,7 @@ endmodule
 // verilog-auto-inst-param-value:t
 // verilog-library-directories:(
 //     "."
+//     ".."
 //     )
 // End:
 

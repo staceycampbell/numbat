@@ -67,7 +67,7 @@ module tbtrans;
    wire                 collision_out;          // From trans of trans.v
    wire [7:0]           depth_out;              // From trans of trans.v
    wire                 entry_valid_out;        // From trans of trans.v
-   wire [EVAL_WIDTH-1:0] eval_out;              // From trans of trans.v
+   wire signed [EVAL_WIDTH-1:0] eval_out;       // From trans of trans.v
    wire [1:0]           flag_out;               // From trans of trans.v
    wire [79:0]          hash_out;               // From trans of trans.v
    wire [`TRANS_NODES_WIDTH-1:0] nodes_out;     // From trans of trans.v
@@ -255,6 +255,7 @@ endmodule
 // verilog-auto-inst-param-value:t
 // verilog-library-directories:(
 //     "."
+//     ".."
 //     )
 // End:
 
