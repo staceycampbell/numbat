@@ -55,7 +55,21 @@ do
     then
         craftyscore=`expr $craftyscore '*' '-1'`
     fi
-    printf "crafty=%d vchess=%d\n" $craftyscore $vchessscore
+    printf "crafty=%d vchess=%d" $craftyscore $vchessscore
+    diff=`expr $craftyscore - $vchessscore`
+    if [ $diff -lt 0 ]
+    then
+        diff=`expr $diff '*' -1`
+    fi
+    if [ $diff -ge 200 ]
+    then
+        printf '!'
+    fi
+    if [ $diff -ge 300 ]
+    then
+        printf '!!'
+    fi
+    printf '\n'
     counter=`expr $counter + 1`
     if [ $counter -eq 50 ]
     then
