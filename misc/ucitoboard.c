@@ -10,7 +10,7 @@ static board_t game[GAME_MAX];
 static uint32_t game_moves;
 
 void
-fen_print(board_t * board)
+fen_print(const board_t * board)
 {
         int row, col, empty, i;
         uint32_t piece;
@@ -100,7 +100,7 @@ vchess_place(board_t *board, uint32_t row, uint32_t col, uint32_t piece)
 }
 
 uint32_t
-vchess_get_piece(board_t *board, uint32_t row, uint32_t col)
+vchess_get_piece(const board_t *board, uint32_t row, uint32_t col)
 {
         uint32_t row_contents, shift, piece;
 

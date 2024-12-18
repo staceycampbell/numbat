@@ -1,5 +1,6 @@
 #!/bin/bash
-(cd misc && make fenconv) > /dev/null 2>&1
+(cd .. && make) > /dev/null 2>&1
+(cd ../misc && make fenconv) > /dev/null 2>&1
 fenmoves=/tmp/fenmoves$$
 fenmove=/tmp/fenmove$$
 simout=/tmp/simout$$
@@ -11,28 +12,29 @@ testresult=/tmp/testresult$$
 amtdir=/tmp/amt$$
 stop=0
 counter=0
-srclist="amt.sv `make srclist`"
-mkdir -p $amtdir
+srclist="`make srclist`"
+mkdir -p $amtdir $amtdir/tb
 cp $srclist $amtdir
-cp attack_mask.vh vchess.vh mobility*.vh evaluate*.vh $amtdir
+cp amt.sv $amtdir/tb
+cp ../attack_mask.vh ../vchess.vh ../mobility*.vh ../evaluate*.vh $amtdir
 while [ $stop -eq 0 ]
 do
     gameno=`shuf -i 1-12998 -n 1`
-    pgn-extract --quiet -s --minmoves 4 --selectonly $gameno misc/GriffySr.pgn > $origpgn 2>/dev/null
-    pgn-extract --quiet --notags -s -Wfen --minmoves 4 --selectonly $gameno misc/GriffySr.pgn 2>/dev/null | grep -v '^$' > $fenmoves
+    pgn-extract --quiet -s --minmoves 4 --selectonly $gameno ../misc/GriffySr.pgn > $origpgn 2>/dev/null
+    pgn-extract --quiet --notags -s -Wfen --minmoves 4 --selectonly $gameno ../misc/GriffySr.pgn 2>/dev/null | grep -v '^$' > $fenmoves
     movecount=`wc -l < $fenmoves`
     movecount=`expr $movecount - 1`
     moveno=`shuf -i 2-$movecount -n 1`
     tail -n+$moveno < $fenmoves | head -n1 > $fenmove
     echo 'moveno' $moveno 'gameno' $gameno `cat $fenmove`
-    misc/fenconv < $fenmove > $amtdir/amt_board.vh
-    (cd $amtdir && iverilog -Wall -o amt $srclist > /dev/null 2>&1)
-    if [ ! -f $amtdir/amt ]
+    ../misc/fenconv < $fenmove > $amtdir/amt_board.vh
+    (cd $amtdir/tb && iverilog -I.. -g2012 -Wall -o amt amt.sv $srclist > /dev/null 2>&1)
+    if [ ! -f $amtdir/tb/amt ]
     then
-        echo $0: $amtdir/amt missing 1>&2
+        echo $0: $amtdir/tb/amt missing 1>&2
         exit 1
     fi
-    $amtdir/amt > $simout
+    $amtdir/tb/amt > $simout
     egrep '^move_index' $simout > $allmoveslist
     genmoves=`cat $simout | wc -l`
     allmoves="`cat $allmoveslist | awk '{ print $2 }'`"
@@ -50,6 +52,7 @@ do
     if [ $status -ne 0 ]
     then
         echo played move $playedmove not generated
+        exit 1
     fi
     for move in $allmoves
     do
