@@ -1,37 +1,38 @@
 `include "vchess.vh"
 
 module et;
-   
-   localparam EVAL_MOBILITY_DISABLE = 0;
+
+   localparam EVAL_MOBILITY_DISABLE = 1;
    localparam EVAL_WIDTH = 24;
    localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, to, from
-   
+   localparam HALF_MOVE_WIDTH = 10;
+
    reg                  reset = 1;
    reg                  clk = 0;
+   reg                  use_random_bit = 0;
+   reg                  random_bit = 0;
+   reg [31:0]           pv_ctrl_in = 0;
+   reg                  clear_eval = 0;
+   reg [`BOARD_WIDTH-1:0] killer_board = 0;
+   reg                    killer_clear = 0;
+   reg [MAX_DEPTH_LOG2 - 1:0] killer_ply = 0;
+   reg signed [EVAL_WIDTH - 1:0] killer_bonus0 = 0;
+   reg signed [EVAL_WIDTH - 1:0] killer_bonus1 = 0;
+   reg                           killer_update = 0;
+   reg [3:0]                     en_passant_col = 4'h0;
+   reg [HALF_MOVE_WIDTH - 1:0]   half_move;
+   reg [HALF_MOVE_WIDTH - 1:0]   full_move_number;
+   reg [`BOARD_WIDTH - 1:0]      board;
+   reg                           board_valid = 0;
+   reg [3:0]                     castle_mask = 0;
+   reg [3:0]                     castle_mask_orig = 4'b1111;
+   reg                           white_to_move = 0;
+   reg                           clear_attack = 0;
+   reg [UCI_WIDTH-1:0]           uci_in = 0;
 
    //should be empty
    /*AUTOREGINPUT*/
-   // Beginning of automatic reg inputs (for undeclared instantiated-module inputs)
-   reg [`BOARD_WIDTH-1:0] board;                // To board_attack of board_attack.v
-   reg [`BOARD_WIDTH-1:0] board_in;             // To evaluate of evaluate.v
-   reg                  board_valid;            // To evaluate of evaluate.v, ...
-   reg [3:0]            castle_mask;            // To evaluate of evaluate.v
-   reg [3:0]            castle_mask_orig;       // To evaluate of evaluate.v
-   reg                  clear_attack;           // To board_attack of board_attack.v
-   reg                  clear_eval;             // To evaluate of evaluate.v
-   reg [`BOARD_WIDTH-1:0] killer_board;         // To evaluate of evaluate.v
-   reg signed [EVAL_WIDTH-1:0] killer_bonus0;   // To evaluate of evaluate.v
-   reg signed [EVAL_WIDTH-1:0] killer_bonus1;   // To evaluate of evaluate.v
-   reg                  killer_clear;           // To evaluate of evaluate.v
-   reg [MAX_DEPTH_LOG2-1:0] killer_ply;         // To evaluate of evaluate.v
-   reg                  killer_update;          // To evaluate of evaluate.v
-   reg [31:0]           pv_ctrl_in;             // To evaluate of evaluate.v
-   reg                  random_bit;             // To evaluate of evaluate.v
-   reg [UCI_WIDTH-1:0]  uci_in;                 // To evaluate of evaluate.v
-   reg                  use_random_bit;         // To evaluate of evaluate.v
-   reg                  white_to_move;          // To evaluate of evaluate.v
-   // End of automatics
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -50,10 +51,46 @@ module et;
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
-   integer              t = 0;
+   integer                       t = 0;
+   integer                       i;
 
    initial
      begin
+        $dumpfile("wave.vcd");
+        $dumpvars(0, et);
+
+        for (i = 0; i < 64; i = i + 1)
+          board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
+
+        // r4r1k/p1P1Npbp/p5p1/2p5/4PP2/1b3N2/P1P3PP/3R2K1 w - - 0 20
+        board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
+        board[7 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
+        board[7 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        board[6 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[6 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[6 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
+        board[6 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        board[6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[5 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[5 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[4 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[3 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[2 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
+        board[2 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
+        board[1 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[1 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        board[0 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
+        board[0 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        white_to_move = 1;
+        castle_mask = 4'h0;
+        en_passant_col = 4'h0;
+        half_move = 0;
+        full_move_number = 20;
+
         clk = 0;
         forever
           #1 clk = ~clk;
@@ -63,9 +100,16 @@ module et;
      begin
         t <= t + 1;
         reset <= t < 64;
+        board_valid <= t >= 128;
+        if (eval_valid)
+          begin
+             $display("eval=%d", eval);
+             $finish;
+          end
      end
 
    /* evaluate AUTO_TEMPLATE (
+    .board_in (board[]),
     );*/
    evaluate #
      (
@@ -90,7 +134,7 @@ module et;
       .random_bit                       (random_bit),
       .board_valid                      (board_valid),
       .is_attacking_done                (is_attacking_done),
-      .board_in                         (board_in[`BOARD_WIDTH-1:0]),
+      .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .uci_in                           (uci_in[UCI_WIDTH-1:0]),
       .castle_mask                      (castle_mask[3:0]),
       .castle_mask_orig                 (castle_mask_orig[3:0]),
@@ -107,7 +151,7 @@ module et;
       .killer_bonus0                    (killer_bonus0[EVAL_WIDTH-1:0]),
       .killer_bonus1                    (killer_bonus1[EVAL_WIDTH-1:0]),
       .pv_ctrl_in                       (pv_ctrl_in[31:0]));
-   
+
    /* board_attack AUTO_TEMPLATE (
     );*/
    board_attack board_attack

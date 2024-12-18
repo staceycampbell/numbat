@@ -40,7 +40,7 @@ module evaluate #
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
     output                           eval_pv_flag,
-    output reg                       eval_valid,
+    output reg                       eval_valid = 0,
     output [31:0]                    material_black,
     output [31:0]                    material_white
     );
