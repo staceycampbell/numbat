@@ -16,7 +16,7 @@ all: tb et tbtrans amt
 tb: tb.sv $(SRC) $(TBSRC) $(HEADERS)
 	iverilog -g2012 -I.. -Wall -o tb tb.sv $(SRC) $(TBSRC)
 
-et: et.sv $(EVSRC) $(HEADERS)
+et: et.sv $(EVSRC) $(HEADERS) et_board.vh
 	iverilog -g2012 -I.. -Wall -o et et.sv $(EVSRC)
 
 tbtrans: tbtrans.sv ../trans.sv $(HEADERS)
@@ -28,6 +28,9 @@ amt: amt.sv $(SRC) $(TBSRC) $(HEADERS) amt_board.vh
 amt_board.vh: ../misc/fenconv
 	echo 'rn1qkb1r/pp2pppp/2p4n/3P1b2/6P1/2N1BP2/PPP4P/R2QKBNR b KQkq g3 0 7' | ../misc/fenconv > amt_board.vh
 
+et_board.vh: amt_board.vh
+	cp amt_board.vh et_board.vh
+
 ../misc/fenconv:
 	cd ../misc && $(MAKE)
 
@@ -37,5 +40,8 @@ $(HEADERS):
 srclist:
 	@echo $(SRC)
 
+evsrclist:
+	@echo $(EVSRC)
+
 clean:
-	rm -f tb wave.vcd attack attack.o amt amt_board.vh tbtrans et
+	rm -f tb wave.vcd attack attack.o amt amt_board.vh tbtrans et et_board.vh

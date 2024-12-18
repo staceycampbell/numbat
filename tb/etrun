@@ -1,0 +1,50 @@
+#!/bin/bash
+(cd .. && make) > /dev/null 2>&1
+(cd ../misc && make fenconv) > /dev/null 2>&1
+fenmoves=/tmp/fenmoves$$
+fenmove=/tmp/fenmove$$
+simout=/tmp/simout$$
+craftyout=/tmp/craftyout$$
+origpgn=/tmp/origpgn$$
+ucitrunc=/tmp/ucitrunc$$
+allmoveslist=/tmp/allmoveslist$$
+testpgn=/tmp/testpgn$$.pgn
+testresult=/tmp/testresult$$
+etdir=/tmp/et$$
+stop=0
+counter=0
+srclist="`make evsrclist`"
+mkdir -p $etdir $etdir/et
+cp $srclist $etdir
+cp et.sv $etdir/et
+cp ../attack_mask.vh ../vchess.vh ../mobility*.vh ../evaluate*.vh $etdir
+while [ $stop -eq 0 ]
+do
+    gameno=`shuf -i 1-12998 -n 1`
+    pgn-extract --quiet -s --minmoves 4 --selectonly $gameno ../misc/GriffySr.pgn > $origpgn 2>/dev/null
+    pgn-extract --quiet --notags -s -Wfen --minmoves 4 --selectonly $gameno ../misc/GriffySr.pgn 2>/dev/null | grep -v '^$' > $fenmoves
+    movecount=`wc -l < $fenmoves`
+    if [ $movecount -eq 0 ]
+    then
+        echo $0: problems with fenmove 1>&2
+        exit 1
+    fi
+    movecount=`expr $movecount - 1`
+    moveno=`shuf -i 2-$movecount -n 1`
+    tail -n+$moveno < $fenmoves | head -n1 > $fenmove
+    echo 'moveno' $moveno 'gameno' $gameno `cat $fenmove`
+    ../misc/fenconv < $fenmove > $etdir/et_board.vh
+    (cd $etdir/et && iverilog -I.. -g2012 -Wall -o et et.sv $srclist > /dev/null 2>&1)
+    if [ ! -f $etdir/et/et ]
+    then
+        echo $0: $etdir/et/et missing 1>&2
+        exit 1
+    fi
+    $etdir/et/et > $simout 2>&1
+    printf 'depth 1\nevtest %s\n' `basename $fenmove` | (cd /tmp && ~/src/crafty/src/crafty) | fgrep 'score=' > $craftyout 2>&1
+    counter=`expr $counter + 1`
+    if [ $counter -eq 2 ]
+    then
+        stop=1
+    fi
+done
