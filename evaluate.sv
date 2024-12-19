@@ -134,13 +134,15 @@ module evaluate #
    generate
       for (c = 0; c < 64; c = c + 1)
         begin : occupied_block
-           assign occupied[c] = board[c * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN;
+           assign occupied[c] = board[c * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN &&
+                                board[c * `PIECE_WIDTH+:`PIECE_WIDTH - 1] != `PIECE_PAWN;
         end
    endgenerate
 
    // From crafty:
    // phase = Min(62, TotalPieces(white, occupied) + TotalPieces(black, occupied));
    // score = ((tree->score_mg * phase) + (tree->score_eg * (62 - phase))) / 62;
+   // note: "occupied" excludes pawns in crafty phase calc
    always @(posedge clk)
      begin
         board_valid_r <= board_valid;
