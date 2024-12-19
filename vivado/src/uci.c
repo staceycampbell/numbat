@@ -55,7 +55,11 @@ uci_go(tc_t * tc)
         search_running = 1;
         book_move_found = 0;
         if (book_miss < 4)      // avoid further book searches after N misses
+        {
                 book_move_found = book_game_move(&game[game_moves - 1]);
+                if (book_move_found)
+                        vchess_write_board_basic(&game[game_moves - 1]);
+        }
         if (!book_move_found)
         {
                 best_board = nm_top(game, game_moves, tc);
@@ -341,9 +345,17 @@ uci_move(char *p)
         next_board = *previous_board;
         next_board.capture = 0;
         next_board.white_to_move = !previous_board->white_to_move;
-        if (next_board.white_to_move)
-                ++next_board.full_move_number;
-        ++next_board.half_move_clock;
+        if (game_moves == 1)
+        {
+                next_board.full_move_number = 1;
+                next_board.half_move_clock = 0;
+        }
+        else
+        {
+                if (next_board.white_to_move)
+                        ++next_board.full_move_number;
+                ++next_board.half_move_clock;   // overridden below where required
+        }
         next_board.en_passant_col = 0 << EN_PASSANT_VALID_BIT;
 
         col_from = p[0] - 'a';
