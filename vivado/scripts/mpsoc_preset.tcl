@@ -268,11 +268,11 @@ proc create_root_design { parentCell } {
     CONFIG.NUM_MI {1} \
     CONFIG.NUM_SI {1} \
     CONFIG.S00_HAS_DATA_FIFO {0} \
-    CONFIG.S00_HAS_REGSLICE {3} \
+    CONFIG.S00_HAS_REGSLICE {4} \
     CONFIG.S01_HAS_DATA_FIFO {0} \
     CONFIG.S01_HAS_REGSLICE {3} \
     CONFIG.STRATEGY {0} \
-    CONFIG.XBAR_DATA_WIDTH {512} \
+    CONFIG.XBAR_DATA_WIDTH {128} \
   ] $axi_interconnect_1
 
 
