@@ -67,7 +67,11 @@ do
     fi
     if [ $diff -ge 300 ]
     then
-        printf '!!'
+        printf '!'
+    fi
+    if [ $diff -ge 400 ]
+    then
+        printf '!'
     fi
     printf '\n'
     counter=`expr $counter + 1`
