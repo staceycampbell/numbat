@@ -43,7 +43,7 @@ do
         echo $0: no vchess score 1>&2
         exit 1
     fi
-    printf 'depth 1\nevtest %s\n' `basename $fenmove` | (cd /tmp && ~/src/crafty/src/crafty) | fgrep 'score=' > $craftyout 2>&1
+    printf 'depth 1\nevtest %s\n' `basename $fenmove` | (cd /tmp && ~/src/crafty/src/crafty 2>&1 1>/dev/null) | fgrep 'score=' > $craftyout
     wtmstring=`awk ' { print $1 } ' < $craftyout`
     craftyscore=`awk ' { print $2 } ' < $craftyout | sed -e 's/.*=//'`
     if [ "$craftyscore" = '' ]
