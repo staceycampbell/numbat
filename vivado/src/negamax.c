@@ -16,6 +16,9 @@
 
 #define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
 
+static const int32_t full_depth_moves = 4;
+static const int32_t reduction_limit = 3;
+
 static uint64_t all_moves_ticks;
 static uint64_t q_ticks;
 static uint32_t nodes_visited, trans_collision, no_trans, mate_distance_pruning;
@@ -267,7 +270,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
 {
         uint32_t move_count, index;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
-        int32_t value;
+        int32_t value, board_eval;
         int32_t alpha_orig;
         uint32_t collision;
         trans_t trans;
@@ -275,8 +278,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         XTime q_start, q_stop;
         uint32_t time_limit_exceeded;
         board_t *board_ptr[MAX_POSITIONS];
-        int32_t value_list[MAX_POSITIONS];
-        int32_t value_median, value_target;
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
 
@@ -366,55 +367,49 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         {
                 vchess_read_board(&board_stack[ply][index], index);
                 board_ptr[index] = &board_stack[ply][index];
-                value_list[index] = board_stack[ply][index].eval;
-                if (!board->white_to_move)
-                        value_list[index] = -value_list[index];
         }
-        value_median = value_list[move_count / 2];
-        if (ply <= 2)
-                value_target = value_median;
-        else
-                value_target = value_list[move_count / ply];
 
         value = -LARGE_EVAL;
         index = 0;
         do
         {
-                if (ply <= 1 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-                    value_list[index] >= value_target || value_list[index] > alpha)
+                board_vert[ply] = board_ptr[index];
+                board_eval = board_ptr[index]->eval;
+                if (!board_ptr[index]->white_to_move)
+                        board_eval = -board_eval;
+                if (depth <= 0)
                 {
-                        board_vert[ply] = board_ptr[index];
-                        if (depth > 0)
-                                value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
-                        else if (board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check)
-                        {
-                                XTime_GetTime(&q_start);
-                                value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
-                                XTime_GetTime(&q_stop);
-                                q_ticks += q_stop - q_start;
-                        }
-                        else
-                                value = value_list[index];
-
-                        if (abort_search)
-                                return 0;       // will be ignored
-
-                        if (value > alpha)
-                        {
-                                if (ply == 0)
-                                        move_ply0 = board->uci;
-                                pv_array[pv_index] = board_ptr[index]->uci;
-                                local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
-                                alpha = value;
-                        }
+                        XTime_GetTime(&q_start);
+                        value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+                        XTime_GetTime(&q_stop);
+                        q_ticks += q_stop - q_start;
+                        return value;
                 }
+                if (index == 0)
+                        value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
+                else if (board_eval <= alpha && index >= full_depth_moves && depth >= reduction_limit &&
+                         !(board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
+                        value = -negamax(game, game_moves, board_ptr[index], depth - 2, -(alpha + 1), -alpha, ply + 1, pv_next_index);
                 else
+                        value = board_eval;
+                if (abort_search)
+                        return 0;       // will be ignored
+                if (value > alpha)
                 {
-                        value = value_list[index];
-                        if (value > alpha)
-                                alpha = value;
+                        value = -negamax(game, game_moves, board_ptr[index], depth - 1, -(alpha + 1), -alpha, ply + 1, pv_next_index);
+                        if (value > alpha && value < beta)
+                                value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                 }
-
+                if (abort_search)
+                        return 0;       // will be ignored
+                if (value > alpha)
+                {
+                        if (ply == 0)
+                                move_ply0 = board->uci;
+                        pv_array[pv_index] = board_ptr[index]->uci;
+                        local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+                        alpha = value;
+                }
                 ++index;
         }
         while (!abort_search && index < move_count && alpha < beta);
