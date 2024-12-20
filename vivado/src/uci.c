@@ -230,7 +230,7 @@ uci_dispatch(void)
 }
 
 void
-uci_pv(int32_t depth, int32_t score, const uci_t * ply0_move, const uci_t * pv)
+uci_pv(int32_t depth, int32_t score, uint32_t time_ms, uint32_t nodes, uint32_t nps, const uci_t * ply0_move, const uci_t * pv)
 {
         int32_t i;
         char depth_str[64];
@@ -249,7 +249,8 @@ uci_pv(int32_t depth, int32_t score, const uci_t * ply0_move, const uci_t * pv)
                 strncat(pv_str, uci_str, sizeof(pv_str) - 1);
         }
         pv_str[sizeof(pv_str) - 1] = '\0';
-        snprintf(info_str, sizeof(info_str), "info depth %s score cp %s pv %s", depth_str, score_str, pv_str);
+        snprintf(info_str, sizeof(info_str), "info depth %s score cp %s time %d nodes %d nps %d pv %s",
+                 depth_str, score_str, time_ms, nodes, nps, pv_str);
         uci_reply(info_str);
 }
 

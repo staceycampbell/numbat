@@ -98,7 +98,8 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                         {
                                 xil_printf("%s: bad half_move_clock (%d), game_moves (%d), and/or ply (%d)\n",
                                            __PRETTY_FUNCTION__, board_vert[ply]->half_move_clock, game_moves, ply);
-                                while (1);
+                                vchess_repdet_write(0);
+                                return;
                         }
                         vchess_repdet_board(game[sel].board);
                         vchess_repdet_castle_mask(game[sel].castle_mask);
@@ -273,7 +274,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         uint32_t time_limit_exceeded;
         board_t *board_ptr[MAX_POSITIONS];
         int32_t value_list[MAX_POSITIONS];
-        int32_t value_sum, value_average, value_target;
+        int32_t value_median, value_target;
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
 
@@ -359,7 +360,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 return 0;       // will be ignored
 
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
-        value_sum = 0;
         for (index = 0; index < move_count; ++index)
         {
                 vchess_read_board(&board_stack[ply][index], index);
@@ -367,10 +367,9 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 value_list[index] = board_stack[ply][index].eval;
                 if (!board->white_to_move)
                         value_list[index] = -value_list[index];
-                value_sum += value_list[index];
         }
-        value_average = value_sum / move_count;
-        value_target = value_average + 200;
+        value_median = value_list[move_count / 2];
+        value_target = value_median + ply * 20;
 
         value = -LARGE_EVAL;
         index = 0;
@@ -468,11 +467,7 @@ nm_move_sort_compare(const void *p1, const void *p2)
 void
 nm_init(void)
 {
-        int32_t i, j;
-
-        for (i = 0; i < MAX_DEPTH; ++i)
-                for (j = 0; j < MAX_POSITIONS; ++j)
-                        board_stack[i][j].half_move_clock = 0;  // fixme: why is this necessary?
+        // no ops just for now
 }
 
 board_t
@@ -488,7 +483,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         double elapsed_time, nps, elapsed_am_time;
         int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
         board_t best_board = { 0 };
-        XTime t_end, t_start;
+        XTime t_end, t_report, t_start;
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
 
@@ -590,7 +585,13 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                 }
 
                 if (debug_pv_info)
-                        uci_pv(depth_limit, best_evaluation, &move_ply0, pv_array);
+                {
+                        XTime_GetTime(&t_report);
+                        elapsed_ticks = t_report - t_start;
+                        elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
+                        nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
+                        uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &move_ply0, pv_array);
+                }
                 ++depth_limit;
                 if (q_ply_reached > valid_q_ply_reached)
                         valid_q_ply_reached = q_ply_reached;
