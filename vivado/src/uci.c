@@ -55,11 +55,7 @@ uci_go(tc_t * tc)
         search_running = 1;
         book_move_found = 0;
         if (book_miss < 4)      // avoid further book searches after N misses
-        {
                 book_move_found = book_game_move(&game[game_moves - 1]);
-                if (book_move_found)
-                        vchess_write_board_basic(&game[game_moves - 1]);
-        }
         if (!book_move_found)
         {
                 best_board = nm_top(game, game_moves, tc);
@@ -117,8 +113,8 @@ uci_dispatch(void)
                 book_miss = 0;
                 killer_clear_table();
                 trans_clear_table();
-                vchess_write_half_move(0);
                 uci_init();
+                nm_init();
         }
         else if (strcmp(p, "position") == 0)
         {

@@ -713,6 +713,7 @@ extern uint32_t vchess_get_piece(const board_t * board, uint32_t row, uint32_t c
 extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask);
 extern void vchess_read_uci(uci_t * uci);
 
+extern void nm_init(void);
 extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);

@@ -16,6 +16,7 @@
 
 #define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
 
+static uint64_t all_moves_ticks;
 static uint32_t nodes_visited, trans_collision, no_trans, mate_distance_pruning;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
@@ -170,7 +171,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         uint32_t move_count, index, endgame;
         uint32_t mate, stalemate, fifty_move;
         int32_t value;
-        XTime t_now;
+        XTime t_now, am_t_start, am_t_stop;
         uint32_t time_limit_exceeded;
         board_t *board_ptr[MAX_POSITIONS];
         int32_t pv_next_index;
@@ -187,7 +188,12 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         vchess_repdet_write(0); // disable repetition detection
         vchess_write_board_basic(board);
         vchess_capture_moves(1);        // collect only capture moves
+
+        XTime_GetTime(&am_t_start);
         vchess_write_board_wait(board);
+        XTime_GetTime(&am_t_stop);
+        all_moves_ticks += am_t_stop - am_t_start;
+
         vchess_status(0, 0, &mate, &stalemate, 0, 0, &fifty_move, 0, 0);
 
         value = nm_eval(board->white_to_move, ply);
@@ -263,10 +269,11 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         int32_t alpha_orig;
         uint32_t collision;
         trans_t trans;
-        XTime t_now;
+        XTime t_now, am_t_start, am_t_stop;
         uint32_t time_limit_exceeded;
         board_t *board_ptr[MAX_POSITIONS];
         int32_t value_list[MAX_POSITIONS];
+        int32_t value_sum, value_average, value_target;
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
 
@@ -290,7 +297,12 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         vchess_write_board_basic(board);
         trans_lookup_init();    // trigger transposition table lookup
         vchess_capture_moves(0);        // collect all legal moves
+
+        XTime_GetTime(&am_t_start);
         vchess_write_board_wait(board);
+        XTime_GetTime(&am_t_stop);
+        all_moves_ticks += am_t_stop - am_t_start;
+
         vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
 
         value = nm_eval(board->white_to_move, ply);
@@ -347,6 +359,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 return 0;       // will be ignored
 
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
+        value_sum = 0;
         for (index = 0; index < move_count; ++index)
         {
                 vchess_read_board(&board_stack[ply][index], index);
@@ -354,14 +367,17 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 value_list[index] = board_stack[ply][index].eval;
                 if (!board->white_to_move)
                         value_list[index] = -value_list[index];
+                value_sum += value_list[index];
         }
+        value_average = value_sum / move_count;
+        value_target = value_average + 200;
 
         value = -LARGE_EVAL;
         index = 0;
         do
         {
                 if (ply <= 1 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-                    (move_count >= 6 && index < move_count / 4))
+                    value_list[index] > value_target || value_list[index] > alpha)
                 {
                         board_vert[ply] = board_ptr[index];
                         if (depth > 0)
@@ -373,6 +389,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
 
                         if (abort_search)
                                 return 0;       // will be ignored
+
                         if (value > alpha)
                         {
                                 if (ply == 0)
@@ -386,13 +403,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 {
                         value = value_list[index];
                         if (value > alpha)
-                        {
-                                if (ply == 0)
-                                        move_ply0 = board->uci;
-                                pv_array[pv_index] = board_ptr[index]->uci;
-                                local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
                                 alpha = value;
-                        }
                 }
 
                 ++index;
@@ -454,6 +465,16 @@ nm_move_sort_compare(const void *p1, const void *p2)
         return 0;
 }
 
+void
+nm_init(void)
+{
+        int32_t i, j;
+
+        for (i = 0; i < MAX_DEPTH; ++i)
+                for (j = 0; j < MAX_POSITIONS; ++j)
+                        board_stack[i][j].half_move_clock = 0;  // fixme: why is this necessary?
+}
+
 board_t
 nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
 {
@@ -464,7 +485,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         uint32_t move_count;
         uint64_t elapsed_ticks;
         int64_t duration_seconds;
-        double elapsed_time, nps;
+        double elapsed_time, nps, elapsed_am_time;
         int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
         board_t best_board = { 0 };
         XTime t_end, t_start;
@@ -486,6 +507,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         no_trans = 0;
         trans_collision = 0;
         mate_distance_pruning = 0;
+        all_moves_ticks = 0;
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0);
@@ -559,7 +581,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
                         }
                         ++i;
                 }
-                printf("\n");
+                if (best_evaluation != -LARGE_EVAL)
+                        printf("\n");
                 if (!abort_search)
                 {
                         qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
@@ -579,8 +602,10 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         nps = (double)nodes_visited / elapsed_time;
         trans_hit = nodes_visited - no_trans;
+        elapsed_am_time = (double)all_moves_ticks / (double)COUNTS_PER_SECOND;
 
-        printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f\n", overall_best, nodes_visited, elapsed_time, nps);
+        printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f, all_moves_time=%.2f%%\n",
+               overall_best, nodes_visited, elapsed_time, nps, (elapsed_am_time * 100.0) / elapsed_time);
         printf("depth_limit=%d, q_depth=%d mate_distance_pruning=%d\n", depth_limit, valid_q_ply_reached, mate_distance_pruning);
         printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
