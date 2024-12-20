@@ -16,9 +16,6 @@
 
 #define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
 
-static const int32_t full_depth_moves = 4;
-static const int32_t reduction_limit = 3;
-
 static uint64_t all_moves_ticks;
 static uint64_t q_ticks;
 static uint32_t nodes_visited, trans_collision, no_trans, mate_distance_pruning;
@@ -373,43 +370,40 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         index = 0;
         do
         {
-                board_vert[ply] = board_ptr[index];
                 board_eval = board_ptr[index]->eval;
-                if (!board_ptr[index]->white_to_move)
+                if (!board->white_to_move)
                         board_eval = -board_eval;
-                if (depth <= 0)
+                if (ply <= 1 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
+                    (move_count >= 6 && index < move_count / 4) || board_eval > alpha)
                 {
-                        XTime_GetTime(&q_start);
-                        value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
-                        XTime_GetTime(&q_stop);
-                        q_ticks += q_stop - q_start;
-                        return value;
-                }
-                if (index == 0)
-                        value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
-                else if (board_eval <= alpha && index >= full_depth_moves && depth >= reduction_limit &&
-                         !(board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
-                        value = -negamax(game, game_moves, board_ptr[index], depth - 2, -(alpha + 1), -alpha, ply + 1, pv_next_index);
-                else
-                        value = board_eval;
-                if (abort_search)
-                        return 0;       // will be ignored
-                if (value > alpha)
-                {
-                        value = -negamax(game, game_moves, board_ptr[index], depth - 1, -(alpha + 1), -alpha, ply + 1, pv_next_index);
-                        if (value > alpha && value < beta)
+                        board_vert[ply] = board_ptr[index];
+                        if (depth > 0)
                                 value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
+
+                        else if (board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check)
+                        {
+                                XTime_GetTime(&q_start);
+                                value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+                                XTime_GetTime(&q_stop);
+                                q_ticks += q_stop - q_start;
+                        }
+                        else
+                                value = board_eval;
+
+                        if (abort_search)
+                                return 0;       // will be ignored
+                        if (value > alpha)
+                        {
+                                if (ply == 0)
+                                        move_ply0 = board->uci;
+                                pv_array[pv_index] = board_ptr[index]->uci;
+                                local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+                                alpha = value;
+                        }
                 }
-                if (abort_search)
-                        return 0;       // will be ignored
-                if (value > alpha)
-                {
-                        if (ply == 0)
-                                move_ply0 = board->uci;
-                        pv_array[pv_index] = board_ptr[index]->uci;
-                        local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
-                        alpha = value;
-                }
+                else if (board_eval > alpha)
+                        alpha = board_eval;
+
                 ++index;
         }
         while (!abort_search && index < move_count && alpha < beta);
