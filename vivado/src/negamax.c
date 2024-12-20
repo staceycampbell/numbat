@@ -17,6 +17,7 @@
 #define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
 
 static uint64_t all_moves_ticks;
+static uint64_t q_ticks;
 static uint32_t nodes_visited, trans_collision, no_trans, mate_distance_pruning;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
@@ -271,6 +272,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         uint32_t collision;
         trans_t trans;
         XTime t_now, am_t_start, am_t_stop;
+        XTime q_start, q_stop;
         uint32_t time_limit_exceeded;
         board_t *board_ptr[MAX_POSITIONS];
         int32_t value_list[MAX_POSITIONS];
@@ -369,20 +371,28 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                         value_list[index] = -value_list[index];
         }
         value_median = value_list[move_count / 2];
-        value_target = value_median + ply * 20;
+        if (ply <= 2)
+                value_target = value_median;
+        else
+                value_target = value_list[move_count / ply];
 
         value = -LARGE_EVAL;
         index = 0;
         do
         {
                 if (ply <= 1 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-                    value_list[index] > value_target || value_list[index] > alpha)
+                    value_list[index] >= value_target || value_list[index] > alpha)
                 {
                         board_vert[ply] = board_ptr[index];
                         if (depth > 0)
                                 value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                         else if (board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check)
+                        {
+                                XTime_GetTime(&q_start);
                                 value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+                                XTime_GetTime(&q_stop);
+                                q_ticks += q_stop - q_start;
+                        }
                         else
                                 value = value_list[index];
 
@@ -481,6 +491,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         uint64_t elapsed_ticks;
         int64_t duration_seconds;
         double elapsed_time, nps, elapsed_am_time;
+        double q_time;
         int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
         board_t best_board = { 0 };
         XTime t_end, t_report, t_start;
@@ -503,6 +514,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         trans_collision = 0;
         mate_distance_pruning = 0;
         all_moves_ticks = 0;
+        q_ticks = 0;
 
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0);
@@ -604,9 +616,10 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         nps = (double)nodes_visited / elapsed_time;
         trans_hit = nodes_visited - no_trans;
         elapsed_am_time = (double)all_moves_ticks / (double)COUNTS_PER_SECOND;
+        q_time = (double)q_ticks / (double)COUNTS_PER_SECOND;
 
-        printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f, all_moves_time=%.2f%%\n",
-               overall_best, nodes_visited, elapsed_time, nps, (elapsed_am_time * 100.0) / elapsed_time);
+        printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f, all_moves_time=%.2f%%, q_time=%.2f%%\n",
+               overall_best, nodes_visited, elapsed_time, nps, (elapsed_am_time * 100.0) / elapsed_time, (q_time * 100.0) / elapsed_time);
         printf("depth_limit=%d, q_depth=%d mate_distance_pruning=%d\n", depth_limit, valid_q_ply_reached, mate_distance_pruning);
         printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
