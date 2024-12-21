@@ -56,8 +56,8 @@ module et;
 
    initial
      begin
-        // $dumpfile("wave.vcd");
-        // $dumpvars(0, et);
+        $dumpfile("wave.vcd");
+        $dumpvars(0, et);
 
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;

@@ -39,7 +39,7 @@ module all_moves #
     input [REPDET_WIDTH-1:0]             repdet_wr_addr_in,
     input                                repdet_wr_en_in,
 
-    input                                am_capture_moves,
+    input                                am_quiescence_moves,
     input [MAX_POSITIONS_LOG2 - 1:0]     am_move_index,
     input                                am_clear_moves,
 
@@ -218,8 +218,6 @@ module all_moves #
    wire [5:0]           attack_white_pop;       // From board_attack of board_attack.v
    wire                 black_in_check;         // From board_attack of board_attack.v
    wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
-   wire [LEGAL_RAM_WIDTH-1:0] capture_move_ram_rd_data;// From move_sort_capture of move_sort.v
-   wire [MAX_POSITIONS_LOG2-1:0] capture_move_ram_wr_addr;// From move_sort_capture of move_sort.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_pv_flag;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
@@ -264,9 +262,9 @@ module all_moves #
            en_passant_col_out, castle_mask_out,
            board_out, white_to_move_out,
            pv_out, capture_out, white_in_check_out, black_in_check_out,
-           eval_out} = am_capture_moves ? capture_move_ram_rd_data : legal_ram_rd_data;
+           eval_out} = legal_ram_rd_data;
 
-   assign am_move_count = am_capture_moves ? capture_move_ram_wr_addr : legal_ram_wr_addr;
+   assign am_move_count = legal_ram_wr_addr;
    assign am_move_ready = am_move_index == am_move_index_s4;
 
    initial
@@ -946,7 +944,7 @@ module all_moves #
                    legal_half_move_ram_wr <= half_move + 1;
                    legal_fifty_move_ram_wr <= half_move >= 99;
                 end
-              legal_ram_wr <= 1;
+              legal_ram_wr <= am_quiescence_moves ? attack_test_capture : 1;
               clear_eval <= 1;
               clear_attack <= 1;
               rd_clear_sample <= 1;
@@ -1137,43 +1135,6 @@ module all_moves #
       .ram_wr_addr_init                 (legal_ram_wr_addr_init), // Templated
       .ram_wr_data                      (legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
       .ram_wr                           (legal_ram_wr),          // Templated
-      .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
-
-   wire capture_move_ram_wr = legal_ram_wr && legal_capture_ram_wr;
-
-   /* move_sort AUTO_TEMPLATE (
-    .clk (clk),
-    .reset (reset),
-    .white_to_move (white_to_move),
-    .sort_complete (),
-    .sort_start (legal_sort_start),
-    .sort_clear (legal_sort_clear),
-    .ram_wr_addr_init (legal_ram_wr_addr_init),
-    .ram_rd_addr (am_move_index[]),
-    .ram_wr_data (legal_ram_wr_data[]),
-    .\(.*\) (capture_move_\1[]),
-    );*/
-   move_sort #
-     (
-      .RAM_WIDTH (LEGAL_RAM_WIDTH),
-      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
-      .EVAL_WIDTH (EVAL_WIDTH)
-      )
-   move_sort_capture
-     (/*AUTOINST*/
-      // Outputs
-      .ram_rd_data                      (capture_move_ram_rd_data[LEGAL_RAM_WIDTH-1:0]), // Templated
-      .ram_wr_addr                      (capture_move_ram_wr_addr[MAX_POSITIONS_LOG2-1:0]), // Templated
-      .sort_complete                    (),                      // Templated
-      // Inputs
-      .clk                              (clk),                   // Templated
-      .reset                            (reset),                 // Templated
-      .sort_start                       (legal_sort_start),      // Templated
-      .sort_clear                       (legal_sort_clear),      // Templated
-      .white_to_move                    (white_to_move),         // Templated
-      .ram_wr_addr_init                 (legal_ram_wr_addr_init), // Templated
-      .ram_wr_data                      (legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
-      .ram_wr                           (capture_move_ram_wr),   // Templated
       .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
 
 endmodule

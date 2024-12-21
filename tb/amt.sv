@@ -33,7 +33,7 @@ module amt;
    reg [REPDET_WIDTH - 1:0]       repdet_depth = 0;
    reg [REPDET_WIDTH - 1:0]       repdet_wr_addr = 0;
    reg                            repdet_wr_en = 0;
-   reg                            am_capture_moves = 0; // 0 - all moves to be considered for this testbench
+   reg                            am_quiescence_moves = 0; // 0 - all moves to be considered for this testbench
    reg                            random_bit = 0;
    reg                            use_random_bit = 0;
    reg [`BOARD_WIDTH-1:0]         killer_board = 0;
@@ -270,7 +270,7 @@ module amt;
       .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated
       .repdet_wr_addr_in                (repdet_wr_addr[REPDET_WIDTH-1:0]), // Templated
       .repdet_wr_en_in                  (repdet_wr_en),          // Templated
-      .am_capture_moves                 (am_capture_moves),
+      .am_quiescence_moves              (am_quiescence_moves),
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));
 
