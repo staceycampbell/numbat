@@ -61,8 +61,6 @@ module move_sort #
    wire signed [EVAL_WIDTH - 1:0]         eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
    wire                                   pv_a = port_a_rd_data[EVAL_WIDTH + 3];
    wire                                   pv_b = port_b_rd_data[EVAL_WIDTH + 3];
-   wire                                   capture_a = port_a_rd_data[EVAL_WIDTH + 2];
-   wire                                   capture_b = port_b_rd_data[EVAL_WIDTH + 2];
 
    assign ram_rd_data = port_b_rd_data;
 
@@ -122,7 +120,6 @@ module move_sort #
               port_b_wr_en <= 0;
               // sort priority
               if (! pv_a && pv_b ? 1'b1 : pv_a && ! pv_b ? 1'b0 : // principal variation 1st
-                  ! capture_a && capture_b ? 1'b1 : capture_a && ! capture_b ? 1'b0 : // captures 2nd, best captures will be higher
                   white_to_move ? eval_a < eval_b : eval_a > eval_b) // position eval 3rd
                 state_sort <= STATE_SWAP;
               else
