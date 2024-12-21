@@ -266,6 +266,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         int32_t pv_index)
 {
         uint32_t move_count, index;
+        int32_t reduce;
         uint32_t move_count_trimmed;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
         int32_t value, board_eval;
@@ -367,32 +368,35 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 board_ptr[index] = &board_stack[ply][index];
         }
 
-        value = -LARGE_EVAL;
         index = 0;
-        if (ply == 0)
-                move_count_trimmed = move_count;
+        if (move_count > 4)
+                move_count_trimmed = move_count / 4;    // moves are sorted by evaluation, look at first quartile in depth
         else
-                move_count_trimmed = move_count / (ply * 4);
+                move_count_trimmed = move_count;
         do
         {
+                board_vert[ply] = board_ptr[index];
                 board_eval = board_ptr[index]->eval;
                 if (!board->white_to_move)
                         board_eval = -board_eval;
-                if (ply <= 2 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-                    index < move_count_trimmed)
+                if (depth <= 0 && (board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
                 {
-                        board_vert[ply] = board_ptr[index];
-                        if (depth > 0)
-                                value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
-
-                        else if (board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check)
-                        {
-                                XTime_GetTime(&q_start);
-                                value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
-                                XTime_GetTime(&q_stop);
-                                q_ticks += q_stop - q_start;
-                        }
-
+                        XTime_GetTime(&q_start);
+                        value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+                        XTime_GetTime(&q_stop);
+                        q_ticks += q_stop - q_start;
+                        if (abort_search)
+                                return 0;       // will be ignored
+                }
+                else if (depth > 0)
+                {
+                        if (ply < 2 ||
+                            board_ptr[index]->capture || board_ptr[index]->white_in_check ||
+                            board_ptr[index]->black_in_check || index < move_count_trimmed || board_eval >= alpha + 200)
+                                reduce = 1;
+                        else
+                                reduce = 2;
+                        value = -negamax(game, game_moves, board_ptr[index], depth - reduce, -beta, -alpha, ply + reduce, pv_next_index);
                         if (abort_search)
                                 return 0;       // will be ignored
                         if (value > alpha)
@@ -404,7 +408,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                                 alpha = value;
                         }
                 }
-                else if (board_eval >= alpha)
+                else if (board_eval > alpha)
                         alpha = board_eval;
 
                 ++index;
@@ -539,7 +543,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         else
         {
                 duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES / 25.0) * (double)move_count + 0.5;
-                duration_seconds += (double)tc->increment * 2.0 / 3.0 + 0.5;
+                duration_seconds += (double)tc->increment * 7.0 / 8.0 + 0.5;
                 if (duration_seconds * 5 > tc->main_remaining[tc->side])
                         duration_seconds /= 8;
                 if (duration_seconds <= 0)
@@ -559,7 +563,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         beta = LARGE_EVAL;
 
         overall_best = -LARGE_EVAL;
-        depth_limit = 2;
+        depth_limit = 1;
         while (depth_limit < MAX_DEPTH - 1 && !abort_search)
         {
                 ply = 0;
