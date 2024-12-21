@@ -266,6 +266,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         int32_t pv_index)
 {
         uint32_t move_count, index;
+        uint32_t move_count_trimmed;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient, check;
         int32_t value, board_eval;
         int32_t alpha_orig;
@@ -368,13 +369,17 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
 
         value = -LARGE_EVAL;
         index = 0;
+        if (ply == 0)
+                move_count_trimmed = move_count;
+        else
+                move_count_trimmed = move_count / (ply * 4);
         do
         {
                 board_eval = board_ptr[index]->eval;
                 if (!board->white_to_move)
                         board_eval = -board_eval;
-                if (ply <= 1 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-                    (move_count >= 6 && index < move_count / 4) || board_eval > alpha)
+                if (ply <= 2 || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
+                    index < move_count_trimmed)
                 {
                         board_vert[ply] = board_ptr[index];
                         if (depth > 0)
@@ -387,8 +392,6 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                                 XTime_GetTime(&q_stop);
                                 q_ticks += q_stop - q_start;
                         }
-                        else
-                                value = board_eval;
 
                         if (abort_search)
                                 return 0;       // will be ignored
@@ -401,7 +404,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                                 alpha = value;
                         }
                 }
-                else if (board_eval > alpha)
+                else if (board_eval >= alpha)
                         alpha = board_eval;
 
                 ++index;
