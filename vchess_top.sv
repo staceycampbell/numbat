@@ -49,7 +49,6 @@ module vchess_top
    wire                 am_black_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_black_is_attacking_out;// From all_moves of all_moves.v
    wire [`BOARD_WIDTH-1:0] am_board_out;        // From all_moves of all_moves.v
-   wire                 am_capture_moves;       // From control of control.v
    wire                 am_capture_out;         // From all_moves of all_moves.v
    wire [3:0]           am_castle_mask_in;      // From control of control.v
    wire [3:0]           am_castle_mask_out;     // From all_moves of all_moves.v
@@ -76,6 +75,7 @@ module vchess_top
    wire                 am_new_board_valid_in;  // From control of control.v
    wire [31:0]          am_pv_ctrl_in;          // From control of control.v
    wire                 am_pv_out;              // From all_moves of all_moves.v
+   wire                 am_quiescence_moves;    // From control of control.v
    wire [`BOARD_WIDTH-1:0] am_repdet_board_in;  // From control of control.v
    wire [3:0]           am_repdet_castle_mask_in;// From control of control.v
    wire [REPDET_WIDTH-1:0] am_repdet_depth_in;  // From control of control.v
@@ -308,7 +308,7 @@ module vchess_top
       .repdet_depth_in                  (am_repdet_depth_in[REPDET_WIDTH-1:0]), // Templated
       .repdet_wr_addr_in                (am_repdet_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
       .repdet_wr_en_in                  (am_repdet_wr_en_in),    // Templated
-      .am_capture_moves                 (am_capture_moves),
+      .am_quiescence_moves              (am_quiescence_moves),
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));
 
@@ -419,7 +419,7 @@ module vchess_top
       .am_repdet_wr_en_out              (am_repdet_wr_en_in),    // Templated
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves),
-      .am_capture_moves                 (am_capture_moves),
+      .am_quiescence_moves              (am_quiescence_moves),
       .am_pv_ctrl_out                   (am_pv_ctrl_in[31:0]),   // Templated
       .am_killer_ply_out                (am_killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
       .am_killer_board_out              (am_killer_board_in[`BOARD_WIDTH-1:0]), // Templated

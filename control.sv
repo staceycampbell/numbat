@@ -31,7 +31,7 @@ module control #
 
     output reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index,
     output reg                            am_clear_moves,
-    output reg                            am_capture_moves,
+    output reg                            am_quiescence_moves,
 
     output reg [31:0]                     am_pv_ctrl_out,
 
@@ -164,7 +164,7 @@ module control #
          5'h01 : am_move_index <= ctrl0_wr_data[MAX_POSITIONS_LOG2 - 1:0];
          5'h02 : {am_white_to_move_out, am_castle_mask_out, am_en_passant_col_out} <= ctrl0_wr_data;
          5'h03 : am_half_move_out <= ctrl0_wr_data;
-         5'h04 : am_capture_moves <= ctrl0_wr_data[0];
+         5'h04 : am_quiescence_moves <= ctrl0_wr_data[0];
          5'h08 : am_new_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          5'h09 : am_new_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          5'h0A : am_new_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
@@ -236,7 +236,7 @@ module control #
                5'h01 : ctrl0_axi_rdata <= am_move_index;
                5'h02 : ctrl0_axi_rdata <= {am_white_to_move_out, am_castle_mask_out, am_en_passant_col_out};
                5'h03 : ctrl0_axi_rdata <= am_half_move_out;
-               5'h04 : ctrl0_axi_rdata <= am_capture_moves;
+               5'h04 : ctrl0_axi_rdata <= am_quiescence_moves;
                5'h08 : ctrl0_axi_rdata <= am_new_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
                5'h09 : ctrl0_axi_rdata <= am_new_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
                5'h0A : ctrl0_axi_rdata <= am_new_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH];

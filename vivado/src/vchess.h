@@ -360,9 +360,9 @@ vchess_move_index(uint32_t move_index)
 }
 
 static inline void
-vchess_capture_moves(uint32_t capture_moves)
+vchess_quiescence_moves(uint32_t quiescence_moves)
 {
-        vchess_write(4, capture_moves);
+        vchess_write(4, quiescence_moves);
 }
 
 static inline void

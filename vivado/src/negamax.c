@@ -189,7 +189,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         vchess_reset_all_moves();
         vchess_repdet_write(0); // disable repetition detection
         vchess_write_board_basic(board);
-        vchess_capture_moves(1);        // collect only capture moves
+        vchess_quiescence_moves(1);        // collect only quiescence moves
 
         XTime_GetTime(&am_t_start);
         vchess_write_board_wait(board);
@@ -299,7 +299,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         killer_ply(ply);
         vchess_write_board_basic(board);
         trans_lookup_init();    // trigger transposition table lookup
-        vchess_capture_moves(0);        // collect all legal moves
+        vchess_quiescence_moves(0);        // collect all legal moves
 
         XTime_GetTime(&am_t_start);
         vchess_write_board_wait(board);
@@ -516,7 +516,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         nm_load_rep_table(game, game_index, 0, 0);
         vchess_write_board_basic(&game[game_index]);
         vchess_write_board_wait(&game[game_index]);
-        vchess_capture_moves(0);
+        vchess_quiescence_moves(0); // all legal moves
         move_count = vchess_move_count();
         if (move_count == 0)
         {
