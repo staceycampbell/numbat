@@ -189,9 +189,9 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         vchess_reset_all_moves();
         vchess_repdet_write(0); // disable repetition detection
         vchess_write_board_basic(board);
-        vchess_quiescence_moves(1);        // collect only quiescence moves
 
         XTime_GetTime(&am_t_start);
+        vchess_quiescence_moves(1);        // collect only quiescence moves
         vchess_write_board_wait(board);
         XTime_GetTime(&am_t_stop);
         all_moves_ticks += am_t_stop - am_t_start;
@@ -299,9 +299,9 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         killer_ply(ply);
         vchess_write_board_basic(board);
         trans_lookup_init();    // trigger transposition table lookup
-        vchess_quiescence_moves(0);        // collect all legal moves
 
         XTime_GetTime(&am_t_start);
+        vchess_quiescence_moves(0);        // collect all legal moves
         vchess_write_board_wait(board);
         XTime_GetTime(&am_t_stop);
         all_moves_ticks += am_t_stop - am_t_start;
@@ -515,8 +515,8 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0);
         vchess_write_board_basic(&game[game_index]);
+        vchess_quiescence_moves(0);        // collect all legal moves
         vchess_write_board_wait(&game[game_index]);
-        vchess_quiescence_moves(0); // all legal moves
         move_count = vchess_move_count();
         if (move_count == 0)
         {
