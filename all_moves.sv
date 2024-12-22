@@ -156,8 +156,8 @@ module all_moves #
    reg                                   clear_eval = 0;
    reg                                   clear_attack = 0;
 
-   reg signed [4:0]                      row, col;
-   reg signed [4:0]                      col_r; // one clock delayed, for timing/fanout, be careful using this
+   reg signed [3:0]                      row, col;
+   reg signed [3:0]                      col_r; // one clock delayed, for timing/fanout, be careful using this
 
    reg signed [1:0]                      slider_offset_col [`PIECE_QUEN:`PIECE_BISH][0:7];
    reg signed [1:0]                      slider_offset_row [`PIECE_QUEN:`PIECE_BISH][0:7];
@@ -206,9 +206,11 @@ module all_moves #
 
    reg                                   legal_sort_clear;
    reg                                   legal_sort_start;
-   
+
    reg [MAX_POSITIONS_LOG2 - 1:0]        am_move_index_s0, am_move_index_s1, am_move_index_s2, am_move_index_s3, am_move_index_s4;
    
+   reg [63:0]                            square_active;
+
    // should be empty
    /*AUTOREGINPUT*/
 
@@ -240,7 +242,7 @@ module all_moves #
    wire signed [4:0]                     pawn_adv1_col [0:2];
    wire signed [4:0]                     pawn_enp_row[0:1];
 
-   integer                               i, x, y, ri;
+   integer                               i, x, y, ri, s;
 
    wire                                  black_to_move = ~white_to_move;
 
@@ -455,30 +457,31 @@ module all_moves #
    localparam STATE_IDLE = 0;
    localparam STATE_INIT_WAIT = 1;
    localparam STATE_INIT = 2;
-   localparam STATE_DO_SQUARE = 3;
-   localparam STATE_SLIDER_INIT = 4;
-   localparam STATE_SLIDER = 5;
-   localparam STATE_DISCRETE_INIT = 6;
-   localparam STATE_DISCRETE = 7;
-   localparam STATE_PAWN_INIT_0 = 8;
-   localparam STATE_PAWN_INIT_1 = 9;
-   localparam STATE_PAWN_ROW_1 = 10;
-   localparam STATE_PAWN_ROW_4 = 11;
-   localparam STATE_PAWN_ROW_6 = 12;
-   localparam STATE_PAWN_ADVANCE = 13;
-   localparam STATE_NEXT = 14;
-   localparam STATE_CASTLE_SHORT = 15;
-   localparam STATE_CASTLE_LONG = 16;
-   localparam STATE_ALL_MOVES_DONE = 17;
-   localparam STATE_LEGAL_INIT = 18;
-   localparam STATE_LEGAL_LOAD = 19;
-   localparam STATE_LEGAL_KING_POS = 20;
-   localparam STATE_ATTACK_WAIT = 21;
-   localparam STATE_LEGAL_MOVE = 22;
-   localparam STATE_LEGAL_NEXT = 23;
-   localparam STATE_MOVE_SORT_INIT = 24;
-   localparam STATE_MOVE_SORT = 25;
-   localparam STATE_DONE = 26;
+   localparam STATE_FIND_PIECE = 3;
+   localparam STATE_DO_SQUARE = 4;
+   localparam STATE_SLIDER_INIT = 5;
+   localparam STATE_SLIDER = 6;
+   localparam STATE_DISCRETE_INIT = 7;
+   localparam STATE_DISCRETE = 8;
+   localparam STATE_PAWN_INIT_0 = 9;
+   localparam STATE_PAWN_INIT_1 = 10;
+   localparam STATE_PAWN_ROW_1 = 11;
+   localparam STATE_PAWN_ROW_4 = 12;
+   localparam STATE_PAWN_ROW_6 = 13;
+   localparam STATE_PAWN_ADVANCE = 14;
+   localparam STATE_NEXT = 15;
+   localparam STATE_CASTLE_SHORT = 16;
+   localparam STATE_CASTLE_LONG = 17;
+   localparam STATE_ALL_MOVES_DONE = 18;
+   localparam STATE_LEGAL_INIT = 19;
+   localparam STATE_LEGAL_LOAD = 20;
+   localparam STATE_LEGAL_KING_POS = 21;
+   localparam STATE_ATTACK_WAIT = 22;
+   localparam STATE_LEGAL_MOVE = 23;
+   localparam STATE_LEGAL_NEXT = 24;
+   localparam STATE_MOVE_SORT_INIT = 25;
+   localparam STATE_MOVE_SORT = 26;
+   localparam STATE_DONE = 27;
 
    reg [4:0] state = STATE_IDLE;
 
@@ -526,6 +529,7 @@ module all_moves #
               ram_wr_addr_init <= 1;
               clear_eval <= 0;
               clear_attack <= 0;
+
               if (board_valid_in)
                 state <= STATE_INIT_WAIT;
            end
@@ -537,6 +541,11 @@ module all_moves #
          STATE_INIT :
            begin
               am_idle <= 0;
+
+              // bitmask of all potentially moveable pieces
+              for (s = 0; s < 64; s = s + 1)
+                square_active[s] <= board[s * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN && // square not empty
+                       board[s * `PIECE_WIDTH + `BLACK_BIT] == black_to_move; // my piece
 
               // append the initial board to the thrice rep ram, but don't advance rd_ram_depth_in yet
               // as rep_det is still processing the initial board
@@ -558,10 +567,21 @@ module all_moves #
               initial_board_check <= (white_to_move && white_in_check) || (black_to_move && black_in_check);
               legal_ram_wr_addr_init <= 0;
               ram_wr_addr_init <= 0;
-              row <= 0;
-              col <= 0;
               ram_wr <= 0;
-              state <= STATE_DO_SQUARE;
+              state <= STATE_FIND_PIECE;
+           end
+         STATE_FIND_PIECE :
+           begin
+              for (s = 63; s >= 0; s = s - 1)
+                if (square_active[s])
+                  begin
+                     row <= s >> 3;
+                     col <= s & 7;
+                  end
+              if (square_active == 64'b0)
+                state <= STATE_CASTLE_SHORT; // all individual piece moves done
+              else
+                state <= STATE_DO_SQUARE;
            end
          STATE_DO_SQUARE :
            begin
@@ -575,24 +595,9 @@ module all_moves #
               uci_from_row_ram_wr <= row;
               uci_from_col_ram_wr <= col;
               uci_promotion_ram_wr <= `EMPTY_POSN;
-              if (board[idx[row][col]+:`PIECE_WIDTH] == `EMPTY_POSN || // empty square or
-                  board[idx[row][col] + `BLACK_BIT] != black_to_move) // opponent's piece, nothing to move
-                begin
-                   ram_wr <= 0;
-                   col <= col + 1;
-                   if (col == 7)
-                     begin
-                        row <= row + 1;
-                        col <= 0;
-                     end
-                   if (col == 7 && row == 7)
-                     state <= STATE_CASTLE_SHORT;
-                   else
-                     state <= STATE_DO_SQUARE;
-                end
-              else if (board[idx[row][col]+:`PIECE_WIDTH - 1] == `PIECE_QUEN ||
-                       board[idx[row][col]+:`PIECE_WIDTH - 1] == `PIECE_ROOK ||
-                       board[idx[row][col]+:`PIECE_WIDTH - 1] == `PIECE_BISH)
+              if (board[idx[row][col]+:`PIECE_WIDTH - 1] == `PIECE_QUEN ||
+                  board[idx[row][col]+:`PIECE_WIDTH - 1] == `PIECE_ROOK ||
+                  board[idx[row][col]+:`PIECE_WIDTH - 1] == `PIECE_BISH)
                 state <= STATE_SLIDER_INIT;
               else if (board[idx[row][col]+:`PIECE_WIDTH - 1] == `PIECE_KNIT ||
                        board[idx[row][col]+:`PIECE_WIDTH - 1] == `PIECE_KING)
@@ -772,16 +777,8 @@ module all_moves #
          STATE_NEXT :
            begin
               ram_wr <= 0;
-              col <= col + 1;
-              if (col == 7)
-                begin
-                   row <= row + 1;
-                   col <= 0;
-                end
-              if (col == 7 && row == 7)
-                state <= STATE_CASTLE_SHORT; // individual piece moves complete, now do castling
-              else
-                state <= STATE_DO_SQUARE;
+              square_active[{row[2:0], col[2:0]}] <= 1'b0;
+              state <= STATE_FIND_PIECE;
            end
          STATE_CASTLE_SHORT :
            begin
