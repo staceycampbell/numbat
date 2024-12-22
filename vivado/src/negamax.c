@@ -98,7 +98,7 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                         if (sel < 0)
                         {
                                 // xil_printf("%s: bad half_move_clock (%d), game_moves (%d), and/or ply (%d)\n",
-				// __PRETTY_FUNCTION__, board_vert[ply]->half_move_clock, game_moves, ply);
+                                // __PRETTY_FUNCTION__, board_vert[ply]->half_move_clock, game_moves, ply);
                                 vchess_repdet_write(0);
                                 return;
                         }
@@ -367,7 +367,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         }
 
         index = 0;
-        if (move_count > 4)
+        if (move_count > 8)
                 move_count_trimmed = move_count / 4;    // moves are sorted by evaluation, look at first quartile in depth
         else
                 move_count_trimmed = move_count;
@@ -390,13 +390,19 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
                 {
                         if (ply < 2 ||
                             board_ptr[index]->capture || board_ptr[index]->white_in_check ||
-                            board_ptr[index]->black_in_check || index < move_count_trimmed || board_eval >= alpha + 200)
+                            board_ptr[index]->black_in_check || index < move_count_trimmed)
                                 reduce = 1;
                         else
                                 reduce = 2;
                         value = -negamax(game, game_moves, board_ptr[index], depth - reduce, -beta, -alpha, ply + reduce, pv_next_index);
                         if (abort_search)
                                 return 0;       // will be ignored
+                        if (reduce > 1 && value > alpha)
+                        {
+                                value = -negamax(game, game_moves, board_ptr[index], depth - 1, -(alpha + 1), -alpha, ply + 1, pv_next_index);
+                                if (value > alpha && value < beta)
+                                        value = -negamax(game, game_moves, board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
+                        }
                         if (value > alpha)
                         {
                                 if (ply == 0)
