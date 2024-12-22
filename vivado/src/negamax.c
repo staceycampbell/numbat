@@ -97,8 +97,8 @@ nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_v
                 {
                         if (sel < 0)
                         {
-                                xil_printf("%s: bad half_move_clock (%d), game_moves (%d), and/or ply (%d)\n",
-                                           __PRETTY_FUNCTION__, board_vert[ply]->half_move_clock, game_moves, ply);
+                                // xil_printf("%s: bad half_move_clock (%d), game_moves (%d), and/or ply (%d)\n",
+				// __PRETTY_FUNCTION__, board_vert[ply]->half_move_clock, game_moves, ply);
                                 vchess_repdet_write(0);
                                 return;
                         }
@@ -191,8 +191,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         vchess_write_board_basic(board);
 
         XTime_GetTime(&am_t_start);
-        vchess_quiescence_moves(1);        // collect only quiescence moves
-        vchess_write_board_wait(board);
+        vchess_write_board_wait(board, 1);
         XTime_GetTime(&am_t_stop);
         all_moves_ticks += am_t_stop - am_t_start;
 
@@ -301,8 +300,7 @@ negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int3
         trans_lookup_init();    // trigger transposition table lookup
 
         XTime_GetTime(&am_t_start);
-        vchess_quiescence_moves(0);        // collect all legal moves
-        vchess_write_board_wait(board);
+        vchess_write_board_wait(board, 0);
         XTime_GetTime(&am_t_stop);
         all_moves_ticks += am_t_stop - am_t_start;
 
@@ -515,8 +513,7 @@ nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
         vchess_reset_all_moves();
         nm_load_rep_table(game, game_index, 0, 0);
         vchess_write_board_basic(&game[game_index]);
-        vchess_quiescence_moves(0);        // collect all legal moves
-        vchess_write_board_wait(&game[game_index]);
+        vchess_write_board_wait(&game[game_index], 0);
         move_count = vchess_move_count();
         if (move_count == 0)
         {

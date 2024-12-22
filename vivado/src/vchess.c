@@ -141,11 +141,12 @@ vchess_write_board_basic(const board_t * board)
 }
 
 void
-vchess_write_board_wait(const board_t * board)
+vchess_write_board_wait(const board_t * board, uint32_t quiescence)
 {
         int32_t i;
         uint32_t moves_ready, move_count;
 
+        vchess_quiescence_moves(quiescence);
         vchess_write_control(0, 1, 0, 0);       // new board valid bit set
         vchess_write_control(0, 0, 0, 0);       // new board valid bit clear
         i = 0;
@@ -158,7 +159,7 @@ vchess_write_board_wait(const board_t * board)
         if (!moves_ready)
                 xil_printf("%s: timeout! (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
         move_count = vchess_move_count();
-        if (move_count >= 218)
+        if (move_count >= MAX_POSITIONS)
         {
                 if (board)
                 {

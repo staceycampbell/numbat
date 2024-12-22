@@ -49,8 +49,7 @@ do_both(void)
                 {
                         best_board = nm_top(game, game_moves, &tc);
                         vchess_write_board_basic(&best_board);
-                        vchess_quiescence_moves(0);     // collect all legal moves
-                        vchess_write_board_wait(&best_board);
+                        vchess_write_board_wait(&best_board, 0);
                         move_count = vchess_move_count();
                         vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, 0);
                         vchess_reset_all_moves();
@@ -366,8 +365,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         trans_clear_table();    // for ease of debug
                         best_board = nm_top(game, game_moves, &tc);
                         vchess_write_board_basic(&best_board);
-                        vchess_quiescence_moves(0);     // collect all legal moves
-                        vchess_write_board_wait(&best_board);
+                        vchess_write_board_wait(&best_board, 0);
                         vchess_print_board(&best_board, 1);
                         fen_print(&best_board);
                         vchess_reset_all_moves();
@@ -426,8 +424,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 {
                         xil_printf("last move in sample game:\n");
                         vchess_write_board_basic(&game[game_moves - 1]);
-                        vchess_quiescence_moves(0);     // collect all legal moves
-                        vchess_write_board_wait(&game[game_moves - 1]);
+                        vchess_write_board_wait(&game[game_moves - 1], 0);
                         vchess_print_board(&game[game_moves - 1], 1);
                         fen_print(&game[game_moves - 1]);
                         vchess_reset_all_moves();

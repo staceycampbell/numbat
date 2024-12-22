@@ -79,8 +79,7 @@ book_game_move(const board_t * board)
         if (!found)
                 return 0;
 
-        vchess_quiescence_moves(0);
-        vchess_write_board_wait(0);
+        vchess_write_board_wait(0, 0);
         move_count = vchess_move_count();
         if (move_count == 0)
                 return 0;       // game is over
