@@ -7,7 +7,7 @@
 #include <xil_io.h>
 #include "vchess.h"
 
-// #pragma GCC optimize ("O2")
+#pragma GCC optimize ("O2")
 
 #define FIXED_TIME 60
 #define MID_GAME_HALF_MOVES 40
