@@ -58,7 +58,7 @@ uci_go(tc_t * tc)
                 book_move_found = book_game_move(&game[game_moves - 1]);
         if (!book_move_found)
         {
-                best_board = nm_top(game, game_moves, tc);
+                best_board = nm_top(tc);
                 game[game_moves] = best_board;
                 ++game_moves;
                 ++book_miss;

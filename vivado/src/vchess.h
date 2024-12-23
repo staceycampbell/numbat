@@ -714,7 +714,7 @@ extern void vchess_repdet_entry(uint32_t index, const uint32_t board[8], uint32_
 extern void vchess_read_uci(uci_t * uci);
 
 extern void nm_init(void);
-extern board_t nm_top(const board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc);
+extern board_t nm_top(const tc_t * tc);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);

@@ -47,7 +47,7 @@ do_both(void)
                 }
                 else
                 {
-                        best_board = nm_top(game, game_moves, &tc);
+                        best_board = nm_top(&tc);
                         vchess_write_board_basic(&best_board);
                         vchess_write_board_wait(&best_board, 0);
                         move_count = vchess_move_count();
@@ -363,7 +363,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 {
                         tc_ignore(&tc);
                         trans_clear_table();    // for ease of debug
-                        best_board = nm_top(game, game_moves, &tc);
+                        best_board = nm_top(&tc);
                         vchess_write_board_basic(&best_board);
                         vchess_write_board_wait(&best_board, 0);
                         vchess_print_board(&best_board, 1);
