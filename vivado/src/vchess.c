@@ -252,7 +252,7 @@ vchess_init_board(board_t * board)
 }
 
 void
-vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask)
+vchess_repdet_entry(uint32_t index, const uint32_t board[8], uint32_t castle_mask)
 {
         vchess_repdet_board(board);
         vchess_repdet_castle_mask(castle_mask);

@@ -710,11 +710,11 @@ extern void vchess_print_board(const board_t * board, uint32_t initial_board);
 extern uint32_t vchess_read_board(board_t * board, uint32_t index);
 extern void vchess_place(board_t * board, uint32_t row, uint32_t col, uint32_t piece);
 extern uint32_t vchess_get_piece(const board_t * board, uint32_t row, uint32_t col);
-extern void vchess_repdet_entry(uint32_t index, uint32_t board[8], uint32_t castle_mask);
+extern void vchess_repdet_entry(uint32_t index, const uint32_t board[8], uint32_t castle_mask);
 extern void vchess_read_uci(uci_t * uci);
 
 extern void nm_init(void);
-extern board_t nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc);
+extern board_t nm_top(const board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);

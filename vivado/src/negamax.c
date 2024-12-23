@@ -52,7 +52,7 @@ nm_eval(uint32_t wtm, uint32_t ply)
 }
 
 static void
-nm_load_rep_table(board_t game[GAME_MAX], uint32_t game_moves, board_t * board_vert[MAX_DEPTH], uint32_t ply)
+nm_load_rep_table(const board_t game[GAME_MAX], uint32_t game_moves, board_t * board_vert[MAX_DEPTH], uint32_t ply)
 {
         uint32_t entries;
         int32_t sel, index;
@@ -261,7 +261,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 }
 
 static int32_t
-negamax(board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply,
+negamax(const board_t game[GAME_MAX], uint32_t game_moves, const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply,
         int32_t pv_index)
 {
         uint32_t move_count, index;
@@ -468,7 +468,7 @@ nm_init(void)
 }
 
 board_t
-nm_top(board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
+nm_top(const board_t game[GAME_MAX], uint32_t game_moves, const tc_t * tc)
 {
         int32_t i, game_index;
         int32_t alpha, beta;
