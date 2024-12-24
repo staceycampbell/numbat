@@ -8,22 +8,26 @@ module evaluate_tropism #
    parameter WHITE = 0
    )
    (
-    input                                clk,
-    input                                reset,
+    input 				 clk,
+    input 				 reset,
 
-    input                                board_valid,
-    input [`BOARD_WIDTH - 1:0]           board,
-    input                                clear_eval,
+    input 				 board_valid,
+    input [`BOARD_WIDTH - 1:0] 		 board,
+    input 				 clear_eval,
 
     output reg signed [EVAL_WIDTH - 1:0] eval_mg,
-    output                               eval_valid
+    output 				 eval_valid
     );
 
    localparam LATENCY_COUNT = 9;
    
+   localparam MY_PAWN = WHITE ? `WHITE_PAWN : `BLACK_PAWN;
+   localparam OP_PAWN = WHITE ? `BLACK_PAWN : `WHITE_PAWN;
+
    localparam MAX_LUT_INDEX = 15;
    localparam MAX_LUT_INDEX_LOG2 = $clog2(MAX_LUT_INDEX);
    localparam LUT_SUM_LOG2 = MAX_LUT_INDEX_LOG2 + $clog2(64);
+   localparam DEFECT_WIDTH = $clog2(MAX_LUT_INDEX) + 8;
    
    localparam LUT_COUNT = (`PIECE_KING + 1) << 3;
    localparam MY_KING = WHITE ? `WHITE_KING : `BLACK_KING;
@@ -32,17 +36,26 @@ module evaluate_tropism #
    localparam ENEMY_ROOK = WHITE ? `BLACK_ROOK : `WHITE_ROOK;
    localparam ENEMY_QUEN = WHITE ? `BLACK_QUEN : `WHITE_QUEN;
 
-   reg signed [EVAL_WIDTH - 1:0]         king_safety[0:255];
-   reg [3:0]                             tropism_lut [0:LUT_COUNT - 1];
-   reg [2:0]                             my_king_row_t1, my_king_col_t1;
-   reg [2:0]                             row_dist_t2 [0:7];
-   reg [2:0]                             col_dist_t2 [0:7];
-   reg [2:0]                             distance_t3 [0:63];
-   reg [$clog2(LUT_COUNT) - 1:0]         lut_index_t4 [0:63];
-   reg [MAX_LUT_INDEX_LOG2 - 1:0]        ksi_t5 [0:63];
-   reg [LUT_SUM_LOG2 - 1:0]              ksi_t6 [0:15];
-   reg [LUT_SUM_LOG2 - 1:0]              ksi_t7 [0:3];
-   reg [LUT_SUM_LOG2 - 1:0]              ksi_t8;
+   reg [DEFECT_WIDTH - 1:0] 		 open_file [0:7];
+   reg [DEFECT_WIDTH - 1:0] 		 half_open_file [0:7];
+   reg [DEFECT_WIDTH - 1:0] 		 pawn_defects [0:7];
+   reg [2:0] 				 row_flip [0:1][0:7];
+   
+   reg [63:0] 				 board_neutral_t1;
+   reg [63:0] 				 enemy_neutral_t1;
+   reg [7:0] 				 col_with_pawn_t1;
+
+   reg signed [EVAL_WIDTH - 1:0] 	 king_safety[0:255];
+   reg [3:0] 				 tropism_lut [0:LUT_COUNT - 1];
+   reg [2:0] 				 my_king_row_t1, my_king_col_t1;
+   reg [2:0] 				 row_dist_t2 [0:7];
+   reg [2:0] 				 col_dist_t2 [0:7];
+   reg [2:0] 				 distance_t3 [0:63];
+   reg [$clog2(LUT_COUNT) - 1:0] 	 lut_index_t4 [0:63];
+   reg [MAX_LUT_INDEX_LOG2 - 1:0] 	 ksi_t5 [0:63];
+   reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t6 [0:15];
+   reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t7 [0:3];
+   reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t8;
    
    // should be empty
    /*AUTOREGINPUT*/
@@ -50,8 +63,10 @@ module evaluate_tropism #
    /*AUTOWIRE*/
 
    integer                               row, col, i, j;
+
+   wire [DEFECT_WIDTH - 1:0] 		 file_defects_t5 [0:7];
    
-   wire [7:0]                            ksi_final_t8 = 0 << 4 | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
+   wire [7:0] 				 ksi_final_t8 = 0 << 4 | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
    
    function [4:0] abs_dist (input signed [4:0] x);
       begin
@@ -106,11 +121,105 @@ module evaluate_tropism #
         else
           eval_mg <= -king_safety[ksi_final_t8];
      end
+   
+   always @(posedge clk)
+     for (row = 0; row < 8; row = row + 1)
+       for (col = 0; col < 8; col = col + 1)
+         if (row != 0 && row != 7)
+           begin
+              board_neutral_t1[(row_flip[WHITE][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN;
+              enemy_neutral_t1[(row_flip[WHITE][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == OP_PAWN;
+           end
+         else
+           begin
+              board_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
+              enemy_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
+           end
+
+   genvar col_g;
+
+   generate
+      for (col_g = 0; col_g < 8; col_g = col_g + 1)
+	begin : file_defect_blk
+	   reg [7:0] pawn_on_file_t2;
+	   reg [7:0] my_pawn_on_file_t2;
+	   reg [7:0] enemy_pawn_on_file_t2;
+	   reg [2:0] most_advanced_enemy_t2;
+	   reg 	     my_pawn_row1_t2;
+	   reg 	     my_pawn_row2_t2;
+	   reg [DEFECT_WIDTH - 1:0] defect_open_file_t3;
+	   reg [DEFECT_WIDTH - 1:0] defect_half_open_file_t3;
+	   reg [DEFECT_WIDTH - 1:0] defect_enemy_half_open_file_t3;
+	   reg [DEFECT_WIDTH - 1:0] defect_my_half_open_file_t3;
+	   reg [DEFECT_WIDTH - 1:0] defect_row1_bonus_t3;
+	   reg [DEFECT_WIDTH - 1:0] defect_row2_bonus_t3;
+	   reg [DEFECT_WIDTH - 1:0] file_defect_a_t4, file_defect_b_t4;
+	   reg [DEFECT_WIDTH - 1:0] file_defect_t5;
+	   
+	   integer 		    ri;
+
+	   assign file_defects_t5[col_g] = file_defect_t5;
+
+	   always @(posedge clk)
+	     begin
+		most_advanced_enemy_t2 <= 0;
+		for (ri = 7; ri >= 0; ri = ri - 1)
+		  begin
+		     if (board_neutral_t1[ri << 3 | col_g] || enemy_neutral_t1[ri << 3 | col_g])
+		       pawn_on_file_t2[ri] <= 1'b1;
+		     else
+		       pawn_on_file_t2[ri] <= 1'b0;
+		     if (enemy_neutral_t1[ri << 3 | col_g])
+		       begin
+			  enemy_pawn_on_file_t2[ri] <= 1'b1;
+			  most_advanced_enemy_t2 <= ri;
+		       end
+		     else
+		       enemy_pawn_on_file_t2[ri] <= 1'b0;
+		     my_pawn_on_file_t2[ri] <= board_neutral_t1[ri << 3 | col_g];
+		  end
+		my_pawn_row1_t2 <= board_neutral_t1[1 << 3 | col_g];
+		my_pawn_row2_t2 <= board_neutral_t1[2 << 3 | col_g];
+
+		defect_open_file_t3 <= 0;
+		defect_half_open_file_t3 <= 0;
+		defect_enemy_half_open_file_t3 <= 0;
+		defect_my_half_open_file_t3 <= 0;
+		defect_row1_bonus_t3 <= 0;
+		defect_row2_bonus_t3 <= 0;
+		if (pawn_on_file_t2 == 0) // open file
+		  defect_open_file_t3 <= open_file[col_g];
+		else
+		  begin
+		     if (enemy_pawn_on_file_t2 == 0) // no enemies on file
+		       defect_enemy_half_open_file_t3 <= half_open_file[col_g] / 2;
+		     else
+		       defect_enemy_half_open_file_t3 <= pawn_defects[most_advanced_enemy_t2]; // closest enemy
+		     if (my_pawn_on_file_t2 == 0) // only enemy pawns on file
+		       defect_my_half_open_file_t3 <= half_open_file[col_g];
+		     else if (! my_pawn_row1_t2) // pawn on rank 1 of file is gone
+		       begin
+			  defect_row1_bonus_t3 <= 1;
+			  if (! my_pawn_row2_t2) // pawn on rank 2 of file is gone
+			    defect_row2_bonus_t3 <= 1;
+		       end
+		  end
+		file_defect_a_t4 <= defect_open_file_t3 + defect_half_open_file_t3 + defect_enemy_half_open_file_t3;
+		file_defect_b_t4 <= defect_my_half_open_file_t3 + defect_row1_bonus_t3 + defect_row2_bonus_t3;
+		file_defect_t5 <= file_defect_a_t4 + file_defect_b_t4;
+	     end
+	end
+   endgenerate
 
    initial
      begin
         for (i = 0; i < LUT_COUNT; i = i + 1)
           tropism_lut[i] = 0;
+        for (i = 0; i < 8; i = i + 1)
+          begin
+             row_flip[0][i] = 7 - i;
+             row_flip[1][i] = i;
+          end
         
 `include "evaluate_tropism.vh"
         
@@ -125,11 +234,11 @@ module evaluate_tropism #
    latency_sm
      (/*AUTOINST*/
       // Outputs
-      .eval_valid                       (eval_valid),
+      .eval_valid			(eval_valid),
       // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .board_valid                      (board_valid),
-      .clear_eval                       (clear_eval));
+      .clk				(clk),
+      .reset				(reset),
+      .board_valid			(board_valid),
+      .clear_eval			(clear_eval));
 
 endmodule
