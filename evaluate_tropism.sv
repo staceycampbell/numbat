@@ -1,6 +1,6 @@
 `include "vchess.vh"
 
-// crafty tropism, currently missing some calcs
+// crafty tropism, mostly complete
 
 module evaluate_tropism #
   (
@@ -12,6 +12,7 @@ module evaluate_tropism #
     input 				 reset,
 
     input 				 board_valid,
+    input [3:0] 			 castle_mask,
     input [`BOARD_WIDTH - 1:0] 		 board,
     input 				 clear_eval,
 
@@ -23,6 +24,8 @@ module evaluate_tropism #
    
    localparam MY_PAWN = WHITE ? `WHITE_PAWN : `BLACK_PAWN;
    localparam OP_PAWN = WHITE ? `BLACK_PAWN : `WHITE_PAWN;
+   localparam CASTLE_SHORT = WHITE ? `CASTLE_WHITE_SHORT : `CASTLE_BLACK_SHORT;
+   localparam CASTLE_LONG = WHITE ? `CASTLE_WHITE_LONG : `CASTLE_BLACK_LONG;
 
    localparam MAX_LUT_INDEX = 15;
    localparam MAX_LUT_INDEX_LOG2 = $clog2(MAX_LUT_INDEX);
@@ -56,6 +59,13 @@ module evaluate_tropism #
    reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t6 [0:15];
    reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t7 [0:3];
    reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t8;
+
+   reg [DEFECT_WIDTH - 1:0] 		 defects_q_t6;
+   reg [DEFECT_WIDTH - 1:0] 		 defects_m_t6;
+   reg [DEFECT_WIDTH - 1:0] 		 defects_k_t6;
+   reg [DEFECT_WIDTH - 1:0] 		 defects_t7;
+   reg 					 castle_min3_t7;
+   reg [3:0] 				 defect_index_t8;
    
    // should be empty
    /*AUTOREGINPUT*/
@@ -63,10 +73,12 @@ module evaluate_tropism #
    /*AUTOWIRE*/
 
    integer                               row, col, i, j;
+   
+   genvar 				 col_g;
 
    wire [DEFECT_WIDTH - 1:0] 		 file_defects_t5 [0:7];
    
-   wire [7:0] 				 ksi_final_t8 = 0 << 4 | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
+   wire [7:0] 				 ksi_final_t8 = (defect_index_t8 << 4) | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
    
    function [4:0] abs_dist (input signed [4:0] x);
       begin
@@ -84,7 +96,48 @@ module evaluate_tropism #
       begin
          enemy_tropism_piece = p == ENEMY_KNIT || p == ENEMY_BISH || p == ENEMY_ROOK || p == ENEMY_QUEN;
       end
-   endfunction
+   endfunction // enemy_tropism_piece
+
+   wire [DEFECT_WIDTH - 1:0] min_q_m_t6 = defects_q_t6 < defects_m_t6 ? defects_q_t6 : defects_m_t6;
+   wire [DEFECT_WIDTH - 1:0] min_k_m_t6 = defects_k_t6 < defects_m_t6 ? defects_k_t6 : defects_m_t6;
+   wire [DEFECT_WIDTH - 1:0] min_q_m_k_t6 = min_q_m_t6 < min_k_m_t6 ? min_q_m_t6 : min_k_m_t6;
+
+   always @(posedge clk)
+     begin
+	defects_q_t6 <= file_defects_t5[0] + file_defects_t5[1] + file_defects_t5[2];
+	defects_m_t6 <= file_defects_t5[2] + file_defects_t5[3] + file_defects_t5[4] + file_defects_t5[5];
+	defects_k_t6 <= file_defects_t5[6] + file_defects_t5[7];
+
+	defects_t7 <= 0;
+	castle_min3_t7 <= 0;
+	if (castle_mask[CASTLE_SHORT] == 1'b0 && castle_mask[CASTLE_LONG] == 1'b0)
+	  begin
+	     if (my_king_col_t1 > 4)
+	       defects_t7 <= defects_k_t6;
+	     else if (my_king_col_t1 < 3)
+	       defects_t7 <= defects_q_t6;
+	     else
+	       defects_t7 <= defects_m_t6;
+	  end
+	else
+	  begin
+	     if (castle_mask[CASTLE_SHORT] == 1'b1 && castle_mask[CASTLE_LONG] == 1'b1)
+	       defects_t7 <= min_q_m_k_t6;
+	     else if (castle_mask[CASTLE_SHORT] == 1'b1)
+	       defects_t7 <= min_k_m_t6;
+	     else
+	       defects_t7 <= min_k_m_t6;
+	     castle_min3_t7 <= 1;
+	  end
+	
+	if (defects_t7 > 15)
+	  defect_index_t8 <= 15;
+	else
+	  if (castle_min3_t7 && defects_t7 < 3)
+	    defect_index_t8 <= 3;
+	  else
+	    defect_index_t8 <= defects_t7;
+     end
 
    always @(posedge clk)
      begin
@@ -135,8 +188,6 @@ module evaluate_tropism #
               board_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
               enemy_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
            end
-
-   genvar col_g;
 
    generate
       for (col_g = 0; col_g < 8; col_g = col_g + 1)
