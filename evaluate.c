@@ -369,8 +369,9 @@ main(void)
 		fprintf(fileinfo[eval_tropism].fp, "open_file[%d] = %d;\n", i, open_file[i]);
 	for (i = 0; i < 8; ++i)
 		fprintf(fileinfo[eval_tropism].fp, "half_open_file[%d] = %d;\n", i, half_open_file[i]);
+	// note: crafty uses pawn_defects on an unflipped board, the Verilog uses a rank-flipped board, so only use crafty's white values
 	for (i = 0; i < 8; ++i)
-		fprintf(fileinfo[eval_tropism].fp, "pawn_defects[%d] = WHITE == 0 ? %d : %d;\n", i, pawn_defects[0][i], pawn_defects[1][i]);
+		fprintf(fileinfo[eval_tropism].fp, "pawn_defects[%d] = %d;\n", i, pawn_defects[1][i]);
 
 	for (i = 0; i < sizeof(fileinfo) / sizeof(fileinfo_t); ++i)
 		fclose(fileinfo[i].fp);
