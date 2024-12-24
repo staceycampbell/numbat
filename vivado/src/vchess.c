@@ -204,8 +204,13 @@ vchess_read_board(board_t * board, uint32_t index)
                 return 3;
         }
 
-        for (y = 0; y < 8; ++y)
-                board->board[y] = vchess_read_move_row(y);
+        uint64_t *ptr;
+
+        for (y = 0; y < 8; y += 2)
+        {
+                ptr = (uint64_t *) (void *)&board->board[y];
+                *ptr = vchess_read_move_two_rows(y);    // rewrite if alignment problems :-)
+        }
         vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move, &board->pv);
         vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
         board->eval = vchess_move_eval();

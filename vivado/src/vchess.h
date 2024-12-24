@@ -120,7 +120,7 @@ typedef struct trans_t
 
 typedef struct board_t
 {
-        uint32_t board[8];
+        uint32_t board[8] __attribute__ ((aligned(sizeof(uint64_t))));
         int32_t eval;
         uint32_t half_move_clock;
         uint32_t full_move_number;
@@ -161,6 +161,18 @@ vchess_read(uint32_t reg)
         uint32_t val;
 
         ptr = (volatile uint32_t *)(uint64_t) (XPAR_CTRL0_AXI_BASEADDR + reg * 4);
+        val = *ptr;
+
+        return val;
+}
+
+static inline uint64_t
+vchess_read64(uint32_t reg)
+{
+        volatile uint64_t *ptr;
+        uint64_t val;
+
+        ptr = (volatile uint64_t *)(uint64_t) (XPAR_CTRL0_AXI_BASEADDR + reg * 4);
         val = *ptr;
 
         return val;
@@ -412,11 +424,19 @@ vchess_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, ui
 static inline uint32_t
 vchess_read_move_row(uint32_t row)
 {
-        uint32_t val, next_val;
+        uint32_t val;
 
         val = vchess_read(172 + row);
-        while ((next_val = vchess_read(172 + row)) != val)
-                val = next_val;
+
+        return val;
+}
+
+static inline uint64_t
+vchess_read_move_two_rows(uint32_t row0)
+{
+        uint64_t val;
+
+        val = vchess_read64(172 + row0);
 
         return val;
 }
