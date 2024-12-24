@@ -8,16 +8,16 @@ module evaluate_tropism #
    parameter WHITE = 0
    )
    (
-    input 				 clk,
-    input 				 reset,
+    input                                clk,
+    input                                reset,
 
-    input 				 board_valid,
-    input [3:0] 			 castle_mask,
-    input [`BOARD_WIDTH - 1:0] 		 board,
-    input 				 clear_eval,
+    input                                board_valid,
+    input [3:0]                          castle_mask,
+    input [`BOARD_WIDTH - 1:0]           board,
+    input                                clear_eval,
 
     output reg signed [EVAL_WIDTH - 1:0] eval_mg,
-    output 				 eval_valid
+    output                               eval_valid
     );
 
    localparam LATENCY_COUNT = 9;
@@ -39,33 +39,33 @@ module evaluate_tropism #
    localparam ENEMY_ROOK = WHITE ? `BLACK_ROOK : `WHITE_ROOK;
    localparam ENEMY_QUEN = WHITE ? `BLACK_QUEN : `WHITE_QUEN;
 
-   reg [DEFECT_WIDTH - 1:0] 		 open_file [0:7];
-   reg [DEFECT_WIDTH - 1:0] 		 half_open_file [0:7];
-   reg [DEFECT_WIDTH - 1:0] 		 pawn_defects [0:7];
-   reg [2:0] 				 row_flip [0:1][0:7];
+   reg [DEFECT_WIDTH - 1:0]              open_file [0:7];
+   reg [DEFECT_WIDTH - 1:0]              half_open_file [0:7];
+   reg [DEFECT_WIDTH - 1:0]              pawn_defects [0:7];
+   reg [2:0]                             row_flip [0:1][0:7];
    
-   reg [63:0] 				 board_neutral_t1;
-   reg [63:0] 				 enemy_neutral_t1;
-   reg [7:0] 				 col_with_pawn_t1;
+   reg [63:0]                            board_neutral_t1;
+   reg [63:0]                            enemy_neutral_t1;
+   reg [7:0]                             col_with_pawn_t1;
 
-   reg signed [EVAL_WIDTH - 1:0] 	 king_safety[0:255];
-   reg [3:0] 				 tropism_lut [0:LUT_COUNT - 1];
-   reg [2:0] 				 my_king_row_t1, my_king_col_t1;
-   reg [2:0] 				 row_dist_t2 [0:7];
-   reg [2:0] 				 col_dist_t2 [0:7];
-   reg [2:0] 				 distance_t3 [0:63];
-   reg [$clog2(LUT_COUNT) - 1:0] 	 lut_index_t4 [0:63];
-   reg [MAX_LUT_INDEX_LOG2 - 1:0] 	 ksi_t5 [0:63];
-   reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t6 [0:15];
-   reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t7 [0:3];
-   reg [LUT_SUM_LOG2 - 1:0] 		 ksi_t8;
+   reg signed [EVAL_WIDTH - 1:0]         king_safety[0:255];
+   reg [3:0]                             tropism_lut [0:LUT_COUNT - 1];
+   reg [2:0]                             my_king_row_t1, my_king_col_t1;
+   reg [2:0]                             row_dist_t2 [0:7];
+   reg [2:0]                             col_dist_t2 [0:7];
+   reg [2:0]                             distance_t3 [0:63];
+   reg [$clog2(LUT_COUNT) - 1:0]         lut_index_t4 [0:63];
+   reg [MAX_LUT_INDEX_LOG2 - 1:0]        ksi_t5 [0:63];
+   reg [LUT_SUM_LOG2 - 1:0]              ksi_t6 [0:15];
+   reg [LUT_SUM_LOG2 - 1:0]              ksi_t7 [0:3];
+   reg [LUT_SUM_LOG2 - 1:0]              ksi_t8;
 
-   reg [DEFECT_WIDTH - 1:0] 		 defects_q_t6;
-   reg [DEFECT_WIDTH - 1:0] 		 defects_m_t6;
-   reg [DEFECT_WIDTH - 1:0] 		 defects_k_t6;
-   reg [DEFECT_WIDTH - 1:0] 		 defects_t7;
+   reg [DEFECT_WIDTH - 1:0]              defects_q_t6;
+   reg [DEFECT_WIDTH - 1:0]              defects_m_t6;
+   reg [DEFECT_WIDTH - 1:0]              defects_k_t6;
+   reg [DEFECT_WIDTH - 1:0]              defects_t7;
    reg 					 castle_min3_t7;
-   reg [3:0] 				 defect_index_t8;
+   reg [3:0]                             defect_index_t8;
    
    // should be empty
    /*AUTOREGINPUT*/
@@ -76,9 +76,9 @@ module evaluate_tropism #
    
    genvar 				 col_g;
 
-   wire [DEFECT_WIDTH - 1:0] 		 file_defects_t5 [0:7];
+   wire [DEFECT_WIDTH - 1:0]             file_defects_t5 [0:7];
    
-   wire [7:0] 				 ksi_final_t8 = (defect_index_t8 << 4) | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
+   wire [7:0]                            ksi_final_t8 = (defect_index_t8 << 4) | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
    
    function [4:0] abs_dist (input signed [4:0] x);
       begin
@@ -285,11 +285,11 @@ module evaluate_tropism #
    latency_sm
      (/*AUTOINST*/
       // Outputs
-      .eval_valid			(eval_valid),
+      .eval_valid                       (eval_valid),
       // Inputs
-      .clk				(clk),
-      .reset				(reset),
-      .board_valid			(board_valid),
-      .clear_eval			(clear_eval));
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (board_valid),
+      .clear_eval                       (clear_eval));
 
 endmodule
