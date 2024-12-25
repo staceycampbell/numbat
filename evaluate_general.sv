@@ -8,8 +8,8 @@ module evaluate_general #
     input                            clk,
     input                            reset,
 
-    input                            use_random_bit,
-    input                            random_bit,
+    input [EVAL_WIDTH - 1:0]         random_score_mask,
+    input [EVAL_WIDTH - 1:0]         random_number,
 
     input                            board_valid,
     input [`BOARD_WIDTH - 1:0]       board,
@@ -33,6 +33,8 @@ module evaluate_general #
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_eg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]                  idx [0:7][0:7];
    reg                                               insufficient_material_t4;
+
+   reg signed [EVAL_WIDTH - 1:0]                     random_score_offset;
    
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_mg_t1 [0:7][0:7];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_eg_t1 [0:7][0:7];
@@ -59,8 +61,6 @@ module evaluate_general #
    reg [8:0]                                         isw_accum_t3;
    reg [8:0]                                         isb_accum_t3;
 
-   reg   signed [2:0]                                random_bit_final;
-
    // should be empty
    /*AUTOREGINPUT*/
 
@@ -68,12 +68,16 @@ module evaluate_general #
 
    integer                                           i, ri, y, x;
 
-   assign eval_mg = eval_mg_t6;
-   assign eval_eg = eval_eg_t6;
+   assign eval_mg = eval_mg_t6 + random_score_offset;
+   assign eval_eg = eval_eg_t6 + random_score_offset;
    assign insufficient_material = insufficient_material_t4;
 
    always @(posedge clk)
      begin
+        if (random_number[EVAL_WIDTH - 1])
+          random_score_offset <= $signed(random_number[EVAL_WIDTH - 2:0] & random_score_mask);
+        else
+          random_score_offset <= -$signed(random_number[EVAL_WIDTH - 2:0] & random_score_mask);
         for (i = 0; i < 64; i = i + 1)
           begin
              if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] == `WHITE_PAWN ||
@@ -115,14 +119,6 @@ module evaluate_general #
                         isb_t1[56] + isb_t1[57] + isb_t1[58] + isb_t1[59] + isb_t1[60] + isb_t1[61] + isb_t1[62] + isb_t1[63];
         insufficient_material_t4 <= ((isw_accum_t3 == 0 && isb_accum_t3 <= 1) || (isw_accum_t3 <= 1 && isb_accum_t3 == 0));
         
-        if (use_random_bit)
-          if (white_to_move)
-            random_bit_final <= {1'b0, random_bit};
-          else
-            random_bit_final <= -$signed({1'b0,random_bit});
-        else
-          random_bit_final <= 0;
-
         for (i = 0; i < 64; i = i + 1)
           if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN &&
               board[i * `PIECE_WIDTH+:`PIECE_WIDTH - 1] != `PIECE_KING) // exclude kings

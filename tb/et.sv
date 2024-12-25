@@ -10,8 +10,6 @@ module et;
 
    reg                  reset = 1;
    reg                  clk = 0;
-   reg                  use_random_bit = 0;
-   reg                  random_bit = 0;
    reg [31:0]           pv_ctrl_in = 0;
    reg                  clear_eval = 0;
    reg [`BOARD_WIDTH-1:0] killer_board = 0;
@@ -30,6 +28,8 @@ module et;
    reg                           white_to_move = 0;
    reg                           clear_attack = 0;
    reg [UCI_WIDTH-1:0]           uci_in = 0;
+   reg [EVAL_WIDTH - 1:0]        random_number = 0;
+   reg [EVAL_WIDTH - 1:0]        random_score_mask = 0;
 
    //should be empty
    /*AUTOREGINPUT*/
@@ -103,8 +103,8 @@ module et;
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .use_random_bit                   (use_random_bit),
-      .random_bit                       (random_bit),
+      .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
+      .random_number                    (random_number[EVAL_WIDTH-1:0]),
       .board_valid                      (board_valid),
       .is_attacking_done                (is_attacking_done),
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated

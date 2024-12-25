@@ -38,8 +38,8 @@ module tb;
    reg [`BOARD_WIDTH - 1:0]       tb_rep_history [0:TB_REP_HISTORY - 1];
    reg [$clog2(TB_REP_HISTORY) - 1:0] tb_rep_index;
    reg                                am_quiescence_moves = 0;
-   reg                                random_bit = 0;
-   reg                                use_random_bit = 0;
+   reg [EVAL_WIDTH - 1:0]               random_number = 0;
+   reg [EVAL_WIDTH - 1:0]               random_score_mask = 0;
 
    reg [`BOARD_WIDTH-1:0]             killer_board = 0;
    reg signed [EVAL_WIDTH-1:0]        killer_bonus0 = 15000;
@@ -133,11 +133,16 @@ module tb;
    always @(posedge clk)
      if (reset)
        begin
-          tb.all_moves.evaluate.evaluate_pv.pv_table_valid[killer_ply] <= 1;
+          // tb.all_moves.evaluate.evaluate_pv.pv_table_valid[killer_ply] <= 1;
           // uci_promotion=0 uci_to_row=7 uci_to_col=3 uci_from_row=0 uci_from_col=3
           // move_index=20 d1d8  D
-          tb.all_moves.evaluate.evaluate_pv.pv_table[killer_ply] <= 0 << 12 | 7 << 9 | 3 << 6 | 0 << 3 | 3 << 0;
+          // tb.all_moves.evaluate.evaluate_pv.pv_table[killer_ply] <= 0 << 12 | 7 << 9 | 3 << 6 | 0 << 3 | 3 << 0;
        end
+
+   always @(posedge clk)
+     begin
+        random_number <= $random;
+     end
 
    localparam LOADST_IDLE = 0;
    localparam LOADST_REP = 1;
@@ -318,8 +323,8 @@ module tb;
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .use_random_bit                   (use_random_bit),
-      .random_bit                       (random_bit),
+      .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
+      .random_number                    (random_number[EVAL_WIDTH-1:0]),
       .board_valid_in                   (board_valid),           // Templated
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated

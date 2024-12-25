@@ -15,7 +15,7 @@ module control #
 
     output reg                            soft_reset = 0,
 
-    output reg                            use_random_bit = 0,
+    output reg [EVAL_WIDTH - 1:0]         random_score_mask = 0,
 
     output reg                            am_new_board_valid_out,
     output reg [`BOARD_WIDTH - 1:0]       am_new_board_out,
@@ -158,7 +158,6 @@ module control #
            begin
               am_new_board_valid_out <= ctrl0_wr_data[0];
               am_clear_moves <= ctrl0_wr_data[1];
-              use_random_bit <= ctrl0_wr_data[30];
               soft_reset <= ctrl0_wr_data[31];
            end
          5'h01 : am_move_index <= ctrl0_wr_data[MAX_POSITIONS_LOG2 - 1:0];
@@ -185,6 +184,8 @@ module control #
          5'h1D : am_repdet_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          5'h1E : am_repdet_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          5'h1F : am_repdet_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+
+         252 : random_score_mask <= ctrl0_wr_data;
 
          520 : {trans_depth_out[7:0], trans_clear_trans_out, trans_hash_only_out, trans_flag_out[1:0],
                 trans_entry_store_out, trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
@@ -230,7 +231,6 @@ module control #
                     ctrl0_axi_rdata[8] <= initial_fifty_move;
                     ctrl0_axi_rdata[9] <= initial_insufficient_material;
                     ctrl0_axi_rdata[10] <= initial_board_check;
-                    ctrl0_axi_rdata[30] <= use_random_bit;
                     ctrl0_axi_rdata[31] <= soft_reset;
                  end
                5'h01 : ctrl0_axi_rdata <= am_move_index;
@@ -283,6 +283,7 @@ module control #
                178 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
                179 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
 
+               252 : ctrl0_axi_rdata <= random_score_mask;
                253 : ctrl0_axi_rdata <= trans_trans;
                254 : ctrl0_axi_rdata <= xorshift32_reg;
                255 : ctrl0_axi_rdata <= misc_status;

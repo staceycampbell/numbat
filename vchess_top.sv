@@ -33,8 +33,6 @@ module vchess_top
 
    integer       i;
    
-   reg [15:0]    ddr4_counter; // incremented on DDR4 async clock
-
    reg [`BOARD_WIDTH - 1:0] am_board_in;
    reg                      am_board_valid_in = 0;
    reg                      am_new_board_valid_in_z = 0;
@@ -121,6 +119,7 @@ module vchess_top
    wire [31:0]          initial_material_white; // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
+   wire [EVAL_WIDTH-1:0] random_score_mask;     // From control of control.v
    wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 soft_reset;             // From control of control.v
    wire [31:0]          trans_axi_araddr;       // From trans of trans.v
@@ -181,18 +180,10 @@ module vchess_top
    wire [31:0]          trans_trans;            // From trans of trans.v
    wire                 trans_trans_idle_out;   // From trans of trans.v
    wire                 trans_white_to_move_in; // From control of control.v
-   wire                 use_random_bit;         // From control of control.v
    wire [31:0]          xorshift32_reg;         // From xorshift32 of xorshift32.v
    // End of automatics
 
-   wire [15:0]                   ddr4_counter_out;
-
-   wire                          random_bit = ddr4_counter_out[0];
-
-   always @(posedge c0_ddr4_ui_clk)
-     ddr4_counter <= ddr4_counter + 1;
-   
-   wire [31:0]                   misc_status = {ddr4_counter_out[15:0], 14'b0, c0_ddr4_ui_clk_sync_rst_out, c0_init_calib_complete_out};
+   wire [31:0]                   misc_status = {c0_ddr4_ui_clk_sync_rst_out, c0_init_calib_complete_out};
 
    wire                          clk = digclk;
 
@@ -238,6 +229,7 @@ module vchess_top
    /* all_moves AUTO_TEMPLATE (
     .reset (soft_reset),
     .clk (clk),
+    .random_number (xorshift32_reg[]),
     .\(.*\)_in (am_\1_in[]),
     .\(.*\)_out (am_\1_out[]),
     );*/
@@ -288,8 +280,8 @@ module vchess_top
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (soft_reset),            // Templated
-      .use_random_bit                   (use_random_bit),
-      .random_bit                       (random_bit),
+      .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
+      .random_number                    (xorshift32_reg[EVAL_WIDTH-1:0]), // Templated
       .board_valid_in                   (am_board_valid_in),     // Templated
       .board_in                         (am_board_in[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (am_white_to_move_in),   // Templated
@@ -405,7 +397,7 @@ module vchess_top
      (/*AUTOINST*/
       // Outputs
       .soft_reset                       (soft_reset),
-      .use_random_bit                   (use_random_bit),
+      .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .am_new_board_valid_out           (am_new_board_valid_in), // Templated
       .am_new_board_out                 (am_new_board_in[`BOARD_WIDTH-1:0]), // Templated
       .am_castle_mask_out               (am_castle_mask_in[3:0]), // Templated
@@ -627,25 +619,6 @@ module vchess_top
       .async_in                         (c0_init_calib_complete)); // Templated
 
    genvar                        c;
-
-   generate
-      for (c = 0; c < 16; c = c + 1)
-        begin
-           /* sync AUTO_TEMPLATE (
-            .clk (clk),
-            .async_in (ddr4_counter[c]),
-            .sync_out (ddr4_counter_out[c]),
-            );*/
-           sync sync_ddr4_counter
-               (/*AUTOINST*/
-                // Outputs
-                .sync_out               (ddr4_counter_out[c]),   // Templated
-                // Inputs
-                .clk                    (clk),                   // Templated
-                .async_in               (ddr4_counter[c]));       // Templated
-           
-        end
-   endgenerate
 
 endmodule
 

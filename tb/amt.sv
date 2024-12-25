@@ -34,8 +34,6 @@ module amt;
    reg [REPDET_WIDTH - 1:0]       repdet_wr_addr = 0;
    reg                            repdet_wr_en = 0;
    reg                            am_quiescence_moves = 0; // 0 - all moves to be considered for this testbench
-   reg                            random_bit = 0;
-   reg                            use_random_bit = 0;
    reg [`BOARD_WIDTH-1:0]         killer_board = 0;
    reg signed [EVAL_WIDTH-1:0]    killer_bonus0 = 0;
    reg signed [EVAL_WIDTH-1:0]    killer_bonus1 = 0;
@@ -43,6 +41,8 @@ module amt;
    reg [MAX_DEPTH_LOG2-1:0]       killer_ply = 0;
    reg 				  killer_update = 0;
    reg [31:0]                     pv_ctrl = 0;
+   reg [EVAL_WIDTH - 1:0]         random_number = 0;
+   reg [EVAL_WIDTH - 1:0]         random_score_mask = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -250,8 +250,8 @@ module amt;
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .use_random_bit                   (use_random_bit),
-      .random_bit                       (random_bit),
+      .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
+      .random_number                    (random_number[EVAL_WIDTH-1:0]),
       .board_valid_in                   (board_valid),           // Templated
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated

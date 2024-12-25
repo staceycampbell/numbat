@@ -14,8 +14,8 @@ module all_moves #
     input                                clk,
     input                                reset,
 
-    input                                use_random_bit,
-    input                                random_bit,
+    input [EVAL_WIDTH - 1:0]             random_score_mask,
+    input [EVAL_WIDTH - 1:0]             random_number,
 
     input                                board_valid_in,
     input [`BOARD_WIDTH - 1:0]           board_in,
@@ -1055,8 +1055,8 @@ module all_moves #
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .use_random_bit                   (use_random_bit),
-      .random_bit                       (random_bit),
+      .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
+      .random_number                    (random_number[EVAL_WIDTH-1:0]),
       .board_valid                      (evaluate_go),           // Templated
       .is_attacking_done                (is_attacking_done),
       .board_in                         (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
