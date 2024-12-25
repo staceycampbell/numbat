@@ -10,18 +10,18 @@ module evaluate_pawns #
    parameter WHITE_PAWNS = 0
    )
    (
-    input                            clk,
-    input                            reset,
+    input 			     clk,
+    input 			     reset,
 
-    input                            board_valid,
-    input [`BOARD_WIDTH - 1:0]       board,
-    input                            clear_eval,
-    input [63:0]                     white_is_attacking,
-    input [63:0]                     black_is_attacking,
+    input 			     board_valid,
+    input [`BOARD_WIDTH - 1:0] 	     board,
+    input 			     clear_eval,
+    input [63:0] 		     white_is_attacking,
+    input [63:0] 		     black_is_attacking,
 
     output signed [EVAL_WIDTH - 1:0] eval_mg,
     output signed [EVAL_WIDTH - 1:0] eval_eg,
-    output                           eval_valid
+    output 			     eval_valid
     );
 
    localparam LATENCY_COUNT = 7;
@@ -38,14 +38,16 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     pawns_backward_mg [0:7];
    reg signed [EVAL_WIDTH - 1:0]     pawns_backward_eg [0:7];
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn [0:7];
-   reg [63:0]                        not_passed_mask [0:63];
-   reg [63:0]                        passed_pawn_path [0:63];
+   reg [63:0] 			     not_passed_mask [0:63];
+   reg [63:0] 			     passed_pawn_path [0:63];
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn_base_mg;
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn_base_eg;
+   reg signed [EVAL_WIDTH - 1:0]     passed_pawn_free_advance;
+   reg signed [EVAL_WIDTH - 1:0]     passed_pawn_defended;
 
-   reg [63:0]                        board_neutral_t1;
-   reg [63:0]                        enemy_neutral_t2;
-   reg [7:0]                         col_with_pawn_t1;
+   reg [63:0] 			     board_neutral_t1;
+   reg [63:0] 			     enemy_neutral_t2;
+   reg [7:0] 			     col_with_pawn_t1;
 
    reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t2 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t2 [0:63];
@@ -56,7 +58,7 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t5;
    reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t5;
 
-   reg [3:0]                         doubled_distance_t2 [0:63];
+   reg [3:0] 			     doubled_distance_t2 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     doubled_eg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t4 [0:7];
@@ -66,7 +68,7 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]     doubled_eg_t6;
 
-   reg [63:0]                        connected_t2;
+   reg [63:0] 			     connected_t2;
    reg signed [EVAL_WIDTH - 1:0]     connected_mg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     connected_eg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     connected_mg_t4 [0:15];
@@ -76,7 +78,7 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     connected_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]     connected_eg_t6;
 
-   reg [63:0]                        backward_t2;
+   reg [63:0] 			     backward_t2;
    reg signed [EVAL_WIDTH - 1:0]     backward_mg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     backward_eg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     backward_mg_t4 [0:15];
@@ -86,8 +88,9 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     backward_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]     backward_eg_t6;
 
-   reg [2:0]                         most_adv_t2 [0:7];
-   reg [7:0]                         passed_pawn_t3;
+   reg [2:0] 			     most_adv_row_t2 [0:7];
+   reg [7:0] 			     passed_pawn_t3;
+   reg signed [EVAL_WIDTH - 1:0]     bonus_t3 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     score_mult_t3 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     passed_mg_t4 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     passed_eg_t4 [0:7];
@@ -99,7 +102,9 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     eval_mg_t7;
    reg signed [EVAL_WIDTH - 1:0]     eval_eg_t7;
 
-   reg [2:0]                         row_flip [0:1][0:7];
+   reg [2:0] 			     row_flip [0:1][0:7];
+   reg [63:0] 			     enemy_is_attacking;
+   reg [63:0] 			     square_is_defended;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -123,11 +128,23 @@ module evaluate_pawns #
                     enemy_neutral_t2[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == OP_PAWN;
                     if (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN)
                       col_with_pawn_t1[col] <= 1;
+		    if (WHITE_PAWNS)
+		      begin
+			 enemy_is_attacking[(row_flip[WHITE_PAWNS][row] << 3) | col] <= black_is_attacking[row << 3 | col];
+			 square_is_defended[(row_flip[WHITE_PAWNS][row] << 3) | col] <= white_is_attacking[row << 3 | col];
+		      end
+		    else
+		      begin
+			 enemy_is_attacking[(row_flip[WHITE_PAWNS][row] << 3) | col] <= white_is_attacking[row << 3 | col];
+			 square_is_defended[(row_flip[WHITE_PAWNS][row] << 3) | col] <= black_is_attacking[row << 3 | col];
+		      end
                  end
                else
                  begin
-                    board_neutral_t1[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
-                    enemy_neutral_t2[row << 3 | col] <= 0; // keep x's out of sim, tossed by optimizer
+                    board_neutral_t1[row << 3 | col] <= 1'b0; // keep x's out of sim, tossed by optimizer
+                    enemy_neutral_t2[row << 3 | col] <= 1'b0;
+		    enemy_is_attacking[row << 3| col] <= 1'b0;
+		    square_is_defended[row << 3| col] <= 1'b0;
                  end
             end
 
@@ -139,28 +156,38 @@ module evaluate_pawns #
    always @(posedge clk)
      begin
         for (col = 0; col < 8; col = col + 1)
-          most_adv_t2[col] <= 0; // row value of 0 is "no pawn" in this column
+          most_adv_row_t2[col] <= 0; // row value of 0 is "no pawn" in this column
 
         for (row = 1; row < 7; row = row + 1)
           for (col = 0; col < 8; col = col + 1)
             if (board_neutral_t1[row << 3 | col])
-              most_adv_t2[col] <= row;
+              most_adv_row_t2[col] <= row;
 
         for (col = 0; col < 8; col = col + 1)
-          if (most_adv_t2[col] != 0 && (enemy_neutral_t2[63:0] & not_passed_mask[most_adv_t2[col] << 3 | col]) == 0)
+          if (most_adv_row_t2[col] != 0 && (enemy_neutral_t2[63:0] & not_passed_mask[most_adv_row_t2[col] << 3 | col]) == 0)
             begin
                passed_pawn_t3[col] <= 1'b1;
-               score_mult_t3[col] <= passed_pawn[most_adv_t2[col]];
+               score_mult_t3[col] <= passed_pawn[most_adv_row_t2[col]];
+	       if (! enemy_is_attacking[(most_adv_row_t2[col] + 1) << 3 | col])
+		 if (square_is_defended[(most_adv_row_t2[col] + 1) << 3 | col])
+		   bonus_t3[col] <= passed_pawn_free_advance + passed_pawn_defended;
+		 else
+		   bonus_t3[col] <= passed_pawn_free_advance;
+	       else if (square_is_defended[(most_adv_row_t2[col] + 1) << 3 | col])
+		 bonus_t3[col] <= passed_pawn_defended;
+	       else
+		 bonus_t3[col] <= 0;
             end
           else
             begin
                passed_pawn_t3[col] <= 1'b0;
                score_mult_t3[col] <= 0;
+	       bonus_t3[col] <= 0;
             end
         for (col = 0; col < 8; col = col + 1)
           begin
-             passed_mg_t4[col] <= score_mult_t3[col] * passed_pawn_base_mg;
-             passed_eg_t4[col] <= score_mult_t3[col] * passed_pawn_base_eg;
+             passed_mg_t4[col] <= score_mult_t3[col] * (passed_pawn_base_mg + bonus_t3[col]);
+             passed_eg_t4[col] <= score_mult_t3[col] * (passed_pawn_base_eg + bonus_t3[col]);
           end
         for (i = 0; i < 2; i = i + 1)
           begin
@@ -366,11 +393,11 @@ module evaluate_pawns #
    latency_sm
      (/*AUTOINST*/
       // Outputs
-      .eval_valid                       (eval_valid),
+      .eval_valid			(eval_valid),
       // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .board_valid                      (board_valid),
-      .clear_eval                       (clear_eval));
+      .clk				(clk),
+      .reset				(reset),
+      .board_valid			(board_valid),
+      .clear_eval			(clear_eval));
 
 endmodule
