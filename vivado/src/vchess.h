@@ -205,6 +205,12 @@ vchess_random(void)
 }
 
 static inline void
+vchess_random_score_mask(uint32_t mask)
+{
+	vchess_write(252, mask);
+}
+
+static inline void
 vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
 {
         uint32_t val;
