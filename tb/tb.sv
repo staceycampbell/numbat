@@ -214,9 +214,9 @@ module tb;
         t <= t + 1;
         reset <= t < 64;
 
-        if (0 && t >= 10000)
+        if (0 && t >= 100000)
           $finish;
-        if (1 && tb.all_moves.state == 25)
+        if (0 && tb.all_moves.state == 25)
           begin
              $display("stopping sim at sort init\n");
              $finish;
