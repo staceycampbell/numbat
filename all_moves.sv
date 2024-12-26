@@ -203,7 +203,7 @@ module all_moves #
    reg                                   legal_sort_clear;
    reg                                   legal_sort_start;
 
-   reg [MAX_POSITIONS_LOG2 - 1:0] 	 am_move_index_s0, am_move_index_s1, am_move_index_s2, am_move_index_s3, am_move_index_s4;
+   reg [MAX_POSITIONS_LOG2 - 1:0] 	 am_move_index_s0, am_move_index_s1;
    
    reg [63:0] 				 square_active;
 
@@ -279,7 +279,7 @@ module all_moves #
            eval_out[EVAL_WIDTH - 1:0]} = legal_ram_rd_data;
 
    assign am_move_count = legal_ram_wr_addr;
-   assign am_move_ready = am_move_index == am_move_index_s4;
+   assign am_move_ready = am_move_index == am_move_index_s1;
 
    initial
      begin
@@ -376,9 +376,6 @@ module all_moves #
      begin
         am_move_index_s0 <= am_move_index;
         am_move_index_s1 <= am_move_index_s0;
-        am_move_index_s2 <= am_move_index_s1;
-        am_move_index_s3 <= am_move_index_s2;
-        am_move_index_s4 <= am_move_index_s3;
      end
 
    assign pawn_enp_row[0] = pawn_row_cap_left;
