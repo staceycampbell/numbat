@@ -125,7 +125,6 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:ddr4:2.2\
-xilinx.com:ip:clk_wiz:6.0\
 xilinx.com:ip:proc_sys_reset:5.0\
 xilinx.com:ip:zynq_ultra_ps_e:3.4\
 "
@@ -250,18 +249,8 @@ proc create_root_design { parentCell } {
  ] $digclk
   set reset [ create_bd_port -dir O -from 0 -to 0 -type rst reset ]
 
-  # Create instance: axi_interconnect_0, and set properties
-  set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
-  set_property -dict [list \
-    CONFIG.ENABLE_ADVANCED_OPTIONS {0} \
-    CONFIG.NUM_MI {1} \
-    CONFIG.S00_HAS_DATA_FIFO {0} \
-    CONFIG.S00_HAS_REGSLICE {4} \
-  ] $axi_interconnect_0
-
-
-  # Create instance: axi_interconnect_1, and set properties
-  set axi_interconnect_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_1 ]
+  # Create instance: axi_iconnect_ddr4, and set properties
+  set axi_iconnect_ddr4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_iconnect_ddr4 ]
   set_property -dict [list \
     CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
     CONFIG.M00_HAS_REGSLICE {3} \
@@ -273,7 +262,17 @@ proc create_root_design { parentCell } {
     CONFIG.S01_HAS_REGSLICE {3} \
     CONFIG.STRATEGY {0} \
     CONFIG.XBAR_DATA_WIDTH {128} \
-  ] $axi_interconnect_1
+  ] $axi_iconnect_ddr4
+
+
+  # Create instance: axi_iconnect_fabric, and set properties
+  set axi_iconnect_fabric [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_iconnect_fabric ]
+  set_property -dict [list \
+    CONFIG.ENABLE_ADVANCED_OPTIONS {0} \
+    CONFIG.NUM_MI {1} \
+    CONFIG.S00_HAS_DATA_FIFO {0} \
+    CONFIG.S00_HAS_REGSLICE {1} \
+  ] $axi_iconnect_fabric
 
 
   # Create instance: ddr4_0, and set properties
@@ -288,53 +287,14 @@ proc create_root_design { parentCell } {
   ] $ddr4_0
 
 
-  # Create instance: digclk_gen, and set properties
-  set digclk_gen [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 digclk_gen ]
-  set_property -dict [list \
-    CONFIG.AUTO_PRIMITIVE {PLL} \
-    CONFIG.CLKIN1_JITTER_PS {33.330000000000005} \
-    CONFIG.CLKOUT1_DRIVES {Buffer} \
-    CONFIG.CLKOUT1_JITTER {109.830} \
-    CONFIG.CLKOUT1_PHASE_ERROR {114.212} \
-    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {400} \
-    CONFIG.CLKOUT2_DRIVES {Buffer} \
-    CONFIG.CLKOUT2_JITTER {81.814} \
-    CONFIG.CLKOUT2_PHASE_ERROR {77.836} \
-    CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {100.000} \
-    CONFIG.CLKOUT2_USED {false} \
-    CONFIG.CLKOUT3_DRIVES {Buffer} \
-    CONFIG.CLKOUT4_DRIVES {Buffer} \
-    CONFIG.CLKOUT5_DRIVES {Buffer} \
-    CONFIG.CLKOUT6_DRIVES {Buffer} \
-    CONFIG.CLKOUT7_DRIVES {Buffer} \
-    CONFIG.CLK_OUT1_PORT {digclk} \
-    CONFIG.CLK_OUT2_PORT {clk_out2} \
-    CONFIG.FEEDBACK_SOURCE {FDBK_AUTO} \
-    CONFIG.MMCM_BANDWIDTH {OPTIMIZED} \
-    CONFIG.MMCM_CLKFBOUT_MULT_F {8} \
-    CONFIG.MMCM_CLKIN1_PERIOD {3.333} \
-    CONFIG.MMCM_CLKIN2_PERIOD {10.0} \
-    CONFIG.MMCM_CLKOUT0_DIVIDE_F {2} \
-    CONFIG.MMCM_CLKOUT1_DIVIDE {1} \
-    CONFIG.MMCM_COMPENSATION {AUTO} \
-    CONFIG.MMCM_DIVCLK_DIVIDE {3} \
-    CONFIG.NUM_OUT_CLKS {1} \
-    CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
-    CONFIG.PRIMITIVE {Auto} \
-    CONFIG.PRIM_SOURCE {Global_buffer} \
-    CONFIG.USE_LOCKED {false} \
-    CONFIG.USE_RESET {false} \
-  ] $digclk_gen
+  # Create instance: rst_ddr4_axi_300M, and set properties
+  set rst_ddr4_axi_300M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ddr4_axi_300M ]
 
+  # Create instance: rst_ddr4_system, and set properties
+  set rst_ddr4_system [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ddr4_system ]
 
-  # Create instance: rst_ddr4_0_300M, and set properties
-  set rst_ddr4_0_300M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ddr4_0_300M ]
-
-  # Create instance: rst_ddr4_0_375M, and set properties
-  set rst_ddr4_0_375M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ddr4_0_375M ]
-
-  # Create instance: rst_ps8_0_99M, and set properties
-  set rst_ps8_0_99M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps8_0_99M ]
+  # Create instance: rst_digclk_ddr4_users, and set properties
+  set rst_digclk_ddr4_users [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_digclk_ddr4_users ]
 
   # Create instance: zynq_ultra_ps_e_0, and set properties
   set zynq_ultra_ps_e_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.4 zynq_ultra_ps_e_0 ]
@@ -1370,25 +1330,24 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 
 
   # Create interface connections
-  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_ports ctrl0_axi] [get_bd_intf_pins axi_interconnect_0/M00_AXI]
-  connect_bd_intf_net -intf_net axi_interconnect_1_M00_AXI [get_bd_intf_pins axi_interconnect_1/M00_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_ports ctrl0_axi] [get_bd_intf_pins axi_iconnect_fabric/M00_AXI]
+  connect_bd_intf_net -intf_net axi_interconnect_1_M00_AXI [get_bd_intf_pins axi_iconnect_ddr4/M00_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_062] [get_bd_intf_pins ddr4_0/C0_DDR4]
-  connect_bd_intf_net -intf_net trans_axi_1 [get_bd_intf_ports trans_axi] [get_bd_intf_pins axi_interconnect_1/S00_AXI]
+  connect_bd_intf_net -intf_net trans_axi_1 [get_bd_intf_ports trans_axi] [get_bd_intf_pins axi_iconnect_ddr4/S00_AXI]
   connect_bd_intf_net -intf_net user_si570_sysclk_1 [get_bd_intf_ports user_si570_sysclk] [get_bd_intf_pins ddr4_0/C0_SYS_CLK]
-  connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_FPD [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_FPD]
+  connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_FPD [get_bd_intf_pins axi_iconnect_fabric/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_FPD]
 
   # Create port connections
-  connect_bd_net -net ARESETN_1 [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins rst_ps8_0_99M/peripheral_aresetn]
-  connect_bd_net -net S01_ARESETN_1 [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins rst_ddr4_0_375M/peripheral_aresetn]
-  connect_bd_net -net ddr4_0_addn_ui_clkout1 [get_bd_ports digclk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins digclk_gen/digclk] [get_bd_pins rst_ddr4_0_375M/slowest_sync_clk]
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_ports c0_ddr4_ui_clk] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins ddr4_0/c0_ddr4_ui_clk] [get_bd_pins digclk_gen/clk_in1] [get_bd_pins rst_ddr4_0_300M/slowest_sync_clk]
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_ports c0_ddr4_ui_clk_sync_rst] [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins rst_ddr4_0_300M/ext_reset_in] [get_bd_pins rst_ddr4_0_375M/ext_reset_in]
+  connect_bd_net -net ARESETN_1 [get_bd_pins axi_iconnect_fabric/ARESETN] [get_bd_pins axi_iconnect_fabric/M00_ARESETN] [get_bd_pins axi_iconnect_fabric/S00_ARESETN] [get_bd_pins rst_ddr4_system/peripheral_aresetn]
+  connect_bd_net -net S01_ARESETN_1 [get_bd_pins axi_iconnect_ddr4/S00_ARESETN] [get_bd_pins rst_digclk_ddr4_users/peripheral_aresetn]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_ports c0_ddr4_ui_clk] [get_bd_pins axi_iconnect_ddr4/ACLK] [get_bd_pins axi_iconnect_ddr4/M00_ACLK] [get_bd_pins ddr4_0/c0_ddr4_ui_clk] [get_bd_pins rst_ddr4_axi_300M/slowest_sync_clk]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_ports c0_ddr4_ui_clk_sync_rst] [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins rst_ddr4_axi_300M/ext_reset_in] [get_bd_pins rst_digclk_ddr4_users/ext_reset_in]
   connect_bd_net -net ddr4_0_c0_init_calib_complete [get_bd_ports c0_init_calib_complete] [get_bd_pins ddr4_0/c0_init_calib_complete]
-  connect_bd_net -net rst_ddr4_0_300M_peripheral_aresetn [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins ddr4_0/c0_ddr4_aresetn] [get_bd_pins rst_ddr4_0_300M/peripheral_aresetn]
-  connect_bd_net -net rst_ddr4_0_375M_peripheral_reset [get_bd_ports reset] [get_bd_pins rst_ddr4_0_375M/peripheral_reset]
-  connect_bd_net -net rst_ps8_0_99M_peripheral_reset [get_bd_pins ddr4_0/sys_rst] [get_bd_pins rst_ps8_0_99M/peripheral_reset]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins rst_ps8_0_99M/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
+  connect_bd_net -net rst_ddr4_0_300M_peripheral_aresetn [get_bd_pins axi_iconnect_ddr4/ARESETN] [get_bd_pins axi_iconnect_ddr4/M00_ARESETN] [get_bd_pins ddr4_0/c0_ddr4_aresetn] [get_bd_pins rst_ddr4_axi_300M/peripheral_aresetn]
+  connect_bd_net -net rst_ddr4_0_375M_peripheral_reset [get_bd_ports reset] [get_bd_pins rst_digclk_ddr4_users/peripheral_reset]
+  connect_bd_net -net rst_ps8_0_99M_peripheral_reset [get_bd_pins ddr4_0/sys_rst] [get_bd_pins rst_ddr4_system/peripheral_reset]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_ports digclk] [get_bd_pins axi_iconnect_ddr4/S00_ACLK] [get_bd_pins axi_iconnect_fabric/ACLK] [get_bd_pins axi_iconnect_fabric/M00_ACLK] [get_bd_pins axi_iconnect_fabric/S00_ACLK] [get_bd_pins rst_ddr4_system/slowest_sync_clk] [get_bd_pins rst_digclk_ddr4_users/slowest_sync_clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins rst_ddr4_system/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
   assign_bd_address -offset 0xA0000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs ctrl0_axi/Reg] -force
