@@ -178,33 +178,22 @@ vchess_read_board(board_t * board, uint32_t index)
         uint32_t move_ready, moves_ready;
         uint32_t y;
         uint32_t status;
-
-        move_count = vchess_move_count();
-        if (move_count >= MAX_POSITIONS)
-        {
-                xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                while (1);
-        }
-        status = vchess_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
-        if (!moves_ready)
-        {
-                xil_printf("moves_ready not set\n");
-                return 2;
-        }
-        if (index >= move_count)
-        {
-                xil_printf("bad index %d, move count is %d\n", index, move_count);
-                return 1;
-        }
-        vchess_move_index(index);
-        status = vchess_status(&move_ready, 0, 0, 0, 0, 0, 0, 0, 0);
-        if (!move_ready)
-        {
-                xil_printf("move_ready not set: 0x%X\n", status);
-                return 3;
-        }
-
         uint64_t *ptr;
+        static const uint32_t verify_move_ready = 0;
+
+        // assume moves_ready is tested elsewhere and move_ready is always set due to Zynq to PL latency
+        vchess_move_index(index);
+        if (verify_move_ready)
+        {
+                status = vchess_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
+                move_count = vchess_move_count();
+                if (!move_ready || !moves_ready || index >= move_count)
+                {
+                        printf("%s: problems, stopping (%s %d) [%d %d %d 0x%08X]\n", __PRETTY_FUNCTION__, __FILE__, __LINE__, move_ready, moves_ready,
+                               index >= move_count, status);
+                        while (1);
+                }
+        }
 
         for (y = 0; y < 8; y += 2)
         {

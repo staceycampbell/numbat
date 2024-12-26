@@ -106,7 +106,7 @@ main(void)
         uci_init();
         uci_input_reset();
         book_open();
-	vchess_random_score_mask(0x3);
+        vchess_random_score_mask(0x0);
 
         printf("ready\n");
 
