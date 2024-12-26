@@ -36,8 +36,6 @@ static const uci_t zero_move = { 0, 0, 0, 0, 0 };
 
 static uint32_t abort_test_move_count;
 
-static uci_t move_ply0;
-
 static const uint32_t debug_pv_info = 1;
 
 static int32_t
@@ -293,6 +291,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
+        int32_t ply_delta;
 
         if (ply >= MAX_DEPTH - 1)
         {
@@ -374,6 +373,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         vchess_reset_all_moves();
         rep_table_load(board, ply);     // update thrice rep table
 
+        ply_delta = ply * 20;
         in_check = board->white_in_check || board->black_in_check;
         index = 0;
         do
@@ -393,26 +393,27 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                         value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                         XTime_GetTime(&q_stop);
                         q_ticks += q_stop - q_start;
+                        if (abort_search)
+                                return 0;       // will be ignored
                 }
                 else if (depth > 0)
                 {
-                        if (index < 2 || ply < 2 || in_check || board_eval > alpha)
+                        if (index == 0 || ply < 2 || in_check || board_eval + 100 > alpha + ply_delta)
                                 value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                         else
                                 value = -GLOBAL_VALUE_KING;
+                        if (abort_search)
+                                return 0;       // will be ignored
+                        if (value > alpha && value < beta)
+                        {
+                                pv_array[pv_index] = board_ptr[index]->uci;
+                                local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+                        }
                 }
                 else if (board_eval > alpha)
                         value = board_eval;
-                if (abort_search)
-                        return 0;       // will be ignored
                 if (value > alpha)
-                {
-                        if (ply == 0)
-                                move_ply0 = board->uci;
-                        pv_array[pv_index] = board_ptr[index]->uci;
-                        local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
                         alpha = value;
-                }
 
                 ++index;
         }
@@ -594,15 +595,15 @@ nm_top(const tc_t * tc)
                 {
                         qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
                         pv_load_table(pv_array);
-                }
-
-                if (debug_pv_info)
-                {
-                        XTime_GetTime(&t_report);
-                        elapsed_ticks = t_report - t_start;
-                        elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
-                        nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
-                        uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &move_ply0, pv_array);
+                        if (debug_pv_info)
+                        {
+                                XTime_GetTime(&t_report);
+                                elapsed_ticks = t_report - t_start;
+                                elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
+                                nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
+                                uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci,
+                                       pv_array);
+                        }
                 }
                 ++depth_limit;
                 if (q_ply_reached > valid_q_ply_reached)
