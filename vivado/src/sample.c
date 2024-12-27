@@ -3,7 +3,7 @@
 #include "vchess.h"
 
 static char *sample[] = {
-	"r1bq2r1/b4pk1/p1pp1p2/1p2pP2/1P2P1PB/3P4/1PPQ2P1/R3K2R w - - 0 1"
+	"6k1/3b3r/1p1p4/p1n2p2/1PPNpP1q/P3Q1p1/1R1RB1P1/5K2 b - - 0-1"
 };
 
 uint32_t
