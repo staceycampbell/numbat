@@ -243,28 +243,28 @@ module checkmate #
      end
 
    localparam STATE_IDLE = 0;
-   localparam STATE_INIT = 2;
-   localparam STATE_FIND_PIECE = 3;
-   localparam STATE_DO_SQUARE = 4;
-   localparam STATE_SLIDER_INIT = 5;
-   localparam STATE_SLIDER = 6;
-   localparam STATE_DISCRETE_INIT = 7;
-   localparam STATE_DISCRETE = 8;
-   localparam STATE_PAWN_INIT_0 = 9;
-   localparam STATE_PAWN_INIT_1 = 10;
-   localparam STATE_PAWN_ROW_1 = 11;
-   localparam STATE_PAWN_ROW_4 = 12;
-   localparam STATE_PAWN_ROW_6 = 13;
-   localparam STATE_PAWN_ADVANCE = 14;
-   localparam STATE_NEXT = 15;
-   localparam STATE_ALL_MOVES_DONE = 18;
-   localparam STATE_LEGAL_INIT = 19;
-   localparam STATE_LEGAL_LOAD = 20;
-   localparam STATE_LEGAL_KING_POS = 21;
-   localparam STATE_ATTACK_WAIT = 22;
-   localparam STATE_LEGAL_MOVE = 23;
-   localparam STATE_LEGAL_NEXT = 24;
-   localparam STATE_DONE = 27;
+   localparam STATE_INIT = 1;
+   localparam STATE_FIND_PIECE = 2;
+   localparam STATE_DO_SQUARE = 3;
+   localparam STATE_SLIDER_INIT = 4;
+   localparam STATE_SLIDER = 5;
+   localparam STATE_DISCRETE_INIT = 6;
+   localparam STATE_DISCRETE = 7;
+   localparam STATE_PAWN_INIT_0 = 8;
+   localparam STATE_PAWN_INIT_1 = 9;
+   localparam STATE_PAWN_ROW_1 = 10;
+   localparam STATE_PAWN_ROW_4 = 11;
+   localparam STATE_PAWN_ROW_6 = 12;
+   localparam STATE_PAWN_ADVANCE = 13;
+   localparam STATE_NEXT = 14;
+   localparam STATE_ALL_MOVES_DONE = 15;
+   localparam STATE_LEGAL_INIT = 16;
+   localparam STATE_LEGAL_LOAD = 17;
+   localparam STATE_LEGAL_KING_POS = 18;
+   localparam STATE_ATTACK_WAIT = 19;
+   localparam STATE_LEGAL_MOVE = 20;
+   localparam STATE_LEGAL_NEXT = 21;
+   localparam STATE_DONE = 22;
 
    reg [4:0] state = STATE_IDLE;
 
