@@ -2,6 +2,7 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../all_moves.sv
 ../axi4lite_write.sv
 ../board_attack.sv
+../checkmate.sv
 ../control.sv
 ../evaluate_general.sv
 ../evaluate_bishops.sv

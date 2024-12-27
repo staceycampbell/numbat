@@ -207,6 +207,9 @@ module all_moves #
    
    reg [63:0] 				 square_active;
 
+   reg 					 checkmate_board_valid;
+   reg 					 clear_checkmate_evaluation;
+
    // should be empty
    /*AUTOREGINPUT*/
 
@@ -216,6 +219,8 @@ module all_moves #
    wire [5:0]		attack_white_pop;	// From board_attack of board_attack.v
    wire			black_in_check;		// From board_attack of board_attack.v
    wire [63:0]		black_is_attacking;	// From board_attack of board_attack.v
+   wire			checkmate_out;		// From checkmate of checkmate.v
+   wire			checkmate_valid_out;	// From checkmate of checkmate.v
    wire signed [EVAL_WIDTH-1:0] eval;		// From evaluate of evaluate.v
    wire			eval_pv_flag;		// From evaluate of evaluate.v
    wire			eval_valid;		// From evaluate of evaluate.v
@@ -511,6 +516,9 @@ module all_moves #
               evaluate_castle_mask <= castle_mask_in;
               evaluate_castle_mask_orig <= castle_mask_in;
               evaluate_go <= board_valid_in;
+
+	      checkmate_board_valid <= 0;
+	      clear_checkmate_evaluation <= 0;
 
               // upstream populates thrice repetition ram while idle and
               // before asserting board valid
@@ -856,6 +864,7 @@ module all_moves #
               evaluate_go <= 0;
               clear_eval <= 0;
               clear_attack <= 0;
+	      clear_checkmate_evaluation <= 0;
               rd_clear_sample <= 0;
               state <= STATE_LEGAL_KING_POS;
            end
@@ -911,11 +920,19 @@ module all_moves #
               attack_test_black_is_attacking <= black_is_attacking;
               attack_test_attack_white_pop <= attack_white_pop;
               attack_test_attack_black_pop <= attack_black_pop;
+
+	      // if set then board is legal and side is in check so test for mate
+	      checkmate_board_valid <= (attack_test_white_to_move ? attack_test_white_in_check : attack_test_black_in_check) &&
+				       is_attacking_done &&
+				       ! ((white_to_move && white_in_check) || (black_to_move && black_in_check));
+	      
               if (is_attacking_done && eval_valid && rd_thrice_rep_valid)
                 if ((white_to_move && white_in_check) || (black_to_move && black_in_check))
-                  state <= STATE_LEGAL_NEXT;
+                  state <= STATE_LEGAL_NEXT; // invalid position, side to move still in check
                 else
-                  state <= STATE_LEGAL_MOVE;
+		  if (((attack_test_white_to_move ? attack_test_white_in_check : attack_test_black_in_check) && checkmate_valid_out) ||
+		      ! (attack_test_white_to_move ? attack_test_white_in_check : attack_test_black_in_check))
+                    state <= STATE_LEGAL_MOVE; // either store a legal move, or if opponent now in check then see if it's mate then store
            end
          STATE_LEGAL_MOVE :
            begin
@@ -931,7 +948,13 @@ module all_moves #
               legal_uci_ram_wr <= attack_uci;
               legal_attack_white_pop_ram_wr <= attack_test_attack_white_pop;
               legal_attack_black_pop_ram_wr <= attack_test_attack_black_pop;
-              legal_eval_ram_wr <= eval;
+	      if (checkmate_board_valid && checkmate_out)
+		if (attack_test_white_to_move)
+		  legal_eval_ram_wr <= -(`GLOBAL_VALUE_KING); // white mated
+		else
+		  legal_eval_ram_wr <= `GLOBAL_VALUE_KING; // black mated
+	      else
+		legal_eval_ram_wr <= eval;
               legal_eval_pv_flag_wr <= eval_pv_flag;
               legal_thrice_rep_ram_wr <= rd_thrice_rep;
               legal_insufficent_material_ram_wr <= insufficient_material;
@@ -949,11 +972,15 @@ module all_moves #
               clear_eval <= 1;
               clear_attack <= 1;
               rd_clear_sample <= 1;
+	      clear_checkmate_evaluation <= 1;
+	      checkmate_board_valid <= 0;
               state <= STATE_LEGAL_NEXT;
            end
          STATE_LEGAL_NEXT :
            begin
               legal_ram_wr <= 0;
+	      clear_checkmate_evaluation <= 1;
+	      checkmate_board_valid <= 0;
               clear_eval <= 1;
               clear_attack <= 1;
               rd_clear_sample <= 1;
@@ -983,6 +1010,7 @@ module all_moves #
            begin
               legal_sort_clear <= 0;
               clear_eval <= 0;
+	      clear_checkmate_evaluation <= 0;
               clear_attack <= 0;
               rd_clear_sample <= 0;
               if (am_move_count == 0) // no legal moves found
@@ -1137,6 +1165,32 @@ module all_moves #
       .ram_wr_data			(legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
       .ram_wr				(legal_ram_wr),		 // Templated
       .ram_rd_addr			(am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
+   
+   wire [`BOARD_WIDTH - 1:0] checkmate_board = attack_test_board;
+   wire [3:0] 		     checkmate_en_passant_col = attack_test_en_passant_col;
+   wire 		     checkmate_white_to_move = legal_white_to_move_ram_wr;
+   
+   /* checkmate AUTO_TEMPLATE (
+    .clear (clear_checkmate_evaluation),
+    .\(.*\)_in (checkmate_\1[]),
+    );*/
+   checkmate #
+     (
+      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
+      )
+   checkmate
+     (/*AUTOINST*/
+      // Outputs
+      .checkmate_out			(checkmate_out),
+      .checkmate_valid_out		(checkmate_valid_out),
+      // Inputs
+      .clk				(clk),
+      .reset				(reset),
+      .board_valid_in			(checkmate_board_valid), // Templated
+      .board_in				(checkmate_board[`BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in			(checkmate_white_to_move), // Templated
+      .en_passant_col_in		(checkmate_en_passant_col[3:0]), // Templated
+      .clear				(clear_checkmate_evaluation)); // Templated
 
 endmodule
 
