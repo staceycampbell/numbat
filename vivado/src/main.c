@@ -101,6 +101,7 @@ main(void)
 
         vchess_init();
         trans_clear_table();
+        q_trans_clear_table();
         killer_clear_table();
         killer_bonus(100, 90);
         uci_init();

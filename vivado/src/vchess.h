@@ -120,7 +120,7 @@ typedef struct trans_t
 
 typedef struct board_t
 {
-        uint32_t board[8] __attribute__ ((aligned(sizeof(uint64_t))));
+        uint32_t board[8] __attribute__((aligned(sizeof(uint64_t))));
         int32_t eval;
         uint32_t half_move_clock;
         uint32_t full_move_number;
@@ -134,7 +134,8 @@ typedef struct board_t
         uint32_t fifty_move;
         uint32_t pv;
         uci_t uci;
-} board_t;
+}
+board_t;
 
 static inline void
 vchess_write(uint32_t reg, uint32_t val)
@@ -207,7 +208,7 @@ vchess_random(void)
 static inline void
 vchess_random_score_mask(uint32_t mask)
 {
-	vchess_write(252, mask);
+        vchess_write(252, mask);
 }
 
 static inline void
@@ -336,6 +337,134 @@ trans_lookup_init(void)
 {
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         vchess_trans_lookup();  // lookup hash will be calculated for board in most recent call to vchess_write_board_basic
+}
+
+static inline void
+vchess_q_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
+{
+        uint32_t val;
+        uint32_t depth32;
+        uint8_t depth_u8;
+        const uint32_t entry_store = 1 << 1;
+
+        depth_u8 = (uint8_t) depth;
+        depth32 = depth_u8;
+
+        val = (uint32_t) eval;
+        val &= ~(1 << 31);
+        val |= (capture != 0) << 31;    // msbit of this reg stores capture flag
+        vchess_write(621, (uint32_t) val);
+        vchess_write(625, nodes);
+
+        val = depth32 << 8 | flag << 2 | entry_store;   // toggle store on
+        vchess_write(620, val);
+
+        val = depth32 << 8 | flag << 2; // toggle store off
+        vchess_write(620, val);
+}
+
+static inline void
+vchess_q_trans_lookup(void)
+{
+        const uint32_t entry_lookup = 1 << 0;
+
+        vchess_write(620, entry_lookup);
+        vchess_write(620, 0);
+}
+
+static inline void
+vchess_q_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
+                    uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
+{
+        uint32_t val;
+
+        if (eval)
+                *eval = (int32_t) vchess_read(614);
+        if (nodes)
+                *nodes = vchess_read(615);
+        val = vchess_read(612);
+        if (trans_idle)
+                *trans_idle = val & 0x1;
+        if (entry_valid)
+                *entry_valid = (val >> 1) & 0x1;
+        if (flag)
+                *flag = (val >> 2) & 0x3;
+        if (depth)
+                *depth = (int8_t) ((val >> 8) & 0xFF);
+        if (collision)
+                *collision = (val >> 9) & 0x1;
+        if (capture)
+                *capture = (val >> 10) & 0x1;
+}
+
+static inline void
+vchess_q_trans_hash_only(void)
+{
+        const uint32_t hash_only = 1 << 4;
+
+        vchess_write(620, hash_only);
+        vchess_write(620, 0);
+}
+
+static inline void
+vchess_q_trans_clear_table(void)
+{
+        const uint32_t clear_trans = 1 << 5;
+
+        vchess_write(620, clear_trans);
+        vchess_write(620, 0);
+}
+
+static inline uint64_t
+vchess_q_trans_hash(uint16_t * bits_79_64)
+{
+        uint64_t bits_31_0, bits_63_32;
+        uint64_t hash;
+
+        bits_31_0 = vchess_read(622);
+        bits_63_32 = vchess_read(623);
+        if (bits_79_64)
+                *bits_79_64 = vchess_read(624);
+        hash = bits_63_32 << 32 | bits_31_0;
+
+        return hash;
+}
+
+static inline int32_t
+vchess_q_trans_idle_wait(void)
+{
+        uint32_t counter;
+        uint32_t trans_idle;
+
+        counter = 0;
+        do
+        {
+                vchess_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                ++counter;
+        }
+        while (counter < 100 && !trans_idle);
+
+        return trans_idle;
+}
+
+static inline void
+q_trans_test_idle(const char *func, const char *file, int line)
+{
+        uint32_t trans_idle;
+
+        vchess_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+        if (!trans_idle)
+        {
+                printf("%s: transposition table state machine is not idle, stopping. (%s %d)\n", func, file, line);
+                while (1);
+        }
+}
+
+static inline void
+q_trans_lookup_init(void)
+{
+        trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
+        vchess_q_trans_lookup();        // lookup hash will be calculated for board in most recent call to vchess_write_board_basic
 }
 
 static inline uint32_t
@@ -760,6 +889,9 @@ extern void uci_pv(int32_t depth, int32_t score, uint32_t time_ms, uint32_t node
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t * trans, uint32_t * collision);
 extern void trans_store(const trans_t * trans);
+extern void q_trans_clear_table(void);
+extern void q_trans_lookup(trans_t * trans, uint32_t * collision);
+extern void q_trans_store(const trans_t * trans);
 
 extern void book_build(void);
 extern void book_format_media(void);

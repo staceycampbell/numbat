@@ -362,6 +362,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 {
                         tc_ignore(&tc);
                         trans_clear_table();    // for ease of debug
+                        q_trans_clear_table();    // for ease of debug
                         best_board = nm_top(&tc);
                         vchess_write_board_basic(&best_board);
                         vchess_write_board_wait(&best_board, 0);
@@ -382,6 +383,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 killer_clear_table();
                 trans_clear_table();
+                q_trans_clear_table();
                 uci_init();
         }
         else if (strcmp((char *)str, "pos") == 0)
@@ -402,6 +404,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         return;
                 killer_clear_table();
                 trans_clear_table();
+                q_trans_clear_table();
                 game_moves = 1;
                 board.half_move_clock = 0;
                 board.full_move_number = 0;
@@ -418,6 +421,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 killer_clear_table();
                 trans_clear_table();
+                q_trans_clear_table();
                 game_moves = sample_game(game);
                 if (game_moves > 0)
                 {
@@ -438,6 +442,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         else if (strcmp((char *)str, "tclear") == 0)
         {
                 trans_clear_table();
+                q_trans_clear_table();
         }
         else if (strcmp((char *)str, "mstatus") == 0)
         {

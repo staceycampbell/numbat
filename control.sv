@@ -68,6 +68,32 @@ module control #
     input [79:0]                          trans_hash_in,
     input [31:0]                          trans_trans,
 
+    output [`BOARD_WIDTH - 1:0]           q_trans_board_out,
+    output                                q_trans_white_to_move_out,
+    output [3:0]                          q_trans_castle_mask_out,
+    output [3:0]                          q_trans_en_passant_col_out,
+
+    output reg [7:0]                      q_trans_depth_out,
+    output reg                            q_trans_entry_lookup_out,
+    output reg                            q_trans_entry_store_out,
+    output reg                            q_trans_hash_only_out,
+    output reg                            q_trans_clear_trans_out,
+    output reg signed [EVAL_WIDTH - 1:0]  q_trans_eval_out,
+    output reg [`TRANS_NODES_WIDTH - 1:0] q_trans_nodes_out,
+    output reg                            q_trans_capture_out,
+    output reg [1:0]                      q_trans_flag_out,
+
+    input [7:0]                           q_trans_depth_in,
+    input                                 q_trans_entry_valid_in,
+    input signed [EVAL_WIDTH - 1:0]       q_trans_eval_in,
+    input [1:0]                           q_trans_flag_in,
+    input [`TRANS_NODES_WIDTH - 1:0]      q_trans_nodes_in,
+    input                                 q_trans_capture_in,
+    input                                 q_trans_trans_idle_in,
+    input                                 q_trans_collision_in,
+    input [79:0]                          q_trans_hash_in,
+    input [31:0]                          q_trans_trans,
+   
     input                                 initial_mate,
     input                                 initial_stalemate,
     input signed [EVAL_WIDTH - 1:0]       initial_eval, // root node eval
@@ -148,6 +174,11 @@ module control #
    assign trans_castle_mask_out = am_castle_mask_out;
    assign trans_en_passant_col_out = am_en_passant_col_out;
 
+   assign q_trans_board_out = am_new_board_out;
+   assign q_trans_white_to_move_out = am_white_to_move_out;
+   assign q_trans_castle_mask_out = am_castle_mask_out;
+   assign q_trans_en_passant_col_out = am_en_passant_col_out;
+
    assign ctrl0_axi_arready = 1; // always ready
    assign ctrl0_axi_rresp = 2'b0; // always ok
 
@@ -191,8 +222,13 @@ module control #
                 trans_entry_store_out, trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
          521 : {trans_capture_out, trans_eval_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[EVAL_WIDTH - 1:0]};
          525 : trans_nodes_out <= ctrl0_wr_data;
-
+         
          600 : am_pv_ctrl_out <= ctrl0_wr_data;
+
+         620 : {q_trans_depth_out[7:0], q_trans_clear_trans_out, q_trans_hash_only_out, q_trans_flag_out[1:0],
+                q_trans_entry_store_out, q_trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
+         621 : {q_trans_capture_out, q_trans_eval_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[EVAL_WIDTH - 1:0]};
+         625 : q_trans_nodes_out <= ctrl0_wr_data;
 
          1024 : am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
          1025 : am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
@@ -301,6 +337,18 @@ module control #
                525 : ctrl0_axi_rdata <= trans_nodes_out;
 
                600 : ctrl0_axi_rdata <= am_pv_ctrl_out;
+               
+               612 : ctrl0_axi_rdata <= {q_trans_capture_in, q_trans_collision_in, q_trans_depth_in[7:0], 4'b0,
+                                         q_trans_flag_in[1:0], q_trans_entry_valid_in, q_trans_trans_idle_in};
+               614 : ctrl0_axi_rdata <= q_trans_eval_in;
+               615 : ctrl0_axi_rdata <= q_trans_nodes_in;
+               620 : ctrl0_axi_rdata <= {q_trans_depth_out[7:0], 2'b0, q_trans_clear_trans_out, q_trans_hash_only_out,
+                                         q_trans_flag_out[1:0], q_trans_entry_store_out, q_trans_entry_lookup_out};
+               621 : ctrl0_axi_rdata <= q_trans_capture_out << 31 | q_trans_eval_out[EVAL_WIDTH - 1:0];
+               622 : ctrl0_axi_rdata <= q_trans_hash_in[31: 0];
+               623 : ctrl0_axi_rdata <= q_trans_hash_in[63:32];
+               624 : ctrl0_axi_rdata <= q_trans_hash_in[79:64];
+               625 : ctrl0_axi_rdata <= q_trans_nodes_out;
 
                1024 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
                1025 : ctrl0_axi_rdata[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH];

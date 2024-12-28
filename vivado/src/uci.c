@@ -113,6 +113,7 @@ uci_dispatch(void)
                 book_miss = 0;
                 killer_clear_table();
                 trans_clear_table();
+                q_trans_clear_table();
                 uci_init();
                 nm_init();
         }

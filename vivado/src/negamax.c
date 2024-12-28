@@ -22,7 +22,7 @@ extern uint32_t game_moves;
 static uint32_t repdet_game_moves;
 
 static uint64_t all_moves_ticks;
-static uint32_t nodes_visited, trans_collision, no_trans;
+static uint32_t nodes_visited, q_nodes_visited, trans_collision, no_trans, q_trans_collision, q_no_trans;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
 static int32_t q_ply_reached, valid_q_ply_reached;
@@ -191,17 +191,24 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         board_t *board_ptr[MAX_POSITIONS];
         int32_t pv_next_index;
         int32_t board_eval;
+        uint32_t collision;
+        trans_t trans;
+        int32_t alpha_orig;
 
         ++nodes_visited;
+        ++q_nodes_visited;
 
         if (ply >= MAX_DEPTH - 1)
                 return beta;
+
+        alpha_orig = alpha;
 
         pv_array[pv_index] = zero_move;
         pv_next_index = pv_index + MAX_DEPTH - ply;
 
         vchess_reset_all_moves();
         vchess_write_board_basic(board);
+        q_trans_lookup_init();  // trigger transposition table lookup
 
         XTime_GetTime(&am_t_start);
         vchess_write_board_wait(board, 1);
@@ -215,9 +222,27 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         if (move_count == 0)
                 return value;
 
+        q_trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
+        vchess_q_trans_read(&collision, &trans.eval, 0, &trans.flag, 0, 0, &trans.entry_valid, 0);
+        if (trans.entry_valid)
+        {
+                if (trans.flag == TRANS_EXACT)
+                        return trans.eval;
+                else if (trans.flag == TRANS_LOWER_BOUND)
+                        alpha = valmax(alpha, trans.eval);
+                else if (trans.flag == TRANS_UPPER_BOUND)
+                        beta = valmin(beta, trans.eval);
+                if (alpha >= beta)
+                        return trans.eval;
+        }
+        else
+                ++q_no_trans;
+
+        // fixme: test these do things
         if (value >= beta)
                 return value;
 
+        // fixme: test these do things
         if (value > alpha)
                 alpha = value;
 
@@ -278,6 +303,23 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 
         if (abort_search)
                 return 0;       // will be ignored
+
+        vchess_write_board_basic(board);
+        q_trans_lookup(&trans, &collision);
+        q_trans_collision += collision;
+        if (!trans.entry_valid)
+        {
+                trans.eval = alpha;
+                if (alpha <= alpha_orig)
+                        trans.flag = TRANS_UPPER_BOUND;
+                else if (value >= beta)
+                        trans.flag = TRANS_LOWER_BOUND;
+                else
+                        trans.flag = TRANS_EXACT;
+                // trans.nodes, trans.depth, trans.capture unused in q transposition table
+                trans.entry_valid = 1;
+                q_trans_store(&trans);
+        }
 
         return alpha;
 }
@@ -488,7 +530,7 @@ nm_top(const tc_t * tc)
         uint64_t elapsed_ticks;
         int64_t duration_seconds;
         double elapsed_time, nps, elapsed_am_time;
-        int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
+        int32_t evaluate_move, best_evaluation, overall_best, trans_hit, q_trans_hit;
         board_t best_board = { 0 };
         XTime t_end, t_report, t_start;
         board_t root_node_boards[MAX_POSITIONS];
@@ -506,8 +548,11 @@ nm_top(const tc_t * tc)
         best_board = game[game_index];
 
         nodes_visited = 0;
+        q_nodes_visited = 0;
         no_trans = 0;
         trans_collision = 0;
+        q_no_trans = 0;
+        q_trans_collision = 0;
         all_moves_ticks = 0;
 
         vchess_reset_all_moves();
@@ -610,6 +655,7 @@ nm_top(const tc_t * tc)
         nps = (double)nodes_visited / elapsed_time;
         trans_hit = nodes_visited - no_trans;
         elapsed_am_time = (double)all_moves_ticks / (double)COUNTS_PER_SECOND;
+        q_trans_hit = q_nodes_visited - q_no_trans;
 
         printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f, all_moves_time=%.2f%%\n",
                overall_best, nodes_visited, elapsed_time, nps, (elapsed_am_time * 100.0) / elapsed_time);
@@ -617,6 +663,10 @@ nm_top(const tc_t * tc)
         printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
                ((double)trans_collision * 100.0) / (double)nodes_visited);
+        if (q_nodes_visited > 0)
+                printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%), q_trans_collision=%u (%.2f%%)\n", q_no_trans,
+                       q_trans_hit, ((double)q_trans_hit * 100.0) / (double)q_nodes_visited, q_trans_collision,
+                       ((double)q_trans_collision * 100.0) / (double)q_nodes_visited);
 
         return best_board;
 }

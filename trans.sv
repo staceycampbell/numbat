@@ -2,6 +2,8 @@
 
 module trans #
   (
+   parameter ADDRESS_WIDTH = 0,
+   parameter MEM_SIZE_BYTES = 0,
    parameter EVAL_WIDTH = 0
    )
    (
@@ -46,7 +48,7 @@ module trans #
     input                                 trans_axi_rvalid,
     input                                 trans_axi_wready,
    
-    output reg [31:0]                     trans_axi_araddr,
+    output reg [ADDRESS_WIDTH - 1:0]                     trans_axi_araddr,
     output [1:0]                          trans_axi_arburst,
     output [3:0]                          trans_axi_arcache,
     output [7:0]                          trans_axi_arlen,
@@ -55,7 +57,7 @@ module trans #
     output [3:0]                          trans_axi_arqos,
     output [2:0]                          trans_axi_arsize,
     output reg                            trans_axi_arvalid,
-    output reg [31:0]                     trans_axi_awaddr,
+    output reg [ADDRESS_WIDTH - 1:0]                     trans_axi_awaddr,
     output [1:0]                          trans_axi_awburst,
     output [3:0]                          trans_axi_awcache,
     output [7:0]                          trans_axi_awlen,
@@ -79,9 +81,9 @@ module trans #
    localparam HASH_USED = 64;
 
    localparam BASE_ADDRESS = 32'h00000000; // AXI4 byte address for base of memory
-   localparam MEM_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GByte DDR4
+   // localparam MEM_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GByte DDR4
    localparam MEM_ADDR_WIDTH = $clog2(MEM_SIZE_BYTES);
-   localparam TABLE_SIZE_LOG2 = $clog2(MEM_SIZE_BYTES) + $clog2(8) - $clog2(128); // 2^27 * 128 bits for 2GByte
+   localparam TABLE_SIZE_LOG2 = $clog2(MEM_SIZE_BYTES) + $clog2(8) - $clog2(128); // e.g. 2^27 * 128 bits for 2GByte
    localparam TABLE_SIZE = 1 << TABLE_SIZE_LOG2;
    localparam BURST_TICK_TOTAL = TABLE_SIZE;
    localparam BURST_COUNTER_WIDTH = $clog2(BURST_TICK_TOTAL) + 1;

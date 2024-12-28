@@ -31,6 +31,9 @@ module vchess_top
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, row/col to, row/col from
    localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
 
+   localparam TRANS_ADDRESS_WIDTH = 32;
+   localparam Q_TRANS_ADDRESS_WIDTH = 21;
+
    integer       i;
    
    reg [`BOARD_WIDTH - 1:0] am_board_in;
@@ -119,10 +122,68 @@ module vchess_top
    wire [31:0]          initial_material_white; // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
+   wire [Q_TRANS_ADDRESS_WIDTH-1:0] q_trans_axi_araddr;// From q_trans of trans.v
+   wire [1:0]           q_trans_axi_arburst;    // From q_trans of trans.v
+   wire [3:0]           q_trans_axi_arcache;    // From q_trans of trans.v
+   wire [7:0]           q_trans_axi_arlen;      // From q_trans of trans.v
+   wire [0:0]           q_trans_axi_arlock;     // From q_trans of trans.v
+   wire [2:0]           q_trans_axi_arprot;     // From q_trans of trans.v
+   wire [3:0]           q_trans_axi_arqos;      // From q_trans of trans.v
+   wire                 q_trans_axi_arready;    // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [3:0]           q_trans_axi_arregion;   // From q_trans of trans.v
+   wire [2:0]           q_trans_axi_arsize;     // From q_trans of trans.v
+   wire                 q_trans_axi_arvalid;    // From q_trans of trans.v
+   wire [Q_TRANS_ADDRESS_WIDTH-1:0] q_trans_axi_awaddr;// From q_trans of trans.v
+   wire [1:0]           q_trans_axi_awburst;    // From q_trans of trans.v
+   wire [3:0]           q_trans_axi_awcache;    // From q_trans of trans.v
+   wire [7:0]           q_trans_axi_awlen;      // From q_trans of trans.v
+   wire [0:0]           q_trans_axi_awlock;     // From q_trans of trans.v
+   wire [2:0]           q_trans_axi_awprot;     // From q_trans of trans.v
+   wire [3:0]           q_trans_axi_awqos;      // From q_trans of trans.v
+   wire                 q_trans_axi_awready;    // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [3:0]           q_trans_axi_awregion;   // From q_trans of trans.v
+   wire [2:0]           q_trans_axi_awsize;     // From q_trans of trans.v
+   wire                 q_trans_axi_awvalid;    // From q_trans of trans.v
+   wire                 q_trans_axi_bready;     // From q_trans of trans.v
+   wire [1:0]           q_trans_axi_bresp;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 q_trans_axi_bvalid;     // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [127:0]         q_trans_axi_rdata;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 q_trans_axi_rlast;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 q_trans_axi_rready;     // From q_trans of trans.v
+   wire [1:0]           q_trans_axi_rresp;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 q_trans_axi_rvalid;     // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [127:0]         q_trans_axi_wdata;      // From q_trans of trans.v
+   wire                 q_trans_axi_wlast;      // From q_trans of trans.v
+   wire                 q_trans_axi_wready;     // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [15:0]          q_trans_axi_wstrb;      // From q_trans of trans.v
+   wire                 q_trans_axi_wvalid;     // From q_trans of trans.v
+   wire [`BOARD_WIDTH-1:0] q_trans_board_in;    // From control of control.v
+   wire                 q_trans_capture_in;     // From control of control.v
+   wire                 q_trans_capture_out;    // From q_trans of trans.v
+   wire [3:0]           q_trans_castle_mask_in; // From control of control.v
+   wire                 q_trans_clear_trans_in; // From control of control.v
+   wire                 q_trans_collision_out;  // From q_trans of trans.v
+   wire [7:0]           q_trans_depth_in;       // From control of control.v
+   wire [7:0]           q_trans_depth_out;      // From q_trans of trans.v
+   wire [3:0]           q_trans_en_passant_col_in;// From control of control.v
+   wire                 q_trans_entry_lookup_in;// From control of control.v
+   wire                 q_trans_entry_store_in; // From control of control.v
+   wire                 q_trans_entry_valid_out;// From q_trans of trans.v
+   wire signed [EVAL_WIDTH-1:0] q_trans_eval_in;// From control of control.v
+   wire signed [EVAL_WIDTH-1:0] q_trans_eval_out;// From q_trans of trans.v
+   wire [1:0]           q_trans_flag_in;        // From control of control.v
+   wire [1:0]           q_trans_flag_out;       // From q_trans of trans.v
+   wire                 q_trans_hash_only_in;   // From control of control.v
+   wire [79:0]          q_trans_hash_out;       // From q_trans of trans.v
+   wire [`TRANS_NODES_WIDTH-1:0] q_trans_nodes_in;// From control of control.v
+   wire [`TRANS_NODES_WIDTH-1:0] q_trans_nodes_out;// From q_trans of trans.v
+   wire [31:0]          q_trans_trans;          // From q_trans of trans.v
+   wire                 q_trans_trans_idle_out; // From q_trans of trans.v
+   wire                 q_trans_white_to_move_in;// From control of control.v
    wire [EVAL_WIDTH-1:0] random_score_mask;     // From control of control.v
    wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire                 soft_reset;             // From control of control.v
-   wire [31:0]          trans_axi_araddr;       // From trans of trans.v
+   wire [TRANS_ADDRESS_WIDTH-1:0] trans_axi_araddr;// From trans of trans.v
    wire [1:0]           trans_axi_arburst;      // From trans of trans.v
    wire [3:0]           trans_axi_arcache;      // From trans of trans.v
    wire [7:0]           trans_axi_arlen;        // From trans of trans.v
@@ -133,7 +194,7 @@ module vchess_top
    wire [3:0]           trans_axi_arregion;     // From trans of trans.v
    wire [2:0]           trans_axi_arsize;       // From trans of trans.v
    wire                 trans_axi_arvalid;      // From trans of trans.v
-   wire [31:0]          trans_axi_awaddr;       // From trans of trans.v
+   wire [TRANS_ADDRESS_WIDTH-1:0] trans_axi_awaddr;// From trans of trans.v
    wire [1:0]           trans_axi_awburst;      // From trans of trans.v
    wire [3:0]           trans_axi_awcache;      // From trans of trans.v
    wire [7:0]           trans_axi_awlen;        // From trans of trans.v
@@ -313,6 +374,8 @@ module vchess_top
     );*/
    trans #
      (
+      .ADDRESS_WIDTH (TRANS_ADDRESS_WIDTH),
+      .MEM_SIZE_BYTES (2 * 1024 * 1024 * 1024), // 2GByte DDR4
       .EVAL_WIDTH (EVAL_WIDTH)
       )
    trans
@@ -327,7 +390,7 @@ module vchess_top
       .capture_out                      (trans_capture_out),     // Templated
       .collision_out                    (trans_collision_out),   // Templated
       .hash_out                         (trans_hash_out[79:0]),  // Templated
-      .trans_axi_araddr                 (trans_axi_araddr[31:0]), // Templated
+      .trans_axi_araddr                 (trans_axi_araddr[TRANS_ADDRESS_WIDTH-1:0]), // Templated
       .trans_axi_arburst                (trans_axi_arburst[1:0]), // Templated
       .trans_axi_arcache                (trans_axi_arcache[3:0]), // Templated
       .trans_axi_arlen                  (trans_axi_arlen[7:0]),  // Templated
@@ -336,7 +399,7 @@ module vchess_top
       .trans_axi_arqos                  (trans_axi_arqos[3:0]),  // Templated
       .trans_axi_arsize                 (trans_axi_arsize[2:0]), // Templated
       .trans_axi_arvalid                (trans_axi_arvalid),     // Templated
-      .trans_axi_awaddr                 (trans_axi_awaddr[31:0]), // Templated
+      .trans_axi_awaddr                 (trans_axi_awaddr[TRANS_ADDRESS_WIDTH-1:0]), // Templated
       .trans_axi_awburst                (trans_axi_awburst[1:0]), // Templated
       .trans_axi_awcache                (trans_axi_awcache[3:0]), // Templated
       .trans_axi_awlen                  (trans_axi_awlen[7:0]),  // Templated
@@ -380,6 +443,85 @@ module vchess_top
       .trans_axi_rvalid                 (trans_axi_rvalid),      // Templated
       .trans_axi_wready                 (trans_axi_wready));      // Templated
 
+   /* trans AUTO_TEMPLATE (
+    .clk (clk),
+    .reset (reset),
+    .trans_axi_\(.*\) (q_trans_axi_\1[]),
+    .\(.*\)_in (q_trans_\1_in[]),
+    .\(.*\)_out (q_trans_\1_out[]),
+    .trans_trans (q_trans_trans[]),
+    );*/
+   trans #
+     (
+      .ADDRESS_WIDTH (Q_TRANS_ADDRESS_WIDTH),
+      .MEM_SIZE_BYTES ((1 << Q_TRANS_ADDRESS_WIDTH) * 128 / 8), // 2097152 bytes of URAM
+      .EVAL_WIDTH (EVAL_WIDTH)
+      )
+   q_trans
+     (/*AUTOINST*/
+      // Outputs
+      .trans_idle_out                   (q_trans_trans_idle_out), // Templated
+      .entry_valid_out                  (q_trans_entry_valid_out), // Templated
+      .eval_out                         (q_trans_eval_out[EVAL_WIDTH-1:0]), // Templated
+      .depth_out                        (q_trans_depth_out[7:0]), // Templated
+      .flag_out                         (q_trans_flag_out[1:0]), // Templated
+      .nodes_out                        (q_trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .capture_out                      (q_trans_capture_out),   // Templated
+      .collision_out                    (q_trans_collision_out), // Templated
+      .hash_out                         (q_trans_hash_out[79:0]), // Templated
+      .trans_axi_araddr                 (q_trans_axi_araddr[Q_TRANS_ADDRESS_WIDTH-1:0]), // Templated
+      .trans_axi_arburst                (q_trans_axi_arburst[1:0]), // Templated
+      .trans_axi_arcache                (q_trans_axi_arcache[3:0]), // Templated
+      .trans_axi_arlen                  (q_trans_axi_arlen[7:0]), // Templated
+      .trans_axi_arlock                 (q_trans_axi_arlock[0:0]), // Templated
+      .trans_axi_arprot                 (q_trans_axi_arprot[2:0]), // Templated
+      .trans_axi_arqos                  (q_trans_axi_arqos[3:0]), // Templated
+      .trans_axi_arsize                 (q_trans_axi_arsize[2:0]), // Templated
+      .trans_axi_arvalid                (q_trans_axi_arvalid),   // Templated
+      .trans_axi_awaddr                 (q_trans_axi_awaddr[Q_TRANS_ADDRESS_WIDTH-1:0]), // Templated
+      .trans_axi_awburst                (q_trans_axi_awburst[1:0]), // Templated
+      .trans_axi_awcache                (q_trans_axi_awcache[3:0]), // Templated
+      .trans_axi_awlen                  (q_trans_axi_awlen[7:0]), // Templated
+      .trans_axi_awlock                 (q_trans_axi_awlock[0:0]), // Templated
+      .trans_axi_awprot                 (q_trans_axi_awprot[2:0]), // Templated
+      .trans_axi_awqos                  (q_trans_axi_awqos[3:0]), // Templated
+      .trans_axi_awsize                 (q_trans_axi_awsize[2:0]), // Templated
+      .trans_axi_awvalid                (q_trans_axi_awvalid),   // Templated
+      .trans_axi_bready                 (q_trans_axi_bready),    // Templated
+      .trans_axi_rready                 (q_trans_axi_rready),    // Templated
+      .trans_axi_wdata                  (q_trans_axi_wdata[127:0]), // Templated
+      .trans_axi_wlast                  (q_trans_axi_wlast),     // Templated
+      .trans_axi_wstrb                  (q_trans_axi_wstrb[15:0]), // Templated
+      .trans_axi_wvalid                 (q_trans_axi_wvalid),    // Templated
+      .trans_axi_arregion               (q_trans_axi_arregion[3:0]), // Templated
+      .trans_axi_awregion               (q_trans_axi_awregion[3:0]), // Templated
+      .trans_trans                      (q_trans_trans[31:0]),   // Templated
+      // Inputs
+      .clk                              (clk),                   // Templated
+      .reset                            (reset),                 // Templated
+      .entry_lookup_in                  (q_trans_entry_lookup_in), // Templated
+      .entry_store_in                   (q_trans_entry_store_in), // Templated
+      .hash_only_in                     (q_trans_hash_only_in),  // Templated
+      .clear_trans_in                   (q_trans_clear_trans_in), // Templated
+      .board_in                         (q_trans_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in                 (q_trans_white_to_move_in), // Templated
+      .castle_mask_in                   (q_trans_castle_mask_in[3:0]), // Templated
+      .en_passant_col_in                (q_trans_en_passant_col_in[3:0]), // Templated
+      .flag_in                          (q_trans_flag_in[1:0]),  // Templated
+      .eval_in                          (q_trans_eval_in[EVAL_WIDTH-1:0]), // Templated
+      .depth_in                         (q_trans_depth_in[7:0]), // Templated
+      .nodes_in                         (q_trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .capture_in                       (q_trans_capture_in),    // Templated
+      .trans_axi_arready                (q_trans_axi_arready),   // Templated
+      .trans_axi_awready                (q_trans_axi_awready),   // Templated
+      .trans_axi_bresp                  (q_trans_axi_bresp[1:0]), // Templated
+      .trans_axi_bvalid                 (q_trans_axi_bvalid),    // Templated
+      .trans_axi_rdata                  (q_trans_axi_rdata[127:0]), // Templated
+      .trans_axi_rlast                  (q_trans_axi_rlast),     // Templated
+      .trans_axi_rresp                  (q_trans_axi_rresp[1:0]), // Templated
+      .trans_axi_rvalid                 (q_trans_axi_rvalid),    // Templated
+      .trans_axi_wready                 (q_trans_axi_wready));    // Templated
+   
    /* control AUTO_TEMPLATE (
     .\(.*\)_out (\1_in[]),
     .\(.*\)_in (\1_out[]),
@@ -432,6 +574,19 @@ module vchess_top
       .trans_nodes_out                  (trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
       .trans_capture_out                (trans_capture_in),      // Templated
       .trans_flag_out                   (trans_flag_in[1:0]),    // Templated
+      .q_trans_board_out                (q_trans_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .q_trans_white_to_move_out        (q_trans_white_to_move_in), // Templated
+      .q_trans_castle_mask_out          (q_trans_castle_mask_in[3:0]), // Templated
+      .q_trans_en_passant_col_out       (q_trans_en_passant_col_in[3:0]), // Templated
+      .q_trans_depth_out                (q_trans_depth_in[7:0]), // Templated
+      .q_trans_entry_lookup_out         (q_trans_entry_lookup_in), // Templated
+      .q_trans_entry_store_out          (q_trans_entry_store_in), // Templated
+      .q_trans_hash_only_out            (q_trans_hash_only_in),  // Templated
+      .q_trans_clear_trans_out          (q_trans_clear_trans_in), // Templated
+      .q_trans_eval_out                 (q_trans_eval_in[EVAL_WIDTH-1:0]), // Templated
+      .q_trans_nodes_out                (q_trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .q_trans_capture_out              (q_trans_capture_in),    // Templated
+      .q_trans_flag_out                 (q_trans_flag_in[1:0]),  // Templated
       .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
       .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
       .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),
@@ -453,6 +608,16 @@ module vchess_top
       .trans_collision_in               (trans_collision_out),   // Templated
       .trans_hash_in                    (trans_hash_out[79:0]),  // Templated
       .trans_trans                      (trans_trans[31:0]),
+      .q_trans_depth_in                 (q_trans_depth_out[7:0]), // Templated
+      .q_trans_entry_valid_in           (q_trans_entry_valid_out), // Templated
+      .q_trans_eval_in                  (q_trans_eval_out[EVAL_WIDTH-1:0]), // Templated
+      .q_trans_flag_in                  (q_trans_flag_out[1:0]), // Templated
+      .q_trans_nodes_in                 (q_trans_nodes_out[`TRANS_NODES_WIDTH-1:0]), // Templated
+      .q_trans_capture_in               (q_trans_capture_out),   // Templated
+      .q_trans_trans_idle_in            (q_trans_trans_idle_out), // Templated
+      .q_trans_collision_in             (q_trans_collision_out), // Templated
+      .q_trans_hash_in                  (q_trans_hash_out[79:0]), // Templated
+      .q_trans_trans                    (q_trans_trans[31:0]),
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
@@ -539,6 +704,15 @@ module vchess_top
       .ddr4_sdram_062_odt               (ddr4_sdram_062_odt),
       .ddr4_sdram_062_reset_n           (ddr4_sdram_062_reset_n),
       .digclk                           (digclk),
+      .q_trans_axi_arready              (q_trans_axi_arready),
+      .q_trans_axi_awready              (q_trans_axi_awready),
+      .q_trans_axi_bresp                (q_trans_axi_bresp[1:0]),
+      .q_trans_axi_bvalid               (q_trans_axi_bvalid),
+      .q_trans_axi_rdata                (q_trans_axi_rdata[127:0]),
+      .q_trans_axi_rlast                (q_trans_axi_rlast),
+      .q_trans_axi_rresp                (q_trans_axi_rresp[1:0]),
+      .q_trans_axi_rvalid               (q_trans_axi_rvalid),
+      .q_trans_axi_wready               (q_trans_axi_wready),
       .reset                            (reset[0:0]),
       .trans_axi_arready                (trans_axi_arready),
       .trans_axi_awready                (trans_axi_awready),
@@ -563,6 +737,28 @@ module vchess_top
       .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
       .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid),
       .ctrl0_axi_wready                 (ctrl0_axi_wready),
+      .q_trans_axi_araddr               (q_trans_axi_araddr[20:0]),
+      .q_trans_axi_arburst              (q_trans_axi_arburst[1:0]),
+      .q_trans_axi_arcache              (q_trans_axi_arcache[3:0]),
+      .q_trans_axi_arlen                (q_trans_axi_arlen[7:0]),
+      .q_trans_axi_arlock               (q_trans_axi_arlock),
+      .q_trans_axi_arprot               (q_trans_axi_arprot[2:0]),
+      .q_trans_axi_arsize               (q_trans_axi_arsize[2:0]),
+      .q_trans_axi_arvalid              (q_trans_axi_arvalid),
+      .q_trans_axi_awaddr               (q_trans_axi_awaddr[20:0]),
+      .q_trans_axi_awburst              (q_trans_axi_awburst[1:0]),
+      .q_trans_axi_awcache              (q_trans_axi_awcache[3:0]),
+      .q_trans_axi_awlen                (q_trans_axi_awlen[7:0]),
+      .q_trans_axi_awlock               (q_trans_axi_awlock),
+      .q_trans_axi_awprot               (q_trans_axi_awprot[2:0]),
+      .q_trans_axi_awsize               (q_trans_axi_awsize[2:0]),
+      .q_trans_axi_awvalid              (q_trans_axi_awvalid),
+      .q_trans_axi_bready               (q_trans_axi_bready),
+      .q_trans_axi_rready               (q_trans_axi_rready),
+      .q_trans_axi_wdata                (q_trans_axi_wdata[127:0]),
+      .q_trans_axi_wlast                (q_trans_axi_wlast),
+      .q_trans_axi_wstrb                (q_trans_axi_wstrb[15:0]),
+      .q_trans_axi_wvalid               (q_trans_axi_wvalid),
       .trans_axi_araddr                 (trans_axi_araddr[31:0]),
       .trans_axi_arburst                (trans_axi_arburst[1:0]),
       .trans_axi_arcache                (trans_axi_arcache[3:0]),
