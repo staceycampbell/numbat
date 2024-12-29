@@ -182,6 +182,8 @@ module tbtrans;
     );*/
    trans #
      (
+      .ADDRESS_WIDTH (32),
+      .MEM_SIZE_BYTES (2 * 1024 * 1024 * 1024),
       .EVAL_WIDTH (EVAL_WIDTH)
       )
    trans

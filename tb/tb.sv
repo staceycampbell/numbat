@@ -38,8 +38,8 @@ module tb;
    reg [`BOARD_WIDTH - 1:0]       tb_rep_history [0:TB_REP_HISTORY - 1];
    reg [$clog2(TB_REP_HISTORY) - 1:0] tb_rep_index;
    reg                                am_quiescence_moves = 0;
-   reg [EVAL_WIDTH - 1:0]               random_number = 0;
-   reg [EVAL_WIDTH - 1:0]               random_score_mask = 'h0;
+   reg [EVAL_WIDTH - 1:0]             random_number = 0;
+   reg [EVAL_WIDTH - 1:0]             random_score_mask = 'h0;
 
    reg [`BOARD_WIDTH-1:0]             killer_board = 0;
    reg signed [EVAL_WIDTH-1:0]        killer_bonus0 = 15000;
@@ -197,7 +197,7 @@ module tb;
 
         if (0 && t >= 100000)
           $finish;
-        if (1 && tb.all_moves.state == 25 /* tb.all_moves.checkmate.state == 27 */)
+        if (0 && tb.all_moves.state == 25 /* tb.all_moves.checkmate.state == 27 */)
           begin
              $display("stopping sim at sort init\n");
              $finish;

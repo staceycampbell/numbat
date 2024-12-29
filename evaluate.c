@@ -6,7 +6,8 @@
 #define EXCLUDE_VITIS 1
 #include "vivado/src/vchess.h"
 
-// Crafty weights, copyright 1996-2020 by Robert M. Hyatt, Ph.D.
+// Weights are mostly copied from crafty source evaluate.h. Crafty is copyright 1996-2020 by Robert M. Hyatt, Ph.D.
+// See README-crafty.md for crafty license information.
 
 #define MATE                                 32768
 #define PAWN_VALUE                             100
