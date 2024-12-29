@@ -8,7 +8,7 @@
 #include <xil_printf.h>
 #include <xtime_l.h>
 #include <xil_io.h>
-#include "vchess.h"
+#include "numbat.h"
 
 #pragma GCC optimize ("O2")
 
@@ -46,11 +46,11 @@ nm_initial_eval(uint32_t wtm, uint32_t ply)
         int32_t value;
         uint32_t thrice_rep, stalemate, fifty_move;
 
-        vchess_status(0, 0, 0, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
+        numbat_status(0, 0, 0, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
         if (stalemate || fifty_move || thrice_rep)
                 return 0;
 
-        value = vchess_initial_eval();
+        value = numbat_initial_eval();
         if (value == GLOBAL_VALUE_KING)
                 value -= ply;
         else if (value == -GLOBAL_VALUE_KING)
@@ -66,7 +66,7 @@ rep_table_idle_test(const char *func, const char *file, uint32_t line)
 {
         uint32_t am_idle;
 
-        vchess_status(0, 0, 0, 0, 0, &am_idle, 0, 0, 0);
+        numbat_status(0, 0, 0, 0, 0, &am_idle, 0, 0, 0);
         if (!am_idle)
         {
                 xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", func, file, line);
@@ -77,9 +77,9 @@ rep_table_idle_test(const char *func, const char *file, uint32_t line)
 static void
 rep_table_entry(const uint32_t board[8], uint32_t castle_mask, uint32_t addr)
 {
-        vchess_repdet_board(board);
-        vchess_repdet_castle_mask(castle_mask);
-        vchess_repdet_write(addr);
+        numbat_repdet_board(board);
+        numbat_repdet_castle_mask(castle_mask);
+        numbat_repdet_write(addr);
 }
 
 static void
@@ -95,7 +95,7 @@ rep_table_init(uint32_t exclude_initial_board)
                 index = (int32_t) game_moves - 2;
                 if (index < 0)
                 {
-                        vchess_repdet_depth(0);
+                        numbat_repdet_depth(0);
                         return;
                 }
         }
@@ -114,7 +114,7 @@ rep_table_init(uint32_t exclude_initial_board)
                 --index;
         }
         while (index >= 0 && !half_move_zero);
-        vchess_repdet_depth(repdet_game_moves);
+        numbat_repdet_depth(repdet_game_moves);
 }
 
 static void
@@ -126,7 +126,7 @@ rep_table_load(const board_t * board, uint32_t ply)
         index = repdet_game_moves + ply;
         entries = index + 1;
         rep_table_entry(board->board, board->castle_mask, entries);
-        vchess_repdet_depth(entries);
+        numbat_repdet_depth(entries);
 }
 
 static int32_t
@@ -135,20 +135,20 @@ load_positions(board_t boards[MAX_POSITIONS])
         int32_t i;
         uint32_t moves_ready, move_count;
 
-        vchess_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
+        numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
         if (!moves_ready)
         {
                 xil_printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return -1;
         }
-        move_count = vchess_move_count();
+        move_count = numbat_move_count();
         if (move_count == 0)
         {
                 xil_printf("%s: no moves available (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return -2;
         }
         for (i = 0; i < move_count; ++i)
-                vchess_read_board(&boards[i], i);
+                numbat_read_board(&boards[i], i);
         return move_count;
 }
 
@@ -209,24 +209,24 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         pv_array[pv_index] = zero_move;
         pv_next_index = pv_index + MAX_DEPTH - ply;
 
-        vchess_reset_all_moves();
-        vchess_write_board_basic(board);
+        numbat_reset_all_moves();
+        numbat_write_board_basic(board);
         q_trans_lookup_init();  // trigger transposition table lookup
 
         XTime_GetTime(&am_t_start);
-        vchess_write_board_wait(board, 1);
+        numbat_write_board_wait(board, 1);
         XTime_GetTime(&am_t_stop);
         all_moves_ticks += am_t_stop - am_t_start;
 
-        vchess_status(0, 0, &mate, &stalemate, 0, 0, &fifty_move, 0, 0);
+        numbat_status(0, 0, &mate, &stalemate, 0, 0, &fifty_move, 0, 0);
 
         value = nm_initial_eval(board->white_to_move, ply);
-        move_count = vchess_move_count();
+        move_count = numbat_move_count();
         if (move_count == 0)
                 return value;
 
         q_trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        vchess_q_trans_read(&collision, &trans.eval, 0, &trans.flag, 0, 0, &trans.entry_valid, 0);
+        numbat_q_trans_read(&collision, &trans.eval, 0, &trans.flag, 0, 0, &trans.entry_valid, 0);
         if (trans.entry_valid)
         {
                 if (trans.flag == TRANS_EXACT)
@@ -250,7 +250,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
                 alpha = value;
 
         // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
-        endgame = vchess_initial_material_black() < 1700 && vchess_initial_material_white() < 1700;
+        endgame = numbat_initial_material_black() < 1700 && numbat_initial_material_white() < 1700;
         if (!endgame && value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
                 return alpha;
 
@@ -273,7 +273,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
         for (index = 0; index < move_count; ++index)
         {
-                vchess_read_board(&board_stack[ply][index], index);
+                numbat_read_board(&board_stack[ply][index], index);
                 board_ptr[index] = &board_stack[ply][index];
                 if (!board_ptr[index]->capture)
                 {
@@ -282,7 +282,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
                 }
         }
 
-        vchess_reset_all_moves();
+        numbat_reset_all_moves();
         rep_table_load(board, ply);     // update thrice rep table
 
         index = 0;
@@ -307,7 +307,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         if (abort_search)
                 return 0;       // will be ignored
 
-        vchess_write_board_basic(board);
+        numbat_write_board_basic(board);
         q_trans_lookup(&trans, &collision);
         q_trans_collision += collision;
         if (!trans.entry_valid)
@@ -357,24 +357,24 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 
         alpha_orig = alpha;
 
-        vchess_reset_all_moves();
+        numbat_reset_all_moves();
         killer_ply(ply);
-        vchess_write_board_basic(board);
+        numbat_write_board_basic(board);
         trans_lookup_init();    // trigger transposition table lookup
 
         XTime_GetTime(&am_t_start);
-        vchess_write_board_wait(board, 0);
+        numbat_write_board_wait(board, 0);
         XTime_GetTime(&am_t_stop);
         all_moves_ticks += am_t_stop - am_t_start;
 
         value = nm_initial_eval(board->white_to_move, ply);
-        move_count = vchess_move_count();
+        move_count = numbat_move_count();
 
         if (move_count == 0)
                 return value;
 
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        vchess_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.capture, &trans.entry_valid, 0);
+        numbat_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.capture, &trans.entry_valid, 0);
         trans_collision += collision;
 
         if (trans.entry_valid && trans.depth >= depth)
@@ -407,11 +407,11 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
         for (index = 0; index < move_count; ++index)
         {
-                vchess_read_board(&board_stack[ply][index], index);
+                numbat_read_board(&board_stack[ply][index], index);
                 board_ptr[index] = &board_stack[ply][index];
         }
 
-        vchess_reset_all_moves();
+        numbat_reset_all_moves();
         rep_table_load(board, ply);     // update thrice rep table
 
         ply_delta = ply * 20;
@@ -474,7 +474,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         nodes = node_stop - node_start;
         if (nodes >= (1 << TRANS_NODES_WIDTH))
                 nodes = (1 << TRANS_NODES_WIDTH) - 1;
-        vchess_write_board_basic(board);
+        numbat_write_board_basic(board);
         trans_lookup(&trans, &collision);
         if (!trans.entry_valid || trans.nodes < nodes)
         {
@@ -558,11 +558,11 @@ nm_top(const tc_t * tc)
         q_trans_collision = 0;
         all_moves_ticks = 0;
 
-        vchess_reset_all_moves();
+        numbat_reset_all_moves();
         rep_table_init(1);
-        vchess_write_board_basic(&game[game_index]);
-        vchess_write_board_wait(&game[game_index], 0);
-        move_count = vchess_move_count();
+        numbat_write_board_basic(&game[game_index]);
+        numbat_write_board_wait(&game[game_index], 0);
+        move_count = numbat_move_count();
         if (move_count == 0)
         {
                 xil_printf("%s: game is over, no moves (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -574,7 +574,7 @@ nm_top(const tc_t * tc)
 
         load_positions(root_node_boards);
 
-        vchess_reset_all_moves();
+        numbat_reset_all_moves();
         rep_table_init(0);
 
         best_board = root_node_boards[0];

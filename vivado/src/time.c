@@ -11,7 +11,7 @@
 #include <xil_cache.h>
 #include <xuartps.h>
 #include <xtime_l.h>
-#include "vchess.h"
+#include "numbat.h"
 
 void
 tc_display(const tc_t *tc)

@@ -1,4 +1,4 @@
-vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
+numbat/numbat_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../all_moves.sv
 ../axi4lite_write.sv
 ../board_attack.sv
@@ -23,6 +23,6 @@ vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
 ../rep_det.sv
 ../sync.sv
 ../trans.sv
-../vchess_top.sv
-../vchess.vh
+../numbat_top.sv
+../numbat.vh
 ../xorshift32.sv

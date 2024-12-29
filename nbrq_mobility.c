@@ -6,7 +6,7 @@
 #include <assert.h>
 
 #define EXCLUDE_VITIS 1
-#include "vivado/src/vchess.h"
+#include "vivado/src/numbat.h"
 
 typedef struct offset_t
 {

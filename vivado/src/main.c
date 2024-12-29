@@ -10,7 +10,7 @@
 #include <xil_cache.h>
 #include <xuartps.h>
 #include <xtime_l.h>
-#include "vchess.h"
+#include "numbat.h"
 
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
 
@@ -102,7 +102,7 @@ main(void)
         // ip_status = 0;
         com_status = 0;
 
-        vchess_init();
+        numbat_init();
         trans_clear_table();
         q_trans_clear_table();
         killer_clear_table();
@@ -110,7 +110,7 @@ main(void)
         uci_init();
         uci_input_reset();
         book_open();
-        vchess_random_score_mask(0x0);
+        numbat_random_score_mask(0x0);
 
         printf("ready\n");
 

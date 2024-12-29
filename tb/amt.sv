@@ -1,4 +1,4 @@
-`include "vchess.vh"
+`include "numbat.vh"
 
 module amt;
 

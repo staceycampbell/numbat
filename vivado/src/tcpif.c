@@ -6,7 +6,7 @@
 #include <lwip/err.h>
 #include <lwip/tcp.h>
 #include <xil_printf.h>
-#include "vchess.h"
+#include "numbat.h"
 
 #if 0
 extern struct tcp_pcb *cmd_pcb;

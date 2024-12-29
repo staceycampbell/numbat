@@ -6,7 +6,7 @@
 #include <assert.h>
 
 #define EXCLUDE_VITIS 1
-#include "vivado/src/vchess.h"
+#include "vivado/src/numbat.h"
 
 #define ATTACK_COUNT 75
 #define EMPTY_POSN2 (1 << EMPTY_POSN)

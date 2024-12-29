@@ -5,14 +5,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <xil_printf.h>
-#include "vchess.h"
+#include "numbat.h"
 
 #pragma GCC optimize ("O2")
 
 static char piece_char[1 << PIECE_BITS];
 
 uint32_t
-vchess_get_piece(const board_t * board, uint32_t row, uint32_t col)
+numbat_get_piece(const board_t * board, uint32_t row, uint32_t col)
 {
         uint32_t row_contents, shift, piece;
 
@@ -24,7 +24,7 @@ vchess_get_piece(const board_t * board, uint32_t row, uint32_t col)
 }
 
 void
-vchess_place(board_t * board, uint32_t row, uint32_t col, uint32_t piece)
+numbat_place(board_t * board, uint32_t row, uint32_t col, uint32_t piece)
 {
         uint32_t row_contents;
         uint32_t shift;
@@ -37,24 +37,24 @@ vchess_place(board_t * board, uint32_t row, uint32_t col, uint32_t piece)
 }
 
 uint32_t
-vchess_move_piece(board_t * board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to)
+numbat_move_piece(board_t * board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to)
 {
         uint32_t piece, occupied;
 
-        piece = vchess_get_piece(board, row_from, col_from);
-        occupied = vchess_get_piece(board, row_to, col_to) != EMPTY_POSN;
-        vchess_place(board, row_from, col_from, EMPTY_POSN);
-        vchess_place(board, row_to, col_to, piece);
+        piece = numbat_get_piece(board, row_from, col_from);
+        occupied = numbat_get_piece(board, row_to, col_to) != EMPTY_POSN;
+        numbat_place(board, row_from, col_from, EMPTY_POSN);
+        numbat_place(board, row_to, col_to, piece);
 
         return occupied;
 }
 
 void
-vchess_read_uci(uci_t * uci)
+numbat_read_uci(uci_t * uci)
 {
         uint32_t val;
 
-        val = vchess_read(139);
+        val = numbat_read(139);
         uci->col_from = (val >> 0) & 0x7;
         uci->row_from = (val >> 4) & 0x7;
         uci->col_to = (val >> 8) & 0x7;
@@ -63,7 +63,7 @@ vchess_read_uci(uci_t * uci)
 }
 
 void
-vchess_print_board(const board_t * board, uint32_t initial_board)
+numbat_print_board(const board_t * board, uint32_t initial_board)
 {
         int y, x, rev;
         char uci_str[6];
@@ -79,7 +79,7 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
                 printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);        // sgr0
                 for (x = 0; x < 8; ++x)
                 {
-                        piece = vchess_get_piece(board, y, x);
+                        piece = numbat_get_piece(board, y, x);
                         rev = (y ^ x) & 1;
                         if (rev)
                                 printf("%c%c%c%c%c", 27, 91, 52, 55, 109);      // setb 7, light bg
@@ -105,10 +105,10 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
         printf("%c%c%c%c%c%c\n", 27, 40, 66, 27, 91, 109);      // sgr0
         if (initial_board)
         {
-                eval = vchess_initial_eval();
-                vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
-                material_white = vchess_initial_material_white();
-                material_black = vchess_initial_material_black();
+                eval = numbat_initial_eval();
+                numbat_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
+                material_white = numbat_initial_material_white();
+                material_black = numbat_initial_material_black();
                 material = material_white - material_black;
         }
         else
@@ -132,41 +132,41 @@ vchess_print_board(const board_t * board, uint32_t initial_board)
 }
 
 void
-vchess_write_board_basic(const board_t * board)
+numbat_write_board_basic(const board_t * board)
 {
-        vchess_reset_all_moves();
-        vchess_write_board_two_rows(0, board->board[0], board->board[1]);
-        vchess_write_board_two_rows(2, board->board[2], board->board[3]);
-        vchess_write_board_two_rows(4, board->board[4], board->board[5]);
-        vchess_write_board_two_rows(6, board->board[6], board->board[7]);
-        vchess_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
-        vchess_write_half_move(board->half_move_clock);
+        numbat_reset_all_moves();
+        numbat_write_board_two_rows(0, board->board[0], board->board[1]);
+        numbat_write_board_two_rows(2, board->board[2], board->board[3]);
+        numbat_write_board_two_rows(4, board->board[4], board->board[5]);
+        numbat_write_board_two_rows(6, board->board[6], board->board[7]);
+        numbat_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
+        numbat_write_half_move(board->half_move_clock);
 }
 
 void
-vchess_write_board_wait(const board_t * board, uint32_t quiescence)
+numbat_write_board_wait(const board_t * board, uint32_t quiescence)
 {
         int32_t i;
         uint32_t moves_ready, move_count;
 
-        vchess_quiescence_moves(quiescence);
-        vchess_write_control(0, 1, 0, 0);       // new board valid bit set
-        vchess_write_control(0, 0, 0, 0);       // new board valid bit clear
+        numbat_quiescence_moves(quiescence);
+        numbat_write_control(0, 1, 0, 0);       // new board valid bit set
+        numbat_write_control(0, 0, 0, 0);       // new board valid bit clear
         i = 0;
         do
         {
-                vchess_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
+                numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
                 ++i;
         }
         while (i < 5000 && !moves_ready);
         if (!moves_ready)
                 xil_printf("%s: timeout! (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-        move_count = vchess_move_count();
+        move_count = numbat_move_count();
         if (move_count >= MAX_POSITIONS)
         {
                 if (board)
                 {
-                        vchess_print_board(board, 1);
+                        numbat_print_board(board, 1);
                         fen_print(board);
                 }
                 xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -175,7 +175,7 @@ vchess_write_board_wait(const board_t * board, uint32_t quiescence)
 }
 
 uint32_t
-vchess_read_board(board_t * board, uint32_t index)
+numbat_read_board(board_t * board, uint32_t index)
 {
         uint32_t move_count;
         uint32_t move_ready, moves_ready;
@@ -185,11 +185,11 @@ vchess_read_board(board_t * board, uint32_t index)
         static const uint32_t verify_move_ready = 0;
 
         // assume moves_ready is tested elsewhere and move_ready is always set due to Zynq to PL latency
-        vchess_move_index(index);
+        numbat_move_index(index);
         if (verify_move_ready)
         {
-                status = vchess_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
-                move_count = vchess_move_count();
+                status = numbat_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
+                move_count = numbat_move_count();
                 if (!move_ready || !moves_ready || index >= move_count)
                 {
                         printf("%s: problems, stopping (%s %d) [%d %d %d 0x%08X]\n", __PRETTY_FUNCTION__, __FILE__, __LINE__, move_ready, moves_ready,
@@ -201,47 +201,47 @@ vchess_read_board(board_t * board, uint32_t index)
         for (y = 0; y < 8; y += 2)
         {
                 ptr = (uint64_t *) (void *)&board->board[y];
-                *ptr = vchess_read_move_two_rows(y);    // rewrite if alignment problems :-)
+                *ptr = numbat_read_move_two_rows(y);    // rewrite if alignment problems :-)
         }
-        vchess_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move, &board->pv);
-        vchess_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
-        board->eval = vchess_move_eval();
-        board->half_move_clock = vchess_read_half_move();
-        vchess_read_uci(&board->uci);
+        numbat_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move, &board->pv);
+        numbat_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
+        board->eval = numbat_move_eval();
+        board->half_move_clock = numbat_read_half_move();
+        numbat_read_uci(&board->uci);
 
         return 0;
 }
 
 void
-vchess_init_board(board_t * board)
+numbat_init_board(board_t * board)
 {
         int i, j;
 
         for (i = 2; i <= 5; ++i)
                 for (j = 0; j < 8; ++j)
-                        vchess_place(board, i, j, EMPTY_POSN);
+                        numbat_place(board, i, j, EMPTY_POSN);
         for (j = 0; j < 8; ++j)
         {
-                vchess_place(board, 1, j, WHITE_PAWN);
-                vchess_place(board, 6, j, BLACK_PAWN);
+                numbat_place(board, 1, j, WHITE_PAWN);
+                numbat_place(board, 6, j, BLACK_PAWN);
         }
-        vchess_place(board, 0, 0, WHITE_ROOK);
-        vchess_place(board, 0, 1, WHITE_KNIT);
-        vchess_place(board, 0, 2, WHITE_BISH);
-        vchess_place(board, 0, 3, WHITE_QUEN);
-        vchess_place(board, 0, 4, WHITE_KING);
-        vchess_place(board, 0, 5, WHITE_BISH);
-        vchess_place(board, 0, 6, WHITE_KNIT);
-        vchess_place(board, 0, 7, WHITE_ROOK);
+        numbat_place(board, 0, 0, WHITE_ROOK);
+        numbat_place(board, 0, 1, WHITE_KNIT);
+        numbat_place(board, 0, 2, WHITE_BISH);
+        numbat_place(board, 0, 3, WHITE_QUEN);
+        numbat_place(board, 0, 4, WHITE_KING);
+        numbat_place(board, 0, 5, WHITE_BISH);
+        numbat_place(board, 0, 6, WHITE_KNIT);
+        numbat_place(board, 0, 7, WHITE_ROOK);
 
-        vchess_place(board, 7, 0, BLACK_ROOK);
-        vchess_place(board, 7, 1, BLACK_KNIT);
-        vchess_place(board, 7, 2, BLACK_BISH);
-        vchess_place(board, 7, 3, BLACK_QUEN);
-        vchess_place(board, 7, 4, BLACK_KING);
-        vchess_place(board, 7, 5, BLACK_BISH);
-        vchess_place(board, 7, 6, BLACK_KNIT);
-        vchess_place(board, 7, 7, BLACK_ROOK);
+        numbat_place(board, 7, 0, BLACK_ROOK);
+        numbat_place(board, 7, 1, BLACK_KNIT);
+        numbat_place(board, 7, 2, BLACK_BISH);
+        numbat_place(board, 7, 3, BLACK_QUEN);
+        numbat_place(board, 7, 4, BLACK_KING);
+        numbat_place(board, 7, 5, BLACK_BISH);
+        numbat_place(board, 7, 6, BLACK_KNIT);
+        numbat_place(board, 7, 7, BLACK_ROOK);
 
         board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
         board->castle_mask = 0xF;
@@ -249,15 +249,15 @@ vchess_init_board(board_t * board)
 }
 
 void
-vchess_repdet_entry(uint32_t index, const uint32_t board[8], uint32_t castle_mask)
+numbat_repdet_entry(uint32_t index, const uint32_t board[8], uint32_t castle_mask)
 {
-        vchess_repdet_board(board);
-        vchess_repdet_castle_mask(castle_mask);
-        vchess_repdet_write(index);
+        numbat_repdet_board(board);
+        numbat_repdet_castle_mask(castle_mask);
+        numbat_repdet_write(index);
 }
 
 void
-vchess_init(void)
+numbat_init(void)
 {
         int i;
 

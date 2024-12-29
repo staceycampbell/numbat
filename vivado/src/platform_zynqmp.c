@@ -9,7 +9,7 @@
 #include <xil_printf.h>
 #include <netif/xadapter.h>
 #include <xttcps.h>
-#include "vchess.h"
+#include "numbat.h"
 
 #define INTC_DEVICE_ID          XPAR_SCUGIC_SINGLE_DEVICE_ID
 #define TIMER_DEVICE_ID         XPAR_XTTCPS_0_DEVICE_ID

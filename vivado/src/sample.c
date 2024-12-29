@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <xil_printf.h>
-#include "vchess.h"
+#include "numbat.h"
 
 static char *sample[] = {
 	"6k1/3b3r/1p1p4/p1n2p2/1PPNpP1q/P3Q1p1/1R1RB1P1/5K2 b - - 0-1"

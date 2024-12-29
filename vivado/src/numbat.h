@@ -141,7 +141,7 @@ typedef struct board_t
 board_t;
 
 static inline void
-vchess_write(uint32_t reg, uint32_t val)
+numbat_write(uint32_t reg, uint32_t val)
 {
         volatile uint32_t *ptr;
 
@@ -150,7 +150,7 @@ vchess_write(uint32_t reg, uint32_t val)
 }
 
 static inline void
-vchess_write64(uint32_t reg, uint64_t val)
+numbat_write64(uint32_t reg, uint64_t val)
 {
         volatile uint64_t *ptr;
 
@@ -159,7 +159,7 @@ vchess_write64(uint32_t reg, uint64_t val)
 }
 
 static inline uint32_t
-vchess_read(uint32_t reg)
+numbat_read(uint32_t reg)
 {
         volatile uint32_t *ptr;
         uint32_t val;
@@ -171,7 +171,7 @@ vchess_read(uint32_t reg)
 }
 
 static inline uint64_t
-vchess_read64(uint32_t reg)
+numbat_read64(uint32_t reg)
 {
         volatile uint64_t *ptr;
         uint64_t val;
@@ -183,39 +183,39 @@ vchess_read64(uint32_t reg)
 }
 
 static inline int32_t
-vchess_initial_material_black(void)
+numbat_initial_material_black(void)
 {
         int32_t material;
 
-        material = (int32_t) vchess_read(141);
+        material = (int32_t) numbat_read(141);
 
         return material;
 }
 
 static inline int32_t
-vchess_initial_material_white(void)
+numbat_initial_material_white(void)
 {
         int32_t material;
 
-        material = (int32_t) vchess_read(142);
+        material = (int32_t) numbat_read(142);
 
         return material;
 }
 
 static inline uint32_t
-vchess_random(void)
+numbat_random(void)
 {
-        return vchess_read(254);
+        return numbat_read(254);
 }
 
 static inline void
-vchess_random_score_mask(uint32_t mask)
+numbat_random_score_mask(uint32_t mask)
 {
-        vchess_write(252, mask);
+        numbat_write(252, mask);
 }
 
 static inline void
-vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
+numbat_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
 {
         uint32_t val;
         uint32_t depth32;
@@ -228,36 +228,36 @@ vchess_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, u
         val = (uint32_t) eval;
         val &= ~(1 << 31);
         val |= (capture != 0) << 31;    // msbit of this reg stores capture flag
-        vchess_write(521, (uint32_t) val);
-        vchess_write(525, nodes);
+        numbat_write(521, (uint32_t) val);
+        numbat_write(525, nodes);
 
         val = depth32 << 8 | flag << 2 | entry_store;   // toggle store on
-        vchess_write(520, val);
+        numbat_write(520, val);
 
         val = depth32 << 8 | flag << 2; // toggle store off
-        vchess_write(520, val);
+        numbat_write(520, val);
 }
 
 static inline void
-vchess_trans_lookup(void)
+numbat_trans_lookup(void)
 {
         const uint32_t entry_lookup = 1 << 0;
 
-        vchess_write(520, entry_lookup);
-        vchess_write(520, 0);
+        numbat_write(520, entry_lookup);
+        numbat_write(520, 0);
 }
 
 static inline void
-vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
+numbat_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
                   uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
 {
         uint32_t val;
 
         if (eval)
-                *eval = (int32_t) vchess_read(514);
+                *eval = (int32_t) numbat_read(514);
         if (nodes)
-                *nodes = vchess_read(515);
-        val = vchess_read(512);
+                *nodes = numbat_read(515);
+        val = numbat_read(512);
         if (trans_idle)
                 *trans_idle = val & 0x1;
         if (entry_valid)
@@ -273,40 +273,40 @@ vchess_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_
 }
 
 static inline void
-vchess_trans_hash_only(void)
+numbat_trans_hash_only(void)
 {
         const uint32_t hash_only = 1 << 4;
 
-        vchess_write(520, hash_only);
-        vchess_write(520, 0);
+        numbat_write(520, hash_only);
+        numbat_write(520, 0);
 }
 
 static inline void
-vchess_trans_clear_table(void)
+numbat_trans_clear_table(void)
 {
         const uint32_t clear_trans = 1 << 5;
 
-        vchess_write(520, clear_trans);
-        vchess_write(520, 0);
+        numbat_write(520, clear_trans);
+        numbat_write(520, 0);
 }
 
 static inline uint64_t
-vchess_trans_hash(uint16_t * bits_79_64)
+numbat_trans_hash(uint16_t * bits_79_64)
 {
         uint64_t bits_31_0, bits_63_32;
         uint64_t hash;
 
-        bits_31_0 = vchess_read(522);
-        bits_63_32 = vchess_read(523);
+        bits_31_0 = numbat_read(522);
+        bits_63_32 = numbat_read(523);
         if (bits_79_64)
-                *bits_79_64 = vchess_read(524);
+                *bits_79_64 = numbat_read(524);
         hash = bits_63_32 << 32 | bits_31_0;
 
         return hash;
 }
 
 static inline int32_t
-vchess_trans_idle_wait(void)
+numbat_trans_idle_wait(void)
 {
         uint32_t counter;
         uint32_t trans_idle;
@@ -314,7 +314,7 @@ vchess_trans_idle_wait(void)
         counter = 0;
         do
         {
-                vchess_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                numbat_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
                 ++counter;
         }
         while (counter < 100 && !trans_idle);
@@ -327,7 +327,7 @@ trans_test_idle(const char *func, const char *file, int line)
 {
         uint32_t trans_idle;
 
-        vchess_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+        numbat_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
         if (!trans_idle)
         {
                 printf("%s: transposition table state machine is not idle, stopping. (%s %d)\n", func, file, line);
@@ -339,11 +339,11 @@ static inline void
 trans_lookup_init(void)
 {
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        vchess_trans_lookup();  // lookup hash will be calculated for board in most recent call to vchess_write_board_basic
+        numbat_trans_lookup();  // lookup hash will be calculated for board in most recent call to numbat_write_board_basic
 }
 
 static inline void
-vchess_q_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
+numbat_q_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
 {
         uint32_t val;
         uint32_t depth32;
@@ -356,36 +356,36 @@ vchess_q_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes,
         val = (uint32_t) eval;
         val &= ~(1 << 31);
         val |= (capture != 0) << 31;    // msbit of this reg stores capture flag
-        vchess_write(621, (uint32_t) val);
-        vchess_write(625, nodes);
+        numbat_write(621, (uint32_t) val);
+        numbat_write(625, nodes);
 
         val = depth32 << 8 | flag << 2 | entry_store;   // toggle store on
-        vchess_write(620, val);
+        numbat_write(620, val);
 
         val = depth32 << 8 | flag << 2; // toggle store off
-        vchess_write(620, val);
+        numbat_write(620, val);
 }
 
 static inline void
-vchess_q_trans_lookup(void)
+numbat_q_trans_lookup(void)
 {
         const uint32_t entry_lookup = 1 << 0;
 
-        vchess_write(620, entry_lookup);
-        vchess_write(620, 0);
+        numbat_write(620, entry_lookup);
+        numbat_write(620, 0);
 }
 
 static inline void
-vchess_q_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
+numbat_q_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
                     uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
 {
         uint32_t val;
 
         if (eval)
-                *eval = (int32_t) vchess_read(614);
+                *eval = (int32_t) numbat_read(614);
         if (nodes)
-                *nodes = vchess_read(615);
-        val = vchess_read(612);
+                *nodes = numbat_read(615);
+        val = numbat_read(612);
         if (trans_idle)
                 *trans_idle = val & 0x1;
         if (entry_valid)
@@ -401,40 +401,40 @@ vchess_q_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint3
 }
 
 static inline void
-vchess_q_trans_hash_only(void)
+numbat_q_trans_hash_only(void)
 {
         const uint32_t hash_only = 1 << 4;
 
-        vchess_write(620, hash_only);
-        vchess_write(620, 0);
+        numbat_write(620, hash_only);
+        numbat_write(620, 0);
 }
 
 static inline void
-vchess_q_trans_clear_table(void)
+numbat_q_trans_clear_table(void)
 {
         const uint32_t clear_trans = 1 << 5;
 
-        vchess_write(620, clear_trans);
-        vchess_write(620, 0);
+        numbat_write(620, clear_trans);
+        numbat_write(620, 0);
 }
 
 static inline uint64_t
-vchess_q_trans_hash(uint16_t * bits_79_64)
+numbat_q_trans_hash(uint16_t * bits_79_64)
 {
         uint64_t bits_31_0, bits_63_32;
         uint64_t hash;
 
-        bits_31_0 = vchess_read(622);
-        bits_63_32 = vchess_read(623);
+        bits_31_0 = numbat_read(622);
+        bits_63_32 = numbat_read(623);
         if (bits_79_64)
-                *bits_79_64 = vchess_read(624);
+                *bits_79_64 = numbat_read(624);
         hash = bits_63_32 << 32 | bits_31_0;
 
         return hash;
 }
 
 static inline int32_t
-vchess_q_trans_idle_wait(void)
+numbat_q_trans_idle_wait(void)
 {
         uint32_t counter;
         uint32_t trans_idle;
@@ -442,7 +442,7 @@ vchess_q_trans_idle_wait(void)
         counter = 0;
         do
         {
-                vchess_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                numbat_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
                 ++counter;
         }
         while (counter < 100 && !trans_idle);
@@ -455,7 +455,7 @@ q_trans_test_idle(const char *func, const char *file, int line)
 {
         uint32_t trans_idle;
 
-        vchess_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+        numbat_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
         if (!trans_idle)
         {
                 printf("%s: transposition table state machine is not idle, stopping. (%s %d)\n", func, file, line);
@@ -467,17 +467,17 @@ static inline void
 q_trans_lookup_init(void)
 {
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        vchess_q_trans_lookup();        // lookup hash will be calculated for board in most recent call to vchess_write_board_basic
+        numbat_q_trans_lookup();        // lookup hash will be calculated for board in most recent call to numbat_write_board_basic
 }
 
 static inline uint32_t
-vchess_misc_status(void)
+numbat_misc_status(void)
 {
-        return vchess_read(255);
+        return numbat_read(255);
 }
 
 static inline void
-vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves, uint32_t use_random_bit)
+numbat_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves, uint32_t use_random_bit)
 {
         uint32_t val;
 
@@ -487,11 +487,11 @@ vchess_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t cle
         clear_moves = (clear_moves != 0) << 1;
 
         val = soft_reset | new_board_valid | clear_moves;
-        vchess_write(0, val);
+        numbat_write(0, val);
 }
 
 static inline void
-vchess_write_board_misc(uint32_t white_to_move, uint32_t castle_mask, uint32_t en_passant_col)
+numbat_write_board_misc(uint32_t white_to_move, uint32_t castle_mask, uint32_t en_passant_col)
 {
         uint32_t val;
 
@@ -500,43 +500,43 @@ vchess_write_board_misc(uint32_t white_to_move, uint32_t castle_mask, uint32_t e
         en_passant_col &= 0xF;
 
         val = white_to_move | castle_mask | en_passant_col;
-        vchess_write(2, val);
+        numbat_write(2, val);
 }
 
 static inline void
-vchess_move_index(uint32_t move_index)
+numbat_move_index(uint32_t move_index)
 {
-        vchess_write(1, move_index);
+        numbat_write(1, move_index);
 }
 
 static inline void
-vchess_quiescence_moves(uint32_t quiescence_moves)
+numbat_quiescence_moves(uint32_t quiescence_moves)
 {
-        vchess_write(4, quiescence_moves);
+        numbat_write(4, quiescence_moves);
 }
 
 static inline void
-vchess_write_board_row(uint32_t row, uint32_t row_pieces)
+numbat_write_board_row(uint32_t row, uint32_t row_pieces)
 {
-        vchess_write(8 + row, row_pieces);
+        numbat_write(8 + row, row_pieces);
 }
 
 static inline void
-vchess_write_board_two_rows(uint32_t row0, uint64_t row_pieces0, uint64_t row_pieces1)
+numbat_write_board_two_rows(uint32_t row0, uint64_t row_pieces0, uint64_t row_pieces1)
 {
         uint64_t row_pieces;
 
         row_pieces = row_pieces1 << (uint64_t) 32 | row_pieces0;
-        vchess_write64(8 + row0, row_pieces);
+        numbat_write64(8 + row0, row_pieces);
 }
 
 static inline uint32_t
-vchess_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, uint32_t * stalemate,
+numbat_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, uint32_t * stalemate,
               uint32_t * thrice_rep, uint32_t * am_idle, uint32_t * fifty_move, uint32_t * insufficient, uint32_t * check)
 {
         uint32_t val;
 
-        val = vchess_read(0);
+        val = numbat_read(0);
         if (check)
                 *check = (val & (1 << 10)) != 0;
         if (insufficient)
@@ -560,32 +560,32 @@ vchess_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, ui
 }
 
 static inline uint32_t
-vchess_read_move_row(uint32_t row)
+numbat_read_move_row(uint32_t row)
 {
         uint32_t val;
 
-        val = vchess_read(172 + row);
+        val = numbat_read(172 + row);
 
         return val;
 }
 
 static inline uint64_t
-vchess_read_move_two_rows(uint32_t row0)
+numbat_read_move_two_rows(uint32_t row0)
 {
         uint64_t val;
 
-        val = vchess_read64(172 + row0);
+        val = numbat_read64(172 + row0);
 
         return val;
 }
 
 static inline uint64_t
-vchess_read_white_is_attacking(void)
+numbat_read_white_is_attacking(void)
 {
         uint64_t bits_lo, bits_hi, val;
 
-        bits_lo = vchess_read(128);
-        bits_hi = vchess_read(129);
+        bits_lo = numbat_read(128);
+        bits_hi = numbat_read(129);
 
         val = bits_hi << 31 | bits_lo;
 
@@ -593,12 +593,12 @@ vchess_read_white_is_attacking(void)
 }
 
 static inline uint64_t
-vchess_read_black_is_attacking(void)
+numbat_read_black_is_attacking(void)
 {
         uint64_t bits_lo, bits_hi, val;
 
-        bits_lo = vchess_read(130);
-        bits_hi = vchess_read(131);
+        bits_lo = numbat_read(130);
+        bits_hi = numbat_read(131);
 
         val = bits_hi << 31 | bits_lo;
 
@@ -606,12 +606,12 @@ vchess_read_black_is_attacking(void)
 }
 
 static inline uint32_t
-vchess_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint32_t * capture, uint32_t * thrice_rep, uint32_t * fifty_move,
+numbat_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint32_t * capture, uint32_t * thrice_rep, uint32_t * fifty_move,
                      uint32_t * pv)
 {
         uint32_t val;
 
-        val = vchess_read(132);
+        val = numbat_read(132);
         if (capture)
                 *capture = (val & (1 << 0)) != 0;
         if (white_in_check)
@@ -629,11 +629,11 @@ vchess_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint3
 }
 
 static inline uint32_t
-vchess_board_status1(uint32_t * white_to_move, uint32_t * castle_mask, uint32_t * en_passant_col)
+numbat_board_status1(uint32_t * white_to_move, uint32_t * castle_mask, uint32_t * en_passant_col)
 {
         uint32_t val;
 
-        val = vchess_read(133);
+        val = numbat_read(133);
         if (white_to_move)
                 *white_to_move = (val & (1 << 8)) != 0;
         if (castle_mask)
@@ -645,56 +645,56 @@ vchess_board_status1(uint32_t * white_to_move, uint32_t * castle_mask, uint32_t 
 }
 
 static inline int32_t
-vchess_move_eval(void)
+numbat_move_eval(void)
 {
         int32_t val;
 
-        val = (int32_t) vchess_read(134);
+        val = (int32_t) numbat_read(134);
 
         return val;
 }
 
 static inline int32_t
-vchess_initial_eval(void)
+numbat_initial_eval(void)
 {
         int32_t val;
 
-        val = (int32_t) vchess_read(136);
+        val = (int32_t) numbat_read(136);
 
         return val;
 }
 
 static inline uint32_t
-vchess_move_count(void)
+numbat_move_count(void)
 {
         int32_t val;
 
-        val = vchess_read(135);
+        val = numbat_read(135);
 
         return val;
 }
 
 static inline void
-vchess_repdet_write(uint32_t addr)
+numbat_repdet_write(uint32_t addr)
 {
-        vchess_write(0x12, 1 << 31 | addr);     // toggle write enable
-        vchess_write(0x12, addr);
+        numbat_write(0x12, 1 << 31 | addr);     // toggle write enable
+        numbat_write(0x12, addr);
 }
 
 static inline void
-vchess_repdet_depth(uint32_t depth)
+numbat_repdet_depth(uint32_t depth)
 {
-        vchess_write(0x10, depth);
+        numbat_write(0x10, depth);
 }
 
 static inline void
-vchess_repdet_castle_mask(uint32_t castle_mask)
+numbat_repdet_castle_mask(uint32_t castle_mask)
 {
-        vchess_write(0x11, castle_mask);
+        numbat_write(0x11, castle_mask);
 }
 
 static inline void
-vchess_repdet_board(const uint32_t board[8])
+numbat_repdet_board(const uint32_t board[8])
 {
         uint32_t i;
         uint64_t row_pieces0, row_pieces1, row_pieces;
@@ -704,31 +704,31 @@ vchess_repdet_board(const uint32_t board[8])
                 row_pieces0 = board[i + 0];
                 row_pieces1 = board[i + 1];
                 row_pieces = row_pieces1 << (uint64_t) 32 | row_pieces0;
-                vchess_write64(0x18 + i, row_pieces);
+                numbat_write64(0x18 + i, row_pieces);
         }
 }
 
 static inline void
-vchess_write_half_move(uint32_t half_move)
+numbat_write_half_move(uint32_t half_move)
 {
-        vchess_write(0x3, half_move);
+        numbat_write(0x3, half_move);
 }
 
 static inline uint32_t
-vchess_read_half_move(void)
+numbat_read_half_move(void)
 {
         uint32_t half_move;
 
-        half_move = vchess_read(138);
+        half_move = numbat_read(138);
 
         return half_move;
 }
 
 static inline void
-vchess_reset_all_moves(void)
+numbat_reset_all_moves(void)
 {
-        vchess_write_control(1, 0, 0, 0);       // soft reset, new board valid, clear moves
-        vchess_write_control(0, 0, 0, 0);
+        numbat_write_control(1, 0, 0, 0);       // soft reset, new board valid, clear moves
+        numbat_write_control(0, 0, 0, 0);
 }
 
 static inline uint32_t
@@ -762,20 +762,20 @@ killer_control(uint32_t clear, uint32_t update)
         uint32_t val;
 
         val = (clear != 0) << 1 | (update != 0) << 0;
-        vchess_write(1032, val);
+        numbat_write(1032, val);
 }
 
 static inline void
 killer_bonus(int32_t bonus0, int32_t bonus1)
 {
-        vchess_write(134, bonus0);
-        vchess_write(135, bonus1);
+        numbat_write(134, bonus0);
+        numbat_write(135, bonus1);
 }
 
 static inline void
 killer_ply(uint32_t ply)
 {
-        vchess_write(1033, ply);
+        numbat_write(1033, ply);
 }
 
 static inline void
@@ -784,7 +784,7 @@ killer_write_board_two_rows(uint32_t row0, uint64_t row_pieces0, uint64_t row_pi
         uint64_t row_pieces;
 
         row_pieces = row_pieces1 << (uint64_t) 32 | row_pieces0;
-        vchess_write64(1024 + row0, row_pieces);
+        numbat_write64(1024 + row0, row_pieces);
 }
 
 static inline void
@@ -837,7 +837,7 @@ pv_write_ctrl(uint32_t table_write, uint32_t table_clear, const uci_t * move, ui
         val |= ply << 16;       // UCI_WIDTH
         val |= table_entry_packed;
 
-        vchess_write(600, val);
+        numbat_write(600, val);
 }
 
 static inline void
@@ -858,18 +858,18 @@ extern void cleanup_platform(void);
 extern void platform_enable_interrupts(void);
 extern uint32_t cmd_transfer_data(uint8_t cmdbuf[512], uint32_t * index);
 
-extern void vchess_init(void);
-extern uint32_t vchess_move_piece(board_t * board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
-extern void vchess_init_board(board_t * board);
-extern void vchess_write_board_basic(const board_t * board);
-extern void vchess_write_board_wait(const board_t * board, uint32_t quiescence);
-extern void vchess_init_board(board_t * board);
-extern void vchess_print_board(const board_t * board, uint32_t initial_board);
-extern uint32_t vchess_read_board(board_t * board, uint32_t index);
-extern void vchess_place(board_t * board, uint32_t row, uint32_t col, uint32_t piece);
-extern uint32_t vchess_get_piece(const board_t * board, uint32_t row, uint32_t col);
-extern void vchess_repdet_entry(uint32_t index, const uint32_t board[8], uint32_t castle_mask);
-extern void vchess_read_uci(uci_t * uci);
+extern void numbat_init(void);
+extern uint32_t numbat_move_piece(board_t * board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
+extern void numbat_init_board(board_t * board);
+extern void numbat_write_board_basic(const board_t * board);
+extern void numbat_write_board_wait(const board_t * board, uint32_t quiescence);
+extern void numbat_init_board(board_t * board);
+extern void numbat_print_board(const board_t * board, uint32_t initial_board);
+extern uint32_t numbat_read_board(board_t * board, uint32_t index);
+extern void numbat_place(board_t * board, uint32_t row, uint32_t col, uint32_t piece);
+extern uint32_t numbat_get_piece(const board_t * board, uint32_t row, uint32_t col);
+extern void numbat_repdet_entry(uint32_t index, const uint32_t board[8], uint32_t castle_mask);
+extern void numbat_read_uci(uci_t * uci);
 
 extern void nm_init(void);
 extern board_t nm_top(const tc_t * tc);

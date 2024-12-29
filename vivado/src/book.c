@@ -10,7 +10,7 @@
 #include <xtime_l.h>
 #include <xil_printf.h>
 #include <ff.h>
-#include "vchess.h"
+#include "numbat.h"
 
 #pragma GCC optimize ("O2")
 
@@ -69,21 +69,21 @@ book_game_move(const board_t * board)
         uci_t uci;
         char uci_str[6];
 
-        vchess_write_board_basic(board);
-        vchess_trans_hash_only();
-        trans_idle = vchess_trans_idle_wait();
+        numbat_write_board_basic(board);
+        numbat_trans_hash_only();
+        trans_idle = numbat_trans_idle_wait();
         if (!trans_idle)
         {
                 xil_printf("%s: hash state machine idle timeout, stopping. (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
-        hash = vchess_trans_hash(&hash_extra);
+        hash = numbat_trans_hash(&hash_extra);
         found = book_move(hash_extra, hash, BOOK_MOST_COMMON, &uci);
         if (!found)
                 return 0;
 
-        vchess_write_board_wait(0, 0);
-        move_count = vchess_move_count();
+        numbat_write_board_wait(0, 0);
+        move_count = numbat_move_count();
         if (move_count == 0)
                 return 0;       // game is over
 
@@ -92,10 +92,10 @@ book_game_move(const board_t * board)
         i = 0;
         do
         {
-                status = vchess_read_board(&next_board, i);
+                status = numbat_read_board(&next_board, i);
                 if (status)
                 {
-                        xil_printf("%s: problem with vchess_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        xil_printf("%s: problem with numbat_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         return 0;
                 }
                 confirmed = uci_match(&uci, &next_board.uci);
@@ -157,11 +157,11 @@ book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t * uci)
                 sel_index = start_index;
                 break;
         case BOOK_RANDOM:
-                sel_index = vchess_random() % (end_index - start_index + 1) + start_index;
+                sel_index = numbat_random() % (end_index - start_index + 1) + start_index;
                 break;
         case BOOK_RANDOM_COMMON:
         default:
-                random_count = vchess_random() % book[start_index].count;
+                random_count = numbat_random() % book[start_index].count;
                 sel_index = end_index;
                 while (sel_index >= start_index && book[sel_index].count < random_count)
                         --sel_index;
@@ -363,16 +363,16 @@ book_build(void)
                         c = buffer;
                         do
                         {
-                                vchess_write_board_basic(&game[game_moves - 1]);
-                                vchess_trans_hash_only();
-                                trans_idle = vchess_trans_idle_wait();
+                                numbat_write_board_basic(&game[game_moves - 1]);
+                                numbat_trans_hash_only();
+                                trans_idle = numbat_trans_idle_wait();
                                 if (!trans_idle)
                                 {
                                         xil_printf("%s: hash state machine idle timeout, stopping. (%s %d)\n",
                                                    __PRETTY_FUNCTION__, __FILE__, __LINE__);
                                         while (1);
                                 }
-                                hash = vchess_trans_hash(&hash_extra);
+                                hash = numbat_trans_hash(&hash_extra);
                                 uci_str_ptr = strsep(&c, " \n\r");
                                 done = uci_str_ptr == 0;
                                 if (!done)

@@ -1,6 +1,6 @@
 CFLAGS := -Wall -g
 
-all:: vchesscomm
+all:: numbatcomm
 
 clean::
-	rm -f vchesscomm debug.log
+	rm -f numbatcomm debug.log

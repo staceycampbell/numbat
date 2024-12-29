@@ -13,7 +13,7 @@ srclist="`make evsrclist`"
 mkdir -p $etdir $etdir/et
 cp $srclist $etdir
 cp et.sv $etdir/et
-cp ../attack_mask.vh ../vchess.vh ../mobility*.vh ../evaluate*.vh $etdir
+cp ../attack_mask.vh ../numbat.vh ../mobility*.vh ../evaluate*.vh $etdir
 while [ $stop -eq 0 ]
 do
     gameno=`shuf -i 1-12998 -n 1`
@@ -37,10 +37,10 @@ do
         exit 1
     fi
     $etdir/et/et > $simout 2>&1
-    vchessscore=`fgrep 'eval=' $simout | sed -e 's/.*=//'`
-    if [ "$vchessscore" = '' ]
+    numbatscore=`fgrep 'eval=' $simout | sed -e 's/.*=//'`
+    if [ "$numbatscore" = '' ]
     then
-        echo $0: no vchess score 1>&2
+        echo $0: no numbat score 1>&2
         exit 1
     fi
     printf 'depth 1\nevtest %s\n' `basename $fenmove` | (cd /tmp && ~/src/crafty/src/crafty 2>&1 1>/dev/null) | fgrep 'score=' > $craftyout
@@ -55,8 +55,8 @@ do
     then
         craftyscore=`expr $craftyscore '*' '-1'`
     fi
-    printf "crafty=%d vchess=%d" $craftyscore $vchessscore
-    diff=`expr $craftyscore - $vchessscore`
+    printf "crafty=%d numbat=%d" $craftyscore $numbatscore
+    diff=`expr $craftyscore - $numbatscore`
     if [ $diff -lt 0 ]
     then
         diff=`expr $diff '*' -1`

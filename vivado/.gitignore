@@ -1,6 +1,6 @@
-vchess/
+numbat/
 vivado*.jou
 vivado*.log
 .Xil
 xrc.log
-vchess_workspace/
+numbat_workspace/

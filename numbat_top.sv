@@ -1,9 +1,9 @@
 // Copyright (c) 2025 Stacey Campbell
 // SPDX-License-Identifier: MIT
 
-`include "vchess.vh"
+`include "numbat.vh"
 
-module vchess_top
+module numbat_top
   (
    input         user_si570_sysclk_clk_n,
    input         user_si570_sysclk_clk_p,
@@ -826,7 +826,7 @@ endmodule
 // verilog-library-directories:(
 //     "."
 //     "/usr/local/Xilinx/Vivado/2022.1/data/verilog/src/unisims"
-//     "vivado/./vchess/vchess_1.gen/sources_1/bd/mpsoc_preset/hdl"
+//     "vivado/./numbat/numbat_1.gen/sources_1/bd/mpsoc_preset/hdl"
 //     )
 // End:
 

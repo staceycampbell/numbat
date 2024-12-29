@@ -12,7 +12,7 @@
 #include <xil_cache.h>
 #include <xuartps.h>
 #include <xtime_l.h>
-#include "vchess.h"
+#include "numbat.h"
 
 #pragma GCC optimize ("O2")
 
@@ -101,7 +101,7 @@ uci_dispatch(void)
                 return UCI_SEARCH_CONT;
         if (strcmp(p, "uci") == 0)
         {
-                uci_reply("id name fpgachess");
+                uci_reply("id name numbat");
                 uci_reply("id author Stacey Campbell");
                 uci_reply("option name OwnBook type check default true");
                 uci_reply("uciok");
@@ -132,7 +132,7 @@ uci_dispatch(void)
                 }
                 else if (strcmp(p, "startpos") == 0)
                 {
-                        vchess_write_half_move(0);
+                        numbat_write_half_move(0);
                         uci_init();
                 }
                 p = strstr(next, "moves");
@@ -297,29 +297,29 @@ uci_init(void)
 
         for (i = 2; i <= 5; ++i)
                 for (j = 0; j < 8; ++j)
-                        vchess_place(&game[0], i, j, EMPTY_POSN);
+                        numbat_place(&game[0], i, j, EMPTY_POSN);
         for (j = 0; j < 8; ++j)
         {
-                vchess_place(&game[0], 1, j, WHITE_PAWN);
-                vchess_place(&game[0], 6, j, BLACK_PAWN);
+                numbat_place(&game[0], 1, j, WHITE_PAWN);
+                numbat_place(&game[0], 6, j, BLACK_PAWN);
         }
-        vchess_place(&game[0], 0, 0, WHITE_ROOK);
-        vchess_place(&game[0], 0, 1, WHITE_KNIT);
-        vchess_place(&game[0], 0, 2, WHITE_BISH);
-        vchess_place(&game[0], 0, 3, WHITE_QUEN);
-        vchess_place(&game[0], 0, 4, WHITE_KING);
-        vchess_place(&game[0], 0, 5, WHITE_BISH);
-        vchess_place(&game[0], 0, 6, WHITE_KNIT);
-        vchess_place(&game[0], 0, 7, WHITE_ROOK);
+        numbat_place(&game[0], 0, 0, WHITE_ROOK);
+        numbat_place(&game[0], 0, 1, WHITE_KNIT);
+        numbat_place(&game[0], 0, 2, WHITE_BISH);
+        numbat_place(&game[0], 0, 3, WHITE_QUEN);
+        numbat_place(&game[0], 0, 4, WHITE_KING);
+        numbat_place(&game[0], 0, 5, WHITE_BISH);
+        numbat_place(&game[0], 0, 6, WHITE_KNIT);
+        numbat_place(&game[0], 0, 7, WHITE_ROOK);
 
-        vchess_place(&game[0], 7, 0, BLACK_ROOK);
-        vchess_place(&game[0], 7, 1, BLACK_KNIT);
-        vchess_place(&game[0], 7, 2, BLACK_BISH);
-        vchess_place(&game[0], 7, 3, BLACK_QUEN);
-        vchess_place(&game[0], 7, 4, BLACK_KING);
-        vchess_place(&game[0], 7, 5, BLACK_BISH);
-        vchess_place(&game[0], 7, 6, BLACK_KNIT);
-        vchess_place(&game[0], 7, 7, BLACK_ROOK);
+        numbat_place(&game[0], 7, 0, BLACK_ROOK);
+        numbat_place(&game[0], 7, 1, BLACK_KNIT);
+        numbat_place(&game[0], 7, 2, BLACK_BISH);
+        numbat_place(&game[0], 7, 3, BLACK_QUEN);
+        numbat_place(&game[0], 7, 4, BLACK_KING);
+        numbat_place(&game[0], 7, 5, BLACK_BISH);
+        numbat_place(&game[0], 7, 6, BLACK_KNIT);
+        numbat_place(&game[0], 7, 7, BLACK_ROOK);
 
         game[0].en_passant_col = 0 << EN_PASSANT_VALID_BIT;
         game[0].castle_mask = 0xF;
@@ -406,11 +406,11 @@ uci_move(char *p)
         next_board.uci.col_to = col_to;
         next_board.uci.promotion = promotion;
 
-        piece = vchess_get_piece(previous_board, row_from, col_from);
+        piece = numbat_get_piece(previous_board, row_from, col_from);
         piece_type = piece & ~(1 << BLACK_BIT);
 
         // unconditionally vacate "from" square
-        vchess_place(&next_board, row_from, col_from, EMPTY_POSN);
+        numbat_place(&next_board, row_from, col_from, EMPTY_POSN);
 
         if (row_to == 0)
         {
@@ -449,76 +449,76 @@ uci_move(char *p)
         // castling
         if (piece == WHITE_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 6)
         {
-                vchess_place(&next_board, row_from, 7, EMPTY_POSN);
-                vchess_place(&next_board, row_from, 5, WHITE_ROOK);
-                vchess_place(&next_board, row_from, 6, WHITE_KING);
+                numbat_place(&next_board, row_from, 7, EMPTY_POSN);
+                numbat_place(&next_board, row_from, 5, WHITE_ROOK);
+                numbat_place(&next_board, row_from, 6, WHITE_KING);
         }
         else if (piece == WHITE_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 2)
         {
-                vchess_place(&next_board, row_from, 0, EMPTY_POSN);
-                vchess_place(&next_board, row_from, 1, EMPTY_POSN);
-                vchess_place(&next_board, row_from, 3, WHITE_ROOK);
-                vchess_place(&next_board, row_from, 2, WHITE_KING);
+                numbat_place(&next_board, row_from, 0, EMPTY_POSN);
+                numbat_place(&next_board, row_from, 1, EMPTY_POSN);
+                numbat_place(&next_board, row_from, 3, WHITE_ROOK);
+                numbat_place(&next_board, row_from, 2, WHITE_KING);
         }
         else if (piece == BLACK_KING && row_from == 7 && row_to == 7 && col_from == 4 && col_to == 6)
         {
-                vchess_place(&next_board, row_from, 7, EMPTY_POSN);
-                vchess_place(&next_board, row_from, 5, BLACK_ROOK);
-                vchess_place(&next_board, row_from, 6, BLACK_KING);
+                numbat_place(&next_board, row_from, 7, EMPTY_POSN);
+                numbat_place(&next_board, row_from, 5, BLACK_ROOK);
+                numbat_place(&next_board, row_from, 6, BLACK_KING);
         }
         else if (piece == BLACK_KING && row_from == 7 && row_to == 7 && col_from == 4 && col_to == 2)
         {
-                vchess_place(&next_board, row_from, 0, EMPTY_POSN);
-                vchess_place(&next_board, row_from, 1, EMPTY_POSN);
-                vchess_place(&next_board, row_from, 3, BLACK_ROOK);
-                vchess_place(&next_board, row_from, 2, BLACK_KING);
+                numbat_place(&next_board, row_from, 0, EMPTY_POSN);
+                numbat_place(&next_board, row_from, 1, EMPTY_POSN);
+                numbat_place(&next_board, row_from, 3, BLACK_ROOK);
+                numbat_place(&next_board, row_from, 2, BLACK_KING);
         }
         // en-passant target
         else if (piece == WHITE_PAWN && row_from == 1 && row_to == 3)
         {
-                vchess_place(&next_board, row_to, col_to, WHITE_PAWN);
+                numbat_place(&next_board, row_to, col_to, WHITE_PAWN);
                 next_board.half_move_clock = 0;
                 next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
         }
         else if (piece == BLACK_PAWN && row_from == 6 && row_to == 4)
         {
-                vchess_place(&next_board, row_to, col_to, BLACK_PAWN);
+                numbat_place(&next_board, row_to, col_to, BLACK_PAWN);
                 next_board.half_move_clock = 0;
                 next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
         }
         // en-passant capture
-        else if (piece == WHITE_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
+        else if (piece == WHITE_PAWN && numbat_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
         {
-                vchess_place(&next_board, row_to, col_to, WHITE_PAWN);
-                vchess_place(&next_board, row_from, col_to, EMPTY_POSN);
+                numbat_place(&next_board, row_to, col_to, WHITE_PAWN);
+                numbat_place(&next_board, row_from, col_to, EMPTY_POSN);
                 next_board.capture = 1;
                 next_board.half_move_clock = 0;
         }
-        else if (piece == BLACK_PAWN && vchess_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
+        else if (piece == BLACK_PAWN && numbat_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
         {
-                vchess_place(&next_board, row_to, col_to, BLACK_PAWN);
-                vchess_place(&next_board, row_from, col_to, EMPTY_POSN);
+                numbat_place(&next_board, row_to, col_to, BLACK_PAWN);
+                numbat_place(&next_board, row_from, col_to, EMPTY_POSN);
                 next_board.capture = 1;
                 next_board.half_move_clock = 0;
         }
         // promotion
         else if (piece == WHITE_PAWN && row_to == 7)
         {
-                vchess_place(&next_board, 7, col_to, promotion);
-                next_board.capture = vchess_get_piece(previous_board, 7, col_to) != EMPTY_POSN;
+                numbat_place(&next_board, 7, col_to, promotion);
+                next_board.capture = numbat_get_piece(previous_board, 7, col_to) != EMPTY_POSN;
                 next_board.half_move_clock = 0;
         }
         else if (piece == BLACK_PAWN && row_to == 0)
         {
-                vchess_place(&next_board, 0, col_to, promotion);
-                next_board.capture = vchess_get_piece(previous_board, 7, col_to) != EMPTY_POSN;
+                numbat_place(&next_board, 0, col_to, promotion);
+                next_board.capture = numbat_get_piece(previous_board, 7, col_to) != EMPTY_POSN;
                 next_board.half_move_clock = 0;
         }
         // all other moves
         else
         {
-                vchess_place(&next_board, row_to, col_to, piece);
-                next_board.capture = vchess_get_piece(previous_board, row_to, col_to) != EMPTY_POSN;
+                numbat_place(&next_board, row_to, col_to, piece);
+                next_board.capture = numbat_get_piece(previous_board, row_to, col_to) != EMPTY_POSN;
                 if (next_board.capture || piece_type == PIECE_PAWN)
                         next_board.half_move_clock = 0;
         }

@@ -9,7 +9,7 @@ EVSRC := $(addprefix ../, evaluate.sv evaluate_bishops.sv evaluate_castling.sv e
 	evaluate_rooks.sv evaluate_tropism.sv popcount.sv latency_sm.sv board_attack.sv \
 	is_attacking.sv)
 TBSRC := display_board.sv display_is_attacking.sv
-HEADERS := $(addprefix ../, evaluate_general.vh evaluate_pawns.vh evaluate_tropism.vh vchess.vh attack_mask.vh mobility_mask.vh)
+HEADERS := $(addprefix ../, evaluate_general.vh evaluate_pawns.vh evaluate_tropism.vh numbat.vh attack_mask.vh mobility_mask.vh)
 
 all: tb et tbtrans amt
 

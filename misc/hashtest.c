@@ -6,7 +6,7 @@
 #include <memory.h>
 #include <malloc.h>
 #define EXCLUDE_VITIS 1
-#include "../vivado/src/vchess.h"
+#include "../vivado/src/numbat.h"
 
 #pragma GCC optimize ("O3")
 

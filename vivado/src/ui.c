@@ -10,7 +10,7 @@
 #include <xil_cache.h>
 #include <xuartps.h>
 #include <xtime_l.h>
-#include "vchess.h"
+#include "numbat.h"
 
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
@@ -50,11 +50,11 @@ do_both(void)
                 else
                 {
                         best_board = nm_top(&tc);
-                        vchess_write_board_basic(&best_board);
-                        vchess_write_board_wait(&best_board, 0);
-                        move_count = vchess_move_count();
-                        vchess_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, 0);
-                        vchess_reset_all_moves();
+                        numbat_write_board_basic(&best_board);
+                        numbat_write_board_wait(&best_board, 0);
+                        move_count = numbat_move_count();
+                        numbat_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, 0);
+                        numbat_reset_all_moves();
                         game[game_moves] = best_board;
                         ++game_moves;
                 }
@@ -65,7 +65,7 @@ do_both(void)
                                game_moves, GAME_MAX, __FILE__, __LINE__);
                         while (1);
                 }
-                vchess_print_board(&best_board, 1);
+                numbat_print_board(&best_board, 1);
                 fen_print(&best_board);
                 printf("\n");
                 key_hit = ui_data_available();
@@ -124,7 +124,7 @@ fen_print(const board_t * board)
                 empty = 0;
                 for (col = 0; col < 8; ++col)
                 {
-                        piece = vchess_get_piece(board, row, col);
+                        piece = numbat_get_piece(board, row, col);
                         if (piece == EMPTY_POSN)
                                 ++empty;
                         else
@@ -185,51 +185,51 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
                 switch (buffer[i])
                 {
                 case 'r':
-                        vchess_place(board, row, col, BLACK_ROOK);
+                        numbat_place(board, row, col, BLACK_ROOK);
                         ++col;
                         break;
                 case 'n':
-                        vchess_place(board, row, col, BLACK_KNIT);
+                        numbat_place(board, row, col, BLACK_KNIT);
                         ++col;
                         break;
                 case 'b':
-                        vchess_place(board, row, col, BLACK_BISH);
+                        numbat_place(board, row, col, BLACK_BISH);
                         ++col;
                         break;
                 case 'q':
-                        vchess_place(board, row, col, BLACK_QUEN);
+                        numbat_place(board, row, col, BLACK_QUEN);
                         ++col;
                         break;
                 case 'k':
-                        vchess_place(board, row, col, BLACK_KING);
+                        numbat_place(board, row, col, BLACK_KING);
                         ++col;
                         break;
                 case 'p':
-                        vchess_place(board, row, col, BLACK_PAWN);
+                        numbat_place(board, row, col, BLACK_PAWN);
                         ++col;
                         break;
                 case 'R':
-                        vchess_place(board, row, col, WHITE_ROOK);
+                        numbat_place(board, row, col, WHITE_ROOK);
                         ++col;
                         break;
                 case 'N':
-                        vchess_place(board, row, col, WHITE_KNIT);
+                        numbat_place(board, row, col, WHITE_KNIT);
                         ++col;
                         break;
                 case 'B':
-                        vchess_place(board, row, col, WHITE_BISH);
+                        numbat_place(board, row, col, WHITE_BISH);
                         ++col;
                         break;
                 case 'Q':
-                        vchess_place(board, row, col, WHITE_QUEN);
+                        numbat_place(board, row, col, WHITE_QUEN);
                         ++col;
                         break;
                 case 'K':
-                        vchess_place(board, row, col, WHITE_KING);
+                        numbat_place(board, row, col, WHITE_KING);
                         ++col;
                         break;
                 case 'P':
-                        vchess_place(board, row, col, WHITE_PAWN);
+                        numbat_place(board, row, col, WHITE_PAWN);
                         ++col;
                         break;
                 case '/':
@@ -245,7 +245,7 @@ fen_board(uint8_t buffer[BUF_SIZE], board_t * board)
                         stop_col = col + buffer[i] - '1';
                         while (col <= stop_col)
                         {
-                                vchess_place(board, row, col, EMPTY_POSN);
+                                numbat_place(board, row, col, EMPTY_POSN);
                                 ++col;
                         }
                         break;
@@ -343,19 +343,19 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         {
                 uint32_t move_ready, moves_ready, mate, stalemate, thrice_rep, fifty_move, insufficient, check;
 
-                status = vchess_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
+                status = numbat_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
                 printf("moves_ready=%d, mate=%d, stalemate=%d, thrice_rep=%d, fifty_move=%d, insufficient=%d, check=%d",
                        moves_ready, mate, stalemate, thrice_rep, fifty_move, insufficient, check);
                 if (moves_ready)
-                        printf(", moves=%d, eval=%d", vchess_move_count(), vchess_initial_eval());
+                        printf(", moves=%d, eval=%d", numbat_move_count(), numbat_initial_eval());
                 printf("\n");
         }
         else if (strcmp((char *)str, "read") == 0)
         {
                 move_index = arg1;
-                status = vchess_read_board(&board, move_index);
+                status = numbat_read_board(&board, move_index);
                 if (status == 0)
-                        vchess_print_board(&board, 0);
+                        numbat_print_board(&board, 0);
         }
         else if (strcmp((char *)str, "nm") == 0)
         {
@@ -367,11 +367,11 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         trans_clear_table();    // for ease of debug
                         q_trans_clear_table();    // for ease of debug
                         best_board = nm_top(&tc);
-                        vchess_write_board_basic(&best_board);
-                        vchess_write_board_wait(&best_board, 0);
-                        vchess_print_board(&best_board, 1);
+                        numbat_write_board_basic(&best_board);
+                        numbat_write_board_wait(&best_board, 0);
+                        numbat_print_board(&best_board, 1);
                         fen_print(&best_board);
-                        vchess_reset_all_moves();
+                        numbat_reset_all_moves();
                         game[game_moves] = best_board;
                         ++game_moves;
                 }
@@ -416,7 +416,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         else if (strcmp((char *)str, "print") == 0)
         {
                 if (game_moves > 0)
-                        vchess_print_board(&game[game_moves - 1], 1);
+                        numbat_print_board(&game[game_moves - 1], 1);
                 else
                         printf("No positions to print.\n");
         }
@@ -429,11 +429,11 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 if (game_moves > 0)
                 {
                         printf("last move in sample game:\n");
-                        vchess_write_board_basic(&game[game_moves - 1]);
-                        vchess_write_board_wait(&game[game_moves - 1], 0);
-                        vchess_print_board(&game[game_moves - 1], 1);
+                        numbat_write_board_basic(&game[game_moves - 1]);
+                        numbat_write_board_wait(&game[game_moves - 1], 0);
+                        numbat_print_board(&game[game_moves - 1], 1);
                         fen_print(&game[game_moves - 1]);
-                        vchess_reset_all_moves();
+                        numbat_reset_all_moves();
                 }
                 else
                         printf("%s: no moves found in sample\n", __PRETTY_FUNCTION__);
@@ -449,7 +449,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         }
         else if (strcmp((char *)str, "mstatus") == 0)
         {
-                printf("misc_status=%08X\n", vchess_misc_status());
+                printf("misc_status=%08X\n", numbat_misc_status());
         }
         else if (strcmp((char *)str, "bbook") == 0)
         {
@@ -471,29 +471,29 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 uci_move("c7c5");
                 uci_move("g1f3");
                 uci_move("d7d6");
-                vchess_write_board_basic(&game[game_moves - 1]);
-                vchess_trans_hash_only();
-                trans_idle = vchess_trans_idle_wait();
+                numbat_write_board_basic(&game[game_moves - 1]);
+                numbat_trans_hash_only();
+                trans_idle = numbat_trans_idle_wait();
                 if (!trans_idle)
                 {
                         printf("%s: hash state machine idle timeout, stopping. (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         while (1);
                 }
-                hash = vchess_trans_hash(&hash_extra);
+                hash = numbat_trans_hash(&hash_extra);
                 status = book_move(hash_extra, hash, BOOK_RANDOM_COMMON, &uci);
                 if (!status)
                         printf("no book move found\n");
         }
         else if (strcmp((char *)str, "rand") == 0)
         {
-                printf("%08X\n", vchess_random());
+                printf("%08X\n", numbat_random());
         }
         else if (strcmp((char *)str, "rmask") == 0)
         {
                 uint32_t rmask = arg1;
 
                 printf("random score mask: 0x%04X\n", rmask);
-                vchess_random_score_mask(rmask);
+                numbat_random_score_mask(rmask);
         }
         else if (strcmp((char *)str, "tc") == 0)
         {

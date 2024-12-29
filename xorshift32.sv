@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Stacey Campbell
 // SPDX-License-Identifier: MIT
 
-`include "vchess.vh"
+`include "numbat.vh"
 
 module xorshift32
   (
