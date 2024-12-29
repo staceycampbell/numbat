@@ -75,7 +75,7 @@ book_game_move(const board_t * board)
                 while (1);
         }
         hash = vchess_trans_hash(&hash_extra);
-        found = book_move(hash_extra, hash, BOOK_RANDOM_COMMON, &uci);
+        found = book_move(hash_extra, hash, BOOK_MOST_COMMON, &uci);
         if (!found)
                 return 0;
 
