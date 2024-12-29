@@ -334,7 +334,7 @@ proc create_root_design { parentCell } {
   set_property -dict [list \
     CONFIG.Memory_Type {Single_Port_RAM} \
     CONFIG.PRIM_type_to_Implement {URAM} \
-    CONFIG.READ_LATENCY_A {8} \
+    CONFIG.READ_LATENCY_A {6} \
     CONFIG.READ_LATENCY_B {4} \
   ] $q_uram
 
