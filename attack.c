@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Stacey Campbell
+// SPDX-License-Identifier: MIT
+
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>

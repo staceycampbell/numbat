@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Stacey Campbell
+// SPDX-License-Identifier: MIT
+
 #include <xparameters.h>
 #include <xparameters_ps.h>
 #include <xil_cache.h>

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Stacey Campbell
+// SPDX-License-Identifier: MIT
+
 module sync
   (
    input  clk,

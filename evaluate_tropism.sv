@@ -1,6 +1,7 @@
-`include "vchess.vh"
+// Copyright (c) 2025 Stacey Campbell
+// SPDX-License-Identifier: MIT
 
-// crafty tropism, mostly complete
+`include "vchess.vh"
 
 module evaluate_tropism #
   (
