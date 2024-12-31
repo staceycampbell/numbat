@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <xtime_l.h>
-#include <xil_io.h>
 #include "numbat.h"
 
 #pragma GCC optimize ("O2")
@@ -24,7 +23,7 @@ extern uint32_t game_moves;
 static uint32_t repdet_game_moves;
 
 static uint64_t all_moves_ticks;
-static uint32_t nodes_visited, q_nodes_visited, trans_collision, no_trans, q_trans_collision, q_no_trans;
+static uint32_t nodes_visited, q_nodes_visited, trans_collision, no_trans, q_no_trans;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
 static int32_t q_ply_reached, valid_q_ply_reached;
@@ -146,27 +145,48 @@ rep_table_load(const board_t * board, uint32_t ply)
         numbat_repdet_depth(entries);
 }
 
-static int32_t
-load_positions(board_t boards[MAX_POSITIONS])
+static uint32_t
+load_root_nodes(board_t boards[MAX_POSITIONS])
 {
-        int32_t i;
+        int32_t i, mate_index;
         uint32_t moves_ready, move_count;
+        uint32_t mate;
 
         numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
         if (!moves_ready)
         {
                 printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                return -1;
+                return 0;
         }
         move_count = numbat_move_count();
         if (move_count == 0)
         {
                 printf("%s: no moves available (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                return -2;
+                return 0;
         }
+        mate_index = -1;
+        mate = 0;
         for (i = 0; i < move_count; ++i)
+        {
                 numbat_read_board(&boards[i], i);
-        return move_count;
+                if (boards[i].white_to_move)
+                {
+                        if (boards[i].eval == GLOBAL_VALUE_KING)
+                        {
+                                mate_index = i;
+                                mate = 1;
+                        }
+                        else if (boards[i].eval == -GLOBAL_VALUE_KING)
+                        {
+                                mate_index = i;
+                                mate = 1;
+                        }
+                }
+        }
+        if (mate)
+                boards[0] = boards[mate_index];
+
+        return mate;
 }
 
 static inline int32_t
@@ -261,12 +281,18 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
                 return value;
 
         if (value > alpha)
+        {
                 alpha = value;
-
-        // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
-        endgame = numbat_initial_material_black() < 1700 && numbat_initial_material_white() < 1700;
-        if (!endgame && value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
-                return alpha;
+                pv_array[pv_index] = board->uci;
+                local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+        }
+        else
+        {
+                // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
+                endgame = numbat_initial_material_black() < 1700 && numbat_initial_material_white() < 1700;
+                if (!endgame && value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
+                        return alpha;
+        }
 
         abort_test();
         if (abort_search)
@@ -314,7 +340,6 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 
         numbat_write_board_basic(board);
         q_trans_lookup(&trans, &collision);
-        q_trans_collision += collision;
         if (!trans.entry_valid)
         {
                 trans.eval = alpha;
@@ -524,6 +549,7 @@ nm_top(const tc_t * tc)
         int32_t i, game_index;
         int32_t alpha, beta;
         int32_t depth_limit;
+        uint32_t mate;
         uint32_t move_count;
         uint64_t elapsed_ticks;
         int64_t duration_seconds;
@@ -550,7 +576,6 @@ nm_top(const tc_t * tc)
         no_trans = 0;
         trans_collision = 0;
         q_no_trans = 0;
-        q_trans_collision = 0;
         all_moves_ticks = 0;
 
         numbat_reset_all_moves();
@@ -567,17 +592,16 @@ nm_top(const tc_t * tc)
         tc_display(tc);
         printf(" - %s to move - ", best_board.white_to_move ? "white" : "black");
 
-        load_positions(root_node_boards);
+        mate = load_root_nodes(root_node_boards);
+        best_board = root_node_boards[0];
+        if (move_count == 1 || mate)
+        {
+                printf("one move possible or mate\n");
+                return best_board;
+        }
 
         numbat_reset_all_moves();
         rep_table_init(0);
-
-        best_board = root_node_boards[0];
-        if (move_count == 1)
-        {
-                printf("one move possible\n");
-                return best_board;
-        }
 
         for (i = 0; i < move_count; ++i)
                 board_ptr[i] = &root_node_boards[i];
@@ -662,9 +686,7 @@ nm_top(const tc_t * tc)
                trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
                ((double)trans_collision * 100.0) / (double)nodes_visited);
         if (q_nodes_visited > 0)
-                printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%), q_trans_collision=%u (%.2f%%)\n", q_no_trans,
-                       q_trans_hit, ((double)q_trans_hit * 100.0) / (double)q_nodes_visited, q_trans_collision,
-                       ((double)q_trans_collision * 100.0) / (double)q_nodes_visited);
+                printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%)\n", q_no_trans, q_trans_hit, ((double)q_trans_hit * 100.0) / (double)q_nodes_visited);
 
         return best_board;
 }
