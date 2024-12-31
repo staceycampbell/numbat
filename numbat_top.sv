@@ -3,26 +3,7 @@
 
 `include "numbat.vh"
 
-module numbat_top
-  (
-   input         user_si570_sysclk_clk_n,
-   input         user_si570_sysclk_clk_p,
-
-   output        ddr4_sdram_062_act_n,
-   output [16:0] ddr4_sdram_062_adr,
-   output [1:0]  ddr4_sdram_062_ba,
-   output        ddr4_sdram_062_bg,
-   output        ddr4_sdram_062_ck_c,
-   output        ddr4_sdram_062_ck_t,
-   output        ddr4_sdram_062_cke,
-   output        ddr4_sdram_062_cs_n,
-   inout [7:0]   ddr4_sdram_062_dm_n,
-   inout [63:0]  ddr4_sdram_062_dq,
-   inout [7:0]   ddr4_sdram_062_dqs_c,
-   inout [7:0]   ddr4_sdram_062_dqs_t,
-   output        ddr4_sdram_062_odt,
-   output        ddr4_sdram_062_reset_n
-   );
+module numbat_top;
 
    // 1 for fast debug builds, 0 for release
    localparam EVAL_MOBILITY_DISABLE = 0;
@@ -34,7 +15,7 @@ module numbat_top
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, row/col to, row/col from
    localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
 
-   localparam TRANS_ADDRESS_WIDTH = 32;
+   localparam TRANS_ADDRESS_WIDTH = 36;
    localparam Q_TRANS_ADDRESS_WIDTH = 21;
 
    integer       i;
@@ -91,11 +72,6 @@ module numbat_top
    wire [63:0]          am_white_is_attacking_out;// From all_moves of all_moves.v
    wire                 am_white_to_move_in;    // From control of control.v
    wire                 am_white_to_move_out;   // From all_moves of all_moves.v
-   wire                 c0_ddr4_ui_clk;         // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 c0_ddr4_ui_clk_sync_rst;// From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 c0_ddr4_ui_clk_sync_rst_out;// From sync_c0_ddr4_ui_clk_sync_rst of sync.v
-   wire                 c0_init_calib_complete; // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 c0_init_calib_complete_out;// From sync_c0_init_calib_complete of sync.v
    wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
    wire [0:0]           ctrl0_axi_arready;      // From control of control.v
@@ -247,9 +223,9 @@ module numbat_top
    wire [31:0]          xorshift32_reg;         // From xorshift32 of xorshift32.v
    // End of automatics
 
-   wire [31:0]                   misc_status = {c0_ddr4_ui_clk_sync_rst_out, c0_init_calib_complete_out};
+   wire [31:0]                      misc_status = 0;
 
-   wire                          clk = digclk;
+   wire                             clk = digclk;
 
    initial
      begin
@@ -377,6 +353,7 @@ module numbat_top
     );*/
    trans #
      (
+      .ADDRESS_SEL (0), // DDR4
       .ADDRESS_WIDTH (TRANS_ADDRESS_WIDTH),
       .MEM_SIZE_BYTES (2 * 1024 * 1024 * 1024), // 2GByte DDR4
       .EVAL_WIDTH (EVAL_WIDTH)
@@ -456,6 +433,7 @@ module numbat_top
     );*/
    trans #
      (
+      .ADDRESS_SEL (1), // URAM
       .ADDRESS_WIDTH (Q_TRANS_ADDRESS_WIDTH),
       .MEM_SIZE_BYTES ((1 << Q_TRANS_ADDRESS_WIDTH) * 128 / 8), // 2097152 bytes of URAM
       .EVAL_WIDTH (EVAL_WIDTH)
@@ -682,9 +660,6 @@ module numbat_top
    mpsoc_preset_wrapper mpsoc_preset_wrapper
      (/*AUTOINST*/
       // Outputs
-      .c0_ddr4_ui_clk                   (c0_ddr4_ui_clk),
-      .c0_ddr4_ui_clk_sync_rst          (c0_ddr4_ui_clk_sync_rst),
-      .c0_init_calib_complete           (c0_init_calib_complete),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
@@ -696,16 +671,6 @@ module numbat_top
       .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
       .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
       .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
-      .ddr4_sdram_062_act_n             (ddr4_sdram_062_act_n),
-      .ddr4_sdram_062_adr               (ddr4_sdram_062_adr[16:0]),
-      .ddr4_sdram_062_ba                (ddr4_sdram_062_ba[1:0]),
-      .ddr4_sdram_062_bg                (ddr4_sdram_062_bg),
-      .ddr4_sdram_062_ck_c              (ddr4_sdram_062_ck_c),
-      .ddr4_sdram_062_ck_t              (ddr4_sdram_062_ck_t),
-      .ddr4_sdram_062_cke               (ddr4_sdram_062_cke),
-      .ddr4_sdram_062_cs_n              (ddr4_sdram_062_cs_n),
-      .ddr4_sdram_062_odt               (ddr4_sdram_062_odt),
-      .ddr4_sdram_062_reset_n           (ddr4_sdram_062_reset_n),
       .digclk                           (digclk),
       .q_trans_axi_arready              (q_trans_axi_arready),
       .q_trans_axi_awready              (q_trans_axi_awready),
@@ -726,11 +691,6 @@ module numbat_top
       .trans_axi_rresp                  (trans_axi_rresp[1:0]),
       .trans_axi_rvalid                 (trans_axi_rvalid),
       .trans_axi_wready                 (trans_axi_wready),
-      // Inouts
-      .ddr4_sdram_062_dm_n              (ddr4_sdram_062_dm_n[7:0]),
-      .ddr4_sdram_062_dq                (ddr4_sdram_062_dq[63:0]),
-      .ddr4_sdram_062_dqs_c             (ddr4_sdram_062_dqs_c[7:0]),
-      .ddr4_sdram_062_dqs_t             (ddr4_sdram_062_dqs_t[7:0]),
       // Inputs
       .ctrl0_axi_arready                (ctrl0_axi_arready),
       .ctrl0_axi_awready                (ctrl0_axi_awready),
@@ -740,7 +700,7 @@ module numbat_top
       .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
       .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid),
       .ctrl0_axi_wready                 (ctrl0_axi_wready),
-      .q_trans_axi_araddr               (q_trans_axi_araddr[20:0]),
+      .q_trans_axi_araddr               (q_trans_axi_araddr[13:0]),
       .q_trans_axi_arburst              (q_trans_axi_arburst[1:0]),
       .q_trans_axi_arcache              (q_trans_axi_arcache[3:0]),
       .q_trans_axi_arlen                (q_trans_axi_arlen[7:0]),
@@ -748,7 +708,7 @@ module numbat_top
       .q_trans_axi_arprot               (q_trans_axi_arprot[2:0]),
       .q_trans_axi_arsize               (q_trans_axi_arsize[2:0]),
       .q_trans_axi_arvalid              (q_trans_axi_arvalid),
-      .q_trans_axi_awaddr               (q_trans_axi_awaddr[20:0]),
+      .q_trans_axi_awaddr               (q_trans_axi_awaddr[13:0]),
       .q_trans_axi_awburst              (q_trans_axi_awburst[1:0]),
       .q_trans_axi_awcache              (q_trans_axi_awcache[3:0]),
       .q_trans_axi_awlen                (q_trans_axi_awlen[7:0]),
@@ -762,7 +722,7 @@ module numbat_top
       .q_trans_axi_wlast                (q_trans_axi_wlast),
       .q_trans_axi_wstrb                (q_trans_axi_wstrb[15:0]),
       .q_trans_axi_wvalid               (q_trans_axi_wvalid),
-      .trans_axi_araddr                 (trans_axi_araddr[31:0]),
+      .trans_axi_araddr                 (trans_axi_araddr[35:0]),
       .trans_axi_arburst                (trans_axi_arburst[1:0]),
       .trans_axi_arcache                (trans_axi_arcache[3:0]),
       .trans_axi_arlen                  (trans_axi_arlen[7:0]),
@@ -772,7 +732,7 @@ module numbat_top
       .trans_axi_arregion               (trans_axi_arregion[3:0]),
       .trans_axi_arsize                 (trans_axi_arsize[2:0]),
       .trans_axi_arvalid                (trans_axi_arvalid),
-      .trans_axi_awaddr                 (trans_axi_awaddr[31:0]),
+      .trans_axi_awaddr                 (trans_axi_awaddr[35:0]),
       .trans_axi_awburst                (trans_axi_awburst[1:0]),
       .trans_axi_awcache                (trans_axi_awcache[3:0]),
       .trans_axi_awlen                  (trans_axi_awlen[7:0]),
@@ -787,37 +747,7 @@ module numbat_top
       .trans_axi_wdata                  (trans_axi_wdata[127:0]),
       .trans_axi_wlast                  (trans_axi_wlast),
       .trans_axi_wstrb                  (trans_axi_wstrb[15:0]),
-      .trans_axi_wvalid                 (trans_axi_wvalid),
-      .user_si570_sysclk_clk_n          (user_si570_sysclk_clk_n),
-      .user_si570_sysclk_clk_p          (user_si570_sysclk_clk_p));
-
-   /* sync AUTO_TEMPLATE (
-    .clk (clk),
-    .async_in (c0_ddr4_ui_clk_sync_rst),
-    .sync_out (c0_ddr4_ui_clk_sync_rst_out),
-    );*/
-   sync sync_c0_ddr4_ui_clk_sync_rst
-     (/*AUTOINST*/
-      // Outputs
-      .sync_out                         (c0_ddr4_ui_clk_sync_rst_out), // Templated
-      // Inputs
-      .clk                              (clk),                   // Templated
-      .async_in                         (c0_ddr4_ui_clk_sync_rst)); // Templated
-
-   /* sync AUTO_TEMPLATE (
-    .clk (clk),
-    .async_in (c0_init_calib_complete),
-    .sync_out (c0_init_calib_complete_out),
-    );*/
-   sync sync_c0_init_calib_complete
-     (/*AUTOINST*/
-      // Outputs
-      .sync_out                         (c0_init_calib_complete_out), // Templated
-      // Inputs
-      .clk                              (clk),                   // Templated
-      .async_in                         (c0_init_calib_complete)); // Templated
-
-   genvar                        c;
+      .trans_axi_wvalid                 (trans_axi_wvalid));
 
 endmodule
 

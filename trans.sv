@@ -5,6 +5,7 @@
 
 module trans #
   (
+   parameter ADDRESS_SEL = 0, // 0 - DDR4, 1 - URAM
    parameter ADDRESS_WIDTH = 0,
    parameter MEM_SIZE_BYTES = 0,
    parameter EVAL_WIDTH = 0
@@ -51,7 +52,7 @@ module trans #
     input                                 trans_axi_rvalid,
     input                                 trans_axi_wready,
    
-    output reg [ADDRESS_WIDTH - 1:0]                     trans_axi_araddr,
+    output reg [ADDRESS_WIDTH - 1:0]      trans_axi_araddr,
     output [1:0]                          trans_axi_arburst,
     output [3:0]                          trans_axi_arcache,
     output [7:0]                          trans_axi_arlen,
@@ -60,7 +61,7 @@ module trans #
     output [3:0]                          trans_axi_arqos,
     output [2:0]                          trans_axi_arsize,
     output reg                            trans_axi_arvalid,
-    output reg [ADDRESS_WIDTH - 1:0]                     trans_axi_awaddr,
+    output reg [ADDRESS_WIDTH - 1:0]      trans_axi_awaddr,
     output [1:0]                          trans_axi_awburst,
     output [3:0]                          trans_axi_awcache,
     output [7:0]                          trans_axi_awlen,
@@ -83,8 +84,6 @@ module trans #
 
    localparam HASH_USED = 64;
 
-   localparam BASE_ADDRESS = 32'h00000000; // AXI4 byte address for base of memory
-   // localparam MEM_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GByte DDR4
    localparam MEM_ADDR_WIDTH = $clog2(MEM_SIZE_BYTES);
    localparam TABLE_SIZE_LOG2 = $clog2(MEM_SIZE_BYTES) + $clog2(8) - $clog2(128); // e.g. 2^27 * 128 bits for 2GByte
    localparam TABLE_SIZE = 1 << TABLE_SIZE_LOG2;
@@ -115,7 +114,7 @@ module trans #
    reg [79:0]                             hash_1 [15:0];
    reg [79:0]                             hash_2 [ 3:0];
    reg [79:0]                             hash_side;
-   reg [79:0]                             hash;
+   reg [79:0]                             hash = 0;
 
    reg                                    entry_store, entry_lookup, hash_only, clear_trans;
    reg                                    clear_trans_r;
@@ -155,7 +154,10 @@ module trans #
 
    wire [HASH_USED - 1:0]                 store_hash = hash[HASH_USED - 1:0];
 
-   wire [MEM_ADDR_WIDTH - 1:0]            hash_address = BASE_ADDRESS + (hash << $clog2(128 / 8)); // axi4 byte address for 128 bit table entry
+   wire [ADDRESS_WIDTH - 1:0]             base_address = ADDRESS_SEL == 0 ? 36'h800000000 : 0;
+   wire [MEM_ADDR_WIDTH - 1:0]            table_byte_offset = (hash << $clog2(128 / 8));
+   wire [ADDRESS_WIDTH - 1:0]             hash_address = base_address | table_byte_offset;
+   
    wire [127:0]                           store = {valid_wr, capture, nodes[`TRANS_NODES_WIDTH - 1:0], depth[7:0],
                                                    flag[1:0], eval[EVAL_WIDTH - 1:0], store_hash[HASH_USED - 1:0]};
 
@@ -171,7 +173,7 @@ module trans #
    assign trans_axi_awprot = 3'b000; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq
    assign trans_axi_awqos = 4'b0; // no QOS scheme
    assign trans_axi_awburst = 2'b01; // incrementing address
-   assign trans_axi_awcache = 4'b0000; // non-cacheable
+   assign trans_axi_awcache = 4'b0000; // no cache coherency
    assign trans_axi_awsize = 3'b100; // 128 bits (16 bytes) per beat
    assign trans_axi_bready = 1'b1; // can always accept a write response
    assign trans_axi_wstrb = 16'hffff; // all byte lanes valid always
@@ -180,7 +182,7 @@ module trans #
    assign trans_axi_wvalid = clear_trans ? start_data && burst_counter < BURST_TICK_TOTAL : local_wvalid;
 
    assign trans_axi_arburst = 2'b00; // fixed address (not incrementing burst)
-   assign trans_axi_arcache = 4'b0000; // non-cacheable
+   assign trans_axi_arcache = 4'b0000; // no cache coherency
    assign trans_axi_arlen = 8'h00; // one ready per transaction
    assign trans_axi_arlock = 1'b0; // normal access
    assign trans_axi_arprot = 3'b000; // https://support.xilinx.com/s/question/0D52E00006iHqdESAS/accessing-ddr-from-pl-on-zynq

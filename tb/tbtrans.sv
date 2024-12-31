@@ -71,7 +71,7 @@ module tbtrans;
    wire [1:0]           flag_out;               // From trans of trans.v
    wire [79:0]          hash_out;               // From trans of trans.v
    wire [`TRANS_NODES_WIDTH-1:0] nodes_out;     // From trans of trans.v
-   wire [31:0]          trans_axi_araddr;       // From trans of trans.v
+   wire [35:0]          trans_axi_araddr;       // From trans of trans.v
    wire [1:0]           trans_axi_arburst;      // From trans of trans.v
    wire [3:0]           trans_axi_arcache;      // From trans of trans.v
    wire [7:0]           trans_axi_arlen;        // From trans of trans.v
@@ -81,7 +81,7 @@ module tbtrans;
    wire [3:0]           trans_axi_arregion;     // From trans of trans.v
    wire [2:0]           trans_axi_arsize;       // From trans of trans.v
    wire                 trans_axi_arvalid;      // From trans of trans.v
-   wire [31:0]          trans_axi_awaddr;       // From trans of trans.v
+   wire [35:0]          trans_axi_awaddr;       // From trans of trans.v
    wire [1:0]           trans_axi_awburst;      // From trans of trans.v
    wire [3:0]           trans_axi_awcache;      // From trans of trans.v
    wire [7:0]           trans_axi_awlen;        // From trans of trans.v
@@ -182,7 +182,8 @@ module tbtrans;
     );*/
    trans #
      (
-      .ADDRESS_WIDTH (32),
+      .ADDRESS_SEL (0),
+      .ADDRESS_WIDTH (36),
       .MEM_SIZE_BYTES (2 * 1024 * 1024 * 1024),
       .EVAL_WIDTH (EVAL_WIDTH)
       )
@@ -198,7 +199,7 @@ module tbtrans;
       .capture_out                      (capture_out),
       .collision_out                    (collision_out),
       .hash_out                         (hash_out[79:0]),
-      .trans_axi_araddr                 (trans_axi_araddr[31:0]),
+      .trans_axi_araddr                 (trans_axi_araddr[35:0]),
       .trans_axi_arburst                (trans_axi_arburst[1:0]),
       .trans_axi_arcache                (trans_axi_arcache[3:0]),
       .trans_axi_arlen                  (trans_axi_arlen[7:0]),
@@ -207,7 +208,7 @@ module tbtrans;
       .trans_axi_arqos                  (trans_axi_arqos[3:0]),
       .trans_axi_arsize                 (trans_axi_arsize[2:0]),
       .trans_axi_arvalid                (trans_axi_arvalid),
-      .trans_axi_awaddr                 (trans_axi_awaddr[31:0]),
+      .trans_axi_awaddr                 (trans_axi_awaddr[35:0]),
       .trans_axi_awburst                (trans_axi_awburst[1:0]),
       .trans_axi_awcache                (trans_axi_awcache[3:0]),
       .trans_axi_awlen                  (trans_axi_awlen[7:0]),

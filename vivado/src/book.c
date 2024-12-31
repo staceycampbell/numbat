@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <xtime_l.h>
-#include <xil_printf.h>
 #include <ff.h>
 #include "numbat.h"
 
@@ -74,7 +73,7 @@ book_game_move(const board_t * board)
         trans_idle = numbat_trans_idle_wait();
         if (!trans_idle)
         {
-                xil_printf("%s: hash state machine idle timeout, stopping. (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                printf("%s: hash state machine idle timeout, stopping. (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
         hash = numbat_trans_hash(&hash_extra);
@@ -95,7 +94,7 @@ book_game_move(const board_t * board)
                 status = numbat_read_board(&next_board, i);
                 if (status)
                 {
-                        xil_printf("%s: problem with numbat_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        printf("%s: problem with numbat_read_board (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         return 0;
                 }
                 confirmed = uci_match(&uci, &next_board.uci);
@@ -105,7 +104,7 @@ book_game_move(const board_t * board)
 
         if (!confirmed)
         {
-                xil_printf("%s: book returned move %s that is not in all_moves!\n", __PRETTY_FUNCTION__, uci_str);
+                printf("%s: book returned move %s that is not in all_moves!\n", __PRETTY_FUNCTION__, uci_str);
                 return 0;
         }
 
@@ -188,7 +187,7 @@ book_open(void)
                 status = f_mount(&fatfs, sd_path, 0);
                 if (status != FR_OK)
                 {
-                        xil_printf("%s: SD filesystem mount failed (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        printf("%s: SD filesystem mount failed (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         return -2;
                 }
                 fs_init = 1;
@@ -196,27 +195,29 @@ book_open(void)
         status = f_open(&fp, book_bin_fn, FA_READ);
         if (status != FR_OK)
         {
-                xil_printf("%s: cannot read %s\n", __PRETTY_FUNCTION__, book_bin_fn);
+                printf("%s: cannot read %s\n", __PRETTY_FUNCTION__, book_bin_fn);
                 return -1;
         }
         bytes = f_size(&fp);
         book_count = bytes / sizeof(book_t);
+	printf("%s: attempting to malloc %d (0x%08X) bytes\n", __PRETTY_FUNCTION__, bytes, bytes);
+	
         book = (book_t *) malloc(bytes);
         if (book == 0)
         {
-                xil_printf("%s: book malloc failed with %d entries\n", __PRETTY_FUNCTION__, book_count);
+                printf("%s: book malloc failed with %d entries\n", __PRETTY_FUNCTION__, book_count);
                 return -1;
         }
-        xil_printf("%s: reading %d entries from %s\n", __PRETTY_FUNCTION__, book_count, book_bin_fn);
+        printf("%s: reading %d entries from %s\n", __PRETTY_FUNCTION__, book_count, book_bin_fn);
         status = f_read(&fp, book, bytes, &br);
         if (status != FR_OK)
         {
-                xil_printf("%s: %s f_read failed (%d)\n", __PRETTY_FUNCTION__, book_bin_fn, status);
+                printf("%s: %s f_read failed (%d)\n", __PRETTY_FUNCTION__, book_bin_fn, status);
                 return -1;
         }
         if (bytes != br)
         {
-                xil_printf("%s: asked for %d byts from %s, received %d\n", __PRETTY_FUNCTION__, bytes, br);
+                printf("%s: asked for %d byts from %s, received %d\n", __PRETTY_FUNCTION__, bytes, book_bin_fn, br);
                 return -1;
         }
         f_close(&fp);
@@ -235,7 +236,7 @@ book_format_media(void)
         status = f_mkfs(sd_path, FM_FAT32, 0, work, sizeof work);
         if (status != FR_OK)
         {
-                xil_printf("%s: f_mkfs fail (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                printf("%s: f_mkfs fail (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return;
         }
 }
@@ -319,7 +320,7 @@ book_build(void)
         book = (book_t *) malloc(book_size * sizeof(book_t));
         if (book == 0)
         {
-                xil_printf("%s: unable to malloc %d bytes for book (%s %d)\n", __PRETTY_FUNCTION__, book_size * sizeof(book_t), __FILE__, __LINE__);
+                printf("%s: unable to malloc %lu bytes for book (%s %d)\n", __PRETTY_FUNCTION__, book_size * sizeof(book_t), __FILE__, __LINE__);
                 return;
         }
 
@@ -329,7 +330,7 @@ book_build(void)
                 if (status != FR_OK)
                 {
                         free(book);
-                        xil_printf("%s: SD filesystem mount failed (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                        printf("%s: SD filesystem mount failed (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                         return;
                 }
                 fs_init = 1;
@@ -339,7 +340,7 @@ book_build(void)
         if (status != FR_OK)
         {
                 free(book);
-                xil_printf("%s: cannot read %s (%s %d)\n", __PRETTY_FUNCTION__, fn, __FILE__, __LINE__);
+                printf("%s: cannot read %s (%s %d)\n", __PRETTY_FUNCTION__, fn, __FILE__, __LINE__);
                 return;
         }
 
@@ -349,7 +350,7 @@ book_build(void)
         sorted_counter = 0;
         unsorted_index = 0;
         next_sort = SORT_THRESHOLD;
-        xil_printf("%s opened\n", fn);
+        printf("%s opened\n", fn);
         while (counter < 2000000 && f_gets(buffer, sizeof(buffer), &fp))
         {
                 len = strnlen(buffer, sizeof(buffer) - 2);
@@ -357,7 +358,7 @@ book_build(void)
                 {
                         buffer[len - 1] = '\0';
                         if (counter % 4096 == 0)
-                                xil_printf("line %9d: %s, book_count=%u, sorted_hit=%u, unsorted_hit=%u\r",
+                                printf("line %9d: %s, book_count=%u, sorted_hit=%u, unsorted_hit=%u\r",
                                            counter, buffer, book_count, sorted_hit, unsorted_hit);
                         uci_init();
                         c = buffer;
@@ -368,7 +369,7 @@ book_build(void)
                                 trans_idle = numbat_trans_idle_wait();
                                 if (!trans_idle)
                                 {
-                                        xil_printf("%s: hash state machine idle timeout, stopping. (%s %d)\n",
+                                        printf("%s: hash state machine idle timeout, stopping. (%s %d)\n",
                                                    __PRETTY_FUNCTION__, __FILE__, __LINE__);
                                         while (1);
                                 }
@@ -381,7 +382,7 @@ book_build(void)
                                         if (!move_ok)
                                         {
                                                 free(book);
-                                                xil_printf("%s: bad uci data line %d. (%s %d)\n", __PRETTY_FUNCTION__,
+                                                printf("%s: bad uci data line %d. (%s %d)\n", __PRETTY_FUNCTION__,
                                                            counter + 1, __FILE__, __LINE__);
                                                 return;
                                         }
@@ -421,7 +422,7 @@ book_build(void)
                                                                 book = (book_t *) realloc(book, book_size * sizeof(book_t));
                                                                 if (book == 0)
                                                                 {
-                                                                        xil_printf("%s: realloc of %d failed. (%s %d)\n", __PRETTY_FUNCTION__,
+                                                                        printf("%s: realloc of %lu failed. (%s %d)\n", __PRETTY_FUNCTION__,
                                                                                    book_size * sizeof(book_t), __FILE__, __LINE__);
                                                                         return;
                                                                 }
@@ -448,11 +449,11 @@ book_build(void)
         status = f_open(&fp, book_bin_fn, FA_CREATE_ALWAYS | FA_WRITE);
         if (status != FR_OK)
         {
-                xil_printf("%s: cannot write %s\n", __PRETTY_FUNCTION__, book_bin_fn);
+                printf("%s: cannot write %s\n", __PRETTY_FUNCTION__, book_bin_fn);
                 return;
         }
         status = f_write(&fp, (void *)book, book_count * sizeof(book_t), &bw);
-        xil_printf("\n%s: %u bytes (%u x %u) written to %s\n", __PRETTY_FUNCTION__, bw, book_count, sizeof(book_t), book_bin_fn);
+        printf("\n%s: %u bytes (%u x %lu) written to %s\n", __PRETTY_FUNCTION__, bw, book_count, sizeof(book_t), book_bin_fn);
         f_close(&fp);
 
         XTime_GetTime(&t_end);
