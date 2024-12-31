@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <xil_printf.h>
 #include <xtime_l.h>
 #include <xil_io.h>
 #include "numbat.h"
@@ -61,6 +60,24 @@ nm_initial_eval(uint32_t wtm, uint32_t ply)
         return value;
 }
 
+static void
+abort_test(void)
+{
+        XTime t_now;
+        uint32_t time_limit_exceeded;
+
+        ++abort_test_move_count;
+        if (abort_test_move_count < 1000)
+                return;
+
+        abort_test_move_count = 0;
+        XTime_GetTime(&t_now);
+        time_limit_exceeded = t_now > time_limit;
+        ui_data_stop = ui_data_available();
+        uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
+        abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
+}
+
 static inline void
 rep_table_idle_test(const char *func, const char *file, uint32_t line)
 {
@@ -69,7 +86,7 @@ rep_table_idle_test(const char *func, const char *file, uint32_t line)
         numbat_status(0, 0, 0, 0, 0, &am_idle, 0, 0, 0);
         if (!am_idle)
         {
-                xil_printf("%s: all moves state machine not idle, stopping (%s %d)\n", func, file, line);
+                printf("%s: all moves state machine not idle, stopping (%s %d)\n", func, file, line);
                 while (1);
         }
 }
@@ -138,13 +155,13 @@ load_positions(board_t boards[MAX_POSITIONS])
         numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
         if (!moves_ready)
         {
-                xil_printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return -1;
         }
         move_count = numbat_move_count();
         if (move_count == 0)
         {
-                xil_printf("%s: no moves available (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                printf("%s: no moves available (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return -2;
         }
         for (i = 0; i < move_count; ++i)
@@ -189,8 +206,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         uint32_t move_count, index, endgame;
         uint32_t mate, stalemate, fifty_move;
         int32_t value;
-        XTime t_now, am_t_start, am_t_stop;
-        uint32_t time_limit_exceeded;
+        XTime am_t_start, am_t_stop;
         board_t *board_ptr[MAX_POSITIONS];
         int32_t pv_next_index;
         int32_t board_eval;
@@ -241,11 +257,9 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         else
                 ++q_no_trans;
 
-        // fixme: test these do things
         if (value >= beta)
                 return value;
 
-        // fixme: test these do things
         if (value > alpha)
                 alpha = value;
 
@@ -254,16 +268,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         if (!endgame && value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
                 return alpha;
 
-        ++abort_test_move_count;
-        if (abort_test_move_count >= 1000)
-        {
-                abort_test_move_count = 0;
-                XTime_GetTime(&t_now);
-                time_limit_exceeded = t_now > time_limit;
-                ui_data_stop = ui_data_available();
-                uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
-                abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
-        }
+        abort_test();
         if (abort_search)
                 return 0;       // will be ignored
 
@@ -336,8 +341,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         int32_t alpha_orig;
         uint32_t collision;
         trans_t trans;
-        XTime t_now, am_t_start, am_t_stop;
-        uint32_t time_limit_exceeded;
+        XTime am_t_start, am_t_stop;
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
@@ -391,16 +395,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         else
                 ++no_trans;
 
-        ++abort_test_move_count;
-        if (abort_test_move_count > 1000)
-        {
-                abort_test_move_count = 0;
-                XTime_GetTime(&t_now);
-                time_limit_exceeded = t_now > time_limit;
-                ui_data_stop = ui_data_available();
-                uci_data_stop = uci_input_poll() == UCI_SEARCH_STOP;
-                abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
-        }
+        abort_test();
         if (abort_search)
                 return 0;       // will be ignored
 
@@ -541,7 +536,7 @@ nm_top(const tc_t * tc)
 
         if (game_moves == 0)
         {
-                xil_printf("%s: no moves in game (%s %d)!", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                printf("%s: no moves in game (%s %d)!", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return best_board;
         }
 
@@ -565,7 +560,7 @@ nm_top(const tc_t * tc)
         move_count = numbat_move_count();
         if (move_count == 0)
         {
-                xil_printf("%s: game is over, no moves (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+                printf("%s: game is over, no moves (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return best_board;
         }
 

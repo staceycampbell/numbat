@@ -200,7 +200,6 @@ book_open(void)
         }
         bytes = f_size(&fp);
         book_count = bytes / sizeof(book_t);
-	printf("%s: attempting to malloc %d (0x%08X) bytes\n", __PRETTY_FUNCTION__, bytes, bytes);
 	
         book = (book_t *) malloc(bytes);
         if (book == 0)
