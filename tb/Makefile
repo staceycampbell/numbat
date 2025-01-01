@@ -26,7 +26,7 @@ amt: amt.sv $(SRC) $(TBSRC) $(HEADERS) amt_board.vh
 	iverilog -g2012 -I.. -Wall -o amt amt.sv $(SRC) $(TBSRC)
 
 amt_board.vh: ../misc/fenconv
-	echo 'rn1qkb1r/pp2pppp/2p4n/3P1b2/6P1/2N1BP2/PPP4P/R2QKBNR b KQkq g3 0 7' | ../misc/fenconv > amt_board.vh
+	echo '6k1/2p2pPp/2qp1R2/4p1P1/4P3/1r1n2NP/3QN1K1/r7 b - - 1 39' | ../misc/fenconv > amt_board.vh
 
 et_board.vh: amt_board.vh
 	cp amt_board.vh et_board.vh
@@ -44,4 +44,4 @@ evsrclist:
 	@echo $(EVSRC)
 
 clean:
-	rm -f tb wave.vcd attack attack.o amt amt_board.vh tbtrans et et_board.vh
+	rm -f tb wave.vcd attack attack.o amt amt_board.vh tbtrans et et_board.vh game.* log.*

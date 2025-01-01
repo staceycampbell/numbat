@@ -3,3 +3,6 @@ amt
 tb
 wave.vcd
 et_board.vh
+*.fen
+game.*
+log.*
