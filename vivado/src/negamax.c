@@ -448,7 +448,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 else if (depth > 0)
                 {
-                        if (index == 0 || ply < 2 || in_check || board_eval + 200 >= alpha)
+                        if (index == 0 || ply < 2 || in_check || board_eval > alpha)
                                 value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                         else
                                 value = -GLOBAL_VALUE_KING;
@@ -634,21 +634,20 @@ nm_top(const tc_t * tc)
                 }
                 if (best_evaluation != -LARGE_EVAL)
                         printf("\n");
+                if (debug_pv_info)
+                {
+                        XTime_GetTime(&t_report);
+                        elapsed_ticks = t_report - t_start;
+                        elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
+                        nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
+                        uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci, pv_array);
+                }
                 if (!abort_search)
                 {
                         qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
                         pv_load_table(pv_array);
-                        if (debug_pv_info)
-                        {
-                                XTime_GetTime(&t_report);
-                                elapsed_ticks = t_report - t_start;
-                                elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
-                                nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
-                                uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci,
-                                       pv_array);
-                        }
+                        ++depth_limit;
                 }
-                ++depth_limit;
                 if (q_ply_reached > valid_q_ply_reached)
                         valid_q_ply_reached = q_ply_reached;
         }
