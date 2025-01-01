@@ -169,18 +169,10 @@ load_root_nodes(board_t boards[MAX_POSITIONS])
         for (i = 0; i < move_count; ++i)
         {
                 numbat_read_board(&boards[i], i);
-                if (boards[i].white_to_move)
+                if (boards[i].checkmate)
                 {
-                        if (boards[i].eval == GLOBAL_VALUE_KING)
-                        {
-                                mate_index = i;
-                                mate = 1;
-                        }
-                        else if (boards[i].eval == -GLOBAL_VALUE_KING)
-                        {
-                                mate_index = i;
-                                mate = 1;
-                        }
+                        mate_index = i;
+                        mate = 1;
                 }
         }
         if (mate)
@@ -370,7 +362,6 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
-        int32_t ply_delta;
 
         if (ply >= MAX_DEPTH - 1)
         {
@@ -434,7 +425,6 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         numbat_reset_all_moves();
         rep_table_load(board, ply);     // update thrice rep table
 
-        ply_delta = ply * 20;
         in_check = board->white_in_check || board->black_in_check;
         index = 0;
         do
@@ -450,8 +440,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 if (board_eval == GLOBAL_VALUE_KING)
                         value = GLOBAL_VALUE_KING - ply;
-                else if (depth <= 0
-                         && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
+                else if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
                 {
                         value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                         if (abort_search)
@@ -459,7 +448,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 else if (depth > 0)
                 {
-                        if (index == 0 || ply < 2 || in_check || board_eval + 100 > alpha + ply_delta)
+                        if (index == 0 || ply < 2 || in_check || board_eval + 200 >= alpha)
                                 value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                         else
                                 value = -GLOBAL_VALUE_KING;
@@ -523,12 +512,6 @@ nm_move_sort_compare(const void *p1, const void *p2)
         b1 = (const board_t **)p1;
         b2 = (const board_t **)p2;
 
-#if 0
-        if ((*b1)->capture == 1 && (*b2)->capture == 0)
-                return -1;
-        if ((*b1)->capture == 0 && (*b2)->capture == 1)
-                return 1;
-#endif
         if ((*b1)->eval > (*b2)->eval)
                 return -1;
         if ((*b1)->eval < (*b2)->eval)

@@ -136,6 +136,7 @@ typedef struct board_t
         uint32_t thrice_rep;
         uint32_t fifty_move;
         uint32_t pv;
+        uint32_t checkmate;
         uci_t uci;
 }
 board_t;
@@ -607,7 +608,7 @@ numbat_read_black_is_attacking(void)
 
 static inline uint32_t
 numbat_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint32_t * capture, uint32_t * thrice_rep, uint32_t * fifty_move,
-                     uint32_t * pv)
+                     uint32_t * pv, uint32_t * checkmate)
 {
         uint32_t val;
 
@@ -624,6 +625,8 @@ numbat_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint3
                 *fifty_move = (val & (1 << 4)) != 0;
         if (pv)
                 *pv = (val & (1 << 6)) != 0;
+        if (checkmate)
+                *checkmate = (val & (1 << 7)) != 0;
 
         return val;
 }

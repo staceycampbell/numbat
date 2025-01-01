@@ -74,6 +74,7 @@ module amt;
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire                 initial_thrice_rep;     // From all_moves of all_moves.v
    wire                 insufficient_material_out;// From all_moves of all_moves.v
+   wire                 mate_out;               // From all_moves of all_moves.v
    wire                 pv_out;                 // From all_moves of all_moves.v
    wire                 thrice_rep_out;         // From all_moves of all_moves.v
    wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
@@ -247,6 +248,7 @@ module amt;
       .attack_white_pop_out             (attack_white_pop_out[5:0]),
       .attack_black_pop_out             (attack_black_pop_out[5:0]),
       .insufficient_material_out        (insufficient_material_out),
+      .mate_out                         (mate_out),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

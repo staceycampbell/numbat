@@ -36,7 +36,7 @@ module move_sort #
    reg [MAX_POSITIONS_LOG2 - 1:0]         port_a_addr;
    reg                                    port_a_wr_en = 0;
    reg [RAM_WIDTH - 1:0]                  port_a_wr_data;
-   
+
    reg [MAX_POSITIONS_LOG2 - 1:0]         port_b_addr;
    reg                                    port_b_wr_en = 0;
    reg [RAM_WIDTH - 1:0]                  port_b_wr_data;
@@ -70,7 +70,7 @@ module move_sort #
    always @(posedge clk)
      begin
         sort_start_z <= sort_start;
-        
+
         if (ram_wr_addr_init)
           ram_wr_addr <= 0;
         if (ram_wr)
@@ -123,7 +123,7 @@ module move_sort #
               port_b_wr_en <= 0;
               // sort priority
               if (! pv_a && pv_b ? 1'b1 : pv_a && ! pv_b ? 1'b0 : // principal variation 1st
-                  white_to_move ? eval_a < eval_b : eval_a > eval_b) // position eval 3rd
+                  white_to_move ? eval_a < eval_b : eval_a > eval_b) // evaluation 2nd
                 state_sort <= STATE_SWAP;
               else
                 state_sort <= STATE_INNER;

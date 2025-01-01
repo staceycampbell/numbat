@@ -14,201 +14,203 @@ module all_moves #
    parameter EVAL_MOBILITY_DISABLE = 0
    )
    (
-    input 				 clk,
-    input 				 reset,
+    input                                clk,
+    input                                reset,
 
-    input [EVAL_WIDTH - 1:0] 		 random_score_mask,
-    input [EVAL_WIDTH - 1:0] 		 random_number,
+    input [EVAL_WIDTH - 1:0]             random_score_mask,
+    input [EVAL_WIDTH - 1:0]             random_number,
 
-    input 				 board_valid_in,
-    input [`BOARD_WIDTH - 1:0] 		 board_in,
-    input 				 white_to_move_in,
-    input [3:0] 			 castle_mask_in,
-    input [3:0] 			 en_passant_col_in,
-    input [HALF_MOVE_WIDTH - 1:0] 	 half_move_in,
+    input                                board_valid_in,
+    input [`BOARD_WIDTH - 1:0]           board_in,
+    input                                white_to_move_in,
+    input [3:0]                          castle_mask_in,
+    input [3:0]                          en_passant_col_in,
+    input [HALF_MOVE_WIDTH - 1:0]        half_move_in,
 
-    input [MAX_DEPTH_LOG2 - 1:0] 	 killer_ply_in,
-    input [`BOARD_WIDTH - 1:0] 		 killer_board_in,
-    input 				 killer_update_in,
-    input 				 killer_clear_in,
-    input signed [EVAL_WIDTH - 1:0] 	 killer_bonus0_in,
-    input signed [EVAL_WIDTH - 1:0] 	 killer_bonus1_in,
+    input [MAX_DEPTH_LOG2 - 1:0]         killer_ply_in,
+    input [`BOARD_WIDTH - 1:0]           killer_board_in,
+    input                                killer_update_in,
+    input                                killer_clear_in,
+    input signed [EVAL_WIDTH - 1:0]      killer_bonus0_in,
+    input signed [EVAL_WIDTH - 1:0]      killer_bonus1_in,
 
-    input [31:0] 			 pv_ctrl_in,
+    input [31:0]                         pv_ctrl_in,
 
-    input [`BOARD_WIDTH-1:0] 		 repdet_board_in,
-    input [3:0] 			 repdet_castle_mask_in,
-    input [REPDET_WIDTH-1:0] 		 repdet_depth_in,
-    input [REPDET_WIDTH-1:0] 		 repdet_wr_addr_in,
-    input 				 repdet_wr_en_in,
+    input [`BOARD_WIDTH-1:0]             repdet_board_in,
+    input [3:0]                          repdet_castle_mask_in,
+    input [REPDET_WIDTH-1:0]             repdet_depth_in,
+    input [REPDET_WIDTH-1:0]             repdet_wr_addr_in,
+    input                                repdet_wr_en_in,
 
-    input 				 am_quiescence_moves,
-    input [MAX_POSITIONS_LOG2 - 1:0] 	 am_move_index,
-    input 				 am_clear_moves,
+    input                                am_quiescence_moves,
+    input [MAX_POSITIONS_LOG2 - 1:0]     am_move_index,
+    input                                am_clear_moves,
 
-    output reg 				 initial_mate = 0,
-    output reg 				 initial_stalemate = 0,
+    output reg                           initial_mate = 0,
+    output reg                           initial_stalemate = 0,
     output reg signed [EVAL_WIDTH - 1:0] initial_eval,
-    output reg 				 initial_thrice_rep = 0,
-    output reg 				 initial_fifty_move = 0,
-    output reg 				 initial_insufficient_material = 0,
-    output reg [31:0] 			 initial_material_black,
-    output reg [31:0] 			 initial_material_white,
-    output reg 				 initial_board_check,
+    output reg                           initial_thrice_rep = 0,
+    output reg                           initial_fifty_move = 0,
+    output reg                           initial_insufficient_material = 0,
+    output reg [31:0]                    initial_material_black,
+    output reg [31:0]                    initial_material_white,
+    output reg                           initial_board_check,
 
-    output reg 				 am_idle,
-    output reg 				 am_moves_ready,
-    output 				 am_move_ready,
-    output [MAX_POSITIONS_LOG2 - 1:0] 	 am_move_count,
+    output reg                           am_idle,
+    output reg                           am_moves_ready,
+    output                               am_move_ready,
+    output [MAX_POSITIONS_LOG2 - 1:0]    am_move_count,
 
-    output [`BOARD_WIDTH - 1:0] 	 board_out,
-    output 				 white_to_move_out,
-    output [3:0] 			 castle_mask_out,
-    output [3:0] 			 en_passant_col_out,
-    output 				 capture_out,
-    output 				 pv_out,
-    output 				 white_in_check_out,
-    output 				 black_in_check_out,
-    output [63:0] 			 white_is_attacking_out,
-    output [63:0] 			 black_is_attacking_out,
-    output signed [EVAL_WIDTH - 1:0] 	 eval_out,
-    output 				 thrice_rep_out,
-    output [HALF_MOVE_WIDTH - 1:0] 	 half_move_out,
-    output 				 fifty_move_out,
-    output [UCI_WIDTH - 1:0] 		 uci_out,
-    output [5:0] 			 attack_white_pop_out,
-    output [5:0] 			 attack_black_pop_out,
-    output 				 insufficient_material_out
+    output [`BOARD_WIDTH - 1:0]          board_out,
+    output                               white_to_move_out,
+    output [3:0]                         castle_mask_out,
+    output [3:0]                         en_passant_col_out,
+    output                               capture_out,
+    output                               pv_out,
+    output                               white_in_check_out,
+    output                               black_in_check_out,
+    output [63:0]                        white_is_attacking_out,
+    output [63:0]                        black_is_attacking_out,
+    output signed [EVAL_WIDTH - 1:0]     eval_out,
+    output                               thrice_rep_out,
+    output [HALF_MOVE_WIDTH - 1:0]       half_move_out,
+    output                               fifty_move_out,
+    output [UCI_WIDTH - 1:0]             uci_out,
+    output [5:0]                         attack_white_pop_out,
+    output [5:0]                         attack_black_pop_out,
+    output                               insufficient_material_out,
+    output                               mate_out
     );
 
    // board + castle mask + en passant col + color to move
    localparam INITIAL_WIDTH = `BOARD_WIDTH + 4 + 4 + 1;
    // white/black pop counts, UCI, initial width + capture + pawn adv (to zero-out half move)
    localparam RAM_WIDTH = 6 + 6 + UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
-   localparam LEGAL_RAM_WIDTH = 462; // to verify, increase to excessively large number then look for x's on bus in sim
+   localparam LEGAL_RAM_WIDTH = 463; // to verify, increase to excessively large number then look for x's on bus in sim
 
-   reg [RAM_WIDTH - 1:0] 		 move_ram [0:`MAX_POSITIONS - 1];
-   reg [RAM_WIDTH - 1:0] 		 ram_rd_data;
+   reg [RAM_WIDTH - 1:0]                 move_ram [0:`MAX_POSITIONS - 1];
+   reg [RAM_WIDTH - 1:0]                 ram_rd_data;
    reg                                   ram_wr_addr_init;
-   reg [MAX_POSITIONS_LOG2 - 1:0] 	 ram_wr_addr, ram_rd_addr;
-   reg [MAX_POSITIONS_LOG2 - 1:0] 	 attack_test_move_count;
-   reg [$clog2(`BOARD_WIDTH) - 1:0] 	 idx [0:7][0:7];
-   reg [`PIECE_WIDTH - 1:0] 		 piece;
-   reg [`BOARD_WIDTH - 1:0] 		 board;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        ram_wr_addr, ram_rd_addr;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        attack_test_move_count;
+   reg [$clog2(`BOARD_WIDTH) - 1:0]      idx [0:7][0:7];
+   reg [`PIECE_WIDTH - 1:0]              piece;
+   reg [`BOARD_WIDTH - 1:0]              board;
    reg                                   white_to_move;
-   reg [3:0] 				 castle_mask;
-   reg [3:0] 				 en_passant_col;
-   reg [HALF_MOVE_WIDTH - 1:0] 		 half_move;
+   reg [3:0]                             castle_mask;
+   reg [3:0]                             en_passant_col;
+   reg [HALF_MOVE_WIDTH - 1:0]           half_move;
 
    reg                                   legal_ram_wr_addr_init;
 
-   reg [`BOARD_WIDTH - 1:0] 		 board_ram_wr;
-   reg [3:0] 				 en_passant_col_ram_wr;
-   reg [3:0] 				 castle_mask_ram_wr;
+   reg [`BOARD_WIDTH - 1:0]              board_ram_wr;
+   reg [3:0]                             en_passant_col_ram_wr;
+   reg [3:0]                             castle_mask_ram_wr;
    reg                                   white_to_move_ram_wr;
    reg                                   capture_ram_wr;
    reg                                   pawn_zero_half_move_ram_wr;
-   reg [3:0] 				 uci_promotion_ram_wr;
-   reg [2:0] 				 uci_from_row_ram_wr, uci_from_col_ram_wr;
-   reg [2:0] 				 uci_to_row_ram_wr, uci_to_col_ram_wr;
+   reg [3:0]                             uci_promotion_ram_wr;
+   reg [2:0]                             uci_from_row_ram_wr, uci_from_col_ram_wr;
+   reg [2:0]                             uci_to_row_ram_wr, uci_to_col_ram_wr;
    reg                                   ram_wr;
 
-   reg [`BOARD_WIDTH - 1:0] 		 legal_board_ram_wr;
-   reg [3:0] 				 legal_en_passant_col_ram_wr;
-   reg [3:0] 				 legal_castle_mask_ram_wr;
+   reg [`BOARD_WIDTH - 1:0]              legal_board_ram_wr;
+   reg [3:0]                             legal_en_passant_col_ram_wr;
+   reg [3:0]                             legal_castle_mask_ram_wr;
    reg                                   legal_white_to_move_ram_wr;
    reg                                   legal_capture_ram_wr;
-   reg [HALF_MOVE_WIDTH - 1:0] 		 legal_half_move_ram_wr;
+   reg [HALF_MOVE_WIDTH - 1:0]           legal_half_move_ram_wr;
    reg                                   legal_fifty_move_ram_wr;
    reg                                   legal_white_in_check_ram_wr;
    reg                                   legal_black_in_check_ram_wr;
-   reg [63:0] 				 legal_white_is_attacking_ram_wr;
-   reg [63:0] 				 legal_black_is_attacking_ram_wr;
-   reg signed [EVAL_WIDTH - 1:0] 	 legal_eval_ram_wr;
+   reg [63:0]                            legal_white_is_attacking_ram_wr;
+   reg [63:0]                            legal_black_is_attacking_ram_wr;
+   reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
+   reg                                   legal_mate_ram_wr;
    reg                                   legal_eval_pv_flag_wr;
    reg                                   legal_thrice_rep_ram_wr;
    reg                                   legal_insufficent_material_ram_wr;
-   reg [5:0] 				 legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr;
-   reg [UCI_WIDTH - 1:0] 		 legal_uci_ram_wr;
+   reg [5:0]                             legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr;
+   reg [UCI_WIDTH - 1:0]                 legal_uci_ram_wr;
    reg                                   legal_ram_wr = 0;
 
-   reg [`BOARD_WIDTH - 1:0] 		 attack_test_board;
-   reg [3:0] 				 attack_test_en_passant_col;
-   reg [3:0] 				 attack_test_castle_mask;
+   reg [`BOARD_WIDTH - 1:0]              attack_test_board;
+   reg [3:0]                             attack_test_en_passant_col;
+   reg [3:0]                             attack_test_castle_mask;
    reg                                   attack_test_white_to_move;
    reg                                   attack_test_capture;
    reg                                   attack_test_white_in_check;
    reg                                   attack_test_black_in_check;
-   reg [63:0] 				 attack_test_white_is_attacking;
-   reg [63:0] 				 attack_test_black_is_attacking;
+   reg [63:0]                            attack_test_white_is_attacking;
+   reg [63:0]                            attack_test_black_is_attacking;
    reg                                   attack_pawn_zero_half_move;
-   reg [UCI_WIDTH - 1:0] 		 attack_uci;
-   reg [5:0] 				 attack_test_attack_white_pop, attack_test_attack_black_pop;
+   reg [UCI_WIDTH - 1:0]                 attack_uci;
+   reg [5:0]                             attack_test_attack_white_pop, attack_test_attack_black_pop;
 
-   reg [`BOARD_WIDTH - 1:0] 		 evaluate_board;
-   reg [UCI_WIDTH - 1:0] 		 evaluate_uci;
-   reg [3:0] 				 evaluate_castle_mask;
-   reg [3:0] 				 evaluate_castle_mask_orig;
+   reg [`BOARD_WIDTH - 1:0]              evaluate_board;
+   reg [UCI_WIDTH - 1:0]                 evaluate_uci;
+   reg [3:0]                             evaluate_castle_mask;
+   reg [3:0]                             evaluate_castle_mask_orig;
    reg                                   evaluate_white_to_move;
    reg                                   evaluate_go;
 
    reg                                   clear_eval = 0;
    reg                                   clear_attack = 0;
 
-   reg signed [3:0] 			 row, col;
-   reg signed [3:0] 			 col_r; // one clock delayed, for timing/fanout, be careful using this
+   reg signed [3:0]                      row, col;
+   reg signed [3:0]                      col_r; // one clock delayed, for timing/fanout, be careful using this
 
-   reg signed [1:0] 			 slider_offset_col [`PIECE_QUEN:`PIECE_BISH][0:7];
-   reg signed [1:0] 			 slider_offset_row [`PIECE_QUEN:`PIECE_BISH][0:7];
-   reg [3:0] 				 slider_offset_count [`PIECE_QUEN:`PIECE_BISH];
-   reg [3:0] 				 slider_index;
-   reg signed [4:0] 			 slider_row, slider_col;
+   reg signed [1:0]                      slider_offset_col [`PIECE_QUEN:`PIECE_BISH][0:7];
+   reg signed [1:0]                      slider_offset_row [`PIECE_QUEN:`PIECE_BISH][0:7];
+   reg [3:0]                             slider_offset_count [`PIECE_QUEN:`PIECE_BISH];
+   reg [3:0]                             slider_index;
+   reg signed [4:0]                      slider_row, slider_col;
 
-   reg signed [2:0] 			 discrete_offset_col[`PIECE_KNIT:`PIECE_KING][0:7];
-   reg signed [2:0] 			 discrete_offset_row[`PIECE_KNIT:`PIECE_KING][0:7];
-   reg [3:0] 				 discrete_index;
-   reg signed [4:0] 			 discrete_row, discrete_col;
+   reg signed [2:0]                      discrete_offset_col[`PIECE_KNIT:`PIECE_KING][0:7];
+   reg signed [2:0]                      discrete_offset_row[`PIECE_KNIT:`PIECE_KING][0:7];
+   reg [3:0]                             discrete_index;
+   reg signed [4:0]                      discrete_row, discrete_col;
 
-   reg signed [1:0] 			 pawn_advance [0:1];
-   reg signed [4:0] 			 pawn_promote_row [0:1];
-   reg signed [4:0] 			 pawn_init_row [0:1];
-   reg signed [4:0] 			 pawn_row_adv1, pawn_col_adv1;
-   reg signed [4:0] 			 pawn_row_adv2, pawn_col_adv2;
-   reg signed [4:0] 			 pawn_row_cap_left, pawn_col_cap_left;
-   reg signed [4:0] 			 pawn_row_cap_right, pawn_col_cap_right;
-   reg [`PIECE_WIDTH - 1:0] 		 pawn_promotions [0:3];
-   reg [2:0] 				 pawn_adv1_mask;
+   reg signed [1:0]                      pawn_advance [0:1];
+   reg signed [4:0]                      pawn_promote_row [0:1];
+   reg signed [4:0]                      pawn_init_row [0:1];
+   reg signed [4:0]                      pawn_row_adv1, pawn_col_adv1;
+   reg signed [4:0]                      pawn_row_adv2, pawn_col_adv2;
+   reg signed [4:0]                      pawn_row_cap_left, pawn_col_cap_left;
+   reg signed [4:0]                      pawn_row_cap_right, pawn_col_cap_right;
+   reg [`PIECE_WIDTH - 1:0]              pawn_promotions [0:3];
+   reg [2:0]                             pawn_adv1_mask;
    reg                                   pawn_adv2;
-   reg [1:0] 				 pawn_en_passant_mask;
-   reg signed [4:0] 			 pawn_en_passant_row [0:1];
+   reg [1:0]                             pawn_en_passant_mask;
+   reg signed [4:0]                      pawn_en_passant_row [0:1];
    reg                                   pawn_en_passant_count;
-   reg [1:0] 				 pawn_move_count;
-   reg [1:0] 				 pawn_promotion_count;
+   reg [1:0]                             pawn_move_count;
+   reg [1:0]                             pawn_promotion_count;
    reg                                   pawn_do_init;
    reg                                   pawn_do_en_passant;
    reg                                   pawn_do_promote;
 
-   reg [1:0] 				 castle_short_legal;
-   reg [1:0] 				 castle_long_legal;
-   reg [2:0] 				 castle_row [0:1];
+   reg [1:0]                             castle_short_legal;
+   reg [1:0]                             castle_long_legal;
+   reg [2:0]                             castle_row [0:1];
 
-   reg [`BOARD_WIDTH - 1:0] 		 rd_ram_board_in;
-   reg [3:0] 				 rd_ram_castle_mask_in;
-   reg [REPDET_WIDTH - 1:0] 		 rd_ram_depth_in;
-   reg [REPDET_WIDTH - 1:0] 		 rd_ram_wr_addr_in;
+   reg [`BOARD_WIDTH - 1:0]              rd_ram_board_in;
+   reg [3:0]                             rd_ram_castle_mask_in;
+   reg [REPDET_WIDTH - 1:0]              rd_ram_depth_in;
+   reg [REPDET_WIDTH - 1:0]              rd_ram_wr_addr_in;
    reg                                   rd_ram_wr_en;
 
-   reg [`BOARD_WIDTH - 1:0] 		 rd_board_in;
+   reg [`BOARD_WIDTH - 1:0]              rd_board_in;
    reg                                   rd_board_valid;
-   reg [3:0] 				 rd_castle_mask_in;
+   reg [3:0]                             rd_castle_mask_in;
    reg                                   rd_clear_sample;
 
    reg                                   legal_sort_clear;
    reg                                   legal_sort_start;
 
-   reg [MAX_POSITIONS_LOG2 - 1:0] 	 am_move_index_s0, am_move_index_s1;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        am_move_index_s0, am_move_index_s1;
    
-   reg [63:0] 				 square_active;
+   reg [63:0]                            square_active;
 
    reg 					 checkmate_board_valid;
    reg 					 clear_checkmate_evaluation;
@@ -218,37 +220,38 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [5:0]		attack_black_pop;	// From board_attack of board_attack.v
-   wire [5:0]		attack_white_pop;	// From board_attack of board_attack.v
-   wire			black_in_check;		// From board_attack of board_attack.v
-   wire [63:0]		black_is_attacking;	// From board_attack of board_attack.v
-   wire			checkmate_out;		// From checkmate of checkmate.v
-   wire			checkmate_valid_out;	// From checkmate of checkmate.v
-   wire signed [EVAL_WIDTH-1:0] eval;		// From evaluate of evaluate.v
-   wire			eval_pv_flag;		// From evaluate of evaluate.v
-   wire			eval_valid;		// From evaluate of evaluate.v
-   wire			insufficient_material;	// From evaluate of evaluate.v
-   wire			is_attacking_done;	// From board_attack of board_attack.v
+   wire [5:0]           attack_black_pop;       // From board_attack of board_attack.v
+   wire [5:0]           attack_white_pop;       // From board_attack of board_attack.v
+   wire                 black_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire                 checkmate_out;          // From checkmate of checkmate.v
+   wire                 checkmate_valid_out;    // From checkmate of checkmate.v
+   wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
+   wire                 eval_pv_flag;           // From evaluate of evaluate.v
+   wire                 eval_valid;             // From evaluate of evaluate.v
+   wire                 insufficient_material;  // From evaluate of evaluate.v
+   wire                 is_attacking_done;      // From board_attack of board_attack.v
    wire [LEGAL_RAM_WIDTH-1:0] legal_ram_rd_data;// From move_sort_legal of move_sort.v
    wire [MAX_POSITIONS_LOG2-1:0] legal_ram_wr_addr;// From move_sort_legal of move_sort.v
-   wire			legal_sort_complete;	// From move_sort_legal of move_sort.v
-   wire [31:0]		material_black;		// From evaluate of evaluate.v
-   wire [31:0]		material_white;		// From evaluate of evaluate.v
-   wire			rd_thrice_rep;		// From rep_det of rep_det.v
-   wire			rd_thrice_rep_valid;	// From rep_det of rep_det.v
-   wire			white_in_check;		// From board_attack of board_attack.v
-   wire [63:0]		white_is_attacking;	// From board_attack of board_attack.v
+   wire                 legal_sort_complete;    // From move_sort_legal of move_sort.v
+   wire [31:0]          material_black;         // From evaluate of evaluate.v
+   wire [31:0]          material_white;         // From evaluate of evaluate.v
+   wire                 rd_thrice_rep;          // From rep_det of rep_det.v
+   wire                 rd_thrice_rep_valid;    // From rep_det of rep_det.v
+   wire                 white_in_check;         // From board_attack of board_attack.v
+   wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
-   wire signed [4:0] 			 pawn_adv1_row [0:2];
-   wire signed [4:0] 			 pawn_adv1_col [0:2];
-   wire signed [4:0] 			 pawn_enp_row[0:1];
+   wire signed [4:0]                     pawn_adv1_row [0:2];
+   wire signed [4:0]                     pawn_adv1_col [0:2];
+   wire signed [4:0]                     pawn_enp_row[0:1];
 
    integer                               i, x, y, ri, s;
 
    wire                                  black_to_move = ~white_to_move;
 
-   wire [LEGAL_RAM_WIDTH - 1:0] 	 legal_ram_wr_data = {legal_insufficent_material_ram_wr,
+   wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {legal_mate_ram_wr,
+                                                              legal_insufficent_material_ram_wr,
                                                               legal_attack_white_pop_ram_wr[5:0],
 							      legal_attack_black_pop_ram_wr[5:0],
 							      legal_uci_ram_wr[UCI_WIDTH - 1:0],
@@ -267,7 +270,8 @@ module all_moves #
                                                               legal_black_in_check_ram_wr,
                                                               legal_eval_ram_wr[EVAL_WIDTH - 1:0]};
 
-   assign {insufficient_material_out,
+   assign {mate_out,
+           insufficient_material_out,
 	   attack_white_pop_out[5:0],
 	   attack_black_pop_out[5:0],
 	   uci_out[UCI_WIDTH - 1:0],
@@ -952,12 +956,18 @@ module all_moves #
               legal_attack_white_pop_ram_wr <= attack_test_attack_white_pop;
               legal_attack_black_pop_ram_wr <= attack_test_attack_black_pop;
 	      if (checkmate_board_valid && checkmate_out)
-		if (attack_test_white_to_move)
-		  legal_eval_ram_wr <= -(`GLOBAL_VALUE_KING); // white mated
-		else
-		  legal_eval_ram_wr <= `GLOBAL_VALUE_KING; // black mated
+                begin
+                   legal_mate_ram_wr <= 1;
+		   if (attack_test_white_to_move)
+		     legal_eval_ram_wr <= -(`GLOBAL_VALUE_KING); // white mated
+		   else
+		     legal_eval_ram_wr <= `GLOBAL_VALUE_KING; // black mated
+                end
 	      else
-		legal_eval_ram_wr <= eval;
+                begin
+                   legal_mate_ram_wr <= 0;
+		   legal_eval_ram_wr <= eval;
+                end
               legal_eval_pv_flag_wr <= eval_pv_flag;
               legal_thrice_rep_ram_wr <= rd_thrice_rep;
               legal_insufficent_material_ram_wr <= insufficient_material;
@@ -1048,19 +1058,19 @@ module all_moves #
    board_attack board_attack
      (/*AUTOINST*/
       // Outputs
-      .is_attacking_done		(is_attacking_done),
-      .white_is_attacking		(white_is_attacking[63:0]),
-      .black_is_attacking		(black_is_attacking[63:0]),
-      .white_in_check			(white_in_check),
-      .black_in_check			(black_in_check),
-      .attack_white_pop			(attack_white_pop[5:0]),
-      .attack_black_pop			(attack_black_pop[5:0]),
+      .is_attacking_done                (is_attacking_done),
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .black_is_attacking               (black_is_attacking[63:0]),
+      .white_in_check                   (white_in_check),
+      .black_in_check                   (black_in_check),
+      .attack_white_pop                 (attack_white_pop[5:0]),
+      .attack_black_pop                 (attack_black_pop[5:0]),
       // Inputs
-      .reset				(reset),
-      .clk				(clk),
-      .board				(evaluate_board[`BOARD_WIDTH-1:0]), // Templated
-      .board_valid			(evaluate_go),		 // Templated
-      .clear_attack			(clear_attack));
+      .reset                            (reset),
+      .clk                              (clk),
+      .board                            (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
+      .board_valid                      (evaluate_go),           // Templated
+      .clear_attack                     (clear_attack));
 
    /* evaluate AUTO_TEMPLATE (
     .board_in (evaluate_board[]),
@@ -1081,36 +1091,36 @@ module all_moves #
    evaluate
      (/*AUTOINST*/
       // Outputs
-      .insufficient_material		(insufficient_material),
-      .eval				(eval[EVAL_WIDTH-1:0]),
-      .eval_pv_flag			(eval_pv_flag),
-      .eval_valid			(eval_valid),
-      .material_black			(material_black[31:0]),
-      .material_white			(material_white[31:0]),
+      .insufficient_material            (insufficient_material),
+      .eval                             (eval[EVAL_WIDTH-1:0]),
+      .eval_pv_flag                     (eval_pv_flag),
+      .eval_valid                       (eval_valid),
+      .material_black                   (material_black[31:0]),
+      .material_white                   (material_white[31:0]),
       // Inputs
-      .clk				(clk),
-      .reset				(reset),
-      .random_score_mask		(random_score_mask[EVAL_WIDTH-1:0]),
-      .random_number			(random_number[EVAL_WIDTH-1:0]),
-      .board_valid			(evaluate_go),		 // Templated
-      .is_attacking_done		(is_attacking_done),
-      .board_in				(evaluate_board[`BOARD_WIDTH-1:0]), // Templated
-      .uci_in				(evaluate_uci[UCI_WIDTH-1:0]), // Templated
-      .castle_mask			(evaluate_castle_mask[3:0]), // Templated
-      .castle_mask_orig			(evaluate_castle_mask_orig[3:0]), // Templated
-      .clear_eval			(clear_eval),
-      .white_to_move			(evaluate_white_to_move), // Templated
-      .white_is_attacking		(white_is_attacking[63:0]),
-      .black_is_attacking		(black_is_attacking[63:0]),
-      .white_in_check			(white_in_check),
-      .black_in_check			(black_in_check),
-      .killer_ply			(killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
-      .killer_board			(killer_board_in[`BOARD_WIDTH-1:0]), // Templated
-      .killer_update			(killer_update_in),	 // Templated
-      .killer_clear			(killer_clear_in),	 // Templated
-      .killer_bonus0			(killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
-      .killer_bonus1			(killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
-      .pv_ctrl_in			(pv_ctrl_in[31:0]));
+      .clk                              (clk),
+      .reset                            (reset),
+      .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
+      .random_number                    (random_number[EVAL_WIDTH-1:0]),
+      .board_valid                      (evaluate_go),           // Templated
+      .is_attacking_done                (is_attacking_done),
+      .board_in                         (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
+      .uci_in                           (evaluate_uci[UCI_WIDTH-1:0]), // Templated
+      .castle_mask                      (evaluate_castle_mask[3:0]), // Templated
+      .castle_mask_orig                 (evaluate_castle_mask_orig[3:0]), // Templated
+      .clear_eval                       (clear_eval),
+      .white_to_move                    (evaluate_white_to_move), // Templated
+      .white_is_attacking               (white_is_attacking[63:0]),
+      .black_is_attacking               (black_is_attacking[63:0]),
+      .white_in_check                   (white_in_check),
+      .black_in_check                   (black_in_check),
+      .killer_ply                       (killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
+      .killer_board                     (killer_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .killer_update                    (killer_update_in),      // Templated
+      .killer_clear                     (killer_clear_in),       // Templated
+      .killer_bonus0                    (killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
+      .killer_bonus1                    (killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
+      .pv_ctrl_in                       (pv_ctrl_in[31:0]));
 
    /* rep_det AUTO_TEMPLATE (
     .clk (clk),
@@ -1124,20 +1134,20 @@ module all_moves #
    rep_det
      (/*AUTOINST*/
       // Outputs
-      .thrice_rep			(rd_thrice_rep),	 // Templated
-      .thrice_rep_valid			(rd_thrice_rep_valid),	 // Templated
+      .thrice_rep                       (rd_thrice_rep),         // Templated
+      .thrice_rep_valid                 (rd_thrice_rep_valid),   // Templated
       // Inputs
-      .clk				(clk),			 // Templated
-      .reset				(reset),		 // Templated
-      .board_in				(rd_board_in[`BOARD_WIDTH-1:0]), // Templated
-      .castle_mask_in			(rd_castle_mask_in[3:0]), // Templated
-      .board_valid			(rd_board_valid),	 // Templated
-      .clear_sample			(rd_clear_sample),	 // Templated
-      .ram_board_in			(rd_ram_board_in[`BOARD_WIDTH-1:0]), // Templated
-      .ram_castle_mask_in		(rd_ram_castle_mask_in[3:0]), // Templated
-      .ram_wr_addr_in			(rd_ram_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
-      .ram_wr_en			(rd_ram_wr_en),		 // Templated
-      .ram_depth_in			(rd_ram_depth_in[REPDET_WIDTH-1:0])); // Templated
+      .clk                              (clk),                   // Templated
+      .reset                            (reset),                 // Templated
+      .board_in                         (rd_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .castle_mask_in                   (rd_castle_mask_in[3:0]), // Templated
+      .board_valid                      (rd_board_valid),        // Templated
+      .clear_sample                     (rd_clear_sample),       // Templated
+      .ram_board_in                     (rd_ram_board_in[`BOARD_WIDTH-1:0]), // Templated
+      .ram_castle_mask_in               (rd_ram_castle_mask_in[3:0]), // Templated
+      .ram_wr_addr_in                   (rd_ram_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
+      .ram_wr_en                        (rd_ram_wr_en),          // Templated
+      .ram_depth_in                     (rd_ram_depth_in[REPDET_WIDTH-1:0])); // Templated
 
    /* move_sort AUTO_TEMPLATE (
     .clk (clk),
@@ -1155,22 +1165,22 @@ module all_moves #
    move_sort_legal
      (/*AUTOINST*/
       // Outputs
-      .ram_rd_data			(legal_ram_rd_data[LEGAL_RAM_WIDTH-1:0]), // Templated
-      .ram_wr_addr			(legal_ram_wr_addr[MAX_POSITIONS_LOG2-1:0]), // Templated
-      .sort_complete			(legal_sort_complete),	 // Templated
+      .ram_rd_data                      (legal_ram_rd_data[LEGAL_RAM_WIDTH-1:0]), // Templated
+      .ram_wr_addr                      (legal_ram_wr_addr[MAX_POSITIONS_LOG2-1:0]), // Templated
+      .sort_complete                    (legal_sort_complete),   // Templated
       // Inputs
-      .clk				(clk),			 // Templated
-      .reset				(reset),		 // Templated
-      .sort_start			(legal_sort_start),	 // Templated
-      .sort_clear			(legal_sort_clear),	 // Templated
-      .white_to_move			(white_to_move),	 // Templated
-      .ram_wr_addr_init			(legal_ram_wr_addr_init), // Templated
-      .ram_wr_data			(legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
-      .ram_wr				(legal_ram_wr),		 // Templated
-      .ram_rd_addr			(am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
+      .clk                              (clk),                   // Templated
+      .reset                            (reset),                 // Templated
+      .sort_start                       (legal_sort_start),      // Templated
+      .sort_clear                       (legal_sort_clear),      // Templated
+      .white_to_move                    (white_to_move),         // Templated
+      .ram_wr_addr_init                 (legal_ram_wr_addr_init), // Templated
+      .ram_wr_data                      (legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
+      .ram_wr                           (legal_ram_wr),          // Templated
+      .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
    
    wire [`BOARD_WIDTH - 1:0] checkmate_board = attack_test_board;
-   wire [3:0] 		     checkmate_en_passant_col = attack_test_en_passant_col;
+   wire [3:0]                checkmate_en_passant_col = attack_test_en_passant_col;
    wire 		     checkmate_white_to_move = legal_white_to_move_ram_wr;
    
    /* checkmate AUTO_TEMPLATE (
@@ -1184,16 +1194,16 @@ module all_moves #
    checkmate
      (/*AUTOINST*/
       // Outputs
-      .checkmate_out			(checkmate_out),
-      .checkmate_valid_out		(checkmate_valid_out),
+      .checkmate_out                    (checkmate_out),
+      .checkmate_valid_out              (checkmate_valid_out),
       // Inputs
-      .clk				(clk),
-      .reset				(reset),
-      .board_valid_in			(checkmate_board_valid), // Templated
-      .board_in				(checkmate_board[`BOARD_WIDTH-1:0]), // Templated
-      .white_to_move_in			(checkmate_white_to_move), // Templated
-      .en_passant_col_in		(checkmate_en_passant_col[3:0]), // Templated
-      .clear				(clear_checkmate_evaluation)); // Templated
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid_in                   (checkmate_board_valid), // Templated
+      .board_in                         (checkmate_board[`BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in                 (checkmate_white_to_move), // Templated
+      .en_passant_col_in                (checkmate_en_passant_col[3:0]), // Templated
+      .clear                            (clear_checkmate_evaluation)); // Templated
 
 endmodule
 

@@ -52,6 +52,7 @@ module numbat_top;
    wire                 am_killer_clear_in;     // From control of control.v
    wire [MAX_DEPTH_LOG2-1:0] am_killer_ply_in;  // From control of control.v
    wire                 am_killer_update_in;    // From control of control.v
+   wire                 am_mate_out;            // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_index; // From control of control.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -317,6 +318,7 @@ module numbat_top;
       .attack_white_pop_out             (am_attack_white_pop_out[5:0]), // Templated
       .attack_black_pop_out             (am_attack_black_pop_out[5:0]), // Templated
       .insufficient_material_out        (am_insufficient_material_out), // Templated
+      .mate_out                         (am_mate_out),           // Templated
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (soft_reset),            // Templated
@@ -630,6 +632,7 @@ module numbat_top;
       .am_attack_black_pop_in           (am_attack_black_pop_out[5:0]), // Templated
       .am_insufficient_material_in      (am_insufficient_material_out), // Templated
       .am_pv_in                         (am_pv_out),             // Templated
+      .am_mate_in                       (am_mate_out),           // Templated
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
@@ -700,7 +703,7 @@ module numbat_top;
       .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
       .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid),
       .ctrl0_axi_wready                 (ctrl0_axi_wready),
-      .q_trans_axi_araddr               (q_trans_axi_araddr[13:0]),
+      .q_trans_axi_araddr               (q_trans_axi_araddr[20:0]),
       .q_trans_axi_arburst              (q_trans_axi_arburst[1:0]),
       .q_trans_axi_arcache              (q_trans_axi_arcache[3:0]),
       .q_trans_axi_arlen                (q_trans_axi_arlen[7:0]),
@@ -708,7 +711,7 @@ module numbat_top;
       .q_trans_axi_arprot               (q_trans_axi_arprot[2:0]),
       .q_trans_axi_arsize               (q_trans_axi_arsize[2:0]),
       .q_trans_axi_arvalid              (q_trans_axi_arvalid),
-      .q_trans_axi_awaddr               (q_trans_axi_awaddr[13:0]),
+      .q_trans_axi_awaddr               (q_trans_axi_awaddr[20:0]),
       .q_trans_axi_awburst              (q_trans_axi_awburst[1:0]),
       .q_trans_axi_awcache              (q_trans_axi_awcache[3:0]),
       .q_trans_axi_awlen                (q_trans_axi_awlen[7:0]),
