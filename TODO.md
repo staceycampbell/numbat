@@ -1,1 +1,2 @@
 - test bench for evaluation
+- fix 3x repetition detection
