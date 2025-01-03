@@ -20,8 +20,6 @@
 #define ETH_LINK_DETECT_INTERVAL 4
 #define PLATFORM_TIMER_INTR_RATE_HZ (4)
 
-#if 0
-
 static XTtcPs TimerInstance;
 static XInterval Interval;
 static u8 Prescaler;
@@ -29,7 +27,7 @@ static u8 Prescaler;
 volatile int TcpFastTmrFlag = 0;
 volatile int TcpSlowTmrFlag = 0;
 
-extern struct netif *cmd_netif;
+extern struct netif *uci_netif;
 
 static void
 platform_clear_interrupt(XTtcPs * TimerInstance)
@@ -59,7 +57,7 @@ timer_callback(XTtcPs * TimerInstance)
         /* For detecting Ethernet phy link status periodically */
         if (DetectEthLinkStatus == ETH_LINK_DETECT_INTERVAL)
         {
-                eth_link_detect(cmd_netif);
+                eth_link_detect(uci_netif);
                 DetectEthLinkStatus = 0;
         }
 
@@ -125,23 +123,12 @@ platform_enable_interrupts()
         XTtcPs_Start(&TimerInstance);
         return;
 }
-#endif
 
 void
 init_platform()
 {
-#if 0
         platform_setup_timer();
         platform_setup_interrupts();
-#endif
 
-        return;
-}
-
-void
-cleanup_platform()
-{
-        Xil_ICacheDisable();
-        Xil_DCacheDisable();
         return;
 }

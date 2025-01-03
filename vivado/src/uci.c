@@ -26,6 +26,14 @@ static char uci_input_buffer[UCI_INPUT_BUFFER_SIZE];
 static uint32_t uci_input_index;
 static int32_t book_miss;
 
+#if UCI_TCP_COMMS == 1
+static void
+uci_reply(const char *str)
+{
+        tcp_write_uci(str);
+        printf("uci out: %s\n", str);
+}
+#else
 static inline void
 uci_outbyte(char c)
 {
@@ -44,6 +52,7 @@ uci_reply(const char *str)
         uci_outbyte('\n');
         printf("uci out: %s\n", str);
 }
+#endif
 
 static void
 uci_go(tc_t * tc)
@@ -271,9 +280,15 @@ uci_input_poll(void)
         char c;
         uint32_t uci_search_action;
 
+#if UCI_TCP_COMMS == 1
+        if (tcp_uci_fifo_count() == 0)
+                return UCI_SEARCH_CONT;
+        c = tcp_uci_read_char();
+#else
         if (!XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR))
                 return UCI_SEARCH_CONT;
         c = XUartPs_ReadReg(XPAR_XUARTPS_1_BASEADDR, XUARTPS_FIFO_OFFSET);
+#endif
         uci_input_buffer[uci_input_index] = c;
         uci_input_buffer[uci_input_index + 1] = '\0';
         ++uci_input_index;

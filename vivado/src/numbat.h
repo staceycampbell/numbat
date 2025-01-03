@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <assert.h>
 
+#define UCI_TCP_COMMS 1 // 0 - UART1, 1 - lwip
+
 #if ! defined(EXCLUDE_VITIS)
 #include <xtime_l.h>
 #include <xuartps.h>
@@ -854,12 +856,12 @@ pv_load_table(const uci_t * pv)
         pv_write_ctrl(0, 0, 0, 0, 0);   // disable write
 }
 
-extern void print_app_header(void);
 extern int start_application(void);
 extern void init_platform(void);
-extern void cleanup_platform(void);
 extern void platform_enable_interrupts(void);
-extern uint32_t cmd_transfer_data(uint8_t cmdbuf[512], uint32_t * index);
+extern void tcp_write_uci(const char *str);
+extern int32_t tcp_uci_fifo_count(void);
+extern char tcp_uci_read_char(void);
 
 extern void numbat_init(void);
 extern uint32_t numbat_move_piece(board_t * board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);

@@ -332,11 +332,6 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         uint32_t status;
 
         printf("cmd: %s\n", cmd);
-#if 0
-        len = strlen((char *)cmd);
-        tcp_write(cmd_pcb, cmd, len, TCP_WRITE_FLAG_COPY);
-        tcp_write(cmd_pcb, "\n", 1, TCP_WRITE_FLAG_COPY);
-#endif
         sscanf((char *)cmd, "%s %d %d %d\n", str, &arg1, &arg2, &arg3);
 
         if (strcmp((char *)str, "status") == 0)
