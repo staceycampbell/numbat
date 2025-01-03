@@ -1,6 +1,6 @@
 CFLAGS := -Wall -g
 
-all:: numbatcomm
+all:: numbatcomm numbattcp
 
 clean::
-	rm -f numbatcomm debug.log
+	rm -f numbatcomm debug.log numbattcp
