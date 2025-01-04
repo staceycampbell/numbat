@@ -12,11 +12,13 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <linux/tcp.h>
 
 int
 main(int argc, char *argv[])
 {
-        int opt, i;
+        int opt;
+        int hangup;
         char *ipstring;
         uint32_t port;
         struct pollfd fds[2];
@@ -72,14 +74,15 @@ main(int argc, char *argv[])
         time(&curtime);
         fprintf(logfp, "\n\nDebug log started: %s\n\n", ctime(&curtime));
 
-        while (poll(fds, 2, -1) != -1)
+        hangup = 0;
+        while (poll(fds, 2, -1) != -1 && !hangup)
         {
                 if (fds[0].revents == POLLIN)
                 {
                         if ((count = read(fds[0].fd, buffer, sizeof(buffer))) != 0)
                         {
-                                for (i = 0; i < count; ++i)
-                                        fputc(buffer[i], logfp);
+                                fprintf(logfp, "recv %ld: ", count);
+                                fwrite(buffer, 1, count, logfp);
                                 fflush(logfp);
                                 write(fileno(stdout), buffer, count);
                         }
@@ -88,19 +91,16 @@ main(int argc, char *argv[])
                 {
                         if ((count = read(fds[1].fd, buffer, sizeof(buffer))) != 0)
                         {
-                                i = 0;
-                                while (i < count)
-                                {
-                                        fputc(buffer[i], logfp);
-                                        write(fds[0].fd, &buffer[i], 1);
-                                        usleep(1000);
-                                        ++i;
-                                }
+                                write(fds[0].fd, buffer, count);
+                                fprintf(logfp, "send %ld: ", count);
+                                fwrite(buffer, 1, count, logfp);
                                 fflush(logfp);
                         }
                 }
+                hangup = fds[0].revents == POLLHUP || fds[1].revents == POLLHUP;
         }
         close(fds[0].fd);
+        fprintf(logfp, "%s exit: %s\n\n", argv[0], ctime(&curtime));
         fclose(logfp);
         return 0;
 }
