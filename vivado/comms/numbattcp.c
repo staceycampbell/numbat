@@ -97,7 +97,7 @@ main(int argc, char *argv[])
                                 fflush(logfp);
                         }
                 }
-                hangup = fds[0].revents == POLLHUP || fds[1].revents == POLLHUP;
+                hangup = (fds[0].revents & POLLHUP) != 0 || (fds[1].revents & POLLHUP) != 0;
         }
         close(fds[0].fd);
         fprintf(logfp, "%s exit: %s\n\n", argv[0], ctime(&curtime));
