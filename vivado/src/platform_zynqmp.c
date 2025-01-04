@@ -18,7 +18,8 @@
 #define INTC_DIST_BASE_ADDR     XPAR_SCUGIC_0_DIST_BASEADDR
 
 #define ETH_LINK_DETECT_INTERVAL 4
-#define PLATFORM_TIMER_INTR_RATE_HZ (4)
+// 50 ms per https://github.com/Xilinx/embeddedsw/blob/master/lib/sw_apps/lwip_tcp_perf_server/src/platform_zynqmp.c
+#define PLATFORM_TIMER_INTR_RATE_HZ (20)
 
 static XTtcPs TimerInstance;
 static XInterval Interval;

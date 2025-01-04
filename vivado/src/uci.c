@@ -28,9 +28,10 @@ static int32_t book_miss;
 
 #if UCI_TCP_COMMS == 1
 static void
-uci_reply(const char *str)
+uci_reply(char *str)
 {
         tcp_write_uci(str);
+        tcp_write_uci("\n");
         printf("uci out: %s\n", str);
 }
 #else
@@ -281,6 +282,7 @@ uci_input_poll(void)
         uint32_t uci_search_action;
 
 #if UCI_TCP_COMMS == 1
+        tcp_task();
         if (tcp_uci_fifo_count() == 0)
                 return UCI_SEARCH_CONT;
         c = tcp_uci_read_char();

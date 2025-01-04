@@ -19,11 +19,8 @@ uint32_t game_moves;
 uint32_t tc_main = 15;          // minutes
 uint32_t tc_increment = 0;      // seconds
 
-extern volatile int TcpFastTmrFlag;
-extern volatile int TcpSlowTmrFlag;
-static struct netif server_netif;
-
 struct netif *uci_netif;
+static struct netif server_netif;
 
 static void
 print_ip(char *msg, ip_addr_t * ip)
@@ -108,17 +105,7 @@ main(void)
         {
                 if (XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR))
                         com_status = process_serial_port(cmdbuf, &index);
-                if (TcpFastTmrFlag)
-                {
-                        tcp_fasttmr();
-                        TcpFastTmrFlag = 0;
-                }
-                if (TcpSlowTmrFlag)
-                {
-                        tcp_slowtmr();
-                        TcpSlowTmrFlag = 0;
-                }
-                xemacif_input(uci_netif);
+                tcp_task();
                 uci_input_poll();
                 if (com_status)
                 {
