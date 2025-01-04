@@ -31,8 +31,7 @@ static void
 uci_reply(char *str)
 {
         tcp_write_uci(str);
-        tcp_write_uci("\n");
-        printf("uci out: %s\n", str);
+        printf("uci out: %s", str);
 }
 #else
 static inline void
@@ -50,7 +49,6 @@ uci_reply(const char *str)
         len = strlen(str);
         for (i = 0; i < len; ++i)
                 uci_outbyte(str[i]);
-        uci_outbyte('\n');
         printf("uci out: %s\n", str);
 }
 #endif
@@ -111,15 +109,15 @@ uci_dispatch(void)
                 return UCI_SEARCH_CONT;
         if (strcmp(p, "uci") == 0)
         {
-                uci_reply("id name numbat");
-                uci_reply("id author Stacey Campbell");
-                uci_reply("option name OwnBook type check default true");
-                uci_reply("uciok");
+                uci_reply("id name numbat\n");
+                uci_reply("id author Stacey Campbell\n");
+                uci_reply("option name OwnBook type check default true\n");
+                uci_reply("uciok\n");
         }
         else if (strcmp(p, "isready") == 0)
         {
                 uci_search_action = UCI_SEARCH_CONT;
-                uci_reply("readyok");
+                uci_reply("readyok\n");
         }
         else if (strcmp(p, "ucinewgame") == 0)
         {
@@ -233,6 +231,7 @@ uci_dispatch(void)
                 uci_string(&game[game_moves - 1].uci, uci_str);
                 strcpy(best_move, "bestmove ");
                 strcat(best_move, uci_str);
+                strcat(best_move, "\n");
                 uci_reply(best_move);
         }
         else if (strcmp(p, "stop") == 0)
@@ -263,7 +262,7 @@ uci_pv(int32_t depth, int32_t score, uint32_t time_ms, uint32_t nodes, uint32_t 
                 strncat(pv_str, uci_str, sizeof(pv_str) - 1);
         }
         pv_str[sizeof(pv_str) - 1] = '\0';
-        snprintf(info_str, sizeof(info_str), "info depth %s score cp %s time %d nodes %d nps %d pv %s",
+        snprintf(info_str, sizeof(info_str), "info depth %s score cp %s time %d nodes %d nps %d pv %s\n",
                  depth_str, score_str, time_ms, nodes, nps, pv_str);
         uci_reply(info_str);
 }
