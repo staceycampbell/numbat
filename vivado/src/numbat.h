@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define UCI_TCP_COMMS 1 // 0 - UART1, 1 - lwip
+#define UCI_TCP_COMMS 1         // 0 - UART1, 1 - lwip
 
 #if ! defined(EXCLUDE_VITIS)
 #include <xtime_l.h>
@@ -878,7 +878,7 @@ extern void numbat_repdet_entry(uint32_t index, const uint32_t board[8], uint32_
 extern void numbat_read_uci(uci_t * uci);
 
 extern void nm_init(void);
-extern board_t nm_top(const tc_t * tc);
+extern board_t nm_top(const tc_t * tc, uint32_t * resign);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);
@@ -894,6 +894,8 @@ extern int32_t uci_move(char *p);
 extern void uci_print_game(uint32_t result);
 extern void uci_string(const uci_t * uci, char *str);
 extern void uci_pv(int32_t depth, int32_t score, uint32_t time_ms, uint32_t nodes, uint32_t nps, const uci_t * ply0_move, const uci_t * pv);
+extern void uci_currmove(int32_t depth, int32_t seldepth, const uci_t * currmove, int32_t currmovenumber, int32_t score);
+extern void uci_resign(void);
 
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t * trans, uint32_t * collision);

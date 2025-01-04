@@ -54,7 +54,7 @@ uci_reply(const char *str)
 #endif
 
 static void
-uci_go(tc_t * tc)
+uci_go(tc_t * tc, uint32_t *resign)
 {
         uint32_t book_move_found;
         board_t best_board;
@@ -69,7 +69,7 @@ uci_go(tc_t * tc)
                 book_move_found = book_game_move(&game[game_moves - 1]);
         if (!book_move_found)
         {
-                best_board = nm_top(tc);
+                best_board = nm_top(tc, resign);
                 game[game_moves] = best_board;
                 ++game_moves;
                 ++book_miss;
@@ -85,6 +85,7 @@ uci_dispatch(void)
         int32_t i, len;
         char *p, *next;
         uint32_t uci_search_action;
+        uint32_t resign;
 
         uci_search_action = UCI_SEARCH_STOP;    // default action for UCI protocol, overridden below
         p = uci_input_buffer;
@@ -227,12 +228,14 @@ uci_dispatch(void)
                         increment = b_increment / 1000;
                 }
                 tc_set(&tc, side, main, increment);
-                uci_go(&tc);
+                uci_go(&tc, &resign);
                 uci_string(&game[game_moves - 1].uci, uci_str);
                 strcpy(best_move, "bestmove ");
                 strcat(best_move, uci_str);
                 strcat(best_move, "\n");
                 uci_reply(best_move);
+                if (resign)
+                        uci_resign();
         }
         else if (strcmp(p, "stop") == 0)
         {
@@ -240,6 +243,24 @@ uci_dispatch(void)
         }
 
         return uci_search_action;
+}
+
+void
+uci_resign(void)
+{
+        uci_reply("info string Resign\n");
+}
+
+void
+uci_currmove(int32_t depth, int32_t seldepth, const uci_t * currmove, int32_t currmovenumber, int32_t score)
+{
+        char uci_str[7];
+        char info_str[1024];
+
+        uci_string(currmove, uci_str);
+        snprintf(info_str, sizeof(info_str), "info depth %d seldepth %d currmove %s currmovenumber %d score cp %d\n",
+                 depth, seldepth, uci_str, currmovenumber, score);
+        uci_reply(info_str);
 }
 
 void

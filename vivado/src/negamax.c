@@ -440,7 +440,8 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 if (board_eval == GLOBAL_VALUE_KING)
                         value = GLOBAL_VALUE_KING - ply;
-                else if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
+                else if (depth <= 0
+                         && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
                 {
                         value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                         if (abort_search)
@@ -527,7 +528,7 @@ nm_init(void)
 }
 
 board_t
-nm_top(const tc_t * tc)
+nm_top(const tc_t * tc, uint32_t *resign)
 {
         int32_t i, game_index;
         int32_t alpha, beta;
@@ -542,6 +543,7 @@ nm_top(const tc_t * tc)
         XTime t_end, t_report, t_start;
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
+        static int32_t last_best_score[3];
 
         if (game_moves == 0)
         {
@@ -553,6 +555,8 @@ nm_top(const tc_t * tc)
 
         game_index = game_moves - 1;
         best_board = game[game_index];
+        if (resign)
+                *resign = 0;
 
         nodes_visited = 0;
         q_nodes_visited = 0;
@@ -636,10 +640,12 @@ nm_top(const tc_t * tc)
                         printf("\n");
                 if (debug_pv_info)
                 {
+                        best_board.full_move_number = 1 + game_moves / 2;
                         XTime_GetTime(&t_report);
                         elapsed_ticks = t_report - t_start;
                         elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
                         nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
+                        uci_currmove(depth_limit, q_ply_reached, &board_ptr[0]->uci, best_board.full_move_number, best_evaluation);
                         uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci, pv_array);
                 }
                 if (!abort_search)
@@ -652,6 +658,11 @@ nm_top(const tc_t * tc)
                         valid_q_ply_reached = q_ply_reached;
         }
         best_board.full_move_number = 1 + game_moves / 2;
+
+        last_best_score[game_index % 3] = overall_best;
+        if (game_index > 2 && last_best_score[0] <= -700 && last_best_score[1] <= -700 && last_best_score[2] <= -700)
+                if (resign)
+                        *resign = 1;
 
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;

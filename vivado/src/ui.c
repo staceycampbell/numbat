@@ -49,7 +49,7 @@ do_both(void)
                 }
                 else
                 {
-                        best_board = nm_top(&tc);
+                        best_board = nm_top(&tc, 0);
                         numbat_write_board_basic(&best_board);
                         numbat_write_board_wait(&best_board, 0);
                         move_count = numbat_move_count();
@@ -361,7 +361,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         tc_ignore(&tc);
                         trans_clear_table();    // for ease of debug
                         q_trans_clear_table();    // for ease of debug
-                        best_board = nm_top(&tc);
+                        best_board = nm_top(&tc, 0);
                         numbat_write_board_basic(&best_board);
                         numbat_write_board_wait(&best_board, 0);
                         numbat_print_board(&best_board, 1);
