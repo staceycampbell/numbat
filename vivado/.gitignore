@@ -4,3 +4,4 @@ vivado*.log
 .Xil
 xrc.log
 numbat_workspace/
+Packages
