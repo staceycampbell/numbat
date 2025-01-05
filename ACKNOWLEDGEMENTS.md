@@ -38,3 +38,5 @@ As such I'd like to acknowledge and thank the following for their work in expand
  * Contributors to the [Computer Chess Club: Programming and Technical Discussions forum](https://talkchess.com/viewforum.php?f=7).
  * Emilio Díaz, author of [secondchess](https://github.com/emdio/secondchess).
  * [Maksim Korzh](https://www.chessprogramming.org/Maksim_Korzh), author of [Chenglite](https://github.com/maksimKorzh/Chenglite).
+
+Stacey Campbell 2025
