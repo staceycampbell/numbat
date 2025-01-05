@@ -1,6 +1,6 @@
 #!/bin/bash
 xboard -boardSize Medium -fUCI -fcp numbattcp \
        -fd /home/stacey/src/numbat/vivado/comms \
-       -scp '/home/stacey/src/phalanx/phalanx -e 20' \
+       -scp '/home/stacey/src/phalanx/phalanx -e 1' \
        -sd /home/stacey/src/phalanx/ \
        -saveGameFile /home/stacey/tmp/ph/phgames.pgn
