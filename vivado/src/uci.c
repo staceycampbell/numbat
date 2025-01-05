@@ -113,6 +113,7 @@ uci_dispatch(void)
                 uci_reply("id name numbat\n");
                 uci_reply("id author Stacey Campbell\n");
                 uci_reply("option name OwnBook type check default true\n");
+                // uci_reply("option name UCI_DrawOffers type check default true\n"); // currently hangs xboard
                 uci_reply("uciok\n");
         }
         else if (strcmp(p, "isready") == 0)
@@ -228,14 +229,12 @@ uci_dispatch(void)
                         increment = b_increment / 1000;
                 }
                 tc_set(&tc, side, main, increment);
-                uci_go(&tc, &resign);
+                uci_go(&tc, &resign); // resign ignored for now, xboard hang
                 uci_string(&game[game_moves - 1].uci, uci_str);
                 strcpy(best_move, "bestmove ");
                 strcat(best_move, uci_str);
                 strcat(best_move, "\n");
                 uci_reply(best_move);
-                if (resign)
-                        uci_resign();
         }
         else if (strcmp(p, "stop") == 0)
         {
@@ -248,7 +247,7 @@ uci_dispatch(void)
 void
 uci_resign(void)
 {
-        uci_reply("info string Resign\n");
+        uci_reply("info string resign\n");
 }
 
 void
