@@ -1,6 +1,8 @@
 // Copyright (c) 2025 Stacey Campbell
 // SPDX-License-Identifier: MIT
 
+#pragma GCC optimize ("O2")
+
 #include <stdio.h>
 #include <string.h>
 #include <netif/xadapter.h>
