@@ -1,4 +1,4 @@
-numbat/numbat_1.gen/sources_1/bd/mpsoc_preset/hdl/mpsoc_preset_wrapper.v
+numbat/numbat_1.gen/sources_1/bd/mpsoc_block_diag/hdl/mpsoc_block_diag_wrapper.v
 ../all_moves.sv
 ../axi4lite_write.sv
 ../board_attack.sv

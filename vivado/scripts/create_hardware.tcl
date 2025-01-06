@@ -6,8 +6,8 @@ proc listFromFile {filename} {
 }
 create_project numbat_1 numbat -part xczu7ev-ffvc1156-2-e
 set_property BOARD_PART xilinx.com:zcu106:part0:2.6 [current_project]
-source scripts/mpsoc_preset.tcl
-make_wrapper -files [get_files numbat/numbat_1.srcs/sources_1/bd/mpsoc_preset/mpsoc_preset.bd] -top
+source scripts/mpsoc_block_diag.tcl
+make_wrapper -files [get_files numbat/numbat_1.srcs/sources_1/bd/mpsoc_block_diag/mpsoc_block_diag.bd] -top
 
 set all_src_files [listFromFile hardware_source.f]
 add_files -norecurse $all_src_files

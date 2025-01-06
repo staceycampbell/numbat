@@ -73,26 +73,26 @@ module numbat_top;
    wire [63:0]          am_white_is_attacking_out;// From all_moves of all_moves.v
    wire                 am_white_to_move_in;    // From control of control.v
    wire                 am_white_to_move_out;   // From all_moves of all_moves.v
-   wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [0:0]           ctrl0_axi_arready;      // From control of control.v
-   wire                 ctrl0_axi_arvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [39:0]          ctrl0_axi_awaddr;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [2:0]           ctrl0_axi_awprot;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl0_axi_arvalid;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [39:0]          ctrl0_axi_awaddr;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [2:0]           ctrl0_axi_awprot;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [0:0]           ctrl0_axi_awready;      // From control of control.v
-   wire                 ctrl0_axi_awvalid;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 ctrl0_axi_bready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl0_axi_awvalid;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 ctrl0_axi_bready;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [1:0]           ctrl0_axi_bresp;        // From control of control.v
    wire [0:0]           ctrl0_axi_bvalid;       // From control of control.v
    wire [31:0]          ctrl0_axi_rdata;        // From control of control.v
-   wire                 ctrl0_axi_rready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 ctrl0_axi_rready;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [1:0]           ctrl0_axi_rresp;        // From control of control.v
    wire [0:0]           ctrl0_axi_rvalid;       // From control of control.v
-   wire [31:0]          ctrl0_axi_wdata;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [31:0]          ctrl0_axi_wdata;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [0:0]           ctrl0_axi_wready;       // From control of control.v
-   wire [3:0]           ctrl0_axi_wstrb;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 ctrl0_axi_wvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 digclk;                 // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [3:0]           ctrl0_axi_wstrb;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 ctrl0_axi_wvalid;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 digclk;                 // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 initial_board_check;    // From all_moves of all_moves.v
    wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
    wire                 initial_fifty_move;     // From all_moves of all_moves.v
@@ -109,7 +109,7 @@ module numbat_top;
    wire [0:0]           q_trans_axi_arlock;     // From q_trans of trans.v
    wire [2:0]           q_trans_axi_arprot;     // From q_trans of trans.v
    wire [3:0]           q_trans_axi_arqos;      // From q_trans of trans.v
-   wire                 q_trans_axi_arready;    // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 q_trans_axi_arready;    // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [3:0]           q_trans_axi_arregion;   // From q_trans of trans.v
    wire [2:0]           q_trans_axi_arsize;     // From q_trans of trans.v
    wire                 q_trans_axi_arvalid;    // From q_trans of trans.v
@@ -120,21 +120,21 @@ module numbat_top;
    wire [0:0]           q_trans_axi_awlock;     // From q_trans of trans.v
    wire [2:0]           q_trans_axi_awprot;     // From q_trans of trans.v
    wire [3:0]           q_trans_axi_awqos;      // From q_trans of trans.v
-   wire                 q_trans_axi_awready;    // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 q_trans_axi_awready;    // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [3:0]           q_trans_axi_awregion;   // From q_trans of trans.v
    wire [2:0]           q_trans_axi_awsize;     // From q_trans of trans.v
    wire                 q_trans_axi_awvalid;    // From q_trans of trans.v
    wire                 q_trans_axi_bready;     // From q_trans of trans.v
-   wire [1:0]           q_trans_axi_bresp;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 q_trans_axi_bvalid;     // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [127:0]         q_trans_axi_rdata;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 q_trans_axi_rlast;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [1:0]           q_trans_axi_bresp;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 q_trans_axi_bvalid;     // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [127:0]         q_trans_axi_rdata;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 q_trans_axi_rlast;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 q_trans_axi_rready;     // From q_trans of trans.v
-   wire [1:0]           q_trans_axi_rresp;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 q_trans_axi_rvalid;     // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [1:0]           q_trans_axi_rresp;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 q_trans_axi_rvalid;     // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [127:0]         q_trans_axi_wdata;      // From q_trans of trans.v
    wire                 q_trans_axi_wlast;      // From q_trans of trans.v
-   wire                 q_trans_axi_wready;     // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 q_trans_axi_wready;     // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [15:0]          q_trans_axi_wstrb;      // From q_trans of trans.v
    wire                 q_trans_axi_wvalid;     // From q_trans of trans.v
    wire [`BOARD_WIDTH-1:0] q_trans_board_in;    // From control of control.v
@@ -161,7 +161,7 @@ module numbat_top;
    wire                 q_trans_trans_idle_out; // From q_trans of trans.v
    wire                 q_trans_white_to_move_in;// From control of control.v
    wire [EVAL_WIDTH-1:0] random_score_mask;     // From control of control.v
-   wire [0:0]           reset;                  // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [0:0]           reset;                  // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 soft_reset;             // From control of control.v
    wire [TRANS_ADDRESS_WIDTH-1:0] trans_axi_araddr;// From trans of trans.v
    wire [1:0]           trans_axi_arburst;      // From trans of trans.v
@@ -170,7 +170,7 @@ module numbat_top;
    wire [0:0]           trans_axi_arlock;       // From trans of trans.v
    wire [2:0]           trans_axi_arprot;       // From trans of trans.v
    wire [3:0]           trans_axi_arqos;        // From trans of trans.v
-   wire                 trans_axi_arready;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 trans_axi_arready;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [3:0]           trans_axi_arregion;     // From trans of trans.v
    wire [2:0]           trans_axi_arsize;       // From trans of trans.v
    wire                 trans_axi_arvalid;      // From trans of trans.v
@@ -181,21 +181,21 @@ module numbat_top;
    wire [0:0]           trans_axi_awlock;       // From trans of trans.v
    wire [2:0]           trans_axi_awprot;       // From trans of trans.v
    wire [3:0]           trans_axi_awqos;        // From trans of trans.v
-   wire                 trans_axi_awready;      // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 trans_axi_awready;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [3:0]           trans_axi_awregion;     // From trans of trans.v
    wire [2:0]           trans_axi_awsize;       // From trans of trans.v
    wire                 trans_axi_awvalid;      // From trans of trans.v
    wire                 trans_axi_bready;       // From trans of trans.v
-   wire [1:0]           trans_axi_bresp;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 trans_axi_bvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire [127:0]         trans_axi_rdata;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 trans_axi_rlast;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [1:0]           trans_axi_bresp;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 trans_axi_bvalid;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [127:0]         trans_axi_rdata;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 trans_axi_rlast;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 trans_axi_rready;       // From trans of trans.v
-   wire [1:0]           trans_axi_rresp;        // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
-   wire                 trans_axi_rvalid;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire [1:0]           trans_axi_rresp;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 trans_axi_rvalid;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [127:0]         trans_axi_wdata;        // From trans of trans.v
    wire                 trans_axi_wlast;        // From trans of trans.v
-   wire                 trans_axi_wready;       // From mpsoc_preset_wrapper of mpsoc_preset_wrapper.v
+   wire                 trans_axi_wready;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [15:0]          trans_axi_wstrb;        // From trans of trans.v
    wire                 trans_axi_wvalid;       // From trans of trans.v
    wire [`BOARD_WIDTH-1:0] trans_board_in;      // From control of control.v
@@ -658,9 +658,9 @@ module numbat_top;
       .clk                              (clk),
       .reset                            (reset));
 
-   /* mpsoc_preset_wrapper AUTO_TEMPLATE (
+   /* mpsoc_block_diag_wrapper AUTO_TEMPLATE (
     );*/
-   mpsoc_preset_wrapper mpsoc_preset_wrapper
+   mpsoc_block_diag_wrapper mpsoc_block_diag_wrapper
      (/*AUTOINST*/
       // Outputs
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
@@ -759,7 +759,7 @@ endmodule
 // verilog-library-directories:(
 //     "."
 //     "/usr/local/Xilinx/Vivado/2022.1/data/verilog/src/unisims"
-//     "vivado/./numbat/numbat_1.gen/sources_1/bd/mpsoc_preset/hdl"
+//     "vivado/./numbat/numbat_1.gen/sources_1/bd/mpsoc_block_diag/hdl"
 //     )
 // End:
 
