@@ -43,8 +43,8 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-   create_project project_1 myproj -part xczu7ev-ffvc1156-2-e
-   set_property BOARD_PART xilinx.com:zcu106:part0:2.6 [current_project]
+   create_project project_1 myproj -part xck26-sfvc784-2LV-c
+   set_property BOARD_PART xilinx.com:kr260_som:part0:1.1 [current_project]
 }
 
 
@@ -311,7 +311,7 @@ proc create_root_design { parentCell } {
   set_property -dict [list \
     CONFIG.Memory_Type {Single_Port_RAM} \
     CONFIG.PRIM_type_to_Implement {URAM} \
-    CONFIG.READ_LATENCY_A {6} \
+    CONFIG.READ_LATENCY_A {10} \
     CONFIG.READ_LATENCY_B {4} \
   ] $q_uram
 
@@ -701,7 +701,7 @@ SPI Flash#Quad SPI Flash#GPIO0 MIO#I2C 0#I2C 0#I2C 1#I2C 1#UART 0#UART 0#UART 1#
     CONFIG.PSU__CRF_APB__DP_AUDIO_REF_CTRL__FREQMHZ {25} \
     CONFIG.PSU__CRF_APB__DP_AUDIO_REF_CTRL__SRCSEL {RPLL} \
     CONFIG.PSU__CRF_APB__DP_AUDIO__FRAC_ENABLED {0} \
-    CONFIG.PSU__CRF_APB__DP_STC_REF_CTRL__ACT_FREQMHZ {26.313158} \
+    CONFIG.PSU__CRF_APB__DP_STC_REF_CTRL__ACT_FREQMHZ {26.783037} \
     CONFIG.PSU__CRF_APB__DP_STC_REF_CTRL__FREQMHZ {27} \
     CONFIG.PSU__CRF_APB__DP_STC_REF_CTRL__SRCSEL {RPLL} \
     CONFIG.PSU__CRF_APB__DP_VIDEO_REF_CTRL__ACT_FREQMHZ {299.970032} \
@@ -805,8 +805,8 @@ SPI Flash#Quad SPI Flash#GPIO0 MIO#I2C 0#I2C 0#I2C 1#I2C 1#UART 0#UART 0#UART 1#
     CONFIG.PSU__CRL_APB__PCAP_CTRL__ACT_FREQMHZ {187.481262} \
     CONFIG.PSU__CRL_APB__PCAP_CTRL__FREQMHZ {200} \
     CONFIG.PSU__CRL_APB__PCAP_CTRL__SRCSEL {IOPLL} \
-    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__ACT_FREQMHZ {333.300018} \
-    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {333.333333} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__ACT_FREQMHZ {249.975021} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {250} \
     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__SRCSEL {RPLL} \
     CONFIG.PSU__CRL_APB__PL1_REF_CTRL__ACT_FREQMHZ {199.980026} \
     CONFIG.PSU__CRL_APB__PL2_REF_CTRL__ACT_FREQMHZ {100} \

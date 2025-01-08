@@ -23,21 +23,21 @@ module evaluate_mob #
    
    localparam LATENCY_COUNT = 10;
 
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitebish_eg_t1 [0:15];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitebish_mg_t1 [0:15];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whiteknit_eg_t1 [0:15];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whiteknit_mg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackbish_eg_t1 [0:15];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackbish_mg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackknit_eg_t1 [0:15];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackknit_mg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackquen_eg_t1 [0:15];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackquen_mg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackrook_eg_t1 [0:15];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackrook_mg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitebish_eg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whiteknit_eg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitequen_eg_t1 [0:15];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitequen_mg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whiterook_eg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackbish_mg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackknit_mg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackquen_mg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_blackrook_mg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitebish_mg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whiteknit_mg_t1 [0:15];
+   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whitequen_mg_t1 [0:15];
    (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] eval_whiterook_mg_t1 [0:15];
    
    reg signed [EVAL_WIDTH - 1:0]         eval_whitebish_eg_t2 [0:15];

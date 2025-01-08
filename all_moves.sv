@@ -147,18 +147,18 @@ module all_moves #
    reg [UCI_WIDTH - 1:0]                 attack_uci;
    reg [5:0]                             attack_test_attack_white_pop, attack_test_attack_black_pop;
 
-   reg [`BOARD_WIDTH - 1:0]              evaluate_board;
+   reg [`BOARD_WIDTH - 1:0]              evaluate_board, evaluate_board_r;
+   reg                                   evaluate_go, evaluate_go_r;
    reg [UCI_WIDTH - 1:0]                 evaluate_uci;
    reg [3:0]                             evaluate_castle_mask;
    reg [3:0]                             evaluate_castle_mask_orig;
    reg                                   evaluate_white_to_move;
-   reg                                   evaluate_go;
 
    reg                                   clear_eval = 0;
    reg                                   clear_attack = 0;
 
    reg signed [3:0]                      row, col;
-   reg signed [3:0]                      col_r; // one clock delayed, for timing/fanout, be careful using this
+   reg signed [3:0]                      col_r, row_r; // one clock delayed, for timing/fanout, be careful using this
 
    reg signed [1:0]                      slider_offset_col [`PIECE_QUEN:`PIECE_BISH][0:7];
    reg signed [1:0]                      slider_offset_row [`PIECE_QUEN:`PIECE_BISH][0:7];
@@ -212,7 +212,10 @@ module all_moves #
    
    reg [63:0]                            square_active;
 
-   reg 					 checkmate_board_valid;
+   reg 					 checkmate_board_valid, checkmate_board_valid_r;
+   reg [`BOARD_WIDTH - 1:0]              checkmate_board_r;
+   reg [3:0]                             checkmate_en_passant_col_r;
+   reg                                   checkmate_white_to_move_r;
    reg 					 clear_checkmate_evaluation;
 
    // should be empty
@@ -247,6 +250,10 @@ module all_moves #
    wire signed [4:0]                     pawn_enp_row[0:1];
 
    integer                               i, x, y, ri, s;
+   
+   wire [`BOARD_WIDTH - 1:0]             checkmate_board = attack_test_board;
+   wire [3:0]                            checkmate_en_passant_col = attack_test_en_passant_col;
+   wire                                  checkmate_white_to_move = legal_white_to_move_ram_wr;
 
    wire                                  black_to_move = ~white_to_move;
 
@@ -405,17 +412,26 @@ module all_moves #
         piece <= board[idx[row][col]+:`PIECE_WIDTH];
 
         col_r <= col;
+        row_r <= row;
 
         white_to_move_ram_wr <= ~white_to_move;
 
+        evaluate_board_r <= evaluate_board; // registered for timing and fanout
+        evaluate_go_r <= evaluate_go; // registered for timing and fanout
+
+        checkmate_board_valid_r <= checkmate_board_valid; // registered for timing and fanout
+        checkmate_board_r <= checkmate_board;
+        checkmate_en_passant_col_r <= checkmate_en_passant_col;
+        checkmate_white_to_move_r <= checkmate_white_to_move;
+        
         // free-run these for timing, only valid when used in states
-        pawn_row_adv1 <= row + pawn_advance[white_to_move];
+        pawn_row_adv1 <= row_r + pawn_advance[white_to_move];
         pawn_col_adv1 <= col_r;
-        pawn_row_adv2 <= row + pawn_advance[white_to_move] * 2;
+        pawn_row_adv2 <= row_r + pawn_advance[white_to_move] * 2;
         pawn_col_adv2 <= col_r;
-        pawn_row_cap_left <= row + pawn_advance[white_to_move];
+        pawn_row_cap_left <= row_r + pawn_advance[white_to_move];
         pawn_col_cap_left <= col_r - 1;
-        pawn_row_cap_right <= row + pawn_advance[white_to_move];
+        pawn_row_cap_right <= row_r + pawn_advance[white_to_move];
         pawn_col_cap_right <= col_r + 1;
         for (i = 0; i < 4; i = i + 1)
           pawn_promotions[i][`BLACK_BIT] <= black_to_move;
@@ -436,9 +452,9 @@ module all_moves #
         pawn_en_passant_mask[1] <= en_passant_col[`EN_PASSANT_VALID_BIT] &&
                                    pawn_col_cap_right <= 7 &&
                                    en_passant_col[2:0] == pawn_col_cap_right[2:0];
-        pawn_do_init <= row == pawn_init_row[white_to_move];
-        pawn_do_en_passant <= row == pawn_en_passant_row[white_to_move];
-        pawn_do_promote <= row == pawn_promote_row[white_to_move];
+        pawn_do_init <= row_r == pawn_init_row[white_to_move];
+        pawn_do_en_passant <= row_r == pawn_en_passant_row[white_to_move];
+        pawn_do_promote <= row_r == pawn_promote_row[white_to_move];
 
         // black to move
         castle_short_legal[0] <= castle_mask[`CASTLE_BLACK_SHORT] &&
@@ -629,8 +645,8 @@ module all_moves #
               ram_wr <= 0;
               if (slider_index < slider_offset_count[piece[`BLACK_BIT - 1:0]])
                 begin
-                   slider_row <= row + slider_offset_row[piece[`BLACK_BIT - 1:0]][slider_index];
-                   slider_col <= col + slider_offset_col[piece[`BLACK_BIT - 1:0]][slider_index];
+                   slider_row <= row_r + slider_offset_row[piece[`BLACK_BIT - 1:0]][slider_index];
+                   slider_col <= col_r + slider_offset_col[piece[`BLACK_BIT - 1:0]][slider_index];
                    state <= STATE_SLIDER;
                 end
               else
@@ -639,7 +655,7 @@ module all_moves #
          STATE_SLIDER :
            begin
               board_ram_wr <= board;
-              board_ram_wr[idx[row][col_r]+:`PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[row_r][col_r]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[slider_row[2:0]][slider_col[2:0]]+:`PIECE_WIDTH] <= piece;
               capture_ram_wr <= board[idx[slider_row[2:0]][slider_col[2:0]] + `BLACK_BIT] != black_to_move &&
                                 ! board[idx[slider_row[2:0]][slider_col[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN;
@@ -675,7 +691,7 @@ module all_moves #
          STATE_DISCRETE :
            begin
               board_ram_wr <= board;
-              board_ram_wr[idx[row][col_r]+:`PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[row_r][col_r]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[discrete_row[2:0]][discrete_col[2:0]]+:`PIECE_WIDTH] <= piece;
               capture_ram_wr <= board[idx[discrete_row[2:0]][discrete_col[2:0]] + `BLACK_BIT] != black_to_move &&
                                 ! board[idx[discrete_row[2:0]][discrete_col[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN;
@@ -688,7 +704,7 @@ module all_moves #
               else
                 ram_wr <= 0;
               discrete_index <= discrete_index + 1;
-              discrete_row <= row + discrete_offset_row[piece[`BLACK_BIT - 1:0]][discrete_index];
+              discrete_row <= row_r + discrete_offset_row[piece[`BLACK_BIT - 1:0]][discrete_index];
               discrete_col <= col_r + discrete_offset_col[piece[`BLACK_BIT - 1:0]][discrete_index];
               if (discrete_index == 8)
                 state <= STATE_NEXT;
@@ -713,7 +729,7 @@ module all_moves #
            begin
               board_ram_wr <= board;
               en_passant_col_ram_wr <= (1 << `EN_PASSANT_VALID_BIT) | pawn_col_adv2[2:0];
-              board_ram_wr[idx[row[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[row_r[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:`PIECE_WIDTH] <= piece;
               capture_ram_wr <= 0;
               uci_to_row_ram_wr <= pawn_row_adv2[2:0];
@@ -728,8 +744,8 @@ module all_moves #
          STATE_PAWN_ROW_4 : // en passant pawn
            begin
               board_ram_wr <= board;
-              board_ram_wr[idx[row[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
-              board_ram_wr[idx[row[2:0]][en_passant_col[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[row_r[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[row_r[2:0]][en_passant_col[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[pawn_enp_row[pawn_en_passant_count][2:0]][en_passant_col[2:0]]+:`PIECE_WIDTH] <= piece;
               uci_to_row_ram_wr <= pawn_enp_row[pawn_en_passant_count][2:0];
               uci_to_col_ram_wr <= en_passant_col[2:0];
@@ -749,7 +765,7 @@ module all_moves #
          STATE_PAWN_ROW_6 : // promotion pawn
            begin
               board_ram_wr <= board;
-              board_ram_wr[idx[row[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[row_r[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:`PIECE_WIDTH]
                 <= pawn_promotions[pawn_promotion_count];
               capture_ram_wr <= pawn_move_count != 1;
@@ -777,7 +793,7 @@ module all_moves #
            begin
               en_passant_col_ram_wr <= 0 << `EN_PASSANT_VALID_BIT;
               board_ram_wr <= board;
-              board_ram_wr[idx[row[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[row_r[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
               board_ram_wr[idx[pawn_adv1_row[pawn_move_count][2:0]][pawn_adv1_col[pawn_move_count][2:0]]+:`PIECE_WIDTH] <= piece;
               capture_ram_wr <= pawn_move_count != 1;
               uci_to_row_ram_wr <= pawn_adv1_row[pawn_move_count][2:0];
@@ -1052,8 +1068,8 @@ module all_moves #
        endcase
 
    /* board_attack AUTO_TEMPLATE (
-    .board (evaluate_board[]),
-    .board_valid (evaluate_go),
+    .board (evaluate_board_r[]),
+    .board_valid (evaluate_go_r),
     );*/
    board_attack board_attack
      (/*AUTOINST*/
@@ -1068,17 +1084,17 @@ module all_moves #
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
-      .board                            (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
-      .board_valid                      (evaluate_go),           // Templated
+      .board                            (evaluate_board_r[`BOARD_WIDTH-1:0]), // Templated
+      .board_valid                      (evaluate_go_r),         // Templated
       .clear_attack                     (clear_attack));
 
    /* evaluate AUTO_TEMPLATE (
-    .board_in (evaluate_board[]),
+    .board_in (evaluate_board_r[]),
     .uci_in (evaluate_uci[]),
     .white_to_move (evaluate_white_to_move),
     .castle_mask (evaluate_castle_mask[]),
     .castle_mask_orig (evaluate_castle_mask_orig[]),
-    .board_valid (evaluate_go),
+    .board_valid (evaluate_go_r),
     .killer_\(.*\) (killer_\1_in[]),
     );*/
    evaluate #
@@ -1102,9 +1118,9 @@ module all_moves #
       .reset                            (reset),
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
-      .board_valid                      (evaluate_go),           // Templated
+      .board_valid                      (evaluate_go_r),         // Templated
       .is_attacking_done                (is_attacking_done),
-      .board_in                         (evaluate_board[`BOARD_WIDTH-1:0]), // Templated
+      .board_in                         (evaluate_board_r[`BOARD_WIDTH-1:0]), // Templated
       .uci_in                           (evaluate_uci[UCI_WIDTH-1:0]), // Templated
       .castle_mask                      (evaluate_castle_mask[3:0]), // Templated
       .castle_mask_orig                 (evaluate_castle_mask_orig[3:0]), // Templated
@@ -1179,13 +1195,9 @@ module all_moves #
       .ram_wr                           (legal_ram_wr),          // Templated
       .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
    
-   wire [`BOARD_WIDTH - 1:0] checkmate_board = attack_test_board;
-   wire [3:0]                checkmate_en_passant_col = attack_test_en_passant_col;
-   wire 		     checkmate_white_to_move = legal_white_to_move_ram_wr;
-   
    /* checkmate AUTO_TEMPLATE (
     .clear (clear_checkmate_evaluation),
-    .\(.*\)_in (checkmate_\1[]),
+    .\(.*\)_in (checkmate_\1_r[]),
     );*/
    checkmate #
      (
@@ -1199,10 +1211,10 @@ module all_moves #
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid_in                   (checkmate_board_valid), // Templated
-      .board_in                         (checkmate_board[`BOARD_WIDTH-1:0]), // Templated
-      .white_to_move_in                 (checkmate_white_to_move), // Templated
-      .en_passant_col_in                (checkmate_en_passant_col[3:0]), // Templated
+      .board_valid_in                   (checkmate_board_valid_r), // Templated
+      .board_in                         (checkmate_board_r[`BOARD_WIDTH-1:0]), // Templated
+      .white_to_move_in                 (checkmate_white_to_move_r), // Templated
+      .en_passant_col_in                (checkmate_en_passant_col_r[3:0]), // Templated
       .clear                            (clear_checkmate_evaluation)); // Templated
 
 endmodule

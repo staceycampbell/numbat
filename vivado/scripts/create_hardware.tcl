@@ -4,8 +4,8 @@ proc listFromFile {filename} {
     close $f
     return $data
 }
-create_project numbat_1 numbat -part xczu7ev-ffvc1156-2-e
-set_property BOARD_PART xilinx.com:zcu106:part0:2.6 [current_project]
+create_project numbat_1 numbat -part xck26-sfvc784-2LV-c
+set_property BOARD_PART xilinx.com:kr260_som:part0:1.1 [current_project]
 source scripts/mpsoc_block_diag.tcl
 make_wrapper -files [get_files numbat/numbat_1.srcs/sources_1/bd/mpsoc_block_diag/mpsoc_block_diag.bd] -top
 
