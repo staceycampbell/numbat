@@ -39,4 +39,7 @@ As such I'd like to acknowledge and thank the following for their work in expand
  * Emilio Díaz, author of [secondchess](https://github.com/emdio/secondchess).
  * [Maksim Korzh](https://www.chessprogramming.org/Maksim_Korzh), author of [Chenglite](https://github.com/maksimKorzh/Chenglite).
 
+Note that many evaluation weights were copied from crafty source. Crafty's README copyright is included for this reason and applies to
+`evaluate.c`.
+
 Stacey Campbell 2025
