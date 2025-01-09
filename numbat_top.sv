@@ -6,7 +6,7 @@
 module numbat_top;
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 1;
+   localparam EVAL_MOBILITY_DISABLE = 0;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
