@@ -7,7 +7,7 @@
 #include <xil_printf.h>
 #include "numbat.h"
 
-#pragma GCC optimize ("O2")
+// #pragma GCC optimize ("O2")
 
 static char piece_char[1 << PIECE_BITS];
 

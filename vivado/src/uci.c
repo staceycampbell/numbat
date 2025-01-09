@@ -14,7 +14,7 @@
 #include <xtime_l.h>
 #include "numbat.h"
 
-#pragma GCC optimize ("O2")
+// #pragma GCC optimize ("O2")
 
 #define UCI_INPUT_BUFFER_SIZE 4096
 

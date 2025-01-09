@@ -6,7 +6,7 @@
 module numbat_top;
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 0;
+   localparam EVAL_MOBILITY_DISABLE = 1;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -185,10 +185,12 @@ module numbat_top;
    wire [3:0]           trans_axi_awregion;     // From trans of trans.v
    wire [2:0]           trans_axi_awsize;       // From trans of trans.v
    wire                 trans_axi_awvalid;      // From trans of trans.v
+   wire [5:0]           trans_axi_bid;          // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 trans_axi_bready;       // From trans of trans.v
    wire [1:0]           trans_axi_bresp;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 trans_axi_bvalid;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [127:0]         trans_axi_rdata;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [5:0]           trans_axi_rid;          // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 trans_axi_rlast;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 trans_axi_rready;       // From trans of trans.v
    wire [1:0]           trans_axi_rresp;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
@@ -659,6 +661,10 @@ module numbat_top;
       .reset                            (reset));
 
    /* mpsoc_block_diag_wrapper AUTO_TEMPLATE (
+    .trans_axi_arid (6'b0),
+    .trans_axi_aruser (1'b0),
+    .trans_axi_awid (6'b0),
+    .trans_axi_awuser (1'b0),
     );*/
    mpsoc_block_diag_wrapper mpsoc_block_diag_wrapper
      (/*AUTOINST*/
@@ -687,9 +693,11 @@ module numbat_top;
       .reset                            (reset[0:0]),
       .trans_axi_arready                (trans_axi_arready),
       .trans_axi_awready                (trans_axi_awready),
+      .trans_axi_bid                    (trans_axi_bid[5:0]),
       .trans_axi_bresp                  (trans_axi_bresp[1:0]),
       .trans_axi_bvalid                 (trans_axi_bvalid),
       .trans_axi_rdata                  (trans_axi_rdata[127:0]),
+      .trans_axi_rid                    (trans_axi_rid[5:0]),
       .trans_axi_rlast                  (trans_axi_rlast),
       .trans_axi_rresp                  (trans_axi_rresp[1:0]),
       .trans_axi_rvalid                 (trans_axi_rvalid),
@@ -728,22 +736,26 @@ module numbat_top;
       .trans_axi_araddr                 (trans_axi_araddr[35:0]),
       .trans_axi_arburst                (trans_axi_arburst[1:0]),
       .trans_axi_arcache                (trans_axi_arcache[3:0]),
+      .trans_axi_arid                   (6'b0),                  // Templated
       .trans_axi_arlen                  (trans_axi_arlen[7:0]),
       .trans_axi_arlock                 (trans_axi_arlock[0:0]),
       .trans_axi_arprot                 (trans_axi_arprot[2:0]),
       .trans_axi_arqos                  (trans_axi_arqos[3:0]),
       .trans_axi_arregion               (trans_axi_arregion[3:0]),
       .trans_axi_arsize                 (trans_axi_arsize[2:0]),
+      .trans_axi_aruser                 (1'b0),                  // Templated
       .trans_axi_arvalid                (trans_axi_arvalid),
       .trans_axi_awaddr                 (trans_axi_awaddr[35:0]),
       .trans_axi_awburst                (trans_axi_awburst[1:0]),
       .trans_axi_awcache                (trans_axi_awcache[3:0]),
+      .trans_axi_awid                   (6'b0),                  // Templated
       .trans_axi_awlen                  (trans_axi_awlen[7:0]),
       .trans_axi_awlock                 (trans_axi_awlock[0:0]),
       .trans_axi_awprot                 (trans_axi_awprot[2:0]),
       .trans_axi_awqos                  (trans_axi_awqos[3:0]),
       .trans_axi_awregion               (trans_axi_awregion[3:0]),
       .trans_axi_awsize                 (trans_axi_awsize[2:0]),
+      .trans_axi_awuser                 (1'b0),                  // Templated
       .trans_axi_awvalid                (trans_axi_awvalid),
       .trans_axi_bready                 (trans_axi_bready),
       .trans_axi_rready                 (trans_axi_rready),

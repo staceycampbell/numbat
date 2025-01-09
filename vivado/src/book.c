@@ -11,17 +11,12 @@
 #include <ff.h>
 #include "numbat.h"
 
-#pragma GCC optimize ("O2")
+// #pragma GCC optimize ("O2")
 
 #define SORT_THRESHOLD 64
 
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
-
-static const TCHAR *sd_path = "0:/";
-static const char *book_bin_fn = "book.bin";
-static int fs_init = 0;
-static FATFS fatfs;
 
 static book_t *book;
 static uint32_t book_count;
@@ -175,30 +170,14 @@ book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t * uci)
 int32_t
 book_open(void)
 {
-        FRESULT status;
-        FIL fp;
-        uint32_t bytes, br;
+        uint32_t bytes;
         static int32_t book_init = 0;
+
+	#include "bookdata.h"
 
         if (book_init)
                 return 0;
-        if (!fs_init)
-        {
-                status = f_mount(&fatfs, sd_path, 0);
-                if (status != FR_OK)
-                {
-                        printf("%s: SD filesystem mount failed (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                        return -2;
-                }
-                fs_init = 1;
-        }
-        status = f_open(&fp, book_bin_fn, FA_READ);
-        if (status != FR_OK)
-        {
-                printf("%s: cannot read %s\n", __PRETTY_FUNCTION__, book_bin_fn);
-                return -1;
-        }
-        bytes = f_size(&fp);
+        bytes = sizeof(book_data);
         book_count = bytes / sizeof(book_t);
 	
         book = (book_t *) malloc(bytes);
@@ -207,19 +186,7 @@ book_open(void)
                 printf("%s: book malloc failed with %d entries\n", __PRETTY_FUNCTION__, book_count);
                 return -1;
         }
-        printf("%s: reading %d entries from %s\n", __PRETTY_FUNCTION__, book_count, book_bin_fn);
-        status = f_read(&fp, book, bytes, &br);
-        if (status != FR_OK)
-        {
-                printf("%s: %s f_read failed (%d)\n", __PRETTY_FUNCTION__, book_bin_fn, status);
-                return -1;
-        }
-        if (bytes != br)
-        {
-                printf("%s: asked for %d byts from %s, received %d\n", __PRETTY_FUNCTION__, bytes, book_bin_fn, br);
-                return -1;
-        }
-        f_close(&fp);
+	memcpy(book, book_data, bytes);
 
         book_init = 1;
 
@@ -229,6 +196,7 @@ book_open(void)
 void
 book_format_media(void)
 {
+	#if 0
         FRESULT status;
         BYTE work[FF_MAX_SS];
 
@@ -238,8 +206,10 @@ book_format_media(void)
                 printf("%s: f_mkfs fail (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return;
         }
+	#endif
 }
 
+#if 0
 static int32_t
 book_compare_uci(const void *p1, const void *p2)
 {
@@ -289,10 +259,12 @@ book_compare_count(const void *p1, const void *p2)
                 return 1;
         return 0;
 }
+#endif
 
 void
 book_build(void)
 {
+	#if 0
         uint32_t counter, done, sorted_counter, unsorted_index, next_sort;
         uint32_t sorted_hit, unsorted_hit;
         int32_t len, move_ok;
@@ -463,4 +435,5 @@ book_build(void)
         printf("%u book entries, %u sorted hits, %u unsorted hits\n", book_count, sorted_hit, unsorted_hit);
 
         free(book);
+	#endif
 }
