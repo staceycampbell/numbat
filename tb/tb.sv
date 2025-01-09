@@ -114,7 +114,9 @@ module tb;
         for (i = 0; i < 64; i = i + 1)
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
-	// echo '' | ../misc/fenconv
+        // Insert a FEN line here, feed it through the fenconv tool to convert the
+        // FEN line to data that can be clocked into the move generator
+	// echo 'FEN line goes here' | ../misc/fenconv
 	// echo 'r3kbnr/1ppbqppp/2np4/4p3/pP2P3/2NP3P/P1PBQPP1/R3KBNR w KQkq - 0 1' | ../misc/fenconv
         board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
         board[7 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
