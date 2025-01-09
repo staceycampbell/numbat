@@ -65,10 +65,6 @@
 
 #define TRANS_NODES_WIDTH 28
 
-#define BOOK_RANDOM 0
-#define BOOK_MOST_COMMON 1
-#define BOOK_RANDOM_COMMON 2
-
 #define RESULT_DRAW 0
 #define RESULT_WHITE_WIN 1
 #define RESULT_BLACK_WIN 2
@@ -104,14 +100,6 @@ typedef struct uci_t
         uint8_t col_to;
         uint8_t promotion;
 } uci_t;
-
-typedef struct book_t
-{
-        uint64_t hash;
-        uint32_t count;
-        uint16_t hash_extra;
-        uci_t uci;
-} book_t;
 
 typedef struct trans_t
 {
@@ -903,13 +891,6 @@ extern void trans_store(const trans_t * trans);
 extern void q_trans_clear_table(void);
 extern void q_trans_lookup(trans_t * trans, uint32_t * collision);
 extern void q_trans_store(const trans_t * trans);
-
-extern void book_build(void);
-extern void book_format_media(void);
-extern int32_t book_open(void);
-extern uint32_t book_move(uint16_t hash_extra, uint64_t hash, uint32_t sel_flag, uci_t * uci);
-extern uint32_t book_game_move(const board_t * board);
-extern void book_print_entry(book_t * entry);
 
 extern void tc_init(tc_t * tc, int32_t main, int32_t increment);
 extern uint32_t tc_clock_toggle(tc_t * tc);

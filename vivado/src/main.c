@@ -96,7 +96,6 @@ main(void)
         killer_bonus(100, 90);
         uci_init();
         uci_input_reset();
-        book_open();
         numbat_random_score_mask(0x0);
 
         printf("ready\n");

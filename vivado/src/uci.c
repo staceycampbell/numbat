@@ -24,7 +24,6 @@ extern uint32_t tc_main, tc_increment;
 
 static char uci_input_buffer[UCI_INPUT_BUFFER_SIZE];
 static uint32_t uci_input_index;
-static int32_t book_miss;
 
 #if UCI_TCP_COMMS == 1
 static void
@@ -54,9 +53,8 @@ uci_reply(const char *str)
 #endif
 
 static void
-uci_go(tc_t * tc, uint32_t *resign)
+uci_go(tc_t * tc, uint32_t * resign)
 {
-        uint32_t book_move_found;
         board_t best_board;
         static uint32_t search_running = 0;
 
@@ -64,18 +62,9 @@ uci_go(tc_t * tc, uint32_t *resign)
                 return;         // this is not the place for recursion
 
         search_running = 1;
-        book_move_found = 0;
-        if (book_miss < 4)      // avoid further book searches after N misses
-                book_move_found = book_game_move(&game[game_moves - 1]);
-        if (!book_move_found)
-        {
-                best_board = nm_top(tc, resign);
-                game[game_moves] = best_board;
-                ++game_moves;
-                ++book_miss;
-        }
-        else
-                book_miss = 0;
+        best_board = nm_top(tc, resign);
+        game[game_moves] = best_board;
+        ++game_moves;
         search_running = 0;
 }
 
@@ -112,7 +101,7 @@ uci_dispatch(void)
         {
                 uci_reply("id name numbat\n");
                 uci_reply("id author Stacey Campbell\n");
-                uci_reply("option name OwnBook type check default true\n");
+                uci_reply("option name OwnBook type check default false\n");
                 // uci_reply("option name UCI_DrawOffers type check default true\n"); // currently hangs xboard
                 uci_reply("uciok\n");
         }
@@ -123,7 +112,6 @@ uci_dispatch(void)
         }
         else if (strcmp(p, "ucinewgame") == 0)
         {
-                book_miss = 0;
                 killer_clear_table();
                 trans_clear_table();
                 q_trans_clear_table();
@@ -229,7 +217,7 @@ uci_dispatch(void)
                         increment = b_increment / 1000;
                 }
                 tc_set(&tc, side, main, increment);
-                uci_go(&tc, &resign); // resign ignored for now, xboard hang
+                uci_go(&tc, &resign);   // resign ignored for now, xboard hang
                 uci_string(&game[game_moves - 1].uci, uci_str);
                 strcpy(best_move, "bestmove ");
                 strcat(best_move, uci_str);

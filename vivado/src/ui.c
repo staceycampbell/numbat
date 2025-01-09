@@ -22,7 +22,6 @@ void
 do_both(void)
 {
         uint32_t move_count, key_hit, game_result;
-        uint32_t book_move_found;
         board_t best_board;
         uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient;
         XTime t_end, t_start;
@@ -34,30 +33,14 @@ do_both(void)
         tc_init(&tc, tc_main * 60, tc_increment);
         do
         {
-                book_move_found = book_game_move(&game[game_moves - 1]);
-                if (book_move_found)
-                {
-                        printf("book move\n");
-
-                        mate = 0;
-                        stalemate = 0;
-                        thrice_rep = 0;
-                        fifty_move = 0;
-                        insufficient = 0;
-                        move_count = 1;
-                        best_board = game[game_moves - 1];
-                }
-                else
-                {
-                        best_board = nm_top(&tc, 0);
-                        numbat_write_board_basic(&best_board);
-                        numbat_write_board_wait(&best_board, 0);
-                        move_count = numbat_move_count();
-                        numbat_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, 0);
-                        numbat_reset_all_moves();
-                        game[game_moves] = best_board;
-                        ++game_moves;
-                }
+                best_board = nm_top(&tc, 0);
+                numbat_write_board_basic(&best_board);
+                numbat_write_board_wait(&best_board, 0);
+                move_count = numbat_move_count();
+                numbat_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, 0);
+                numbat_reset_all_moves();
+                game[game_moves] = best_board;
+                ++game_moves;
                 tc_status = tc_clock_toggle(&tc);
                 if (game_moves >= GAME_MAX)
                 {
@@ -360,7 +343,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 {
                         tc_ignore(&tc);
                         trans_clear_table();    // for ease of debug
-                        q_trans_clear_table();    // for ease of debug
+                        q_trans_clear_table();  // for ease of debug
                         best_board = nm_top(&tc, 0);
                         numbat_write_board_basic(&best_board);
                         numbat_write_board_wait(&best_board, 0);
@@ -445,39 +428,6 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         else if (strcmp((char *)str, "mstatus") == 0)
         {
                 printf("misc_status=%08X\n", numbat_misc_status());
-        }
-        else if (strcmp((char *)str, "bbook") == 0)
-        {
-                book_build();
-        }
-        else if (strcmp((char *)str, "bopen") == 0)
-        {
-                book_open();
-        }
-        else if (strcmp((char *)str, "btest") == 0)
-        {
-                uint32_t status, trans_idle;
-                uint16_t hash_extra;
-                uint64_t hash;
-                uci_t uci;
-
-                uci_init();
-                uci_move("e2e4");
-                uci_move("c7c5");
-                uci_move("g1f3");
-                uci_move("d7d6");
-                numbat_write_board_basic(&game[game_moves - 1]);
-                numbat_trans_hash_only();
-                trans_idle = numbat_trans_idle_wait();
-                if (!trans_idle)
-                {
-                        printf("%s: hash state machine idle timeout, stopping. (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                        while (1);
-                }
-                hash = numbat_trans_hash(&hash_extra);
-                status = book_move(hash_extra, hash, BOOK_RANDOM_COMMON, &uci);
-                if (!status)
-                        printf("no book move found\n");
         }
         else if (strcmp((char *)str, "rand") == 0)
         {
