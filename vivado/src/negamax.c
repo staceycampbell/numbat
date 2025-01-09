@@ -148,9 +148,8 @@ rep_table_load(const board_t * board, uint32_t ply)
 static uint32_t
 load_root_nodes(board_t boards[MAX_POSITIONS])
 {
-        int32_t i, mate_index;
+        int32_t i;
         uint32_t moves_ready, move_count;
-        uint32_t mate;
 
         numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
         if (!moves_ready)
@@ -164,21 +163,10 @@ load_root_nodes(board_t boards[MAX_POSITIONS])
                 printf("%s: no moves available (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 return 0;
         }
-        mate_index = -1;
-        mate = 0;
         for (i = 0; i < move_count; ++i)
-        {
                 numbat_read_board(&boards[i], i);
-                if (boards[i].checkmate)
-                {
-                        mate_index = i;
-                        mate = 1;
-                }
-        }
-        if (mate)
-                boards[0] = boards[mate_index];
 
-        return mate;
+        return move_count;
 }
 
 static inline int32_t
@@ -533,7 +521,6 @@ nm_top(const tc_t * tc, uint32_t *resign)
         int32_t i, game_index;
         int32_t alpha, beta;
         int32_t depth_limit;
-        uint32_t mate;
         uint32_t move_count;
         uint64_t elapsed_ticks;
         int64_t duration_seconds;
@@ -579,11 +566,11 @@ nm_top(const tc_t * tc, uint32_t *resign)
         tc_display(tc);
         printf(" - %s to move - ", best_board.white_to_move ? "white" : "black");
 
-        mate = load_root_nodes(root_node_boards);
+        load_root_nodes(root_node_boards);
         best_board = root_node_boards[0];
-        if (move_count == 1 || mate)
+        if (move_count == 1)
         {
-                printf("one move possible or mate\n");
+                printf("one move possible\n");
                 return best_board;
         }
 

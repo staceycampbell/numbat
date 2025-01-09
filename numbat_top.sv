@@ -52,7 +52,6 @@ module numbat_top;
    wire                 am_killer_clear_in;     // From control of control.v
    wire [MAX_DEPTH_LOG2-1:0] am_killer_ply_in;  // From control of control.v
    wire                 am_killer_update_in;    // From control of control.v
-   wire                 am_mate_out;            // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_index; // From control of control.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -320,7 +319,6 @@ module numbat_top;
       .attack_white_pop_out             (am_attack_white_pop_out[5:0]), // Templated
       .attack_black_pop_out             (am_attack_black_pop_out[5:0]), // Templated
       .insufficient_material_out        (am_insufficient_material_out), // Templated
-      .mate_out                         (am_mate_out),           // Templated
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (soft_reset),            // Templated
@@ -634,7 +632,6 @@ module numbat_top;
       .am_attack_black_pop_in           (am_attack_black_pop_out[5:0]), // Templated
       .am_insufficient_material_in      (am_insufficient_material_out), // Templated
       .am_pv_in                         (am_pv_out),             // Templated
-      .am_mate_in                       (am_mate_out),           // Templated
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),

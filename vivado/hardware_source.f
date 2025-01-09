@@ -2,7 +2,6 @@ numbat/numbat_1.gen/sources_1/bd/mpsoc_block_diag/hdl/mpsoc_block_diag_wrapper.v
 ../all_moves.sv
 ../axi4lite_write.sv
 ../board_attack.sv
-../checkmate.sv
 ../control.sv
 ../evaluate_general.sv
 ../evaluate_bishops.sv
@@ -21,7 +20,6 @@ numbat/numbat_1.gen/sources_1/bd/mpsoc_block_diag/hdl/mpsoc_block_diag_wrapper.v
 ../popcount.sv
 ../latency_sm.sv
 ../rep_det.sv
-../sync.sv
 ../trans.sv
 ../numbat_top.sv
 ../numbat.vh

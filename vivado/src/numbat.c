@@ -203,8 +203,7 @@ numbat_read_board(board_t * board, uint32_t index)
                 ptr = (uint64_t *) (void *)&board->board[y];
                 *ptr = numbat_read_move_two_rows(y);    // rewrite if alignment problems :-)
         }
-        numbat_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move, &board->pv,
-                             &board->checkmate);
+        numbat_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move, &board->pv);
         numbat_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
         board->eval = numbat_move_eval();
         board->half_move_clock = numbat_read_half_move();
