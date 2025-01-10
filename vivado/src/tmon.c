@@ -6,6 +6,7 @@
 #include <xstatus.h>
 #include <xtime_l.h>
 #include "xparameters.h"
+#include "numbat.h"
 
 #define SYSMON_DEVICE_ID XPAR_XSYSMONPSU_0_DEVICE_ID
 
@@ -68,6 +69,16 @@ tmon_poll(void)
         tmon_max_temperature = XSysMonPsu_RawToTemperature_OnChip(adc_data);
         adc_data = XSysMonPsu_GetMinMaxMeasurement(sysmon_inst_ptr, XSM_MIN_TEMP, XSYSMON_PS);
         tmon_min_temperature = XSysMonPsu_RawToTemperature_OnChip(adc_data);
+
+        if (tmon_max_temperature > 40.0)
+                printf("%s: WARNING PS temperature %.2fC!\n", __PRETTY_FUNCTION__, tmon_max_temperature);
+        if (tmon_max_temperature > 50.0)
+        {
+                printf("%s: CRITICAL WARNING PS temperature %.2fC! Putting project in reset and stopping. Check fan.\n",
+                       __PRETTY_FUNCTION__, tmon_max_temperature);
+                numbat_write_control(1, 0, 0, 0);
+                while (1);
+        }
 
         tmon_temperature_check_time = time_now + 5 * UINT64_C(COUNTS_PER_SECOND);
 

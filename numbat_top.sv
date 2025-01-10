@@ -7,7 +7,8 @@ module numbat_top
   (
    output led_uf1,
    output led_uf2,
-   output fan_pwm
+   output fan_pwm,
+   output test_point
    );
 
    // 1 for fast debug builds, 0 for release
@@ -241,6 +242,8 @@ module numbat_top
    wire [31:0]                      misc_status = 0;
 
    wire                             clk = digclk;
+
+   assign test_point = fan_pwm;
 
    initial
      begin

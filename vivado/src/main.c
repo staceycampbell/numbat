@@ -69,6 +69,7 @@ main(void)
 
         init_platform();
         tmon_init();
+        numbat_fan_pwm(500);
 
         IP4_ADDR(&ipaddr, 192, 168, 0, 90);
         IP4_ADDR(&netmask, 255, 255, 255, 0);
