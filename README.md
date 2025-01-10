@@ -97,8 +97,8 @@ gtkwave wave.vcd
   - Position evaluation.
   - Zobrist hashing.
   - Transposition table lookup and write
-    o 2GByte TT in PS DDR4 HIGH address space for negamax
-    o 2MByte TT in URAM for quiescence
+    - 2GByte TT in PS DDR4 HIGH address space for negamax
+    - 2MByte TT in URAM for quiescence
   - Thrice repetition draw detection.
 * The PS (a single Arm® Cortex®-A53 MPCore™) side is coded in C. Functions performed are:
   - Negamax algorithm.
