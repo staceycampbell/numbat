@@ -68,6 +68,7 @@ main(void)
         uci_netif = &server_netif;
 
         init_platform();
+        tmon_init();
 
         IP4_ADDR(&ipaddr, 192, 168, 0, 90);
         IP4_ADDR(&netmask, 255, 255, 255, 0);

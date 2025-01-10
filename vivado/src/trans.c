@@ -9,7 +9,7 @@
 #include <xtime_l.h>
 #include "numbat.h"
 
-// #pragma GCC optimize ("O2")
+#pragma GCC optimize ("O2")
 
 static inline void
 trans_wait_idle(const char *func, const char *file, int line)

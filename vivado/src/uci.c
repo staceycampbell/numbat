@@ -14,7 +14,7 @@
 #include <xtime_l.h>
 #include "numbat.h"
 
-// #pragma GCC optimize ("O2")
+#pragma GCC optimize ("O2")
 
 #define UCI_INPUT_BUFFER_SIZE 4096
 
@@ -288,6 +288,7 @@ uci_input_poll(void)
         char c;
         uint32_t uci_search_action;
 
+        tmon_poll();
 #if UCI_TCP_COMMS == 1
         tcp_task();
         if (tcp_uci_fifo_count() == 0)

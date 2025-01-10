@@ -8,7 +8,7 @@
 #include <xtime_l.h>
 #include "numbat.h"
 
-// #pragma GCC optimize ("O2")
+#pragma GCC optimize ("O2")
 
 #define FIXED_TIME 60
 #define MID_GAME_HALF_MOVES 40
@@ -667,6 +667,7 @@ nm_top(const tc_t * tc, uint32_t *resign)
                ((double)trans_collision * 100.0) / (double)nodes_visited);
         if (q_nodes_visited > 0)
                 printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%)\n", q_no_trans, q_trans_hit, ((double)q_trans_hit * 100.0) / (double)q_nodes_visited);
+        printf("temps: %.2fC (max %.2fC min %.2fC)\n", tmon_temperature, tmon_max_temperature, tmon_min_temperature);
 
         return best_board;
 }

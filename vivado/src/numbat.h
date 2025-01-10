@@ -894,3 +894,10 @@ extern uint32_t tc_clock_toggle(tc_t * tc);
 extern void tc_ignore(tc_t * tc);
 extern void tc_display(const tc_t * tc);
 extern void tc_set(tc_t * tc, uint32_t side, int32_t main_remaining, int32_t increment);
+
+extern int tmon_init(void);
+extern int tmon_poll(void);
+extern XTime tmon_temperature_check_time;
+extern float tmon_temperature;
+extern float tmon_max_temperature;
+extern float tmon_min_temperature;
