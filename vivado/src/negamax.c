@@ -437,7 +437,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 else if (depth > 0)
                 {
-                        if (index == 0 || ply < 2 || in_check || board_eval > alpha)
+                        if (index == 0 || ply < 2 || in_check || board_eval + 100 > alpha)
                                 value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                         else
                                 value = -GLOBAL_VALUE_KING;
