@@ -440,6 +440,14 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                 printf("random score mask: 0x%04X\n", rmask);
                 numbat_random_score_mask(rmask);
         }
+        else if (strcmp((char *)str, "fpwm") == 0)
+        {
+                numbat_fan_pwm(arg1);
+        }
+        else if (strcmp((char *)str, "temp") == 0)
+        {
+                printf("temps: %.2fC (max %.2fC min %.2fC)\n", tmon_temperature, tmon_max_temperature, tmon_min_temperature);
+        }
         else if (strcmp((char *)str, "tc") == 0)
         {
                 if (arg1 <= 0 || arg2 < 0)

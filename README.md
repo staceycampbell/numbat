@@ -92,7 +92,7 @@ gtkwave wave.vcd
 ## Architecture
 
 * Numbat is a bare metal Vivado project.
-* The PL (FPGA fabric) side is coded in Verilog. The PL side performs the following functions:
+* The PL side (FPGA fabric) is coded in Verilog. The PL side performs the following functions:
   - Legal move generation.
   - Position evaluation.
   - Zobrist hashing.
@@ -100,7 +100,7 @@ gtkwave wave.vcd
     - 2GByte TT in PS DDR4 HIGH address space for negamax
     - 2MByte TT in URAM for quiescence
   - Thrice repetition draw detection.
-* The PS (a single Arm® Cortex®-A53 MPCore™) side is coded in C. Functions performed are:
+* The PS side (a single Arm Cortex-A53 MPCore) is coded in C. Functions performed are:
   - Negamax algorithm.
   - Game time control.
   - Lwip TCP stack for UCI communication.

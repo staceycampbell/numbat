@@ -6,11 +6,12 @@
 module numbat_top
   (
    output led_uf1,
-   output led_uf2
+   output led_uf2,
+   output fan_pwm
    );
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 0;
+   localparam EVAL_MOBILITY_DISABLE = 1;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -76,6 +77,7 @@ module numbat_top
    wire [63:0]          am_white_is_attacking_out;// From all_moves of all_moves.v
    wire                 am_white_to_move_in;    // From control of control.v
    wire                 am_white_to_move_out;   // From all_moves of all_moves.v
+   wire                 clk100;                 // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [0:0]           ctrl0_axi_arready;      // From control of control.v
@@ -96,6 +98,13 @@ module numbat_top
    wire [3:0]           ctrl0_axi_wstrb;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 ctrl0_axi_wvalid;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 digclk;                 // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 fan_ctrl_read_empty;    // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [31:0]          fan_ctrl_read_rd_data;  // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 fan_ctrl_read_rd_en;    // From fan_ctrl of fan_ctrl.v
+   wire                 fan_ctrl_valid;         // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 fan_ctrl_write_full;    // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [31:0]          fan_ctrl_write_wr_data; // From control of control.v
+   wire                 fan_ctrl_write_wr_en;   // From control of control.v
    wire                 initial_board_check;    // From all_moves of all_moves.v
    wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
    wire                 initial_fifty_move;     // From all_moves of all_moves.v
@@ -576,6 +585,8 @@ module numbat_top
       .q_trans_nodes_out                (q_trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
       .q_trans_capture_out              (q_trans_capture_in),    // Templated
       .q_trans_flag_out                 (q_trans_flag_in[1:0]),  // Templated
+      .fan_ctrl_write_wr_data           (fan_ctrl_write_wr_data[31:0]),
+      .fan_ctrl_write_wr_en             (fan_ctrl_write_wr_en),
       .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
       .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
       .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),
@@ -672,6 +683,7 @@ module numbat_top
    mpsoc_block_diag_wrapper mpsoc_block_diag_wrapper
      (/*AUTOINST*/
       // Outputs
+      .clk100                           (clk100),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
       .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
@@ -684,6 +696,10 @@ module numbat_top
       .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
       .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
       .digclk                           (digclk),
+      .fan_ctrl_read_empty              (fan_ctrl_read_empty),
+      .fan_ctrl_read_rd_data            (fan_ctrl_read_rd_data[31:0]),
+      .fan_ctrl_valid                   (fan_ctrl_valid),
+      .fan_ctrl_write_full              (fan_ctrl_write_full),
       .q_trans_axi_arready              (q_trans_axi_arready),
       .q_trans_axi_awready              (q_trans_axi_awready),
       .q_trans_axi_bresp                (q_trans_axi_bresp[1:0]),
@@ -714,6 +730,9 @@ module numbat_top
       .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
       .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid),
       .ctrl0_axi_wready                 (ctrl0_axi_wready),
+      .fan_ctrl_read_rd_en              (fan_ctrl_read_rd_en),
+      .fan_ctrl_write_wr_data           (fan_ctrl_write_wr_data[31:0]),
+      .fan_ctrl_write_wr_en             (fan_ctrl_write_wr_en),
       .q_trans_axi_araddr               (q_trans_axi_araddr[20:0]),
       .q_trans_axi_arburst              (q_trans_axi_arburst[1:0]),
       .q_trans_axi_arcache              (q_trans_axi_arcache[3:0]),
@@ -766,6 +785,18 @@ module numbat_top
       .trans_axi_wlast                  (trans_axi_wlast),
       .trans_axi_wstrb                  (trans_axi_wstrb[15:0]),
       .trans_axi_wvalid                 (trans_axi_wvalid));
+
+   /* fan_ctrl AUTO_TEMPLATE (
+    );*/
+   fan_ctrl fan_ctrl
+     (/*AUTOINST*/
+      // Outputs
+      .fan_ctrl_read_rd_en              (fan_ctrl_read_rd_en),
+      .fan_pwm                          (fan_pwm),
+      // Inputs
+      .clk100                           (clk100),
+      .fan_ctrl_valid                   (fan_ctrl_valid),
+      .fan_ctrl_read_rd_data            (fan_ctrl_read_rd_data[31:0]));
 
 endmodule
 

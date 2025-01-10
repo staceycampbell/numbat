@@ -14,6 +14,7 @@ numbat/numbat_1.gen/sources_1/bd/mpsoc_block_diag/hdl/mpsoc_block_diag_wrapper.v
 ../evaluate_rooks.sv
 ../evaluate_tropism.sv
 ../evaluate.sv
+../fan_ctrl.sv
 ../is_attacking.sv
 ../move_sort.sv
 ../mram.sv

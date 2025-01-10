@@ -124,6 +124,7 @@ set bCheckIPsPassed 1
 set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
+xilinx.com:ip:fifo_generator:13.2\
 xilinx.com:ip:zynq_ultra_ps_e:3.4\
 xilinx.com:ip:axi_bram_ctrl:4.1\
 xilinx.com:ip:blk_mem_gen:8.4\
@@ -201,6 +202,10 @@ proc create_root_design { parentCell } {
    CONFIG.PROTOCOL {AXI4LITE} \
    ] $ctrl0_axi
 
+  set fan_ctrl_read [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:fifo_read_rtl:1.0 fan_ctrl_read ]
+
+  set fan_ctrl_write [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:fifo_write_rtl:1.0 fan_ctrl_write ]
+
   set q_trans_axi [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 q_trans_axi ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {21} \
@@ -265,10 +270,12 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
+  set clk100 [ create_bd_port -dir O -type clk clk100 ]
   set digclk [ create_bd_port -dir O -type clk digclk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {ctrl0_axi:q_trans_axi:trans_axi} \
  ] $digclk
+  set fan_ctrl_valid [ create_bd_port -dir O fan_ctrl_valid ]
   set reset [ create_bd_port -dir O -from 0 -to 0 -type rst reset ]
 
   # Create instance: axi_iconnect_ddr4, and set properties
@@ -285,6 +292,18 @@ proc create_root_design { parentCell } {
     CONFIG.NUM_MI {1} \
     CONFIG.S00_HAS_REGSLICE {1} \
   ] $axi_iconnect_fabric
+
+
+  # Create instance: fan_ctrl_fifo, and set properties
+  set fan_ctrl_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:fifo_generator:13.2 fan_ctrl_fifo ]
+  set_property -dict [list \
+    CONFIG.Fifo_Implementation {Independent_Clocks_Distributed_RAM} \
+    CONFIG.Input_Data_Width {32} \
+    CONFIG.Input_Depth {16} \
+    CONFIG.Performance_Options {First_Word_Fall_Through} \
+    CONFIG.Reset_Pin {false} \
+    CONFIG.Valid_Flag {true} \
+  ] $fan_ctrl_fifo
 
 
   # Create instance: ps_e, and set properties
@@ -452,7 +471,7 @@ MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 
 1#UART 1#Gem 1#Gem 1#Gem 1#Gem 1#Gem 1#Gem 1#Gem 1#Gem 1#Gem 1#Gem 1#Gem 1#Gem 1#MDIO 1#MDIO 1#########################USB0 Reset#} \
     CONFIG.PSU_MIO_TREE_SIGNALS {sclk_out#miso_mo1#mo2#mo3#mosi_mi0#n_ss_out#sclk_out#gpio0[7]#gpio0[8]#n_ss_out[0]#miso#mosi#gpio0[12]#gpio0[13]#gpio0[14]#gpio0[15]#gpio0[16]#gpio0[17]#gpio0[18]#gpio0[19]#gpio0[20]#gpio0[21]#gpio0[22]#gpio0[23]#scl_out#sda_out#gpi[0]#gpio1[27]#gpio1[28]#gpio1[29]#gpio1[30]#gpi[5]#gpio1[32]#gpio1[33]#gpio1[34]#gpo[3]#txd#rxd#rgmii_tx_clk#rgmii_txd[0]#rgmii_txd[1]#rgmii_txd[2]#rgmii_txd[3]#rgmii_tx_ctl#rgmii_rx_clk#rgmii_rxd[0]#rgmii_rxd[1]#rgmii_rxd[2]#rgmii_rxd[3]#rgmii_rx_ctl#gem1_mdc#gem1_mdio_out#########################reset#}\
 \
-    CONFIG.PSU_USB3__DUAL_CLOCK_ENABLE {1} \
+    CONFIG.PSU_USB3__DUAL_CLOCK_ENABLE {0} \
     CONFIG.PSU__ACT_DDR_FREQ_MHZ {1066.656006} \
     CONFIG.PSU__CRF_APB__ACPU_CTRL__ACT_FREQMHZ {1333.333008} \
     CONFIG.PSU__CRF_APB__ACPU_CTRL__FREQMHZ {1333.333} \
@@ -532,6 +551,8 @@ MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 
     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {250} \
     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__PL1_REF_CTRL__ACT_FREQMHZ {99.999001} \
+    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ {100} \
+    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__SRCSEL {IOPLL} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__ACT_FREQMHZ {124.998749} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__FREQMHZ {125} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__SRCSEL {IOPLL} \
@@ -546,7 +567,7 @@ MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 
     CONFIG.PSU__CRL_APB__USB0_BUS_REF_CTRL__ACT_FREQMHZ {249.997498} \
     CONFIG.PSU__CRL_APB__USB1_BUS_REF_CTRL__ACT_FREQMHZ {249.997498} \
     CONFIG.PSU__CRL_APB__USB3_DUAL_REF_CTRL__ACT_FREQMHZ {19.999800} \
-    CONFIG.PSU__CRL_APB__USB3__ENABLE {1} \
+    CONFIG.PSU__CRL_APB__USB3__ENABLE {0} \
     CONFIG.PSU__CSUPMU__PERIPHERAL__VALID {1} \
     CONFIG.PSU__DDRC__BG_ADDR_COUNT {1} \
     CONFIG.PSU__DDRC__BRC_MAPPING {ROW_BANK_COL} \
@@ -598,7 +619,7 @@ MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 
     CONFIG.PSU__ENET2__PERIPHERAL__ENABLE {0} \
     CONFIG.PSU__FPD_SLCR__WDT1__ACT_FREQMHZ {99.999001} \
     CONFIG.PSU__FPGA_PL0_ENABLE {1} \
-    CONFIG.PSU__FPGA_PL1_ENABLE {0} \
+    CONFIG.PSU__FPGA_PL1_ENABLE {1} \
     CONFIG.PSU__GEM1_COHERENCY {0} \
     CONFIG.PSU__GEM1_ROUTE_THROUGH_FPD {0} \
     CONFIG.PSU__GEM__TSU__ENABLE {0} \
@@ -624,6 +645,7 @@ MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 
     CONFIG.PSU__NUM_FABRIC_RESETS {1} \
     CONFIG.PSU__OVERRIDE__BASIC_CLOCK {0} \
     CONFIG.PSU__PL_CLK0_BUF {TRUE} \
+    CONFIG.PSU__PL_CLK1_BUF {TRUE} \
     CONFIG.PSU__PMU_COHERENCY {0} \
     CONFIG.PSU__PMU__AIBACK__ENABLE {0} \
     CONFIG.PSU__PMU__EMIO_GPI__ENABLE {0} \
@@ -694,8 +716,7 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.PSU__USB0__RESET__ENABLE {1} \
     CONFIG.PSU__USB0__RESET__IO {MIO 76} \
     CONFIG.PSU__USB1__PERIPHERAL__ENABLE {0} \
-    CONFIG.PSU__USB__RESET__MODE {Shared MIO Pin} \
-    CONFIG.PSU__USB__RESET__POLARITY {Active Low} \
+    CONFIG.PSU__USB1__RESET__ENABLE {0} \
     CONFIG.PSU__USE__IRQ0 {1} \
     CONFIG.PSU__USE__M_AXI_GP0 {1} \
     CONFIG.PSU__USE__M_AXI_GP1 {0} \
@@ -726,6 +747,8 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   set rst_digclk_ddr4_users [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_digclk_ddr4_users ]
 
   # Create interface connections
+  connect_bd_intf_net -intf_net FIFO_READ_0_1 [get_bd_intf_ports fan_ctrl_read] [get_bd_intf_pins fan_ctrl_fifo/FIFO_READ]
+  connect_bd_intf_net -intf_net FIFO_WRITE_0_1 [get_bd_intf_ports fan_ctrl_write] [get_bd_intf_pins fan_ctrl_fifo/FIFO_WRITE]
   connect_bd_intf_net -intf_net S00_AXI_0_1 [get_bd_intf_ports trans_axi] [get_bd_intf_pins axi_iconnect_ddr4/S00_AXI]
   connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins axi_iconnect_fabric/S00_AXI] [get_bd_intf_pins ps_e/M_AXI_HPM0_FPD]
   connect_bd_intf_net -intf_net S_AXI_0_1 [get_bd_intf_ports q_trans_axi] [get_bd_intf_pins q_axi_bram_ctrl/S_AXI]
@@ -734,9 +757,11 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net axi_interconnect_1_M00_AXI [get_bd_intf_ports ctrl0_axi] [get_bd_intf_pins axi_iconnect_fabric/M00_AXI]
 
   # Create port connections
+  connect_bd_net -net fan_ctrl_fifo_valid [get_bd_ports fan_ctrl_valid] [get_bd_pins fan_ctrl_fifo/valid]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins axi_iconnect_ddr4/ARESETN] [get_bd_pins axi_iconnect_ddr4/M00_ARESETN] [get_bd_pins axi_iconnect_ddr4/S00_ARESETN] [get_bd_pins axi_iconnect_fabric/ARESETN] [get_bd_pins axi_iconnect_fabric/M00_ARESETN] [get_bd_pins axi_iconnect_fabric/S00_ARESETN] [get_bd_pins q_axi_bram_ctrl/s_axi_aresetn] [get_bd_pins rst_digclk_ddr4_users/peripheral_aresetn]
   connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_ports reset] [get_bd_pins rst_digclk_ddr4_users/peripheral_reset]
-  connect_bd_net -net ps_e_pl_clk0 [get_bd_ports digclk] [get_bd_pins axi_iconnect_ddr4/ACLK] [get_bd_pins axi_iconnect_ddr4/M00_ACLK] [get_bd_pins axi_iconnect_ddr4/S00_ACLK] [get_bd_pins axi_iconnect_fabric/ACLK] [get_bd_pins axi_iconnect_fabric/M00_ACLK] [get_bd_pins axi_iconnect_fabric/S00_ACLK] [get_bd_pins ps_e/maxihpm0_fpd_aclk] [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/saxihp1_fpd_aclk] [get_bd_pins q_axi_bram_ctrl/s_axi_aclk] [get_bd_pins rst_digclk_ddr4_users/slowest_sync_clk]
+  connect_bd_net -net ps_e_pl_clk0 [get_bd_ports digclk] [get_bd_pins axi_iconnect_ddr4/ACLK] [get_bd_pins axi_iconnect_ddr4/M00_ACLK] [get_bd_pins axi_iconnect_ddr4/S00_ACLK] [get_bd_pins axi_iconnect_fabric/ACLK] [get_bd_pins axi_iconnect_fabric/M00_ACLK] [get_bd_pins axi_iconnect_fabric/S00_ACLK] [get_bd_pins fan_ctrl_fifo/wr_clk] [get_bd_pins ps_e/maxihpm0_fpd_aclk] [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/saxihp1_fpd_aclk] [get_bd_pins q_axi_bram_ctrl/s_axi_aclk] [get_bd_pins rst_digclk_ddr4_users/slowest_sync_clk]
+  connect_bd_net -net ps_e_pl_clk1 [get_bd_ports clk100] [get_bd_pins fan_ctrl_fifo/rd_clk] [get_bd_pins ps_e/pl_clk1]
   connect_bd_net -net ps_e_pl_resetn0 [get_bd_pins ps_e/pl_resetn0] [get_bd_pins rst_digclk_ddr4_users/ext_reset_in]
 
   # Create address segments

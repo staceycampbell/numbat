@@ -89,6 +89,9 @@ module control #
     output reg                            q_trans_capture_out,
     output reg [1:0]                      q_trans_flag_out,
 
+    output reg [31:0]                     fan_ctrl_write_wr_data,
+    output reg                            fan_ctrl_write_wr_en,
+
     input [7:0]                           q_trans_depth_in,
     input                                 q_trans_entry_valid_in,
     input signed [EVAL_WIDTH - 1:0]       q_trans_eval_in,
@@ -189,71 +192,79 @@ module control #
    assign ctrl0_axi_rresp = 2'b0; // always ok
 
    always @(posedge clk)
-     if (ctrl0_wr_valid)
-       case (wr_reg_addr)
-         5'h0 :
-           begin
-              am_new_board_valid_out <= ctrl0_wr_data[0];
-              am_clear_moves <= ctrl0_wr_data[1];
-              soft_reset <= ctrl0_wr_data[31];
-           end
-         5'h01 : am_move_index <= ctrl0_wr_data[MAX_POSITIONS_LOG2 - 1:0];
-         5'h02 : {am_white_to_move_out, am_castle_mask_out, am_en_passant_col_out} <= ctrl0_wr_data;
-         5'h03 : am_half_move_out <= ctrl0_wr_data;
-         5'h04 : am_quiescence_moves <= ctrl0_wr_data[0];
-         5'h08 : am_new_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h09 : am_new_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h0A : am_new_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h0B : am_new_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h0C : am_new_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h0D : am_new_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h0E : am_new_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h0F : am_new_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+     begin
+        fan_ctrl_write_wr_en <= 0; // special case for 100MHz clock domain
+        if (ctrl0_wr_valid)
+          case (wr_reg_addr)
+            5'h0 :
+              begin
+                 am_new_board_valid_out <= ctrl0_wr_data[0];
+                 am_clear_moves <= ctrl0_wr_data[1];
+                 soft_reset <= ctrl0_wr_data[31];
+              end
+            5'h01 : am_move_index <= ctrl0_wr_data[MAX_POSITIONS_LOG2 - 1:0];
+            5'h02 : {am_white_to_move_out, am_castle_mask_out, am_en_passant_col_out} <= ctrl0_wr_data;
+            5'h03 : am_half_move_out <= ctrl0_wr_data;
+            5'h04 : am_quiescence_moves <= ctrl0_wr_data[0];
+            5'h08 : am_new_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h09 : am_new_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h0A : am_new_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h0B : am_new_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h0C : am_new_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h0D : am_new_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h0E : am_new_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h0F : am_new_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
 
-         5'h10 : am_repdet_depth_out <= ctrl0_wr_data;
-         5'h11 : am_repdet_castle_mask_out <= ctrl0_wr_data;
-         5'h12 : {am_repdet_wr_en_out, am_repdet_wr_addr_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[REPDET_WIDTH - 1:0]};
-         5'h18 : am_repdet_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h19 : am_repdet_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h1A : am_repdet_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h1B : am_repdet_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h1C : am_repdet_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h1D : am_repdet_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h1E : am_repdet_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         5'h1F : am_repdet_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h10 : am_repdet_depth_out <= ctrl0_wr_data;
+            5'h11 : am_repdet_castle_mask_out <= ctrl0_wr_data;
+            5'h12 : {am_repdet_wr_en_out, am_repdet_wr_addr_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[REPDET_WIDTH - 1:0]};
+            5'h18 : am_repdet_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h19 : am_repdet_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h1A : am_repdet_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h1B : am_repdet_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h1C : am_repdet_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h1D : am_repdet_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h1E : am_repdet_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            5'h1F : am_repdet_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
 
-         252 : random_score_mask <= ctrl0_wr_data;
+            252 : random_score_mask <= ctrl0_wr_data;
 
-         256 : {led_uf2, led_uf1} <= ctrl0_wr_data;
+            256 : {led_uf2, led_uf1} <= ctrl0_wr_data;
+            257 : // special case for 100MHz clock domain
+              begin
+                 fan_ctrl_write_wr_data <= ctrl0_wr_data;
+                 fan_ctrl_write_wr_en <= 1;
+              end
 
-         520 : {trans_depth_out[7:0], trans_clear_trans_out, trans_hash_only_out, trans_flag_out[1:0],
-                trans_entry_store_out, trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
-         521 : {trans_capture_out, trans_eval_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[EVAL_WIDTH - 1:0]};
-         525 : trans_nodes_out <= ctrl0_wr_data;
-         
-         600 : am_pv_ctrl_out <= ctrl0_wr_data;
+            520 : {trans_depth_out[7:0], trans_clear_trans_out, trans_hash_only_out, trans_flag_out[1:0],
+                   trans_entry_store_out, trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
+            521 : {trans_capture_out, trans_eval_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[EVAL_WIDTH - 1:0]};
+            525 : trans_nodes_out <= ctrl0_wr_data;
+            
+            600 : am_pv_ctrl_out <= ctrl0_wr_data;
 
-         620 : {q_trans_depth_out[7:0], q_trans_clear_trans_out, q_trans_hash_only_out, q_trans_flag_out[1:0],
-                q_trans_entry_store_out, q_trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
-         621 : {q_trans_capture_out, q_trans_eval_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[EVAL_WIDTH - 1:0]};
-         625 : q_trans_nodes_out <= ctrl0_wr_data;
+            620 : {q_trans_depth_out[7:0], q_trans_clear_trans_out, q_trans_hash_only_out, q_trans_flag_out[1:0],
+                   q_trans_entry_store_out, q_trans_entry_lookup_out} <= {ctrl0_wr_data[15:8], ctrl0_wr_data[5:0]};
+            621 : {q_trans_capture_out, q_trans_eval_out} <= {ctrl0_wr_data[31], ctrl0_wr_data[EVAL_WIDTH - 1:0]};
+            625 : q_trans_nodes_out <= ctrl0_wr_data;
 
-         1024 : am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1025 : am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1026 : am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1027 : am_killer_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1028 : am_killer_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1029 : am_killer_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1030 : am_killer_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1031 : am_killer_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
-         1032 : {am_killer_clear_out, am_killer_update_out} <= ctrl0_wr_data[1:0];
-         1033 : am_killer_ply_out <= ctrl0_wr_data;
-         1034 : am_killer_bonus0_out <= ctrl0_wr_data;
-         1035 : am_killer_bonus1_out <= ctrl0_wr_data;
-         default :
-           begin
-           end
-       endcase
+            1024 : am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            1025 : am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            1026 : am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            1027 : am_killer_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            1028 : am_killer_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            1029 : am_killer_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            1030 : am_killer_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            1031 : am_killer_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH] <= ctrl0_wr_data[`SIDE_WIDTH - 1:0];
+            1032 : {am_killer_clear_out, am_killer_update_out} <= ctrl0_wr_data[1:0];
+            1033 : am_killer_ply_out <= ctrl0_wr_data;
+            1034 : am_killer_bonus0_out <= ctrl0_wr_data;
+            1035 : am_killer_bonus1_out <= ctrl0_wr_data;
+            default :
+              begin
+              end
+          endcase
+     end
 
    always @(posedge clk)
      begin
@@ -332,6 +343,7 @@ module control #
                254 : ctrl0_axi_rdata <= xorshift32_reg;
                255 : ctrl0_axi_rdata <= misc_status;
                256 : ctrl0_axi_rdata <= {led_uf2, led_uf1};
+               257 : ctrl0_axi_rdata <= fan_ctrl_write_wr_data;
 
                512 : ctrl0_axi_rdata <= {trans_capture_in, trans_collision_in, trans_depth_in[7:0], 4'b0,
                                          trans_flag_in[1:0], trans_entry_valid_in, trans_trans_idle_in};

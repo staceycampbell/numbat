@@ -173,6 +173,14 @@ numbat_read64(uint32_t reg)
 }
 
 static inline void
+numbat_fan_pwm(uint32_t duty_cycle)
+{
+	if (duty_cycle >= 4000)
+		duty_cycle = 3999;
+	numbat_write(257, duty_cycle);
+}
+
+static inline void
 numbat_led(uint32_t led_mask)
 {
         numbat_write(256, led_mask);
