@@ -356,6 +356,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 printf("%s: increase MAX_DEPTH, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
+
         numbat_led(ply);
 
         pv_array[pv_index] = zero_move;
@@ -517,7 +518,7 @@ nm_init(void)
 }
 
 board_t
-nm_top(const tc_t * tc, uint32_t *resign)
+nm_top(const tc_t * tc, uint32_t * resign)
 {
         int32_t i, game_index;
         int32_t alpha, beta;
@@ -669,6 +670,8 @@ nm_top(const tc_t * tc, uint32_t *resign)
         if (q_nodes_visited > 0)
                 printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%)\n", q_no_trans, q_trans_hit, ((double)q_trans_hit * 100.0) / (double)q_nodes_visited);
         printf("temps: %.2fC (max %.2fC min %.2fC)\n", tmon_temperature, tmon_max_temperature, tmon_min_temperature);
+
+        numbat_led(0);
 
         return best_board;
 }
