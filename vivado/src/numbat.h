@@ -897,7 +897,9 @@ extern void tc_set(tc_t * tc, uint32_t side, int32_t main_remaining, int32_t inc
 
 extern int tmon_init(void);
 extern int tmon_poll(void);
+#if ! defined(EXCLUDE_VITIS)
 extern XTime tmon_temperature_check_time;
+#endif
 extern float tmon_temperature;
 extern float tmon_max_temperature;
 extern float tmon_min_temperature;
