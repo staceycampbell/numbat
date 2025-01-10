@@ -356,6 +356,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 printf("%s: increase MAX_DEPTH, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);
         }
+        numbat_led(ply);
 
         pv_array[pv_index] = zero_move;
         pv_next_index = pv_index + MAX_DEPTH - ply;

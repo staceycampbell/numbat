@@ -172,6 +172,12 @@ numbat_read64(uint32_t reg)
         return val;
 }
 
+static inline void
+numbat_led(uint32_t led_mask)
+{
+        numbat_write(256, led_mask);
+}
+
 static inline int32_t
 numbat_initial_material_black(void)
 {

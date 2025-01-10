@@ -3,10 +3,14 @@
 
 `include "numbat.vh"
 
-module numbat_top;
+module numbat_top
+  (
+   output led_uf1,
+   output led_uf2
+   );
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 0;
+   localparam EVAL_MOBILITY_DISABLE = 1;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -18,7 +22,7 @@ module numbat_top;
    localparam TRANS_ADDRESS_WIDTH = 36;
    localparam Q_TRANS_ADDRESS_WIDTH = 21;
 
-   integer       i;
+   integer i;
    
    reg [`BOARD_WIDTH - 1:0] am_board_in;
    reg                      am_board_valid_in = 0;
@@ -557,6 +561,8 @@ module numbat_top;
       .trans_nodes_out                  (trans_nodes_in[`TRANS_NODES_WIDTH-1:0]), // Templated
       .trans_capture_out                (trans_capture_in),      // Templated
       .trans_flag_out                   (trans_flag_in[1:0]),    // Templated
+      .led_uf1                          (led_uf1),
+      .led_uf2                          (led_uf2),
       .q_trans_board_out                (q_trans_board_in[`BOARD_WIDTH-1:0]), // Templated
       .q_trans_white_to_move_out        (q_trans_white_to_move_in), // Templated
       .q_trans_castle_mask_out          (q_trans_castle_mask_in[3:0]), // Templated
