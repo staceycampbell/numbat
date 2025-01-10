@@ -49,7 +49,7 @@ at J4 (115200 baud, 8N1).
 
 ## Using numbat with xboard
 
-Several steps are required to connect xboard to numbat.
+Several steps are required to connect [xboard](https://www.gnu.org/software/xboard/) to numbat.
 
 1. Obtain, compile and install polyglot. Polyglot provides a translation between UCI protocol and
    xboard protocol. I cloned [polyglot from github](https://github.com/ulthiel/polyglot.git).
