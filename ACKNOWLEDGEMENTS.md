@@ -42,4 +42,6 @@ As such I'd like to acknowledge and thank the following for their work in expand
 Note that many evaluation weights were copied from crafty source. Crafty's README copyright is included for this reason and applies to
 `evaluate.c`.
 
+In addition, many thanks to Stephen Williams, primary author of [Icarus Verilog](https://github.com/steveicarus/iverilog).
+
 Stacey Campbell 2025
