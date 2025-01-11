@@ -70,12 +70,13 @@ tmon_poll(void)
         adc_data = XSysMonPsu_GetMinMaxMeasurement(sysmon_inst_ptr, XSM_MIN_TEMP, XSYSMON_PS);
         tmon_min_temperature = XSysMonPsu_RawToTemperature_OnChip(adc_data);
 
-        if (tmon_max_temperature > 40.0)
+        if (tmon_temperature > 40.0)
                 printf("%s: WARNING PS temperature %.2fC!\n", __PRETTY_FUNCTION__, tmon_max_temperature);
         if (tmon_max_temperature > 50.0)
         {
                 printf("%s: CRITICAL WARNING PS temperature %.2fC! Putting project in reset and stopping. Check fan.\n",
                        __PRETTY_FUNCTION__, tmon_max_temperature);
+                numbat_fan_pwm(FAN_MAX_DUTY_CYCLE);
                 numbat_write_control(1, 0, 0, 0);
                 while (1);
         }

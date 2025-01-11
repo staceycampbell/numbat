@@ -172,11 +172,13 @@ numbat_read64(uint32_t reg)
         return val;
 }
 
+#define FAN_MAX_DUTY_CYCLE 3999
+
 static inline void
 numbat_fan_pwm(uint32_t duty_cycle)
 {
         if (duty_cycle >= 4000)
-                duty_cycle = 3999;
+                duty_cycle = FAN_MAX_DUTY_CYCLE;
         numbat_write(257, duty_cycle);
 }
 
