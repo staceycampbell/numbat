@@ -60,8 +60,8 @@ cd numbat/vivado/comms
 make
 ```
 3. Load and run numbat on the KR260.
-4. Start xboard and configure the computer engine path with the -fd option and the bridge command
-   with the -fcp option. For example:
+4. Start xboard and configure the computer engine path with the -fd option and the `numbattcp` bridge
+   program with the -fcp option. For example:
 ```
 xboard -boardSize Medium -fUCI -fcp numbattcp \
        -fd /home/stacey/src/numbat/vivado/comms
@@ -110,6 +110,21 @@ gtkwave wave.vcd
   - Game time control.
   - Lwip TCP stack for UCI communication.
   - UART for debug input/output.
+
+## Code Notes
+
+* The top level module is `numbat_top.sv`. The Vivado block diagram wrapper is instantiated
+  inside this module.
+* The code makes minimal use of System Verilog features and is mostly written in vanilla Verilog (2005).
+* All evaluation algorithms are performed in parallel for a given board.
+* Several algorithms (legal moves, evaluations) are table driven, and those tables are created
+  and output to Verilog header files on the host Linux computer prior to Vivado synthesis.
+* **All** module instantiation code is created with [Emacs Verilog-mode](https://veripool.org/verilog-mode/).
+  - I generally only use AUTO_TEMPLATE, AUTOINST, AUTOWIRE, and AUTOREGINPUT.
+  - I only use AUTOREGINPUT to detect unconnected module inputs. I never use it to create registers.
+  - I am a `vi` user so I unconditionally use [Emacs Evil](https://www.emacswiki.org/emacs/Evil).
+* The C code in `numbat/vivado/src` interacts with the Verilog via the
+  [AXI4-Lite](https://en.wikipedia.org/wiki/Advanced_eXtensible_Interface#AXI4-Lite) `ctrl0_axi` interface.
 
 ## Hardware Notes
 
