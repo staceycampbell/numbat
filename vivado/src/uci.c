@@ -25,6 +25,8 @@ extern uint32_t tc_main, tc_increment;
 static char uci_input_buffer[UCI_INPUT_BUFFER_SIZE];
 static uint32_t uci_input_index;
 
+static int pondering = 0;
+
 #if UCI_TCP_COMMS == 1
 static void
 uci_reply(char *str)
@@ -154,6 +156,7 @@ uci_dispatch(void)
                 char uci_str[6];
                 char best_move[128];
                 static tc_t tc;
+                static tc_t pondering_tc;
 
                 if (game_moves < 1)
                 {
@@ -223,6 +226,12 @@ uci_dispatch(void)
                 strcat(best_move, uci_str);
                 strcat(best_move, "\n");
                 uci_reply(best_move);
+                {
+                        pondering = 1;
+                        tc_set(&pondering_tc, ! side, 10 * 60 * 1000, 0); // ponder for 10 minutes or until interupted
+                        (void)nm_top(&pondering_tc, 0);
+                        pondering = 0;
+                }
         }
         else if (strcmp(p, "stop") == 0)
         {
@@ -244,6 +253,8 @@ uci_currmove(int32_t depth, int32_t seldepth, const uci_t * currmove, int32_t cu
         char uci_str[7];
         char info_str[1024];
 
+        if (pondering)
+                return;
         uci_string(currmove, uci_str);
         snprintf(info_str, sizeof(info_str), "info depth %d seldepth %d currmove %s currmovenumber %d score cp %d\n",
                  depth, seldepth, uci_str, currmovenumber, score);
@@ -260,6 +271,8 @@ uci_pv(int32_t depth, int32_t score, uint32_t time_ms, uint32_t nodes, uint32_t 
         char uci_str[7];
         char info_str[1024];
 
+        if (pondering)
+                return;
         snprintf(depth_str, sizeof(depth_str), "%d", depth);
         snprintf(score_str, sizeof(score_str), "%d", score);
         uci_string(ply0_move, pv_str);
@@ -293,6 +306,8 @@ uci_input_poll(void)
         tcp_task();
         if (tcp_uci_fifo_count() == 0)
                 return UCI_SEARCH_CONT;
+        if (pondering)
+                return UCI_SEARCH_STOP;
         c = tcp_uci_read_char();
 #else
         if (!XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR))
