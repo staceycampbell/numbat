@@ -4,6 +4,7 @@
 `include "numbat.vh"
 
 // in-place Block RAM bubble sort, sharing ports with external write and read
+// all writes are mirrored to block diagram BRAM for AXI4 burst DMA readout to Zynq
 
 module move_sort #
   (
@@ -27,9 +28,9 @@ module move_sort #
     output [RAM_WIDTH - 1:0]              ram_rd_data,
     output reg [MAX_POSITIONS_LOG2 - 1:0] ram_wr_addr,
 
-(* mark_debug = "true" *)    output reg [31:0]                     all_moves_bram_addr,
-   output reg [511:0]                    all_moves_bram_din,
-(* mark_debug = "true" *)    output reg [63:0]                     all_moves_bram_we,
+    output reg [31:0]                     all_moves_bram_addr,
+    output reg [511:0]                    all_moves_bram_din,
+    output reg [63:0]                     all_moves_bram_we,
 
     output reg                            sort_complete
     );
@@ -97,7 +98,7 @@ module move_sort #
    localparam STATE_OUTER_TEST = 7;
    localparam STATE_DONE = 8;
 
-(* mark_debug = "true" *)   reg [3:0]                              state_sort = STATE_IDLE;
+   reg [3:0]                              state_sort = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -179,7 +180,7 @@ module move_sort #
    localparam AM_PORT_A = 0;
    localparam AM_PORT_B = 1;
 
-(* mark_debug = "true" *)   reg [0:0] am_state = AM_PORT_A;
+   reg [0:0] am_state = AM_PORT_A;
 
    always @(posedge clk)
      case (am_state)

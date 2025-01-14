@@ -250,7 +250,7 @@ module all_moves #
 
 
    wire [`BOARD_WIDTH - 1:0]             all_moves_bram_board_out;
-   (* mark_debug = "true" *) wire [31:0] all_moves_bram_board_out_debug = all_moves_bram_board_out[31:0];
+   wire [31:0]                           all_moves_bram_board_out_debug = all_moves_bram_board_out[31:0];
    wire                                  all_moves_bram_white_to_move_out;
    wire [3:0]                            all_moves_bram_castle_mask_out;
    wire [3:0]                            all_moves_bram_en_passant_col_out;
@@ -261,7 +261,7 @@ module all_moves #
    wire [63:0]                           all_moves_bram_white_is_attacking_out;
    wire [63:0]                           all_moves_bram_black_is_attacking_out;
    wire signed [EVAL_WIDTH - 1:0]        all_moves_bram_eval_out;
-   (* mark_debug = "true" *) wire signed [EVAL_WIDTH - 1:0]        all_moves_bram_eval_out_debug = all_moves_bram_eval_out;
+   wire signed [EVAL_WIDTH - 1:0]        all_moves_bram_eval_out_debug = all_moves_bram_eval_out;
    wire                                  all_moves_bram_thrice_rep_out;
    wire [HALF_MOVE_WIDTH - 1:0]          all_moves_bram_half_move_out;
    wire                                  all_moves_bram_fifty_move_out;
