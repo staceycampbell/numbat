@@ -309,7 +309,7 @@ proc create_root_design { parentCell } {
   set_property -dict [list \
     CONFIG.M00_HAS_REGSLICE {4} \
     CONFIG.M01_HAS_REGSLICE {4} \
-    CONFIG.NUM_MI {2} \
+    CONFIG.NUM_MI {1} \
     CONFIG.S00_HAS_DATA_FIFO {0} \
     CONFIG.S00_HAS_REGSLICE {0} \
     CONFIG.STRATEGY {0} \
@@ -674,6 +674,7 @@ MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 
     CONFIG.PSU__IOU_SLCR__WDT0__ACT_FREQMHZ {99.999001} \
     CONFIG.PSU__LPD_SLCR__CSUPMU__ACT_FREQMHZ {100.000000} \
     CONFIG.PSU__MAXIGP0__DATA_WIDTH {128} \
+    CONFIG.PSU__MAXIGP1__DATA_WIDTH {128} \
     CONFIG.PSU__NUM_FABRIC_RESETS {1} \
     CONFIG.PSU__OVERRIDE__BASIC_CLOCK {0} \
     CONFIG.PSU__PL_CLK0_BUF {TRUE} \
@@ -750,7 +751,7 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
     CONFIG.PSU__USB1__RESET__ENABLE {0} \
     CONFIG.PSU__USE__IRQ0 {1} \
     CONFIG.PSU__USE__M_AXI_GP0 {1} \
-    CONFIG.PSU__USE__M_AXI_GP1 {0} \
+    CONFIG.PSU__USE__M_AXI_GP1 {1} \
     CONFIG.PSU__USE__M_AXI_GP2 {0} \
     CONFIG.PSU__USE__S_AXI_GP3 {1} \
     CONFIG.PSU__USE__S_AXI_GP5 {0} \
@@ -799,21 +800,21 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net S_AXI_0_1 [get_bd_intf_ports q_trans_axi] [get_bd_intf_pins q_axi_bram_ctrl/S_AXI]
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins q_axi_bram_ctrl/BRAM_PORTA] [get_bd_intf_pins q_uram/BRAM_PORTA]
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA1 [get_bd_intf_pins all_moves_blk_mem/BRAM_PORTA] [get_bd_intf_pins all_moves_bram_axi_ctrl/BRAM_PORTA]
-  connect_bd_intf_net -intf_net axi_iconnect_M01_AXI [get_bd_intf_pins all_moves_bram_axi_ctrl/S_AXI] [get_bd_intf_pins axi_iconnect/M01_AXI]
-connect_bd_intf_net -intf_net [get_bd_intf_nets axi_iconnect_M01_AXI] [get_bd_intf_pins axi_iconnect/M01_AXI] [get_bd_intf_pins system_ila_0/SLOT_0_AXI]
+  connect_bd_intf_net -intf_net axi_iconnect_M01_AXI [get_bd_intf_pins all_moves_bram_axi_ctrl/S_AXI] [get_bd_intf_pins ps_e/M_AXI_HPM1_FPD]
+connect_bd_intf_net -intf_net [get_bd_intf_nets axi_iconnect_M01_AXI] [get_bd_intf_pins ps_e/M_AXI_HPM1_FPD] [get_bd_intf_pins system_ila_0/SLOT_0_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_iconnect_ddr4/M00_AXI] [get_bd_intf_pins ps_e/S_AXI_HP1_FPD]
   connect_bd_intf_net -intf_net axi_interconnect_1_M00_AXI [get_bd_intf_ports ctrl0_axi] [get_bd_intf_pins axi_iconnect/M00_AXI]
 
   # Create port connections
   connect_bd_net -net fan_ctrl_fifo_valid [get_bd_ports fan_ctrl_valid] [get_bd_pins fan_ctrl_fifo/valid]
-  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aresetn] [get_bd_pins axi_iconnect/ARESETN] [get_bd_pins axi_iconnect/M00_ARESETN] [get_bd_pins axi_iconnect/M01_ARESETN] [get_bd_pins axi_iconnect/S00_ARESETN] [get_bd_pins axi_iconnect_ddr4/ARESETN] [get_bd_pins axi_iconnect_ddr4/M00_ARESETN] [get_bd_pins axi_iconnect_ddr4/S00_ARESETN] [get_bd_pins q_axi_bram_ctrl/s_axi_aresetn] [get_bd_pins rst_digclk_ddr4_users/peripheral_aresetn] [get_bd_pins system_ila_0/resetn]
+  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aresetn] [get_bd_pins axi_iconnect/ARESETN] [get_bd_pins axi_iconnect/M00_ARESETN] [get_bd_pins axi_iconnect/S00_ARESETN] [get_bd_pins axi_iconnect_ddr4/ARESETN] [get_bd_pins axi_iconnect_ddr4/M00_ARESETN] [get_bd_pins axi_iconnect_ddr4/S00_ARESETN] [get_bd_pins q_axi_bram_ctrl/s_axi_aresetn] [get_bd_pins rst_digclk_ddr4_users/peripheral_aresetn] [get_bd_pins system_ila_0/resetn]
   connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_ports reset] [get_bd_pins rst_digclk_ddr4_users/peripheral_reset]
-  connect_bd_net -net ps_e_pl_clk0 [get_bd_ports digclk] [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aclk] [get_bd_pins axi_iconnect/ACLK] [get_bd_pins axi_iconnect/M00_ACLK] [get_bd_pins axi_iconnect/M01_ACLK] [get_bd_pins axi_iconnect/S00_ACLK] [get_bd_pins axi_iconnect_ddr4/ACLK] [get_bd_pins axi_iconnect_ddr4/M00_ACLK] [get_bd_pins axi_iconnect_ddr4/S00_ACLK] [get_bd_pins fan_ctrl_fifo/wr_clk] [get_bd_pins ps_e/maxihpm0_fpd_aclk] [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/saxihp1_fpd_aclk] [get_bd_pins q_axi_bram_ctrl/s_axi_aclk] [get_bd_pins rst_digclk_ddr4_users/slowest_sync_clk] [get_bd_pins system_ila_0/clk]
+  connect_bd_net -net ps_e_pl_clk0 [get_bd_ports digclk] [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aclk] [get_bd_pins axi_iconnect/ACLK] [get_bd_pins axi_iconnect/M00_ACLK] [get_bd_pins axi_iconnect/S00_ACLK] [get_bd_pins axi_iconnect_ddr4/ACLK] [get_bd_pins axi_iconnect_ddr4/M00_ACLK] [get_bd_pins axi_iconnect_ddr4/S00_ACLK] [get_bd_pins fan_ctrl_fifo/wr_clk] [get_bd_pins ps_e/maxihpm0_fpd_aclk] [get_bd_pins ps_e/maxihpm1_fpd_aclk] [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/saxihp1_fpd_aclk] [get_bd_pins q_axi_bram_ctrl/s_axi_aclk] [get_bd_pins rst_digclk_ddr4_users/slowest_sync_clk] [get_bd_pins system_ila_0/clk]
   connect_bd_net -net ps_e_pl_clk1 [get_bd_ports clk100] [get_bd_pins fan_ctrl_fifo/rd_clk] [get_bd_pins ps_e/pl_clk1]
   connect_bd_net -net ps_e_pl_resetn0 [get_bd_pins ps_e/pl_resetn0] [get_bd_pins rst_digclk_ddr4_users/ext_reset_in]
 
   # Create address segments
-  assign_bd_address -offset 0xA0020000 -range 0x00020000 -target_address_space [get_bd_addr_spaces ps_e/Data] [get_bd_addr_segs all_moves_bram_axi_ctrl/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xB0000000 -range 0x00020000 -target_address_space [get_bd_addr_spaces ps_e/Data] [get_bd_addr_segs all_moves_bram_axi_ctrl/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces ps_e/Data] [get_bd_addr_segs ctrl0_axi/Reg] -force
   assign_bd_address -offset 0x00000000 -range 0x00200000 -target_address_space [get_bd_addr_spaces q_trans_axi] [get_bd_addr_segs q_axi_bram_ctrl/S_AXI/Mem0] -force
   assign_bd_address -offset 0x000800000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces trans_axi] [get_bd_addr_segs ps_e/SAXIGP3/HP1_DDR_HIGH] -force
