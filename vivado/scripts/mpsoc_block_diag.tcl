@@ -129,7 +129,6 @@ xilinx.com:ip:axi_bram_ctrl:4.1\
 xilinx.com:ip:fifo_generator:13.2\
 xilinx.com:ip:zynq_ultra_ps_e:3.4\
 xilinx.com:ip:proc_sys_reset:5.0\
-xilinx.com:ip:system_ila:1.1\
 "
 
    set list_ips_missing ""
@@ -577,13 +576,13 @@ MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 MIO#GPIO0 
     CONFIG.PSU__CRL_APB__PCAP_CTRL__ACT_FREQMHZ {199.998001} \
     CONFIG.PSU__CRL_APB__PCAP_CTRL__FREQMHZ {200} \
     CONFIG.PSU__CRL_APB__PCAP_CTRL__SRCSEL {IOPLL} \
-    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__ACT_FREQMHZ {249.997498} \
-    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {250} \
-    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__SRCSEL {IOPLL} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__ACT_FREQMHZ {266.664001} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {266.66666} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__SRCSEL {RPLL} \
     CONFIG.PSU__CRL_APB__PL1_REF_CTRL__ACT_FREQMHZ {99.999001} \
     CONFIG.PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ {100} \
     CONFIG.PSU__CRL_APB__PL1_REF_CTRL__SRCSEL {IOPLL} \
-    CONFIG.PSU__CRL_APB__PL2_REF_CTRL__ACT_FREQMHZ {333.329987} \
+    CONFIG.PSU__CRL_APB__PL2_REF_CTRL__ACT_FREQMHZ {299.997009} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__ACT_FREQMHZ {124.998749} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__FREQMHZ {125} \
     CONFIG.PSU__CRL_APB__QSPI_REF_CTRL__SRCSEL {IOPLL} \
@@ -778,19 +777,6 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   # Create instance: rst_digclk_ddr4_users, and set properties
   set rst_digclk_ddr4_users [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_digclk_ddr4_users ]
 
-  # Create instance: system_ila_0, and set properties
-  set system_ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.1 system_ila_0 ]
-  set_property -dict [list \
-    CONFIG.C_INPUT_PIPE_STAGES {2} \
-    CONFIG.C_SLOT_0_AXI_R_SEL_DATA {0} \
-    CONFIG.C_SLOT_0_AXI_R_SEL_TRIG {0} \
-    CONFIG.C_SLOT_0_AXI_W_SEL_DATA {0} \
-    CONFIG.C_SLOT_0_AXI_W_SEL_TRIG {0} \
-    CONFIG.C_SLOT_0_MAX_RD_BURSTS {8} \
-    CONFIG.C_SLOT_0_MAX_WR_BURSTS {8} \
-  ] $system_ila_0
-
-
   # Create interface connections
   connect_bd_intf_net -intf_net BRAM_PORTB_0_1 [get_bd_intf_ports all_moves_bram] [get_bd_intf_pins all_moves_blk_mem/BRAM_PORTB]
   connect_bd_intf_net -intf_net FIFO_READ_0_1 [get_bd_intf_ports fan_ctrl_read] [get_bd_intf_pins fan_ctrl_fifo/FIFO_READ]
@@ -801,15 +787,14 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins q_axi_bram_ctrl/BRAM_PORTA] [get_bd_intf_pins q_uram/BRAM_PORTA]
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA1 [get_bd_intf_pins all_moves_blk_mem/BRAM_PORTA] [get_bd_intf_pins all_moves_bram_axi_ctrl/BRAM_PORTA]
   connect_bd_intf_net -intf_net axi_iconnect_M01_AXI [get_bd_intf_pins all_moves_bram_axi_ctrl/S_AXI] [get_bd_intf_pins ps_e/M_AXI_HPM1_FPD]
-connect_bd_intf_net -intf_net [get_bd_intf_nets axi_iconnect_M01_AXI] [get_bd_intf_pins ps_e/M_AXI_HPM1_FPD] [get_bd_intf_pins system_ila_0/SLOT_0_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_iconnect_ddr4/M00_AXI] [get_bd_intf_pins ps_e/S_AXI_HP1_FPD]
   connect_bd_intf_net -intf_net axi_interconnect_1_M00_AXI [get_bd_intf_ports ctrl0_axi] [get_bd_intf_pins axi_iconnect/M00_AXI]
 
   # Create port connections
   connect_bd_net -net fan_ctrl_fifo_valid [get_bd_ports fan_ctrl_valid] [get_bd_pins fan_ctrl_fifo/valid]
-  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aresetn] [get_bd_pins axi_iconnect/ARESETN] [get_bd_pins axi_iconnect/M00_ARESETN] [get_bd_pins axi_iconnect/S00_ARESETN] [get_bd_pins axi_iconnect_ddr4/ARESETN] [get_bd_pins axi_iconnect_ddr4/M00_ARESETN] [get_bd_pins axi_iconnect_ddr4/S00_ARESETN] [get_bd_pins q_axi_bram_ctrl/s_axi_aresetn] [get_bd_pins rst_digclk_ddr4_users/peripheral_aresetn] [get_bd_pins system_ila_0/resetn]
+  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aresetn] [get_bd_pins axi_iconnect/ARESETN] [get_bd_pins axi_iconnect/M00_ARESETN] [get_bd_pins axi_iconnect/S00_ARESETN] [get_bd_pins axi_iconnect_ddr4/ARESETN] [get_bd_pins axi_iconnect_ddr4/M00_ARESETN] [get_bd_pins axi_iconnect_ddr4/S00_ARESETN] [get_bd_pins q_axi_bram_ctrl/s_axi_aresetn] [get_bd_pins rst_digclk_ddr4_users/peripheral_aresetn]
   connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_ports reset] [get_bd_pins rst_digclk_ddr4_users/peripheral_reset]
-  connect_bd_net -net ps_e_pl_clk0 [get_bd_ports digclk] [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aclk] [get_bd_pins axi_iconnect/ACLK] [get_bd_pins axi_iconnect/M00_ACLK] [get_bd_pins axi_iconnect/S00_ACLK] [get_bd_pins axi_iconnect_ddr4/ACLK] [get_bd_pins axi_iconnect_ddr4/M00_ACLK] [get_bd_pins axi_iconnect_ddr4/S00_ACLK] [get_bd_pins fan_ctrl_fifo/wr_clk] [get_bd_pins ps_e/maxihpm0_fpd_aclk] [get_bd_pins ps_e/maxihpm1_fpd_aclk] [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/saxihp1_fpd_aclk] [get_bd_pins q_axi_bram_ctrl/s_axi_aclk] [get_bd_pins rst_digclk_ddr4_users/slowest_sync_clk] [get_bd_pins system_ila_0/clk]
+  connect_bd_net -net ps_e_pl_clk0 [get_bd_ports digclk] [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aclk] [get_bd_pins axi_iconnect/ACLK] [get_bd_pins axi_iconnect/M00_ACLK] [get_bd_pins axi_iconnect/S00_ACLK] [get_bd_pins axi_iconnect_ddr4/ACLK] [get_bd_pins axi_iconnect_ddr4/M00_ACLK] [get_bd_pins axi_iconnect_ddr4/S00_ACLK] [get_bd_pins fan_ctrl_fifo/wr_clk] [get_bd_pins ps_e/maxihpm0_fpd_aclk] [get_bd_pins ps_e/maxihpm1_fpd_aclk] [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/saxihp1_fpd_aclk] [get_bd_pins q_axi_bram_ctrl/s_axi_aclk] [get_bd_pins rst_digclk_ddr4_users/slowest_sync_clk]
   connect_bd_net -net ps_e_pl_clk1 [get_bd_ports clk100] [get_bd_pins fan_ctrl_fifo/rd_clk] [get_bd_pins ps_e/pl_clk1]
   connect_bd_net -net ps_e_pl_resetn0 [get_bd_pins ps_e/pl_resetn0] [get_bd_pins rst_digclk_ddr4_users/ext_reset_in]
 
