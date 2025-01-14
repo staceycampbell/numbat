@@ -12,7 +12,7 @@ module numbat_top
    );
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 0;
+   localparam EVAL_MOBILITY_DISABLE = 1;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -25,16 +25,20 @@ module numbat_top
    localparam Q_TRANS_ADDRESS_WIDTH = 21;
 
    integer i;
-   
+
    reg [`BOARD_WIDTH - 1:0] am_board_in;
    reg                      am_board_valid_in = 0;
    reg                      am_new_board_valid_in_z = 0;
-   
+
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [31:0]          all_moves_bram_addr;    // From all_moves of all_moves.v
+   wire [511:0]         all_moves_bram_din;     // From all_moves of all_moves.v
+   wire [511:0]         all_moves_bram_dout;    // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [63:0]          all_moves_bram_we;      // From all_moves of all_moves.v
    wire [5:0]           am_attack_black_pop_out;// From all_moves of all_moves.v
    wire [5:0]           am_attack_white_pop_out;// From all_moves of all_moves.v
    wire                 am_black_in_check_out;  // From all_moves of all_moves.v
@@ -283,7 +287,7 @@ module numbat_top
         else
           am_board_valid_in <= 0;
      end
-   
+
    /* all_moves AUTO_TEMPLATE (
     .reset (soft_reset),
     .clk (clk),
@@ -335,6 +339,9 @@ module numbat_top
       .attack_white_pop_out             (am_attack_white_pop_out[5:0]), // Templated
       .attack_black_pop_out             (am_attack_black_pop_out[5:0]), // Templated
       .insufficient_material_out        (am_insufficient_material_out), // Templated
+      .all_moves_bram_addr              (all_moves_bram_addr[31:0]),
+      .all_moves_bram_din               (all_moves_bram_din[511:0]),
+      .all_moves_bram_we                (all_moves_bram_we[63:0]),
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (soft_reset),            // Templated
@@ -520,7 +527,7 @@ module numbat_top
       .trans_axi_rresp                  (q_trans_axi_rresp[1:0]), // Templated
       .trans_axi_rvalid                 (q_trans_axi_rvalid),    // Templated
       .trans_axi_wready                 (q_trans_axi_wready));    // Templated
-   
+
    /* control AUTO_TEMPLATE (
     .\(.*\)_out (\1_in[]),
     .\(.*\)_in (\1_out[]),
@@ -682,10 +689,14 @@ module numbat_top
     .trans_axi_aruser (1'b0),
     .trans_axi_awid (6'b0),
     .trans_axi_awuser (1'b0),
+    .all_moves_bram_clk (clk),
+    .all_moves_bram_en (1'b1),
+    .all_moves_bram_rst (1'b0),
     );*/
    mpsoc_block_diag_wrapper mpsoc_block_diag_wrapper
      (/*AUTOINST*/
       // Outputs
+      .all_moves_bram_dout              (all_moves_bram_dout[511:0]),
       .clk100                           (clk100),
       .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
       .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
@@ -725,6 +736,12 @@ module numbat_top
       .trans_axi_rvalid                 (trans_axi_rvalid),
       .trans_axi_wready                 (trans_axi_wready),
       // Inputs
+      .all_moves_bram_addr              (all_moves_bram_addr[31:0]),
+      .all_moves_bram_clk               (clk),                   // Templated
+      .all_moves_bram_din               (all_moves_bram_din[511:0]),
+      .all_moves_bram_en                (1'b1),                  // Templated
+      .all_moves_bram_rst               (1'b0),                  // Templated
+      .all_moves_bram_we                (all_moves_bram_we[63:0]),
       .ctrl0_axi_arready                (ctrl0_axi_arready),
       .ctrl0_axi_awready                (ctrl0_axi_awready),
       .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),

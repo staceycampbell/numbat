@@ -49,6 +49,9 @@ module amt;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [31:0]          all_moves_bram_addr;    // From all_moves of all_moves.v
+   wire [511:0]         all_moves_bram_din;     // From all_moves of all_moves.v
+   wire [63:0]          all_moves_bram_we;      // From all_moves of all_moves.v
    wire                 am_idle;                // From all_moves of all_moves.v
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
@@ -247,6 +250,9 @@ module amt;
       .attack_white_pop_out             (attack_white_pop_out[5:0]),
       .attack_black_pop_out             (attack_black_pop_out[5:0]),
       .insufficient_material_out        (insufficient_material_out),
+      .all_moves_bram_addr              (all_moves_bram_addr[31:0]),
+      .all_moves_bram_din               (all_moves_bram_din[511:0]),
+      .all_moves_bram_we                (all_moves_bram_we[63:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

@@ -179,13 +179,17 @@ numbat_read_board(board_t * board, uint32_t index)
 {
         uint32_t move_count;
         uint32_t move_ready, moves_ready;
-        uint32_t y;
         uint32_t status;
-        uint64_t *ptr;
+        const uint64_t *entry_addr_uint64;
+        uint64_t *ptr64;
+        uint64_t dma[6];
+        uint32_t uci_half_move_val;
+        static const uint32_t entry_offset_uint64 = 512 / 64;
+        static const uint64_t *dma_base = (void *)XPAR_ALL_MOVES_BRAM_AXI_CTRL_S_AXI_BASEADDR;
         static const uint32_t verify_move_ready = 0;
 
-        // assume moves_ready is tested elsewhere and move_ready is always set due to Zynq to PL latency
-        numbat_move_index(index);
+        entry_addr_uint64 = dma_base + index * entry_offset_uint64;
+
         if (verify_move_ready)
         {
                 status = numbat_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
@@ -198,16 +202,35 @@ numbat_read_board(board_t * board, uint32_t index)
                 }
         }
 
-        for (y = 0; y < 8; y += 2)
-        {
-                ptr = (uint64_t *) (void *)&board->board[y];
-                *ptr = numbat_read_move_two_rows(y);    // rewrite if alignment problems :-)
-        }
-        numbat_board_status0(&board->black_in_check, &board->white_in_check, &board->capture, &board->thrice_rep, &board->fifty_move, &board->pv);
-        numbat_board_status1(&board->white_to_move, &board->castle_mask, &board->en_passant_col);
-        board->eval = numbat_move_eval();
-        board->half_move_clock = numbat_read_half_move();
-        numbat_read_uci(&board->uci);
+        memcpy(dma, entry_addr_uint64, sizeof(dma)); // triggers AXI4 burst
+
+        ptr64 = (void *)&board->board[0];       // note: board is correctly aligned, see header
+
+        ptr64[0] = dma[0];
+        ptr64[1] = dma[1];
+        ptr64[2] = dma[2];
+        ptr64[3] = dma[3];
+
+        board->eval = (int32_t) (dma[4] & 0xFFFFFFFFULL);
+
+        uci_half_move_val = dma[4] >> 32;
+        board->uci.col_from = (uci_half_move_val >> 0) & 0x7;
+        board->uci.row_from = (uci_half_move_val >> 3) & 0x7;
+        board->uci.col_to = (uci_half_move_val >> 6) & 0x7;
+        board->uci.row_to = (uci_half_move_val >> 9) & 0x7;
+        board->uci.promotion = (uci_half_move_val >> 12) & 0xF;
+        board->half_move_clock = uci_half_move_val >> 16;
+
+        board->white_to_move = (dma[5] >> 0) & 0x1;
+        board->black_in_check = (dma[5] >> 1) & 0x1;
+        board->white_in_check = (dma[5] >> 2) & 0x1;
+        board->capture = (dma[5] >> 3) & 0x1;
+        board->pv = (dma[5] >> 4) & 0x1;
+        board->thrice_rep = (dma[5] >> 5) & 0x1;
+        board->fifty_move = (dma[5] >> 6) & 0x1;
+
+        board->en_passant_col = (dma[5] >> 8) & 0xF;
+        board->castle_mask = (dma[5] >> 12) & 0xF;
 
         return 0;
 }

@@ -27,6 +27,10 @@ module move_sort #
     output [RAM_WIDTH - 1:0]              ram_rd_data,
     output reg [MAX_POSITIONS_LOG2 - 1:0] ram_wr_addr,
 
+(* mark_debug = "true" *)    output reg [31:0]                     all_moves_bram_addr,
+   output reg [511:0]                    all_moves_bram_din,
+(* mark_debug = "true" *)    output reg [63:0]                     all_moves_bram_we,
+
     output reg                            sort_complete
     );
 
@@ -42,6 +46,9 @@ module move_sort #
    reg [RAM_WIDTH - 1:0]                  port_b_wr_data;
 
    reg [MAX_POSITIONS_LOG2 - 1:0]         n, newn;
+
+   reg [31:0]                             all_moves_bram_addr_next;
+   reg [511:0]                            all_moves_bram_din_next;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -65,6 +72,9 @@ module move_sort #
    wire                                   pv_a = port_a_rd_data[EVAL_WIDTH + 3];
    wire                                   pv_b = port_b_rd_data[EVAL_WIDTH + 3];
 
+   wire [63:0]                            all_bytes_wren_clr = 64'h0000000000000000;
+   wire [63:0]                            all_bytes_wren_set = 64'hFFFFFFFFFFFFFFFF;
+
    assign ram_rd_data = port_b_rd_data;
 
    always @(posedge clk)
@@ -87,9 +97,7 @@ module move_sort #
    localparam STATE_OUTER_TEST = 7;
    localparam STATE_DONE = 8;
 
-   reg [3:0]                              state_sort = STATE_IDLE;
-
-   wire                                   debug_compare = state_sort == STATE_COMPARE;
+(* mark_debug = "true" *)   reg [3:0]                              state_sort = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
@@ -167,6 +175,38 @@ module move_sort #
                 state_sort <= STATE_IDLE;
            end
        endcase
+
+   localparam AM_PORT_A = 0;
+   localparam AM_PORT_B = 1;
+
+(* mark_debug = "true" *)   reg [0:0] am_state = AM_PORT_A;
+
+   always @(posedge clk)
+     case (am_state)
+       AM_PORT_A :
+         begin
+            all_moves_bram_din <= active_port_a_wr_data;
+            all_moves_bram_addr <= active_port_a_addr << 6;
+
+            all_moves_bram_din_next <= port_b_wr_data;
+            all_moves_bram_addr_next <= port_b_addr << 6;
+
+            all_moves_bram_we <= all_bytes_wren_clr;
+            if (active_port_a_wr_en)
+              begin
+                 all_moves_bram_we <= all_bytes_wren_set;
+                 if (port_b_wr_en)
+                   am_state <= AM_PORT_B;
+              end
+         end
+       AM_PORT_B :
+         begin
+            all_moves_bram_din <= all_moves_bram_din_next;
+            all_moves_bram_addr <= all_moves_bram_addr_next;
+            all_moves_bram_we <= all_bytes_wren_set;
+            am_state <= AM_PORT_A;
+         end
+     endcase
 
    /* mram AUTO_TEMPLATE (
     );*/

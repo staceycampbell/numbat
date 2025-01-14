@@ -78,7 +78,11 @@ module all_moves #
     output [UCI_WIDTH - 1:0]             uci_out,
     output [5:0]                         attack_white_pop_out,
     output [5:0]                         attack_black_pop_out,
-    output                               insufficient_material_out
+    output                               insufficient_material_out,
+
+    output [31:0]                        all_moves_bram_addr,
+    output [511:0]                       all_moves_bram_din,
+    output [63:0]                        all_moves_bram_we
     );
 
    // board + castle mask + en passant col + color to move
@@ -207,7 +211,7 @@ module all_moves #
    reg                                   legal_sort_start;
 
    reg [MAX_POSITIONS_LOG2 - 1:0]        am_move_index_s0, am_move_index_s1;
-   
+
    reg [63:0]                            square_active;
 
    // should be empty
@@ -215,6 +219,9 @@ module all_moves #
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [31:0]          all_moves_bram_intermediate_addr;// From move_sort_legal of move_sort.v
+   wire [511:0]         all_moves_bram_intermediate_din;// From move_sort_legal of move_sort.v
+   wire [63:0]          all_moves_bram_intermediate_we;// From move_sort_legal of move_sort.v
    wire [5:0]           attack_black_pop;       // From board_attack of board_attack.v
    wire [5:0]           attack_white_pop;       // From board_attack of board_attack.v
    wire                 black_in_check;         // From board_attack of board_attack.v
@@ -235,12 +242,34 @@ module all_moves #
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
+   integer                               i, x, y, ri, s;
+
    wire signed [4:0]                     pawn_adv1_row [0:2];
    wire signed [4:0]                     pawn_adv1_col [0:2];
    wire signed [4:0]                     pawn_enp_row[0:1];
 
-   integer                               i, x, y, ri, s;
-   
+
+   wire [`BOARD_WIDTH - 1:0]             all_moves_bram_board_out;
+   (* mark_debug = "true" *) wire [31:0] all_moves_bram_board_out_debug = all_moves_bram_board_out[31:0];
+   wire                                  all_moves_bram_white_to_move_out;
+   wire [3:0]                            all_moves_bram_castle_mask_out;
+   wire [3:0]                            all_moves_bram_en_passant_col_out;
+   wire                                  all_moves_bram_capture_out;
+   wire                                  all_moves_bram_pv_out;
+   wire                                  all_moves_bram_white_in_check_out;
+   wire                                  all_moves_bram_black_in_check_out;
+   wire [63:0]                           all_moves_bram_white_is_attacking_out;
+   wire [63:0]                           all_moves_bram_black_is_attacking_out;
+   wire signed [EVAL_WIDTH - 1:0]        all_moves_bram_eval_out;
+   (* mark_debug = "true" *) wire signed [EVAL_WIDTH - 1:0]        all_moves_bram_eval_out_debug = all_moves_bram_eval_out;
+   wire                                  all_moves_bram_thrice_rep_out;
+   wire [HALF_MOVE_WIDTH - 1:0]          all_moves_bram_half_move_out;
+   wire                                  all_moves_bram_fifty_move_out;
+   wire [UCI_WIDTH - 1:0]                all_moves_bram_uci_out;
+   wire [5:0]                            all_moves_bram_attack_white_pop_out;
+   wire [5:0]                            all_moves_bram_attack_black_pop_out;
+   wire                                  all_moves_bram_insufficient_material_out;
+
    wire                                  black_to_move = ~white_to_move;
 
    wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {legal_insufficent_material_ram_wr,
@@ -280,6 +309,61 @@ module all_moves #
 	   white_in_check_out,
 	   black_in_check_out,
            eval_out[EVAL_WIDTH - 1:0]} = legal_ram_rd_data;
+
+   assign {all_moves_bram_insufficient_material_out,
+	   all_moves_bram_attack_white_pop_out[5:0],
+	   all_moves_bram_attack_black_pop_out[5:0],
+	   all_moves_bram_uci_out[UCI_WIDTH - 1:0],
+           all_moves_bram_fifty_move_out,
+	   all_moves_bram_half_move_out[HALF_MOVE_WIDTH - 1:0],
+	   all_moves_bram_thrice_rep_out,
+	   all_moves_bram_white_is_attacking_out[63:0],
+	   all_moves_bram_black_is_attacking_out[63:0],
+           all_moves_bram_en_passant_col_out[3:0],
+	   all_moves_bram_castle_mask_out[3:0],
+           all_moves_bram_board_out[`BOARD_WIDTH - 1:0],
+	   all_moves_bram_white_to_move_out,
+           all_moves_bram_pv_out,
+	   all_moves_bram_capture_out,
+	   all_moves_bram_white_in_check_out,
+	   all_moves_bram_black_in_check_out,
+           all_moves_bram_eval_out[EVAL_WIDTH - 1:0]} = all_moves_bram_intermediate_din;
+
+   wire signed [31:0]                    all_moves_bram_eval_out_signed = $signed(all_moves_bram_eval_out[EVAL_WIDTH - 1:0]);
+
+   assign all_moves_bram_we = all_moves_bram_intermediate_we;
+   assign all_moves_bram_addr = all_moves_bram_intermediate_addr;
+   
+   // C-friendly data alignments
+   
+   localparam NEXTZ = 0; // byte 0, word 0, dword 0
+   assign all_moves_bram_din[NEXTZ+:256] = all_moves_bram_board_out[`BOARD_WIDTH - 1:0];
+   
+   localparam NEXTA = NEXTZ + 256; // byte 32, word 8, dword 4
+   assign all_moves_bram_din[NEXTA+:32] = all_moves_bram_eval_out_signed[31:0];
+   localparam NEXTB = NEXTA + 32; // byte 36, word 9
+   assign all_moves_bram_din[NEXTB+:16] = all_moves_bram_uci_out[UCI_WIDTH - 1:0];
+   localparam NEXTC = NEXTB + 16; // byte 38
+   assign all_moves_bram_din[NEXTC+:10] = all_moves_bram_half_move_out[HALF_MOVE_WIDTH - 1:0];
+   localparam NEXTD = NEXTC + 10; // padding
+   assign all_moves_bram_din[NEXTD+:6] = 6'b0;
+   
+   localparam NEXTE = NEXTD + 6; // byte 40, word 10, dword 5
+   assign all_moves_bram_din[NEXTE + 0] = all_moves_bram_white_to_move_out;
+   assign all_moves_bram_din[NEXTE + 1] = all_moves_bram_black_in_check_out;
+   assign all_moves_bram_din[NEXTE + 2] = all_moves_bram_white_in_check_out;
+   assign all_moves_bram_din[NEXTE + 3] = all_moves_bram_capture_out;
+   assign all_moves_bram_din[NEXTE + 4] = all_moves_bram_pv_out;
+   assign all_moves_bram_din[NEXTE + 5] = all_moves_bram_thrice_rep_out;
+   assign all_moves_bram_din[NEXTE + 6] = all_moves_bram_fifty_move_out;
+   assign all_moves_bram_din[NEXTE + 7] = all_moves_bram_insufficient_material_out;
+   localparam NEXTF = NEXTE + 8; // byte 41
+   assign all_moves_bram_din[NEXTF+:4] = all_moves_bram_en_passant_col_out[3:0];
+   localparam NEXTG = NEXTF + 4; // byte 41, mask out 4 bits
+   assign all_moves_bram_din[NEXTG+:4] = all_moves_bram_castle_mask_out[3:0];
+   
+   localparam NEXTH = NEXTG + 4; // bit 336, padding
+   assign all_moves_bram_din[511:NEXTH] = 0;
 
    assign am_move_count = legal_ram_wr_addr;
    assign am_move_ready = am_move_index == am_move_index_s1;
@@ -1121,6 +1205,7 @@ module all_moves #
     .reset (reset),
     .white_to_move (white_to_move),
     .ram_rd_addr (am_move_index[]),
+    .all_moves_bram_\(.*\) (all_moves_bram_intermediate_\1[]),
     .\(.*\) (legal_\1[]),
     );*/
    move_sort #
@@ -1134,6 +1219,9 @@ module all_moves #
       // Outputs
       .ram_rd_data                      (legal_ram_rd_data[LEGAL_RAM_WIDTH-1:0]), // Templated
       .ram_wr_addr                      (legal_ram_wr_addr[MAX_POSITIONS_LOG2-1:0]), // Templated
+      .all_moves_bram_addr              (all_moves_bram_intermediate_addr[31:0]), // Templated
+      .all_moves_bram_din               (all_moves_bram_intermediate_din[511:0]), // Templated
+      .all_moves_bram_we                (all_moves_bram_intermediate_we[63:0]), // Templated
       .sort_complete                    (legal_sort_complete),   // Templated
       // Inputs
       .clk                              (clk),                   // Templated
@@ -1145,7 +1233,7 @@ module all_moves #
       .ram_wr_data                      (legal_ram_wr_data[LEGAL_RAM_WIDTH-1:0]), // Templated
       .ram_wr                           (legal_ram_wr),          // Templated
       .ram_rd_addr                      (am_move_index[MAX_POSITIONS_LOG2-1:0])); // Templated
-   
+
 endmodule
 
 // Local Variables:

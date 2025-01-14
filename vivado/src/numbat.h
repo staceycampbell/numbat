@@ -13,6 +13,7 @@
 #include <xparameters.h>
 #else
 #define XPAR_CTRL0_AXI_BASEADDR 0
+#define XPAR_ALL_MOVES_BRAM_AXI_CTRL_S_AXI_BASEADDR 0
 #endif
 
 #define EMPTY_POSN 0

@@ -14,6 +14,8 @@
 #include <arpa/inet.h>
 #include <linux/tcp.h>
 
+static const int do_logging = 0;
+
 int
 main(int argc, char *argv[])
 {
@@ -65,14 +67,17 @@ main(int argc, char *argv[])
         fds[1].fd = fileno(stdin);
         fds[1].events = POLLIN;
 
-        logfp = fopen("debug.log", "a");
-        if (logfp == 0)
+        if (do_logging)
         {
-                fprintf(stderr, "%s: cannot open debug.log\n", argv[0]);
-                exit(1);
+                logfp = fopen("debug.log", "a");
+                if (logfp == 0)
+                {
+                        fprintf(stderr, "%s: cannot open debug.log\n", argv[0]);
+                        exit(1);
+                }
+                time(&curtime);
+                fprintf(logfp, "\n\nDebug log started: %s\n\n", ctime(&curtime));
         }
-        time(&curtime);
-        fprintf(logfp, "\n\nDebug log started: %s\n\n", ctime(&curtime));
 
         hangup = 0;
         while (poll(fds, 2, -1) != -1 && !hangup)
@@ -81,9 +86,12 @@ main(int argc, char *argv[])
                 {
                         if ((count = read(fds[0].fd, buffer, sizeof(buffer))) != 0)
                         {
-                                fprintf(logfp, "recv %ld: ", count);
-                                fwrite(buffer, 1, count, logfp);
-                                fflush(logfp);
+                                if (do_logging)
+                                {
+                                        fprintf(logfp, "recv %ld: ", count);
+                                        fwrite(buffer, 1, count, logfp);
+                                        fflush(logfp);
+                                }
                                 write(fileno(stdout), buffer, count);
                         }
                 }
@@ -92,15 +100,21 @@ main(int argc, char *argv[])
                         if ((count = read(fds[1].fd, buffer, sizeof(buffer))) != 0)
                         {
                                 write(fds[0].fd, buffer, count);
-                                fprintf(logfp, "send %ld: ", count);
-                                fwrite(buffer, 1, count, logfp);
-                                fflush(logfp);
+                                if (do_logging)
+                                {
+                                        fprintf(logfp, "send %ld: ", count);
+                                        fwrite(buffer, 1, count, logfp);
+                                        fflush(logfp);
+                                }
                         }
                 }
                 hangup = (fds[0].revents & POLLHUP) != 0 || (fds[1].revents & POLLHUP) != 0;
         }
         close(fds[0].fd);
-        fprintf(logfp, "%s exit: %s\n\n", argv[0], ctime(&curtime));
-        fclose(logfp);
+        if (do_logging)
+        {
+                fprintf(logfp, "%s exit: %s\n\n", argv[0], ctime(&curtime));
+                fclose(logfp);
+        }
         return 0;
 }
