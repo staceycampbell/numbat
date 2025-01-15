@@ -54,7 +54,9 @@ Several steps are required to connect [xboard](https://www.gnu.org/software/xboa
 1. Obtain, compile and install polyglot. Polyglot provides a translation between UCI protocol and
    xboard protocol. I cloned [polyglot from github](https://github.com/ulthiel/polyglot.git).
 2. Compile a small bridge application called `numbattcp` that connects the TCP listening port
-of numbat to stdin and stdout of a computer that is internet-connected to the KR260.
+of numbat to stdin and stdout of a computer that is internet-connected to the KR260. Note that the
+default IP address used will be `192.168.0.90`. This can be changed in either the source or with a
+command line argument `-d xxx.xxx.xxx.xxx`.
 ```
 cd numbat/vivado/comms
 make
