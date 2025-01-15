@@ -126,6 +126,7 @@ if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:blk_mem_gen:8.4\
 xilinx.com:ip:axi_bram_ctrl:4.1\
+xilinx.com:ip:util_ds_buf:2.2\
 xilinx.com:ip:fifo_generator:13.2\
 xilinx.com:ip:clk_wiz:6.0\
 xilinx.com:ip:proc_sys_reset:5.0\
@@ -324,6 +325,11 @@ proc create_root_design { parentCell } {
   ] $axi_iconnect_ddr4
 
 
+  # Create instance: bufg_inst, and set properties
+  set bufg_inst [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 bufg_inst ]
+  set_property CONFIG.C_BUF_TYPE {BUFG} $bufg_inst
+
+
   # Create instance: fan_ctrl_fifo, and set properties
   set fan_ctrl_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:fifo_generator:13.2 fan_ctrl_fifo ]
   set_property -dict [list \
@@ -343,7 +349,7 @@ proc create_root_design { parentCell } {
     CONFIG.CLKOUT1_DRIVES {Buffer} \
     CONFIG.CLKOUT1_JITTER {104.543} \
     CONFIG.CLKOUT1_PHASE_ERROR {98.576} \
-    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {333.33333} \
+    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {333.33} \
     CONFIG.CLKOUT2_DRIVES {Buffer} \
     CONFIG.CLKOUT3_DRIVES {Buffer} \
     CONFIG.CLKOUT4_DRIVES {Buffer} \
@@ -830,8 +836,9 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn1 [get_bd_pins all_moves_bram_axi_ctrl/s_axi_aresetn] [get_bd_pins proc_sys_reset_0/peripheral_aresetn]
   connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_ports reset] [get_bd_pins rst_digclk_ddr4_users/peripheral_reset]
   connect_bd_net -net ps_e_pl_clk0 [get_bd_ports digclk] [get_bd_pins axi_iconnect/ACLK] [get_bd_pins axi_iconnect/M00_ACLK] [get_bd_pins axi_iconnect/S00_ACLK] [get_bd_pins axi_iconnect_ddr4/ACLK] [get_bd_pins axi_iconnect_ddr4/M00_ACLK] [get_bd_pins axi_iconnect_ddr4/S00_ACLK] [get_bd_pins fan_ctrl_fifo/wr_clk] [get_bd_pins ps_e/maxihpm0_fpd_aclk] [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/saxihp1_fpd_aclk] [get_bd_pins q_axi_bram_ctrl/s_axi_aclk] [get_bd_pins rst_digclk_ddr4_users/slowest_sync_clk]
-  connect_bd_net -net ps_e_pl_clk1 [get_bd_ports clk100] [get_bd_pins fan_ctrl_fifo/rd_clk] [get_bd_pins fastclk_gen/clk_in1] [get_bd_pins ps_e/pl_clk1]
+  connect_bd_net -net ps_e_pl_clk1 [get_bd_ports clk100] [get_bd_pins bufg_inst/BUFG_I] [get_bd_pins fan_ctrl_fifo/rd_clk] [get_bd_pins ps_e/pl_clk1]
   connect_bd_net -net ps_e_pl_resetn0 [get_bd_pins proc_sys_reset_0/ext_reset_in] [get_bd_pins ps_e/pl_resetn0] [get_bd_pins rst_digclk_ddr4_users/ext_reset_in]
+  connect_bd_net -net util_ds_buf_0_BUFG_O [get_bd_pins bufg_inst/BUFG_O] [get_bd_pins fastclk_gen/clk_in1]
 
   # Create address segments
   assign_bd_address -offset 0xB0000000 -range 0x00020000 -target_address_space [get_bd_addr_spaces ps_e/Data] [get_bd_addr_segs all_moves_bram_axi_ctrl/S_AXI/Mem0] -force
