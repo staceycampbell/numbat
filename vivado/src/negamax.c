@@ -350,6 +350,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
+        int32_t eval_delta;
 
         if (ply >= MAX_DEPTH - 1)
         {
@@ -417,6 +418,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 
         in_check = board->white_in_check || board->black_in_check;
         index = 0;
+        eval_delta = depth * 10;
         do
         {
                 board_vert[ply] = board_ptr[index];
@@ -439,7 +441,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 else if (depth > 0)
                 {
-                        if (index == 0 || ply < 2 || in_check || board_eval + 50 > alpha)
+                        if (index == 0 || ply < 2 || in_check || board_eval + eval_delta > alpha)
                                 value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                         else
                                 value = -GLOBAL_VALUE_KING;
@@ -592,6 +594,8 @@ nm_top(const tc_t * tc, uint32_t * resign)
                         duration_seconds /= 8;
                 if (duration_seconds <= 0)
                         duration_seconds = 1;
+                if (duration_seconds > 60)
+                        duration_seconds = 60;
         }
         printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
         time_limit = t_start + duration_seconds * UINT64_C(COUNTS_PER_SECOND);
