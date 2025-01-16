@@ -539,16 +539,6 @@ numbat_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, ui
         return val >> 4;
 }
 
-static inline uint32_t
-numbat_read_move_row(uint32_t row)
-{
-        uint32_t val;
-
-        val = numbat_read(172 + row);
-
-        return val;
-}
-
 static inline uint64_t
 numbat_read_white_is_attacking(void)
 {
