@@ -12,7 +12,7 @@ module numbat_top
    );
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 0;
+   localparam EVAL_MOBILITY_DISABLE = 1;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -83,25 +83,13 @@ module numbat_top
    wire                 am_white_to_move_in;    // From control of control.v
    wire                 am_white_to_move_out;   // From all_moves of all_moves.v
    wire                 clk100;                 // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [39:0]          ctrl0_axi_araddr;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [2:0]           ctrl0_axi_arprot;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [0:0]           ctrl0_axi_arready;      // From control of control.v
-   wire                 ctrl0_axi_arvalid;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [39:0]          ctrl0_axi_awaddr;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [2:0]           ctrl0_axi_awprot;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [0:0]           ctrl0_axi_awready;      // From control of control.v
-   wire                 ctrl0_axi_awvalid;      // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire                 ctrl0_axi_bready;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [1:0]           ctrl0_axi_bresp;        // From control of control.v
-   wire [0:0]           ctrl0_axi_bvalid;       // From control of control.v
-   wire [31:0]          ctrl0_axi_rdata;        // From control of control.v
-   wire                 ctrl0_axi_rready;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [1:0]           ctrl0_axi_rresp;        // From control of control.v
-   wire [0:0]           ctrl0_axi_rvalid;       // From control of control.v
-   wire [31:0]          ctrl0_axi_wdata;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire [0:0]           ctrl0_axi_wready;       // From control of control.v
-   wire [3:0]           ctrl0_axi_wstrb;        // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
-   wire                 ctrl0_axi_wvalid;       // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [17:0]          ctrl0_addr;             // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 ctrl0_clk;              // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [127:0]         ctrl0_din;              // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [127:0]         ctrl0_dout;             // From control of control.v
+   wire                 ctrl0_en;               // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire                 ctrl0_rst;              // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
+   wire [15:0]          ctrl0_we;               // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 digclk;                 // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire                 fan_ctrl_read_empty;    // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [31:0]          fan_ctrl_read_rd_data;  // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
@@ -242,7 +230,7 @@ module numbat_top
    wire                 trans_white_to_move_in; // From control of control.v
    wire [31:0]          xorshift32_reg;         // From xorshift32 of xorshift32.v
    // End of automatics
-
+   
    wire [31:0]                      misc_status = 0;
 
    wire                             clk = digclk;
@@ -597,14 +585,7 @@ module numbat_top
       .q_trans_flag_out                 (q_trans_flag_in[1:0]),  // Templated
       .fan_ctrl_write_wr_data           (fan_ctrl_write_wr_data[31:0]),
       .fan_ctrl_write_wr_en             (fan_ctrl_write_wr_en),
-      .ctrl0_axi_arready                (ctrl0_axi_arready[0:0]),
-      .ctrl0_axi_awready                (ctrl0_axi_awready[0:0]),
-      .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),
-      .ctrl0_axi_bvalid                 (ctrl0_axi_bvalid[0:0]),
-      .ctrl0_axi_rdata                  (ctrl0_axi_rdata[31:0]),
-      .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
-      .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid[0:0]),
-      .ctrl0_axi_wready                 (ctrl0_axi_wready[0:0]),
+      .ctrl0_dout                       (ctrl0_dout[127:0]),
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
@@ -659,19 +640,12 @@ module numbat_top
       .am_attack_black_pop_in           (am_attack_black_pop_out[5:0]), // Templated
       .am_insufficient_material_in      (am_insufficient_material_out), // Templated
       .am_pv_in                         (am_pv_out),             // Templated
-      .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
-      .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
-      .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
-      .ctrl0_axi_awaddr                 (ctrl0_axi_awaddr[39:0]),
-      .ctrl0_axi_awprot                 (ctrl0_axi_awprot[2:0]),
-      .ctrl0_axi_awvalid                (ctrl0_axi_awvalid),
-      .ctrl0_axi_bready                 (ctrl0_axi_bready),
-      .ctrl0_axi_rready                 (ctrl0_axi_rready),
-      .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
-      .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
-      .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
       .misc_status                      (misc_status[31:0]),
-      .xorshift32_reg                   (xorshift32_reg[31:0]));
+      .xorshift32_reg                   (xorshift32_reg[31:0]),
+      .ctrl0_addr                       (ctrl0_addr[17:0]),
+      .ctrl0_din                        (ctrl0_din[127:0]),
+      .ctrl0_en                         (ctrl0_en),
+      .ctrl0_we                         (ctrl0_we[15:0]));
 
    /* xorshift32 AUTO_TEMPLATE (
     .x (xorshift32_reg[]),
@@ -692,23 +666,19 @@ module numbat_top
     .all_moves_bram_clk (clk),
     .all_moves_bram_en (1'b1),
     .all_moves_bram_rst (1'b0),
+    .board_init_dout (128'b0),
     );*/
    mpsoc_block_diag_wrapper mpsoc_block_diag_wrapper
      (/*AUTOINST*/
       // Outputs
       .all_moves_bram_dout              (all_moves_bram_dout[511:0]),
       .clk100                           (clk100),
-      .ctrl0_axi_araddr                 (ctrl0_axi_araddr[39:0]),
-      .ctrl0_axi_arprot                 (ctrl0_axi_arprot[2:0]),
-      .ctrl0_axi_arvalid                (ctrl0_axi_arvalid),
-      .ctrl0_axi_awaddr                 (ctrl0_axi_awaddr[39:0]),
-      .ctrl0_axi_awprot                 (ctrl0_axi_awprot[2:0]),
-      .ctrl0_axi_awvalid                (ctrl0_axi_awvalid),
-      .ctrl0_axi_bready                 (ctrl0_axi_bready),
-      .ctrl0_axi_rready                 (ctrl0_axi_rready),
-      .ctrl0_axi_wdata                  (ctrl0_axi_wdata[31:0]),
-      .ctrl0_axi_wstrb                  (ctrl0_axi_wstrb[3:0]),
-      .ctrl0_axi_wvalid                 (ctrl0_axi_wvalid),
+      .ctrl0_addr                       (ctrl0_addr[17:0]),
+      .ctrl0_clk                        (ctrl0_clk),
+      .ctrl0_din                        (ctrl0_din[127:0]),
+      .ctrl0_en                         (ctrl0_en),
+      .ctrl0_rst                        (ctrl0_rst),
+      .ctrl0_we                         (ctrl0_we[15:0]),
       .digclk                           (digclk),
       .fan_ctrl_read_empty              (fan_ctrl_read_empty),
       .fan_ctrl_read_rd_data            (fan_ctrl_read_rd_data[31:0]),
@@ -742,14 +712,7 @@ module numbat_top
       .all_moves_bram_en                (1'b1),                  // Templated
       .all_moves_bram_rst               (1'b0),                  // Templated
       .all_moves_bram_we                (all_moves_bram_we[63:0]),
-      .ctrl0_axi_arready                (ctrl0_axi_arready),
-      .ctrl0_axi_awready                (ctrl0_axi_awready),
-      .ctrl0_axi_bresp                  (ctrl0_axi_bresp[1:0]),
-      .ctrl0_axi_bvalid                 (ctrl0_axi_bvalid),
-      .ctrl0_axi_rdata                  (ctrl0_axi_rdata[31:0]),
-      .ctrl0_axi_rresp                  (ctrl0_axi_rresp[1:0]),
-      .ctrl0_axi_rvalid                 (ctrl0_axi_rvalid),
-      .ctrl0_axi_wready                 (ctrl0_axi_wready),
+      .ctrl0_dout                       (ctrl0_dout[127:0]),
       .fan_ctrl_read_rd_en              (fan_ctrl_read_rd_en),
       .fan_ctrl_write_wr_data           (fan_ctrl_write_wr_data[31:0]),
       .fan_ctrl_write_wr_en             (fan_ctrl_write_wr_en),

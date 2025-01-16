@@ -135,10 +135,7 @@ void
 numbat_write_board_basic(const board_t * board)
 {
         numbat_reset_all_moves();
-        numbat_write_board_two_rows(0, board->board[0], board->board[1]);
-        numbat_write_board_two_rows(2, board->board[2], board->board[3]);
-        numbat_write_board_two_rows(4, board->board[4], board->board[5]);
-        numbat_write_board_two_rows(6, board->board[6], board->board[7]);
+	numbat_write256(8, (void *)&board->board[0]);
         numbat_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
         numbat_write_half_move(board->half_move_clock);
 }
@@ -202,7 +199,7 @@ numbat_read_board(board_t * board, uint32_t index)
                 }
         }
 
-        memcpy(dma, entry_addr_uint64, sizeof(dma)); // triggers AXI4 burst
+        memcpy(dma, entry_addr_uint64, sizeof(dma));    // triggers AXI4 burst
 
         ptr64 = (void *)&board->board[0];       // note: board is correctly aligned, see header
 
