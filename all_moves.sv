@@ -667,12 +667,24 @@ module all_moves #
            end
          STATE_FIND_PIECE :
            begin
-              for (s = 63; s >= 0; s = s - 1)
-                if (square_active[s])
-                  begin
-                     row <= s >> 3;
-                     col <= s & 7;
-                  end
+              if (white_to_move)
+                begin
+                   for (s = 0; s < 64; s = s + 1)
+                     if (square_active[s])
+                       begin
+                          row <= s >> 3;
+                          col <= s & 7;
+                       end
+                end
+              else
+                begin
+                   for (s = 63; s >= 0; s = s - 1)
+                     if (square_active[s])
+                       begin
+                          row <= s >> 3;
+                          col <= s & 7;
+                       end
+                end
               if (square_active == 64'b0)
                 state <= STATE_CASTLE_SHORT; // all individual piece moves done
               else
