@@ -140,12 +140,12 @@ module control #
     input [31:0]                          misc_status,
     input [31:0]                          xorshift32_reg,
    
-    (* mark_debug = "true" *)    input [17:0] ctrl0_addr,
-    (* mark_debug = "true" *)    input [127:0] ctrl0_din,
-    (* mark_debug = "true" *)    input    ctrl0_en,
-    (* mark_debug = "true" *)    input [15:0] ctrl0_we,
+    input [17:0]                          ctrl0_addr,
+    input [127:0]                         ctrl0_din,
+    input                                 ctrl0_en,
+    input [15:0]                          ctrl0_we,
    
-    (* mark_debug = "true" *)    output reg [127:0] ctrl0_dout
+    output reg [127:0]                    ctrl0_dout
     );
 
    // should be empty
@@ -153,10 +153,10 @@ module control #
 
    /*AUTOWIRE*/
 
-   (* mark_debug = "true" *)   wire [15:0]                            wr_reg_addr = ctrl0_addr[17:4];
+   wire [15:0]                            wr_reg_addr = ctrl0_addr[17:4];
    wire [15:0]                            rd_reg_addr = ctrl0_addr[17:4];
 
-   (* mark_debug = "true" *)   wire                                   ctrl0_wr_valid = ctrl0_en && ctrl0_we != 0;
+   wire                                   ctrl0_wr_valid = ctrl0_en && ctrl0_we != 0;
 
    assign trans_board_out = am_new_board_out;
    assign trans_white_to_move_out = am_white_to_move_out;
@@ -260,26 +260,10 @@ module control #
        5'h02 : ctrl0_dout[31:0] <= {am_white_to_move_out, am_castle_mask_out, am_en_passant_col_out};
        5'h03 : ctrl0_dout[31:0] <= am_half_move_out;
        5'h04 : ctrl0_dout[31:0] <= am_quiescence_moves;
-       5'h08 : ctrl0_dout[31:0] <= am_new_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
-       5'h09 : ctrl0_dout[31:0] <= am_new_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
-       5'h0A : ctrl0_dout[31:0] <= am_new_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
-       5'h0B : ctrl0_dout[31:0] <= am_new_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH];
-       5'h0C : ctrl0_dout[31:0] <= am_new_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH];
-       5'h0D : ctrl0_dout[31:0] <= am_new_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
-       5'h0E : ctrl0_dout[31:0] <= am_new_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
-       5'h0F : ctrl0_dout[31:0] <= am_new_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
 
        5'h10 : ctrl0_dout[31:0] <= am_repdet_depth_out;
        5'h11 : ctrl0_dout[31:0] <= am_repdet_castle_mask_out;
        5'h12 : ctrl0_dout[31:0] <= {am_repdet_wr_en_out, am_repdet_wr_addr_out};
-       5'h18 : ctrl0_dout[31:0] <= am_repdet_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
-       5'h19 : ctrl0_dout[31:0] <= am_repdet_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
-       5'h1A : ctrl0_dout[31:0] <= am_repdet_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
-       5'h1B : ctrl0_dout[31:0] <= am_repdet_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH];
-       5'h1C : ctrl0_dout[31:0] <= am_repdet_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH];
-       5'h1D : ctrl0_dout[31:0] <= am_repdet_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
-       5'h1E : ctrl0_dout[31:0] <= am_repdet_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
-       5'h1F : ctrl0_dout[31:0] <= am_repdet_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
 
        128 : ctrl0_dout[31:0] <= am_white_is_attacking_in[31:0];
        129 : ctrl0_dout[31:0] <= am_white_is_attacking_in[63:32];
@@ -297,15 +281,6 @@ module control #
        141 : ctrl0_dout[31:0] <= initial_material_black;
        142 : ctrl0_dout[31:0] <= initial_material_white;
        
-       172 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
-       173 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
-       174 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
-       175 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 3+:`SIDE_WIDTH];
-       176 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 4+:`SIDE_WIDTH];
-       177 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
-       178 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
-       179 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_board_in[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
-
        252 : ctrl0_dout[31:0] <= random_score_mask;
        253 : ctrl0_dout[31:0] <= trans_trans;
        254 : ctrl0_dout[31:0] <= xorshift32_reg;
@@ -339,14 +314,6 @@ module control #
        624 : ctrl0_dout[31:0] <= q_trans_hash_in[79:64];
        625 : ctrl0_dout[31:0] <= q_trans_nodes_out;
 
-       1024 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 0+:`SIDE_WIDTH];
-       1025 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 1+:`SIDE_WIDTH];
-       1026 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 2+:`SIDE_WIDTH];
-       1027 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 3+:`SIDE_WIDTH];
-       1028 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 4+:`SIDE_WIDTH];
-       1029 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 5+:`SIDE_WIDTH];
-       1030 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 6+:`SIDE_WIDTH];
-       1031 : ctrl0_dout[`SIDE_WIDTH - 1:0] <= am_killer_board_out[`SIDE_WIDTH * 7+:`SIDE_WIDTH];
        1032 : ctrl0_dout[31:0] <= {am_killer_clear_out, am_killer_update_out};
        1033 : ctrl0_dout[31:0] <= am_killer_ply_out;
        1034 : ctrl0_dout[31:0] <= am_killer_bonus0_out;
