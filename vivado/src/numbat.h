@@ -844,6 +844,7 @@ extern void uci_resign(void);
 extern void trans_clear_table(void);
 extern void trans_lookup(trans_t * trans, uint32_t * collision);
 extern void trans_store(const trans_t * trans);
+extern void trans_wait_idle(const char *func, const char *file, int line);
 extern void q_trans_clear_table(void);
 extern void q_trans_lookup(trans_t * trans, uint32_t * collision);
 extern void q_trans_store(const trans_t * trans);

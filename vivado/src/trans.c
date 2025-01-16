@@ -12,28 +12,6 @@
 #pragma GCC optimize ("O2")
 
 static inline void
-trans_wait_idle(const char *func, const char *file, int line)
-{
-        uint32_t i;
-        uint32_t transaction;
-        uint32_t trans_idle;
-
-        i = 0;
-        do
-        {
-                numbat_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
-                ++i;
-        }
-        while (!trans_idle && i < 1000);
-        if (!trans_idle)
-        {
-                transaction = numbat_read(253);
-                printf("%s: transaction=%d, transposition table state machine is not idle, stopping.\n(%s %d)\n", func, transaction, file, line);
-                while (1);
-        }
-}
-
-static inline void
 q_trans_wait_idle(const char *func, const char *file, int line)
 {
         uint32_t i;
@@ -138,3 +116,26 @@ q_trans_store(const trans_t * trans)
         numbat_q_trans_store(trans->depth, trans->flag, trans->eval, trans->nodes, trans->capture);
         q_trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
 }
+
+void
+trans_wait_idle(const char *func, const char *file, int line)
+{
+        uint32_t i;
+        uint32_t transaction;
+        uint32_t trans_idle;
+
+        i = 0;
+        do
+        {
+                numbat_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                ++i;
+        }
+        while (!trans_idle && i < 1000);
+        if (!trans_idle)
+        {
+                transaction = numbat_read(253);
+                printf("%s: transaction=%d, transposition table state machine is not idle, stopping.\n(%s %d)\n", func, transaction, file, line);
+                while (1);
+        }
+}
+

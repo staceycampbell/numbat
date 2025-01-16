@@ -135,7 +135,7 @@ void
 numbat_write_board_basic(const board_t * board)
 {
         numbat_reset_all_moves();
-	numbat_write256(8, (void *)&board->board[0]);
+        numbat_write256(8, (void *)&board->board[0]);
         numbat_write_board_misc(board->white_to_move, board->castle_mask, board->en_passant_col);
         numbat_write_half_move(board->half_move_clock);
 }

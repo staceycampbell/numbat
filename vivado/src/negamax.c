@@ -373,18 +373,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         numbat_write_board_basic(board);
         trans_lookup_init();    // trigger transposition table lookup
 
-        XTime_GetTime(&am_t_start);
-        numbat_write_board_wait(board, 0);
-        XTime_GetTime(&am_t_stop);
-        all_moves_ticks += am_t_stop - am_t_start;
-
-        value = nm_initial_eval(board->white_to_move, ply);
-        move_count = numbat_move_count();
-
-        if (move_count == 0)
-                return value;
-
-        trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
+        trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         numbat_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.capture, &trans.entry_valid, 0);
         trans_collision += collision;
 
@@ -405,6 +394,17 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         abort_test();
         if (abort_search)
                 return 0;       // will be ignored
+
+        XTime_GetTime(&am_t_start);
+        numbat_write_board_wait(board, 0);
+        XTime_GetTime(&am_t_stop);
+        all_moves_ticks += am_t_stop - am_t_start;
+
+        value = nm_initial_eval(board->white_to_move, ply);
+        move_count = numbat_move_count();
+
+        if (move_count == 0)
+                return value;
 
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
         for (index = 0; index < move_count; ++index)
