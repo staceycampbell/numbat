@@ -140,6 +140,6 @@ gtkwave wave.vcd
 * The Kria KR260 fan runs at full duty cycle for bare metal designs. This project has implemented
   a PL PWM driver to reduce fan noise. The PWM operates at 25kHz and has a programmable duty cycle.
   PS core temperature is monitored at 5 second intervals and the project is put in reset if the PS
-  core exceeds 50C.
+  core exceeds 50C. The duty cycle has a floor setting of 10% to ensure the fan doesn't stall.
 * There are two user-controlable LEDs on the KR260, these blink to indicate that a negamax operation
   is underway and are off when the PL is idle.

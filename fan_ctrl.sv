@@ -16,7 +16,7 @@ module fan_ctrl
    localparam PWM_FREQUENCY = 25 * 1000; // 25kHz
    localparam FULL_DUTY_CYCLE = (100 * 1000000) / PWM_FREQUENCY;
    localparam COUNTER_WIDTH_LOG2 = $clog2(FULL_DUTY_CYCLE) + 1;
-   localparam MIN_DUTY_CYCLE = FULL_DUTY_CYCLE / 10;
+   localparam MIN_DUTY_CYCLE = FULL_DUTY_CYCLE / 10; // min duty cycle to avoid a fan stall
    localparam MAX_DUTY_CYCLE = FULL_DUTY_CYCLE - 1;
 
    reg          fan_pwm_reg = 1'b1;
