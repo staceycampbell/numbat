@@ -159,16 +159,11 @@ module tb;
 	
         forever
           #1 clk = ~clk;
-     end // initial begin
+     end
 
    always @(posedge clk)
-     if (reset)
-       begin
-          // tb.all_moves.evaluate.evaluate_pv.pv_table_valid[killer_ply] <= 1;
-          // uci_promotion=0 uci_to_row=7 uci_to_col=3 uci_from_row=0 uci_from_col=3
-          // move_index=20 d1d8  D
-          // tb.all_moves.evaluate.evaluate_pv.pv_table[killer_ply] <= 0 << 12 | 7 << 9 | 3 << 6 | 0 << 3 | 3 << 0;
-       end
+     begin
+     end
 
    always @(posedge clk)
      begin

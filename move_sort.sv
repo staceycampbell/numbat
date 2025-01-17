@@ -3,7 +3,7 @@
 
 `include "numbat.vh"
 
-// in-place Block RAM bubble sort, sharing ports with external write and read
+// Donald Shell's shellsort, algorithm from K&R, 2nd edition, page 62
 // all writes are mirrored to block diagram BRAM for AXI4 burst DMA readout to Zynq
 
 module move_sort #
@@ -46,8 +46,6 @@ module move_sort #
    reg                                    port_b_wr_en = 0;
    reg [RAM_WIDTH - 1:0]                  port_b_wr_data;
 
-   reg [MAX_POSITIONS_LOG2 - 1:0]         n, newn;
-
    reg [31:0]                             all_moves_bram_addr_next;
    reg [511:0]                            all_moves_bram_din_next;
 
@@ -89,92 +87,117 @@ module move_sort #
      end
 
    localparam STATE_IDLE = 0;
-   localparam STATE_OUTER_INIT = 1;
-   localparam STATE_COMPARE = 2;
-   localparam STATE_SWAP = 3;
-   localparam STATE_INNER = 4;
-   localparam STATE_READ_WS_0 = 5;
-   localparam STATE_READ_WS_1 = 6;
-   localparam STATE_OUTER_TEST = 7;
-   localparam STATE_DONE = 8;
+   localparam STATE_LOOP_OUTER_0 = 1;
+   localparam STATE_LOOP_OUTER_1 = 2;
+   localparam STATE_LOOP_MIDDLE_0 = 3;
+   localparam STATE_LOOP_MIDDLE_1 = 4;
+   localparam STATE_LOOP_INNER_0 = 5;
+   localparam STATE_LOOP_INNER_1 = 6;
+   localparam STATE_LOOP_INNER_2 = 7;
+   localparam STATE_LOOP_INNER_3 = 8;
+   localparam STATE_LOOP_INNER_4 = 9;
+   localparam STATE_LOOP_INNER_5 = 10;
+   localparam STATE_DONE = 11;
 
-   reg [3:0]                              state_sort = STATE_IDLE;
+   reg [3:0]                              state = STATE_IDLE;
+
+   reg signed [MAX_POSITIONS_LOG2 + 2 + 1 - 1:0] gap, i, j, n;
 
    always @(posedge clk)
      if (reset)
-       state_sort <= STATE_IDLE;
+       state <= STATE_IDLE;
      else
-       case (state_sort)
+       case (state)
          STATE_IDLE :
            begin
               port_a_wr_en <= 0;
               port_b_wr_en <= 0;
               external_io <= 1;
               sort_complete <= 0;
+              gap <= ram_wr_addr / 2;
               n <= ram_wr_addr;
               if (sort_start && ~sort_start_z)
                 if (ram_wr_addr <= 1)
-                  state_sort <= STATE_DONE;
+                  state <= STATE_DONE;
                 else
-                  state_sort <= STATE_OUTER_INIT;
+                  state <= STATE_LOOP_OUTER_0;
            end
-         STATE_OUTER_INIT :
+
+         STATE_LOOP_OUTER_0 :
            begin
               external_io <= 0;
-              newn <= 0;
-              port_a_addr <= 0;
-              port_b_addr <= 1;
-              state_sort <= STATE_READ_WS_0;
-           end
-         STATE_COMPARE :
-           begin
-              port_a_wr_en <= 0;
-              port_b_wr_en <= 0;
-              // sort priority
-              if (! pv_a && pv_b ? 1'b1 : pv_a && ! pv_b ? 1'b0 : // principal variation 1st
-                  white_to_move ? eval_a < eval_b : eval_a > eval_b) // evaluation 2nd
-                state_sort <= STATE_SWAP;
+              i <= gap;
+              if (gap <= 0)
+                state <= STATE_DONE;
               else
-                state_sort <= STATE_INNER;
+                state <= STATE_LOOP_MIDDLE_0;
            end
-         STATE_SWAP :
+         STATE_LOOP_OUTER_1 :
            begin
+              gap <= gap / 2;
+              state <= STATE_LOOP_OUTER_0;
+           end
+
+         STATE_LOOP_MIDDLE_0 :
+           begin
+              j <= i - gap;
+              if (i < n)
+                state <= STATE_LOOP_INNER_0;
+              else
+                state <= STATE_LOOP_OUTER_1;
+           end
+         STATE_LOOP_MIDDLE_1 :
+           begin
+              i <= i + 1;
+              state <= STATE_LOOP_MIDDLE_0;
+           end
+
+         STATE_LOOP_INNER_0 :
+           if (j < 0)
+             state <= STATE_LOOP_MIDDLE_1;
+           else
+             begin
+                port_a_addr <= j;
+                port_b_addr <= j + gap;
+                state <= STATE_LOOP_INNER_1;
+             end
+         STATE_LOOP_INNER_1 :
+           state <= STATE_LOOP_INNER_2;
+         STATE_LOOP_INNER_2 :
+           state <= STATE_LOOP_INNER_3;
+         STATE_LOOP_INNER_3 :
+           // compare
+           if (! pv_a && pv_b ? 1'b1 : pv_a && ! pv_b ? 1'b0 : // principal variation 1st
+               white_to_move ? eval_a < eval_b : eval_a > eval_b) // evaluation 2nd
+             state <= STATE_LOOP_INNER_4;
+           else
+             state <= STATE_LOOP_MIDDLE_1;
+         STATE_LOOP_INNER_4 :
+           begin
+              // swap
               port_a_wr_en <= 1;
               port_b_wr_en <= 1;
               port_a_wr_data <= port_b_rd_data;
               port_b_wr_data <= port_a_rd_data;
-              newn <= port_b_addr;
-              state_sort <= STATE_INNER;
+              state <= STATE_LOOP_INNER_5;
            end
-         STATE_INNER :
+         STATE_LOOP_INNER_5 :
            begin
               port_a_wr_en <= 0;
               port_b_wr_en <= 0;
-              port_a_addr <= port_a_addr + 1;
-              port_b_addr <= port_b_addr + 1;
-              if (port_b_addr == n - 1)
-                state_sort <= STATE_OUTER_TEST;
-              else
-                state_sort <= STATE_READ_WS_0;
+              j <= j - gap;
+              state <= STATE_LOOP_INNER_0;
            end
-         STATE_READ_WS_0 :
-           state_sort <= STATE_READ_WS_1;
-         STATE_READ_WS_1 :
-           state_sort <= STATE_COMPARE;
-         STATE_OUTER_TEST :
-           begin
-              n <= newn;
-              if (newn > 1)
-                state_sort <= STATE_OUTER_INIT;
-              else
-                state_sort <= STATE_DONE;
-           end
+
          STATE_DONE :
            begin
               sort_complete <= 1;
               if (sort_clear)
-                state_sort <= STATE_IDLE;
+                state <= STATE_IDLE;
            end
+
+         default :
+           state <= STATE_IDLE;
        endcase
 
    localparam AM_PORT_A = 0;
