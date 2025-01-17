@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <string.h>
 
 #define UCI_TCP_COMMS 1         // 0 - UART1, 1 - lwip
 
@@ -13,7 +14,7 @@
 #include <xparameters.h>
 #else
 #define XPAR_CTRL0_AXI_BASEADDR 0
-#define XPAR_ALL_MOVES_BRAM_AXI_CTRL_S_AXI_BASEADDR 0
+#define XPAR_CTRL0_AXI_TO_BRAM_S_AXI_BASEADDR 0
 #endif
 
 #define EMPTY_POSN 0
