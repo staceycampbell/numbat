@@ -669,7 +669,7 @@ module all_moves #
            begin
               if (white_to_move)
                 begin
-                   for (s = 0; s < 64; s = s + 1)
+                   for (s = 63; s >= 0; s = s - 1)
                      if (square_active[s])
                        begin
                           row <= s >> 3;
@@ -678,7 +678,7 @@ module all_moves #
                 end
               else
                 begin
-                   for (s = 63; s >= 0; s = s - 1)
+                   for (s = 0; s < 64; s = s + 1)
                      if (square_active[s])
                        begin
                           row <= s >> 3;
