@@ -4,6 +4,7 @@
 `include "numbat.vh"
 
 // Donald Shell's shellsort, algorithm from K&R, 2nd edition, page 62
+// Marcin Ciura's gap table https://web.archive.org/web/20180923235211/http://sun.aei.polsl.pl/~mciura/publikacje/shellsort.pdf
 // all writes are mirrored to block diagram BRAM for AXI4 burst DMA readout to Zynq
 
 module move_sort #
@@ -48,6 +49,10 @@ module move_sort #
 
    reg [31:0]                             all_moves_bram_addr_next;
    reg [511:0]                            all_moves_bram_din_next;
+   
+   reg signed [MAX_POSITIONS_LOG2 + 2 + 1 - 1:0] i, j, n;
+   reg [2:0]                                     gap_index = 0;
+   reg signed [MAX_POSITIONS_LOG2 + 1:0]         gap_table [0:4];
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -58,21 +63,33 @@ module move_sort #
    wire [RAM_WIDTH-1:0] port_b_rd_data;         // From mram of mram.v
    // End of automatics
 
-   wire [MAX_POSITIONS_LOG2 - 1:0]        active_port_a_addr = external_io ? ram_wr_addr : port_a_addr; // external write to "a" port
-   wire [MAX_POSITIONS_LOG2 - 1:0]        active_port_b_addr = external_io ? ram_rd_addr : port_b_addr; // external read from "b" port
+   wire [MAX_POSITIONS_LOG2 - 1:0]               active_port_a_addr = external_io ? ram_wr_addr : port_a_addr; // external write to "a" port
+   wire [MAX_POSITIONS_LOG2 - 1:0]               active_port_b_addr = external_io ? ram_rd_addr : port_b_addr; // external read from "b" port
 
-   wire [RAM_WIDTH - 1:0]                 active_port_a_wr_data = external_io ? ram_wr_data : port_a_wr_data;
+   wire [RAM_WIDTH - 1:0]                        active_port_a_wr_data = external_io ? ram_wr_data : port_a_wr_data;
 
-   wire                                   active_port_a_wr_en = external_io ? ram_wr : port_a_wr_en;
-   wire                                   active_port_b_wr_en = external_io ? 1'b0 : port_b_wr_en;
+   wire                                          active_port_a_wr_en = external_io ? ram_wr : port_a_wr_en;
+   wire                                          active_port_b_wr_en = external_io ? 1'b0 : port_b_wr_en;
 
-   wire signed [EVAL_WIDTH - 1:0]         eval_a = $signed(port_a_rd_data[EVAL_WIDTH - 1:0]);
-   wire signed [EVAL_WIDTH - 1:0]         eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
-   wire                                   pv_a = port_a_rd_data[EVAL_WIDTH + 3];
-   wire                                   pv_b = port_b_rd_data[EVAL_WIDTH + 3];
+   wire signed [EVAL_WIDTH - 1:0]                eval_a = $signed(port_a_rd_data[EVAL_WIDTH - 1:0]);
+   wire signed [EVAL_WIDTH - 1:0]                eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
+   wire                                          pv_a = port_a_rd_data[EVAL_WIDTH + 3];
+   wire                                          pv_b = port_b_rd_data[EVAL_WIDTH + 3];
 
-   wire [63:0]                            all_bytes_wren_clr = 64'h0000000000000000;
-   wire [63:0]                            all_bytes_wren_set = 64'hFFFFFFFFFFFFFFFF;
+   wire [63:0]                                   all_bytes_wren_clr = 64'h0000000000000000;
+   wire [63:0]                                   all_bytes_wren_set = 64'hFFFFFFFFFFFFFFFF;
+
+   integer                                       gi;
+
+   initial
+     begin
+        // https://oeis.org/A102549
+        gap_table[0] = 0;
+        gap_table[1] = 1;
+        gap_table[2] = 4;
+        gap_table[3] = 10;
+        gap_table[4] = 23;
+     end
 
    assign ram_rd_data = port_b_rd_data;
 
@@ -101,8 +118,6 @@ module move_sort #
 
    reg [3:0]                              state = STATE_IDLE;
 
-   reg signed [MAX_POSITIONS_LOG2 + 2 + 1 - 1:0] gap, i, j, n;
-
    always @(posedge clk)
      if (reset)
        state <= STATE_IDLE;
@@ -114,7 +129,9 @@ module move_sort #
               port_b_wr_en <= 0;
               external_io <= 1;
               sort_complete <= 0;
-              gap <= ram_wr_addr / 2;
+              for (gi = 0; gi < 5; gi = gi + 1)
+                if (ram_wr_addr / 2 >= gap_table[gi])
+                  gap_index <= gi;
               n <= ram_wr_addr;
               if (sort_start && ~sort_start_z)
                 if (ram_wr_addr <= 1)
@@ -126,21 +143,21 @@ module move_sort #
          STATE_LOOP_OUTER_0 :
            begin
               external_io <= 0;
-              i <= gap;
-              if (gap <= 0)
+              i <= gap_table[gap_index];
+              if (gap_index == 0)
                 state <= STATE_DONE;
               else
                 state <= STATE_LOOP_MIDDLE_0;
            end
          STATE_LOOP_OUTER_1 :
            begin
-              gap <= gap / 2;
+              gap_index <= gap_index - 1;
               state <= STATE_LOOP_OUTER_0;
            end
 
          STATE_LOOP_MIDDLE_0 :
            begin
-              j <= i - gap;
+              j <= i - gap_table[gap_index];
               if (i < n)
                 state <= STATE_LOOP_INNER_0;
               else
@@ -158,7 +175,7 @@ module move_sort #
            else
              begin
                 port_a_addr <= j;
-                port_b_addr <= j + gap;
+                port_b_addr <= j + gap_table[gap_index];
                 state <= STATE_LOOP_INNER_1;
              end
          STATE_LOOP_INNER_1 :
@@ -185,7 +202,7 @@ module move_sort #
            begin
               port_a_wr_en <= 0;
               port_b_wr_en <= 0;
-              j <= j - gap;
+              j <= j - gap_table[gap_index];
               state <= STATE_LOOP_INNER_0;
            end
 
