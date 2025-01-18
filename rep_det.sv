@@ -43,8 +43,6 @@ module rep_det #
 
    /*AUTOWIRE*/
 
-   wire                        repetition_check = board_and_castle_mask == ram_read;
-
    always @(posedge clk)
      begin
         ram_read <= ram_table[ram_rd_addr];
