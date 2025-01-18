@@ -125,15 +125,10 @@ gtkwave wave.vcd
   - I generally only use AUTO_TEMPLATE, AUTOINST, AUTOWIRE, and AUTOREGINPUT.
   - I only use AUTOREGINPUT to detect unconnected module inputs. I never use it to create registers.
   - I am a `vi` user so I unconditionally use [Emacs Evil](https://www.emacswiki.org/emacs/Evil).
-* The C code in `numbat/vivado/src` interacts with the Verilog via the
-  [AXI4-Lite](https://en.wikipedia.org/wiki/Advanced_eXtensible_Interface#AXI4-Lite) `ctrl0_axi` interface.
 * HDL synthesis tools eliminate redundant digital circuits and eliminate circuits with a constant known
   output. The evaluation and transposition Verilog is coded for clarity, but has considerable
   redundancy and many fixed output circuits, so the project relies on these tool optimizations to produce
   a small logic footprint.
-  - The Vivado synthesis tool expends a lot of time on these optimizations in the mobility evaluation logic.
-    For fast debug build times set the `EVAL_MOBILITY_DISABLE` parameter to 1 in `numbat_top.sv` to
-    eliminate mobility scoring from the evaluation logic.
 
 ## Hardware Notes
 
