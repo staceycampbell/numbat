@@ -613,13 +613,13 @@ module all_moves #
           state <= STATE_IDLE;
           all_generated_moves_complete <= 0;
           initial_evaluation_complete <= 0;
+          legal_ram_wr_addr_init <= 1;
+          ram_wr_addr_init <= 1;
        end
      else
        case (state)
          STATE_IDLE :
            begin
-              am_idle <= 1;
-
               all_generated_moves_complete <= 0;
               initial_evaluation_complete <= 0;
 
@@ -672,8 +672,6 @@ module all_moves #
            end
          STATE_INIT :
            begin
-              am_idle <= 0;
-
               // bitmask of all potentially moveable pieces
               for (s = 0; s < 64; s = s + 1)
                 square_active[s] <= board[s * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN && // square not empty
@@ -1040,6 +1038,7 @@ module all_moves #
        begin
           legal <= LEGAL_INIT;
           legal_eval_done <= 0;
+          legal_ram_wr <= 0;
        end
      else
        case (legal)
@@ -1194,7 +1193,7 @@ module all_moves #
               legal_clear_attack <= 0;
               legal_rd_clear_sample <= 0;
               legal_eval_done <= 1;
-              if (~all_generated_moves_complete && am_clear_moves)
+              if (state == STATE_IDLE && ram_wr_addr == 0)
                 begin
                    legal_eval_done <= 0;
                    legal <= LEGAL_INIT;
@@ -1203,6 +1202,9 @@ module all_moves #
          default :
            legal <= LEGAL_INIT;
        endcase
+
+   always @(posedge clk)
+     am_idle <= legal == LEGAL_INIT && state == STATE_IDLE;
 
    /* board_attack AUTO_TEMPLATE (
     .board (evaluate_board_r[]),
