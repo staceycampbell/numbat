@@ -1,6 +1,7 @@
 #!/bin/bash
+# https://www.chess.com/forum/view/chess-equipment/phalanx-rebornand-we-really-mean-it-this-time-phalanx-xxiii
 xboard -boardSize Medium -fUCI -fcp numbattcp \
        -fd /home/stacey/src/numbat/vivado/comms \
-       -scp '/home/stacey/src/phalanx/phalanx -e 1' \
+       -scp '/home/stacey/src/phalanx/phalanx -n1000' \
        -sd /home/stacey/src/phalanx/ \
        -saveGameFile /home/stacey/tmp/ph/phgames.pgn
