@@ -39,6 +39,16 @@ The project uses the GEM1 ethernet interface. This corresponds to ethernet port
 which is the upper right port on the RJ-45 block. Debug input/output also appears on the UART port
 at J4 (115200 baud, 8N1).
 
+### After a `git pull`
+
+Generally, it will be necessary to delete all Vivado-generated files after a `git pull` and rebuild
+the project from scratch.
+```
+cd numbat/vivado
+make distclean
+make create_hardware && make create_software
+```
+
 ## Run the project
 
 1. Power up the KR260.

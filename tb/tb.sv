@@ -156,7 +156,7 @@ module tb;
         en_passant_col = 4'h0;
         half_move = 0;
         full_move_number = 1;
-	
+
         forever
           #1 clk = ~clk;
      end
