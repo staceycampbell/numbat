@@ -110,7 +110,6 @@ typedef struct trans_t
         int32_t eval;
         uint32_t flag;
         uint32_t nodes;
-        uint32_t capture;
 } trans_t;
 
 typedef struct board_t
@@ -157,6 +156,18 @@ numbat_read(uint32_t reg)
         uint32_t val;
 
         ptr = (volatile uint32_t *)(uint64_t) (XPAR_CTRL0_AXI_TO_BRAM_S_AXI_BASEADDR + reg * 16);
+        val = *ptr;
+
+        return val;
+}
+
+static inline uint64_t
+numbat_read64(uint32_t reg)
+{
+        volatile uint64_t *ptr;
+        uint64_t val;
+
+        ptr = (volatile uint64_t *)(uint64_t) (XPAR_CTRL0_AXI_TO_BRAM_S_AXI_BASEADDR + reg * 16);
         val = *ptr;
 
         return val;
@@ -243,29 +254,42 @@ numbat_trans_lookup(void)
         numbat_write(520, 0);
 }
 
-static inline void
-numbat_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
-                  uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
+static inline uint32_t
+numbat_trans_idle(void)
 {
         uint32_t val;
 
+        val = numbat_read(513);
+        val &= 1;
+
+        return val;
+}
+
+static inline void
+numbat_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * entry_valid)
+{
+        uint64_t val;
+        uint32_t bits;
+
+        val = numbat_read64(512);
+
         if (eval)
-                *eval = (int32_t) numbat_read(514);
+        {
+                bits = val & ((1 << 24) - 1);   // 2s comp 24 bits
+                if ((bits & (1 << 23)) != 0)
+                        bits |= 0xFF << 24;     // sign-extend to 32 bits
+                *eval = (int32_t) bits;
+        }
         if (nodes)
-                *nodes = numbat_read(515);
-        val = numbat_read(512);
-        if (trans_idle)
-                *trans_idle = val & 0x1;
-        if (entry_valid)
-                *entry_valid = (val >> 1) & 0x1;
-        if (flag)
-                *flag = (val >> 2) & 0x3;
+                *nodes = (val >> 32) & ((1 << 28) - 1);
         if (depth)
-                *depth = (int8_t) ((val >> 8) & 0xFF);
+                *depth = (int8_t) ((val >> 24) & 0xFF);
+        if (entry_valid)
+                *entry_valid = (val & (1UL << 60)) != 0;
+        if (flag)
+                *flag = (val >> 61) & 0x3;
         if (collision)
-                *collision = (val >> 9) & 0x1;
-        if (capture)
-                *capture = (val >> 10) & 0x1;
+                *collision = (val >> 63) & 0x1;
 }
 
 static inline void
@@ -310,7 +334,7 @@ numbat_trans_idle_wait(void)
         counter = 0;
         do
         {
-                numbat_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                trans_idle = numbat_trans_idle();
                 ++counter;
         }
         while (counter < 100 && !trans_idle);
@@ -323,7 +347,7 @@ trans_test_idle(const char *func, const char *file, int line)
 {
         uint32_t trans_idle;
 
-        numbat_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+        trans_idle = numbat_trans_idle();
         if (!trans_idle)
         {
                 printf("%s: transposition table state machine is not idle, stopping. (%s %d)\n", func, file, line);
@@ -371,29 +395,42 @@ numbat_q_trans_lookup(void)
         numbat_write(620, 0);
 }
 
-static inline void
-numbat_q_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag,
-                    uint32_t * nodes, uint32_t * capture, uint32_t * entry_valid, uint32_t * trans_idle)
+static inline uint32_t
+numbat_q_trans_idle(void)
 {
         uint32_t val;
 
+        val = numbat_read(613);
+        val &= 1;
+
+        return val;
+}
+
+static inline void
+numbat_q_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_t * flag, uint32_t * nodes, uint32_t * entry_valid)
+{
+        uint64_t val;
+        uint32_t bits;
+
+        val = numbat_read64(612);
+
         if (eval)
-                *eval = (int32_t) numbat_read(614);
+        {
+                bits = val & ((1 << 24) - 1);   // 2s comp 24 bits
+                if ((bits & (1 << 23)) != 0)
+                        bits |= 0xFF << 24;     // sign-extend to 32 bits
+                *eval = (int32_t) bits;
+        }
         if (nodes)
-                *nodes = numbat_read(615);
-        val = numbat_read(612);
-        if (trans_idle)
-                *trans_idle = val & 0x1;
-        if (entry_valid)
-                *entry_valid = (val >> 1) & 0x1;
-        if (flag)
-                *flag = (val >> 2) & 0x3;
+                *nodes = (val >> 32) & ((1 << 28) - 1);
         if (depth)
-                *depth = (int8_t) ((val >> 8) & 0xFF);
+                *depth = (int8_t) ((val >> 24) & 0xFF);
+        if (entry_valid)
+                *entry_valid = (val & (1UL << 60)) != 0;
+        if (flag)
+                *flag = (val >> 61) & 0x3;
         if (collision)
-                *collision = (val >> 9) & 0x1;
-        if (capture)
-                *capture = (val >> 10) & 0x1;
+                *collision = (val >> 63) & 0x1;
 }
 
 static inline void
@@ -438,7 +475,7 @@ numbat_q_trans_idle_wait(void)
         counter = 0;
         do
         {
-                numbat_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                trans_idle = numbat_q_trans_idle();
                 ++counter;
         }
         while (counter < 100 && !trans_idle);
@@ -451,7 +488,7 @@ q_trans_test_idle(const char *func, const char *file, int line)
 {
         uint32_t trans_idle;
 
-        numbat_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+        trans_idle = numbat_q_trans_idle();
         if (!trans_idle)
         {
                 printf("%s: transposition table state machine is not idle, stopping. (%s %d)\n", func, file, line);
@@ -462,7 +499,7 @@ q_trans_test_idle(const char *func, const char *file, int line)
 static inline void
 q_trans_lookup_init(void)
 {
-        trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
+        q_trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         numbat_q_trans_lookup();        // lookup hash will be calculated for board in most recent call to numbat_write_board_basic
 }
 

@@ -238,7 +238,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
                 return value;
 
         q_trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        numbat_q_trans_read(&collision, &trans.eval, 0, &trans.flag, 0, 0, &trans.entry_valid, 0);
+        numbat_q_trans_read(&collision, &trans.eval, 0, &trans.flag, 0, &trans.entry_valid);
         if (trans.entry_valid)
         {
                 if (trans.flag == TRANS_EXACT)
@@ -370,7 +370,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         trans_lookup_init();    // trigger transposition table lookup
 
         trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        numbat_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.capture, &trans.entry_valid, 0);
+        numbat_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.entry_valid);
         trans_collision += collision;
 
         if (trans.entry_valid && trans.depth >= depth)
@@ -483,7 +483,6 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                         trans.flag = TRANS_EXACT;
                 trans.nodes = nodes;
                 trans.depth = depth;
-                trans.capture = board->capture;
                 trans.entry_valid = 1;
                 trans_store(&trans);
         }

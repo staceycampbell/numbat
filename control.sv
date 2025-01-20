@@ -288,10 +288,13 @@ module control #
        256 : ctrl0_dout[31:0] <= {led_uf2, led_uf1};
        257 : ctrl0_dout[31:0] <= fan_ctrl_write_wr_data;
 
-       512 : ctrl0_dout[31:0] <= {trans_capture_in, trans_collision_in, trans_depth_in[7:0], 4'b0,
-                                  trans_flag_in[1:0], trans_entry_valid_in, trans_trans_idle_in};
-       514 : ctrl0_dout[31:0] <= trans_eval_in;
-       515 : ctrl0_dout[31:0] <= trans_nodes_in;
+       512 : ctrl0_dout[63:0] <= {trans_collision_in,   //  1
+                                  trans_flag_in[1:0],   //  2
+                                  trans_entry_valid_in, //  1
+                                  trans_nodes_in[27:0], // 28
+                                  trans_depth_in[7:0],  //  8
+                                  trans_eval_in[23:0]}; // 24
+       513 : ctrl0_dout[1:0] <= {trans_capture_in, trans_trans_idle_in}; // note: capture currently unused
        520 : ctrl0_dout[31:0] <= {trans_depth_out[7:0], 2'b0, trans_clear_trans_out, trans_hash_only_out,
                                   trans_flag_out[1:0], trans_entry_store_out, trans_entry_lookup_out};
        521 : ctrl0_dout[31:0] <= trans_capture_out << 31 | trans_eval_out[EVAL_WIDTH - 1:0];
@@ -302,10 +305,13 @@ module control #
 
        600 : ctrl0_dout[31:0] <= am_pv_ctrl_out;
        
-       612 : ctrl0_dout[31:0] <= {q_trans_capture_in, q_trans_collision_in, q_trans_depth_in[7:0], 4'b0,
-                                  q_trans_flag_in[1:0], q_trans_entry_valid_in, q_trans_trans_idle_in};
-       614 : ctrl0_dout[31:0] <= q_trans_eval_in;
-       615 : ctrl0_dout[31:0] <= q_trans_nodes_in;
+       612 : ctrl0_dout[63:0] <= {q_trans_collision_in,   //  1
+                                  q_trans_flag_in[1:0],   //  2
+                                  q_trans_entry_valid_in, //  1
+                                  q_trans_nodes_in[27:0], // 28
+                                  q_trans_depth_in[7:0],  //  8
+                                  q_trans_eval_in[23:0]}; // 24
+       613 : ctrl0_dout[1:0] <= {q_trans_capture_in, q_trans_trans_idle_in}; // note: capture currently unused
        620 : ctrl0_dout[31:0] <= {q_trans_depth_out[7:0], 2'b0, q_trans_clear_trans_out, q_trans_hash_only_out,
                                   q_trans_flag_out[1:0], q_trans_entry_store_out, q_trans_entry_lookup_out};
        621 : ctrl0_dout[31:0] <= q_trans_capture_out << 31 | q_trans_eval_out[EVAL_WIDTH - 1:0];

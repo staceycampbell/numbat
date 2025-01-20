@@ -20,7 +20,7 @@ q_trans_wait_idle(const char *func, const char *file, int line)
         i = 0;
         do
         {
-                numbat_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                trans_idle = numbat_q_trans_idle();
                 ++i;
         }
         while (!trans_idle && i < 1000);
@@ -46,7 +46,7 @@ trans_clear_table(void)
                 XTime_GetTime(&t_end);
                 elapsed_ticks = t_end - t_start;
                 elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
-                numbat_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                trans_idle = numbat_trans_idle();
         }
         while (elapsed_time < 2.0 && !trans_idle);
         if (!trans_idle)
@@ -60,18 +60,16 @@ trans_clear_table(void)
 void
 trans_lookup(trans_t * trans, uint32_t * collision)
 {
-        uint32_t trans_idle;
-
         trans_lookup_init();
         trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        numbat_trans_read(collision, &trans->eval, &trans->depth, &trans->flag, &trans->nodes, &trans->capture, &trans->entry_valid, &trans_idle);
+        numbat_trans_read(collision, &trans->eval, &trans->depth, &trans->flag, &trans->nodes, &trans->entry_valid);
 }
 
 void
 trans_store(const trans_t * trans)
 {
         trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        numbat_trans_store(trans->depth, trans->flag, trans->eval, trans->nodes, trans->capture);
+        numbat_trans_store(trans->depth, trans->flag, trans->eval, trans->nodes, 0);
         trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
 }
 void
@@ -89,7 +87,7 @@ q_trans_clear_table(void)
                 XTime_GetTime(&t_end);
                 elapsed_ticks = t_end - t_start;
                 elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
-                numbat_q_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                trans_idle = numbat_q_trans_idle();
         }
         while (elapsed_time < 2.0 && !trans_idle);
         if (!trans_idle)
@@ -102,18 +100,16 @@ q_trans_clear_table(void)
 void
 q_trans_lookup(trans_t * trans, uint32_t * collision)
 {
-        uint32_t trans_idle;
-
         q_trans_lookup_init();
         q_trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        numbat_q_trans_read(collision, &trans->eval, &trans->depth, &trans->flag, &trans->nodes, &trans->capture, &trans->entry_valid, &trans_idle);
+        numbat_q_trans_read(collision, &trans->eval, &trans->depth, &trans->flag, &trans->nodes, &trans->entry_valid);
 }
 
 void
 q_trans_store(const trans_t * trans)
 {
         q_trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        numbat_q_trans_store(trans->depth, trans->flag, trans->eval, trans->nodes, trans->capture);
+        numbat_q_trans_store(trans->depth, trans->flag, trans->eval, trans->nodes, 0);
         q_trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
 }
 
@@ -127,7 +123,7 @@ trans_wait_idle(const char *func, const char *file, int line)
         i = 0;
         do
         {
-                numbat_trans_read(0, 0, 0, 0, 0, 0, 0, &trans_idle);
+                trans_idle = numbat_trans_idle();
                 ++i;
         }
         while (!trans_idle && i < 1000);
