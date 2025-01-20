@@ -49,10 +49,6 @@ nm_initial_eval(uint32_t wtm, uint32_t ply)
                 return 0;
 
         value = numbat_initial_eval();
-        if (value == GLOBAL_VALUE_KING)
-                value -= ply;
-        else if (value == -GLOBAL_VALUE_KING)
-                value += ply;
         if (!wtm)
                 value = -value;
 
@@ -430,9 +426,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                         if (!board->white_to_move)
                                 board_eval = -board_eval;
                 }
-                if (board_eval == GLOBAL_VALUE_KING)
-                        value = GLOBAL_VALUE_KING - ply;
-                else if (depth <= 0
+                if (depth <= 0
                          && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
                 {
                         value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
@@ -441,7 +435,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 else if (depth > 0)
                 {
-                        if (index == 0 || ply < 2 || in_check || board_eval + eval_delta > alpha)
+                        if (index == 0 || ply < 2 || in_check || board_eval + eval_delta > alpha || alpha > GLOBAL_VALUE_KING - 200)
                                 value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                         else
                                 value = -GLOBAL_VALUE_KING;
