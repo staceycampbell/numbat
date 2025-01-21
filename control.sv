@@ -358,6 +358,10 @@ module control #
        1034 : ctrl0_dout[31:0] <= am_killer_bonus0_out;
        1035 : ctrl0_dout[31:0] <= am_killer_bonus1_out;
 
+`include "random_constant.vh"
+
+       4096 : ctrl0_dout[31:0] <= `RANDOM_CONSTANT;
+
        default : ctrl0_dout <= 0;
      endcase
 

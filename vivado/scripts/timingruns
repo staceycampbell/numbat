@@ -1,0 +1,29 @@
+#!/bin/bash
+if [ ! -f ../random_constant.vh ]
+then
+    printf '%s: this script must be run from numbat/vivado\n' $0 1>&2
+    exit 1
+fi
+seed=`cat ../random_constant.vh | awk ' { print $3 } '`
+if [ "$seed" = '' ]
+then
+    printf '%s: cannot find start seed\n' $0 1>&2
+    exit 1
+fi
+seed=`expr $seed + 1`
+runno=0
+while [ $runno -lt 10 ]
+do
+    tmppath=~/tmp/timing/run_$seed
+    rm -fr $tmppath
+    mkdir -p $tmppath
+    printf 'Starting run %d\n' $seed
+    printf '`define RANDOM_CONSTANT %d\n' $seed > ../random_constant.vh
+    (make distclean && make create_hardware) > $tmppath/build.log 2>&1
+    cp ./numbat/numbat_1.runs/impl_1/*.rpt $tmppath
+    seed=`expr $seed + 1`
+    runno=`expr $runno + 1`
+done
+printf 'Done.\n'
+exit 0
+    
