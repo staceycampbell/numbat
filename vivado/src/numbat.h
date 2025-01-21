@@ -141,6 +141,15 @@ numbat_write(uint32_t reg, uint32_t val)
 }
 
 static inline void
+numbat_write64(uint32_t reg, uint64_t val)
+{
+        volatile uint64_t *ptr;
+
+        ptr = (volatile uint64_t *)(uint64_t) (XPAR_CTRL0_AXI_TO_BRAM_S_AXI_BASEADDR + reg * 16);
+        *ptr = val;
+}
+
+static inline void
 numbat_write256(uint32_t reg, uint64_t * val)
 {
         void *ptr;
@@ -224,25 +233,21 @@ numbat_random_score_mask(uint32_t mask)
 static inline void
 numbat_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
 {
-        uint32_t val;
-        uint32_t depth32;
-        uint8_t depth_u8;
+        uint64_t val;
+        uint64_t depth_bits, eval_bits, flag_bits, node_bits, capture_bit;
         const uint32_t entry_store = 1 << 1;
 
-        depth_u8 = (uint8_t) depth;
-        depth32 = depth_u8;
+        capture_bit = capture & 1;
+        eval_bits = ((uint32_t) eval) & ((1 << 24) - 1);        // 24 bits
+        depth_bits = ((uint32_t) depth) & ((1 << 8) - 1);       // 8 bits
+        node_bits = nodes & ((1 << 28) - 1);    // 28 bits
+        flag_bits = flag & ((1 << 2) - 1);      // 2 bits
 
-        val = (uint32_t) eval;
-        val &= ~(1 << 31);
-        val |= (capture != 0) << 31;    // msbit of this reg stores capture flag
-        numbat_write(521, (uint32_t) val);
-        numbat_write(525, nodes);
+        val = capture_bit << 63 |       // ignored atm
+                flag_bits << 61 | node_bits << 32 | depth_bits << 24 | eval_bits << 0;
+        numbat_write64(520, val);
 
-        val = depth32 << 8 | flag << 2 | entry_store;   // toggle store on
-        numbat_write(520, val);
-
-        val = depth32 << 8 | flag << 2; // toggle store off
-        numbat_write(520, val);
+        numbat_write(521, entry_store); // self clearing
 }
 
 static inline void
@@ -250,8 +255,7 @@ numbat_trans_lookup(void)
 {
         const uint32_t entry_lookup = 1 << 0;
 
-        numbat_write(520, entry_lookup);
-        numbat_write(520, 0);
+        numbat_write(521, entry_lookup);        // self clearing
 }
 
 static inline uint32_t
@@ -270,6 +274,7 @@ numbat_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_
 {
         uint64_t val;
         uint32_t bits;
+        int8_t depth8;
 
         val = numbat_read64(512);
 
@@ -283,7 +288,10 @@ numbat_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_
         if (nodes)
                 *nodes = (val >> 32) & ((1 << 28) - 1);
         if (depth)
-                *depth = (int8_t) ((val >> 24) & 0xFF);
+        {
+                depth8 = (int8_t) ((val >> 24) & 0xFF);
+                *depth = depth8;
+        }
         if (entry_valid)
                 *entry_valid = (val & (1UL << 60)) != 0;
         if (flag)
@@ -295,19 +303,17 @@ numbat_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint32_
 static inline void
 numbat_trans_hash_only(void)
 {
-        const uint32_t hash_only = 1 << 4;
+        const uint32_t hash_only = 1 << 2;
 
-        numbat_write(520, hash_only);
-        numbat_write(520, 0);
+        numbat_write(521, hash_only);   // self clearing
 }
 
 static inline void
 numbat_trans_clear_table(void)
 {
-        const uint32_t clear_trans = 1 << 5;
+        const uint32_t clear_trans = 1 << 3;
 
-        numbat_write(520, clear_trans);
-        numbat_write(520, 0);
+        numbat_write(521, clear_trans); // self clearing
 }
 
 static inline uint64_t
@@ -365,25 +371,21 @@ trans_lookup_init(void)
 static inline void
 numbat_q_trans_store(int32_t depth, uint32_t flag, int32_t eval, uint32_t nodes, uint32_t capture)
 {
-        uint32_t val;
-        uint32_t depth32;
-        uint8_t depth_u8;
+        uint64_t val;
+        uint64_t depth_bits, eval_bits, flag_bits, node_bits, capture_bit;
         const uint32_t entry_store = 1 << 1;
 
-        depth_u8 = (uint8_t) depth;
-        depth32 = depth_u8;
+        capture_bit = capture & 1;
+        eval_bits = ((uint32_t) eval) & ((1 << 24) - 1);        // 24 bits
+        depth_bits = ((uint32_t) depth) & ((1 << 8) - 1);       // 8 bits
+        node_bits = nodes & ((1 << 28) - 1);    // 28 bits
+        flag_bits = flag & ((1 << 2) - 1);      // 2 bits
 
-        val = (uint32_t) eval;
-        val &= ~(1 << 31);
-        val |= (capture != 0) << 31;    // msbit of this reg stores capture flag
-        numbat_write(621, (uint32_t) val);
-        numbat_write(625, nodes);
+        val = capture_bit << 63 |       // ignored atm
+                flag_bits << 61 | node_bits << 32 | depth_bits << 24 | eval_bits << 0;
+        numbat_write64(620, val);
 
-        val = depth32 << 8 | flag << 2 | entry_store;   // toggle store on
-        numbat_write(620, val);
-
-        val = depth32 << 8 | flag << 2; // toggle store off
-        numbat_write(620, val);
+        numbat_write(621, entry_store); // self clearing
 }
 
 static inline void
@@ -391,8 +393,7 @@ numbat_q_trans_lookup(void)
 {
         const uint32_t entry_lookup = 1 << 0;
 
-        numbat_write(620, entry_lookup);
-        numbat_write(620, 0);
+        numbat_write(621, entry_lookup);        // self clearing
 }
 
 static inline uint32_t
@@ -436,19 +437,17 @@ numbat_q_trans_read(uint32_t * collision, int32_t * eval, int32_t * depth, uint3
 static inline void
 numbat_q_trans_hash_only(void)
 {
-        const uint32_t hash_only = 1 << 4;
+        const uint32_t hash_only = 1 << 2;
 
-        numbat_write(620, hash_only);
-        numbat_write(620, 0);
+        numbat_write(621, hash_only);
 }
 
 static inline void
 numbat_q_trans_clear_table(void)
 {
-        const uint32_t clear_trans = 1 << 5;
+        const uint32_t clear_trans = 1 << 3;
 
-        numbat_write(620, clear_trans);
-        numbat_write(620, 0);
+        numbat_write(621, clear_trans);
 }
 
 static inline uint64_t
@@ -876,6 +875,7 @@ extern void trans_wait_idle(const char *func, const char *file, int line);
 extern void q_trans_clear_table(void);
 extern void q_trans_lookup(trans_t * trans, uint32_t * collision);
 extern void q_trans_store(const trans_t * trans);
+extern void trans_test(void);
 
 extern void tc_init(tc_t * tc, int32_t main, int32_t increment);
 extern uint32_t tc_clock_toggle(tc_t * tc);

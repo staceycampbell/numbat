@@ -23,7 +23,7 @@ extern uint32_t game_moves;
 static uint32_t repdet_game_moves;
 
 static uint64_t all_moves_ticks;
-static uint32_t nodes_visited, q_nodes_visited, trans_collision, no_trans, q_no_trans;
+static uint32_t nodes_visited, n_nodes_visited, q_nodes_visited, trans_collision, no_trans, q_no_trans;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
 static int32_t q_ply_reached, valid_q_ply_reached;
@@ -359,8 +359,9 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         pv_array[pv_index] = zero_move;
         pv_next_index = pv_index + MAX_DEPTH - ply;
 
-        node_start = nodes_visited;
+        node_start = n_nodes_visited;
         ++nodes_visited;
+        ++n_nodes_visited;
 
         alpha_orig = alpha;
 
@@ -466,7 +467,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 killer_update_table();
         }
 
-        node_stop = nodes_visited;
+        node_stop = n_nodes_visited;
         nodes = node_stop - node_start;
         if (nodes >= (1 << TRANS_NODES_WIDTH))
                 nodes = (1 << TRANS_NODES_WIDTH) - 1;
@@ -544,6 +545,7 @@ nm_top(const tc_t * tc, uint32_t * resign)
 
         nodes_visited = 0;
         q_nodes_visited = 0;
+        n_nodes_visited = 0;
         no_trans = 0;
         trans_collision = 0;
         q_no_trans = 0;

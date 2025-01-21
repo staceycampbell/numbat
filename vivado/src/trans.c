@@ -9,6 +9,9 @@
 #include <xtime_l.h>
 #include "numbat.h"
 
+extern board_t game[GAME_MAX];
+extern uint32_t game_moves;
+
 #pragma GCC optimize ("O2")
 
 static inline void
@@ -135,3 +138,39 @@ trans_wait_idle(const char *func, const char *file, int line)
         }
 }
 
+void
+trans_test(void)
+{
+        board_t test_board;
+        trans_t store, verify;
+        uint32_t collision;
+
+        if (game_moves == 0)
+        {
+                printf("%s: no game move to test\n", __PRETTY_FUNCTION__);
+                return;
+        }
+        printf("Clearing tt...");
+        fflush(stdout);
+        trans_clear_table();
+        printf("done.\n");
+        test_board = game[game_moves - 1];
+        numbat_write_board_basic(&test_board);
+
+        store.entry_valid = 1;
+        store.depth = numbat_random() % 50;
+        store.eval = ((int32_t) numbat_random() % 4000) - 2000;
+        store.flag = numbat_random() & 0x3;
+        store.nodes = numbat_random() % 100;
+
+        trans_store(&store);
+        trans_lookup(&verify, &collision);
+
+        if (collision)
+                printf("%s: collision set!\n", __PRETTY_FUNCTION__);
+        if (!verify.entry_valid || store.depth != verify.depth || store.eval != verify.eval ||
+            store.flag != verify.flag || store.nodes != verify.nodes)
+                printf("%s: transposition table problem!\n", __PRETTY_FUNCTION__);
+        else if (!collision)
+                printf("%s: test passed\n", __PRETTY_FUNCTION__);
+}

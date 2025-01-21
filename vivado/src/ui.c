@@ -459,6 +459,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         printf("time control now main %d minutes, %d seconds increment\n", tc_main, tc_increment);
                 }
         }
+        else if (strcmp((char *)str, "tt") == 0)
+        {
+                trans_test();
+        }
         else
         {
                 char *uci_ptr, *c;

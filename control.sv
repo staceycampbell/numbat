@@ -102,7 +102,7 @@ module control #
     input                                 q_trans_collision_in,
     input [79:0]                          q_trans_hash_in,
     input [31:0]                          q_trans_trans,
-   
+
     input                                 initial_mate,
     input                                 initial_stalemate,
     input signed [EVAL_WIDTH - 1:0]       initial_eval, // root node eval
@@ -136,15 +136,15 @@ module control #
     input [5:0]                           am_attack_black_pop_in,
     input                                 am_insufficient_material_in,
     input                                 am_pv_in,
-   
+
     input [31:0]                          misc_status,
     input [31:0]                          xorshift32_reg,
-   
+
     input [17:0]                          ctrl0_addr,
     input [127:0]                         ctrl0_din,
     input                                 ctrl0_en,
     input [15:0]                          ctrl0_we,
-   
+
     output reg [127:0]                    ctrl0_dout
     );
 
@@ -173,7 +173,20 @@ module control #
    always @(posedge clk)
      begin
         fan_ctrl_write_wr_en <= 0; // special case for 100MHz clock domain
-        if (ctrl0_wr_valid) // assume all non-128 bit transactions have 'h000f for byte enable
+
+        // auto-clear transposition table control bits
+        trans_clear_trans_out <= 0;
+        trans_hash_only_out <= 0;
+        trans_entry_store_out <= 0;
+        trans_entry_lookup_out <= 0;
+        q_trans_clear_trans_out <= 0;
+        q_trans_hash_only_out <= 0;
+        q_trans_entry_store_out <= 0;
+        q_trans_entry_lookup_out <= 0;
+
+        // assume all 32 bit transactions have 'h000f for byte enable
+        // assume all 64 bit transactions have 'h00ff for byte enable
+        if (ctrl0_wr_valid)
           case (wr_reg_addr)
             5'h0 :
               begin
@@ -211,15 +224,43 @@ module control #
                  fan_ctrl_write_wr_data <= ctrl0_din;
                  fan_ctrl_write_wr_en <= 1;
               end
-            520 : {trans_depth_out[7:0], trans_clear_trans_out, trans_hash_only_out, trans_flag_out[1:0],
-                   trans_entry_store_out, trans_entry_lookup_out} <= {ctrl0_din[15:8], ctrl0_din[5:0]};
-            521 : {trans_capture_out, trans_eval_out} <= {ctrl0_din[31], ctrl0_din[EVAL_WIDTH - 1:0]};
-            525 : trans_nodes_out <= ctrl0_din;
+
+            520 :
+              begin
+                 trans_eval_out[23:0] <= ctrl0_din[0+:24];
+                 trans_depth_out[7:0] <= ctrl0_din[24+:8];
+                 trans_nodes_out[27:0] <= ctrl0_din[32+:28];
+                 // valid bit is assumed set
+                 trans_flag_out[1:0] <= ctrl0_din[61+:2];
+                 trans_capture_out <= ctrl0_din[63]; // stored but ignored for now
+              end
+            521 :
+              begin
+                 trans_clear_trans_out <= ctrl0_din[3];
+                 trans_hash_only_out <= ctrl0_din[2];
+                 trans_entry_store_out <= ctrl0_din[1];
+                 trans_entry_lookup_out <= ctrl0_din[0];
+              end
+
             600 : am_pv_ctrl_out <= ctrl0_din;
-            620 : {q_trans_depth_out[7:0], q_trans_clear_trans_out, q_trans_hash_only_out, q_trans_flag_out[1:0],
-                   q_trans_entry_store_out, q_trans_entry_lookup_out} <= {ctrl0_din[15:8], ctrl0_din[5:0]};
-            621 : {q_trans_capture_out, q_trans_eval_out} <= {ctrl0_din[31], ctrl0_din[EVAL_WIDTH - 1:0]};
-            625 : q_trans_nodes_out <= ctrl0_din;
+
+            620 :
+              begin
+                 q_trans_eval_out[23:0] <= ctrl0_din[0+:24];
+                 q_trans_depth_out[7:0] <= ctrl0_din[24+:8];
+                 q_trans_nodes_out[27:0] <= ctrl0_din[32+:28];
+                 // valid bit is assumed set
+                 q_trans_flag_out[1:0] <= ctrl0_din[61+:2];
+                 q_trans_capture_out <= ctrl0_din[63]; // stored but ignored for now
+              end
+            621 :
+              begin
+                 q_trans_clear_trans_out <= ctrl0_din[3];
+                 q_trans_hash_only_out <= ctrl0_din[2];
+                 q_trans_entry_store_out <= ctrl0_din[1];
+                 q_trans_entry_lookup_out <= ctrl0_din[0];
+              end
+
             1024 : // 128 bit transaction
               for (byte_en = 0; byte_en < 16; byte_en = byte_en + 1)
                 if (ctrl0_we[byte_en])
@@ -232,7 +273,7 @@ module control #
             1033 : am_killer_ply_out <= ctrl0_din;
             1034 : am_killer_bonus0_out <= ctrl0_din;
             1035 : am_killer_bonus1_out <= ctrl0_din;
-            
+
             default :
               begin
               end
@@ -280,7 +321,7 @@ module control #
        140 : ctrl0_dout[31:0] <= {am_attack_black_pop_in[5:0], am_attack_white_pop_in[5:0]};
        141 : ctrl0_dout[31:0] <= initial_material_black;
        142 : ctrl0_dout[31:0] <= initial_material_white;
-       
+
        252 : ctrl0_dout[31:0] <= random_score_mask;
        253 : ctrl0_dout[31:0] <= trans_trans;
        254 : ctrl0_dout[31:0] <= xorshift32_reg;
@@ -295,16 +336,12 @@ module control #
                                   trans_depth_in[7:0],  //  8
                                   trans_eval_in[23:0]}; // 24
        513 : ctrl0_dout[1:0] <= {trans_capture_in, trans_trans_idle_in}; // note: capture currently unused
-       520 : ctrl0_dout[31:0] <= {trans_depth_out[7:0], 2'b0, trans_clear_trans_out, trans_hash_only_out,
-                                  trans_flag_out[1:0], trans_entry_store_out, trans_entry_lookup_out};
-       521 : ctrl0_dout[31:0] <= trans_capture_out << 31 | trans_eval_out[EVAL_WIDTH - 1:0];
        522 : ctrl0_dout[31:0] <= trans_hash_in[31: 0];
        523 : ctrl0_dout[31:0] <= trans_hash_in[63:32];
        524 : ctrl0_dout[31:0] <= trans_hash_in[79:64];
-       525 : ctrl0_dout[31:0] <= trans_nodes_out;
 
        600 : ctrl0_dout[31:0] <= am_pv_ctrl_out;
-       
+
        612 : ctrl0_dout[63:0] <= {q_trans_collision_in,   //  1
                                   q_trans_flag_in[1:0],   //  2
                                   q_trans_entry_valid_in, //  1
@@ -312,13 +349,9 @@ module control #
                                   q_trans_depth_in[7:0],  //  8
                                   q_trans_eval_in[23:0]}; // 24
        613 : ctrl0_dout[1:0] <= {q_trans_capture_in, q_trans_trans_idle_in}; // note: capture currently unused
-       620 : ctrl0_dout[31:0] <= {q_trans_depth_out[7:0], 2'b0, q_trans_clear_trans_out, q_trans_hash_only_out,
-                                  q_trans_flag_out[1:0], q_trans_entry_store_out, q_trans_entry_lookup_out};
-       621 : ctrl0_dout[31:0] <= q_trans_capture_out << 31 | q_trans_eval_out[EVAL_WIDTH - 1:0];
        622 : ctrl0_dout[31:0] <= q_trans_hash_in[31: 0];
        623 : ctrl0_dout[31:0] <= q_trans_hash_in[63:32];
        624 : ctrl0_dout[31:0] <= q_trans_hash_in[79:64];
-       625 : ctrl0_dout[31:0] <= q_trans_nodes_out;
 
        1032 : ctrl0_dout[31:0] <= {am_killer_clear_out, am_killer_update_out};
        1033 : ctrl0_dout[31:0] <= am_killer_ply_out;
