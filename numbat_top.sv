@@ -21,7 +21,7 @@ module numbat_top
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, row/col to, row/col from
    localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
 
-   localparam TRANS_ADDRESS_WIDTH = 36;
+   localparam TRANS_ADDRESS_WIDTH = 49;
    localparam Q_TRANS_ADDRESS_WIDTH = 21;
 
    integer i;
@@ -738,7 +738,7 @@ module numbat_top
       .q_trans_axi_wlast                (q_trans_axi_wlast),
       .q_trans_axi_wstrb                (q_trans_axi_wstrb[15:0]),
       .q_trans_axi_wvalid               (q_trans_axi_wvalid),
-      .trans_axi_araddr                 (trans_axi_araddr[35:0]),
+      .trans_axi_araddr                 (trans_axi_araddr[48:0]),
       .trans_axi_arburst                (trans_axi_arburst[1:0]),
       .trans_axi_arcache                (trans_axi_arcache[3:0]),
       .trans_axi_arid                   (6'b0),                  // Templated
@@ -746,11 +746,10 @@ module numbat_top
       .trans_axi_arlock                 (trans_axi_arlock[0:0]),
       .trans_axi_arprot                 (trans_axi_arprot[2:0]),
       .trans_axi_arqos                  (trans_axi_arqos[3:0]),
-      .trans_axi_arregion               (trans_axi_arregion[3:0]),
       .trans_axi_arsize                 (trans_axi_arsize[2:0]),
       .trans_axi_aruser                 (1'b0),                  // Templated
       .trans_axi_arvalid                (trans_axi_arvalid),
-      .trans_axi_awaddr                 (trans_axi_awaddr[35:0]),
+      .trans_axi_awaddr                 (trans_axi_awaddr[48:0]),
       .trans_axi_awburst                (trans_axi_awburst[1:0]),
       .trans_axi_awcache                (trans_axi_awcache[3:0]),
       .trans_axi_awid                   (6'b0),                  // Templated
@@ -758,7 +757,6 @@ module numbat_top
       .trans_axi_awlock                 (trans_axi_awlock[0:0]),
       .trans_axi_awprot                 (trans_axi_awprot[2:0]),
       .trans_axi_awqos                  (trans_axi_awqos[3:0]),
-      .trans_axi_awregion               (trans_axi_awregion[3:0]),
       .trans_axi_awsize                 (trans_axi_awsize[2:0]),
       .trans_axi_awuser                 (1'b0),                  // Templated
       .trans_axi_awvalid                (trans_axi_awvalid),

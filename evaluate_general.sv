@@ -41,8 +41,8 @@ module evaluate_general #
    
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_mg_t1 [0:7][0:7];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 2:0] score_eg_t1 [0:7][0:7];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] sum_a_mg_t2 [0:7][0:1];
-   (* use_dsp = "yes" *) reg signed [EVAL_WIDTH - 1:0] sum_a_eg_t2 [0:7][0:1];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_a_mg_t2 [0:7][0:1];
+   reg signed [EVAL_WIDTH - 1:0]                     sum_a_eg_t2 [0:7][0:1];
    reg signed [EVAL_WIDTH - 1:0]                     sum_a_mg_t3 [0:7][0:1];
    reg signed [EVAL_WIDTH - 1:0]                     sum_a_eg_t3 [0:7][0:1];
    reg signed [EVAL_WIDTH - 1:0]                     sum_b_mg_t4 [0:3];

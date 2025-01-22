@@ -34,6 +34,7 @@ module evaluate_killer #
    reg                                   killer_clear_r;
    reg                                   killer_update_r;
    reg                                   board_valid_t1, board_valid_t2;
+   reg [`BOARD_WIDTH - 1:0]              board_zero, board_one;
    reg [`BOARD_WIDTH * 2 - 1:0]          killer_table [0:`MAX_DEPTH - 1]; // two killer moves per ply
    reg [`MAX_DEPTH * 2 - 1:0]            killer_valid = 0;
    reg signed [EVAL_WIDTH - 1:0]         eval_mg_pre;
@@ -67,8 +68,10 @@ module evaluate_killer #
              bonus0 <= killer_bonus0;
              bonus1 <= killer_bonus1;
           end
-        killer_zero <= killer_valid[ply_r1 * 2 + 0] && board == killer_table[ply_r1][`BOARD_WIDTH - 1:0];
-        killer_one  <= killer_valid[ply_r1 * 2 + 1] && board == killer_table[ply_r1][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH];
+        board_zero <= killer_table[ply_r1][`BOARD_WIDTH - 1:0];
+        board_one  <= killer_table[ply_r1][`BOARD_WIDTH * 2 - 1:`BOARD_WIDTH];
+        killer_zero <= killer_valid[ply_r1 * 2 + 0] && board == board_zero;
+        killer_one  <= killer_valid[ply_r1 * 2 + 1] && board == board_one;
 
         if (killer_clear && ~killer_clear_r)
           killer_valid <= 0;

@@ -415,7 +415,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 
         in_check = board->white_in_check || board->black_in_check;
         index = 0;
-        eval_delta = depth * 10;
+        eval_delta = depth * 5;
         do
         {
                 board_vert[ply] = board_ptr[index];
