@@ -148,6 +148,8 @@ module control #
     output reg [127:0]                    ctrl0_dout
     );
 
+   reg [31:0]                             par_rand, par_rand_r;
+
    // should be empty
    /*AUTOREGINPUT*/
 
@@ -360,9 +362,27 @@ module control #
 
 `include "random_constant.vh"
 
-       4096 : ctrl0_dout[31:0] <= `RANDOM_CONSTANT;
+       4096 : ctrl0_dout[0] <= (`RANDOM_CONSTANT & par_rand_r) == 0;
 
        default : ctrl0_dout <= 0;
      endcase
+
+   always @(posedge clk)
+     begin
+        par_rand <= {xorshift32_reg[19:0],
+                     am_new_board_valid_out,
+                     am_moves_ready,
+                     initial_stalemate,
+                     initial_thrice_rep,
+                     am_idle,
+                     initial_fifty_move,
+                     am_move_ready,
+                     initial_insufficient_material,
+                     initial_board_check,
+                     am_clear_moves,
+                     initial_mate,
+                     soft_reset};
+        par_rand_r <= par_rand;
+     end
 
 endmodule
