@@ -48,7 +48,7 @@ module evaluate #
     output [31:0]                    material_white
     );
 
-   localparam LATENCY_COUNT = 5;
+   localparam LATENCY_COUNT = 8;
    localparam EVALUATION_COUNT = 13;
    localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
 
@@ -56,14 +56,15 @@ module evaluate #
    reg                               local_board_valid = 0;
    reg [`BOARD_WIDTH - 1:0]          board, board_pre;
    reg [2:0]                         latency;
-   reg signed [7:0]                  phase;
+   reg signed [7:0]                  phase, phase_r;
    reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_mg_t1, eval_b_mg_t1, eval_c_mg_t1, eval_d_mg_t1;
    reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_eg_t1, eval_b_eg_t1, eval_c_eg_t1;
    reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_mg_t2, eval_eg_t2;
    reg signed [PHASE_CALC_WIDTH - 1:0]              score_mg_t3, score_eg_t3;
-   reg signed [PHASE_CALC_WIDTH - 1:0]              score_t4;
-   reg signed [PHASE_CALC_WIDTH - 1:0]              score_t5, score_t6;
-   reg signed [EVAL_WIDTH - 1:0]                    eval_t7;
+   reg signed [PHASE_CALC_WIDTH - 1:0]              score_mg_t4, score_eg_t4;
+   reg signed [PHASE_CALC_WIDTH - 1:0]              score_t5;
+   reg signed [PHASE_CALC_WIDTH - 1:0]              score_t6, score_t7;
+   reg signed [EVAL_WIDTH - 1:0]                    eval_t8;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -132,7 +133,7 @@ module evaluate #
                                                      };
    wire [EVALUATION_COUNT - 1:0]                    evals_complete = ~0;
 
-   assign eval = eval_t7;
+   assign eval = eval_t8;
 
    generate
       for (c = 0; c < 64; c = c + 1)
@@ -155,6 +156,7 @@ module evaluate #
           phase <= 62;
         else
           phase <= occupied_count;
+        phase_r <= phase;
         eval_a_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black;
         eval_b_mg_t1 <= eval_mg_mob + eval_mg_killer + eval_mg_bishops_white + eval_mg_bishops_black;
         eval_c_mg_t1 <= eval_castling_white_mg + eval_castling_black_mg + eval_mg_rooks_white + eval_mg_rooks_black;
@@ -166,12 +168,14 @@ module evaluate #
         
         eval_mg_t2 <= eval_a_mg_t1 + eval_b_mg_t1 + eval_c_mg_t1 + eval_d_mg_t1;
         eval_eg_t2 <= eval_a_eg_t1 + eval_b_eg_t1 + eval_b_eg_t1;
-        score_mg_t3 <= eval_mg_t2 * phase;
-        score_eg_t3 <= eval_eg_t2 * (62 - phase);
-        score_t4 <= score_mg_t3 + score_eg_t3;
-        score_t5 <= score_t4 * $signed(32'h100000 / 62);
-        score_t6 <= score_t5 / $signed(32'h100000);
-        eval_t7 <= score_t6;
+        score_mg_t3 <= eval_mg_t2 * phase_r;
+        score_eg_t3 <= eval_eg_t2 * (62 - phase_r);
+        score_mg_t4 <= score_mg_t3;
+        score_eg_t4 <= score_eg_t3;
+        score_t5 <= score_mg_t4 + score_eg_t4;
+        score_t6 <= score_t5 * $signed(32'h100000 / 62);
+        score_t7 <= score_t6 / $signed(32'h100000);
+        eval_t8 <= score_t7;
      end
 
    localparam STATE_IDLE = 0;
