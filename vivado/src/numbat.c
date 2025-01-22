@@ -69,7 +69,7 @@ numbat_print_board(const board_t * board, uint32_t initial_board)
         char uci_str[6];
         uint32_t piece;
         int32_t eval, material_black, material_white, material;
-        uint32_t mate, stalemate, thrice_rep, fifty_move;
+        uint32_t mate, stalemate, fifty_move;
         uint32_t btm;
 
         btm = board->white_to_move;     // move from board to display is inverse of next to move
@@ -106,7 +106,7 @@ numbat_print_board(const board_t * board, uint32_t initial_board)
         if (initial_board)
         {
                 eval = numbat_initial_eval();
-                numbat_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
+                numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, 0, 0);
                 material_white = numbat_initial_material_white();
                 material_black = numbat_initial_material_black();
                 material = material_white - material_black;
@@ -117,10 +117,10 @@ numbat_print_board(const board_t * board, uint32_t initial_board)
                 material = 0;
         }
         if (!initial_board)
-                printf("capture: %d, thrice rep: %d, half move: %d", board->capture, board->thrice_rep, board->half_move_clock);
+                printf("capture: %d, half move: %d", board->capture, board->half_move_clock);
         else
         {
-                printf("mate: %d, stalemate: %d, thrice rep: %d, fifty move: %d\n", mate, stalemate, thrice_rep, fifty_move);
+                printf("mate: %d, stalemate: %d, fifty move: %d\n", mate, stalemate, fifty_move);
                 printf("material: %.2f - %.2f = %.2f", (double)material_white / 100.0, (double)material_black / 100, (double)material / 100.0);
         }
         uci_string(&board->uci, uci_str);
@@ -152,7 +152,7 @@ numbat_write_board_wait(const board_t * board, uint32_t quiescence)
         i = 0;
         do
         {
-                numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
+                numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0);
                 ++i;
         }
         while (i < 5000 && !moves_ready);
@@ -189,7 +189,7 @@ numbat_read_board(board_t * board, uint32_t index)
 
         if (verify_move_ready)
         {
-                status = numbat_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
+                status = numbat_status(&move_ready, &moves_ready, 0, 0, 0, 0, 0, 0);
                 move_count = numbat_move_count();
                 if (!move_ready || !moves_ready || index >= move_count)
                 {
@@ -223,7 +223,6 @@ numbat_read_board(board_t * board, uint32_t index)
         board->white_in_check = (dma[5] >> 2) & 0x1;
         board->capture = (dma[5] >> 3) & 0x1;
         board->pv = (dma[5] >> 4) & 0x1;
-        board->thrice_rep = (dma[5] >> 5) & 0x1;
         board->fifty_move = (dma[5] >> 6) & 0x1;
 
         board->en_passant_col = (dma[5] >> 8) & 0xF;
@@ -266,14 +265,6 @@ numbat_init_board(board_t * board)
         board->en_passant_col = 0 << EN_PASSANT_VALID_BIT;
         board->castle_mask = 0xF;
         board->white_to_move = 1;
-}
-
-void
-numbat_repdet_entry(uint32_t index, const uint32_t board[8], uint32_t castle_mask)
-{
-        numbat_repdet_board(board);
-        numbat_repdet_castle_mask(castle_mask);
-        numbat_repdet_write(index);
 }
 
 void

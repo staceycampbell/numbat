@@ -7,7 +7,6 @@ module control #
   (
    parameter EVAL_WIDTH = 0,
    parameter MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS),
-   parameter REPDET_WIDTH = 0,
    parameter HALF_MOVE_WIDTH = 0,
    parameter UCI_WIDTH = 4 + 6 + 6,
    parameter MAX_DEPTH_LOG2 = 0
@@ -26,11 +25,6 @@ module control #
     output reg [3:0]                      am_en_passant_col_out,
     output reg                            am_white_to_move_out,
     output reg [HALF_MOVE_WIDTH-1:0]      am_half_move_out,
-    output reg [`BOARD_WIDTH-1:0]         am_repdet_board_out,
-    output reg [3:0]                      am_repdet_castle_mask_out,
-    output reg [REPDET_WIDTH-1:0]         am_repdet_depth_out,
-    output reg [REPDET_WIDTH-1:0]         am_repdet_wr_addr_out,
-    output reg                            am_repdet_wr_en_out,
 
     output reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index,
     output reg                            am_clear_moves,
@@ -106,7 +100,6 @@ module control #
     input                                 initial_mate,
     input                                 initial_stalemate,
     input signed [EVAL_WIDTH - 1:0]       initial_eval, // root node eval
-    input                                 initial_thrice_rep, // root node thrice rep
     input                                 initial_fifty_move,
     input                                 initial_insufficient_material,
     input signed [31:0]                   initial_material_black,
@@ -128,7 +121,6 @@ module control #
     input [63:0]                          am_black_is_attacking_in,
     input                                 am_capture_in,
     input signed [EVAL_WIDTH - 1:0]       am_eval_in, // user indexed move eval
-    input                                 am_thrice_rep_in, // user indexed thrice rep
     input [HALF_MOVE_WIDTH - 1:0]         am_half_move_in,
     input                                 am_fifty_move_in,
     input [UCI_WIDTH - 1:0]               am_uci_in,
@@ -208,17 +200,6 @@ module control #
               for (byte_en = 0; byte_en < 16; byte_en = byte_en + 1)
                 if (ctrl0_we[byte_en])
                   am_new_board_out[128 + byte_en * 8+:8] <= ctrl0_din[byte_en * 8+:8];
-            5'h10 : am_repdet_depth_out <= ctrl0_din;
-            5'h11 : am_repdet_castle_mask_out <= ctrl0_din;
-            5'h12 : {am_repdet_wr_en_out, am_repdet_wr_addr_out} <= {ctrl0_din[31], ctrl0_din[REPDET_WIDTH - 1:0]};
-            5'h18 : // 128 bit transaction
-              for (byte_en = 0; byte_en < 16; byte_en = byte_en + 1)
-                if (ctrl0_we[byte_en])
-                  am_repdet_board_out[byte_en * 8+:8] <= ctrl0_din[byte_en * 8+:8];
-            5'h19 : // 128 bit transaction
-              for (byte_en = 0; byte_en < 16; byte_en = byte_en + 1)
-                if (ctrl0_we[byte_en])
-                  am_repdet_board_out[128 + byte_en * 8+:8] <= ctrl0_din[byte_en * 8+:8];
             252 : random_score_mask <= ctrl0_din;
             256 : {led_uf2, led_uf1} <= ctrl0_din;
             257 : // special case for 100MHz clock domain
@@ -292,7 +273,7 @@ module control #
             ctrl0_dout[3] <= am_move_ready;
             ctrl0_dout[4] <= initial_stalemate;
             ctrl0_dout[5] <= initial_mate;
-            ctrl0_dout[6] <= initial_thrice_rep;
+            ctrl0_dout[6] <= 0;
             ctrl0_dout[7] <= am_idle;
             ctrl0_dout[8] <= initial_fifty_move;
             ctrl0_dout[9] <= initial_insufficient_material;
@@ -304,16 +285,12 @@ module control #
        5'h03 : ctrl0_dout[31:0] <= am_half_move_out;
        5'h04 : ctrl0_dout[31:0] <= am_quiescence_moves;
 
-       5'h10 : ctrl0_dout[31:0] <= am_repdet_depth_out;
-       5'h11 : ctrl0_dout[31:0] <= am_repdet_castle_mask_out;
-       5'h12 : ctrl0_dout[31:0] <= {am_repdet_wr_en_out, am_repdet_wr_addr_out};
-
        128 : ctrl0_dout[31:0] <= am_white_is_attacking_in[31:0];
        129 : ctrl0_dout[31:0] <= am_white_is_attacking_in[63:32];
        130 : ctrl0_dout[31:0] <= am_black_is_attacking_in[31:0];
        131 : ctrl0_dout[31:0] <= am_black_is_attacking_in[63:32];
        132 : ctrl0_dout[31:0] <= {am_pv_in, am_insufficient_material_in, am_fifty_move_in,
-                                  am_thrice_rep_in, am_black_in_check_in, am_white_in_check_in, am_capture_in};
+                                  1'b0, am_black_in_check_in, am_white_in_check_in, am_capture_in};
        133 : ctrl0_dout[31:0] <= {am_white_to_move_in, am_castle_mask_in, am_en_passant_col_in};
        134 : ctrl0_dout[31:0] <= am_eval_in;
        135 : ctrl0_dout[31:0] <= am_move_count;
@@ -362,7 +339,7 @@ module control #
 
 `include "random_constant.vh"
 
-       4096 : ctrl0_dout[0] <= (`RANDOM_CONSTANT & par_rand_r) == 0;
+       4096 : ctrl0_dout[0] <= `RANDOM_CONSTANT ^ par_rand_r;
 
        default : ctrl0_dout <= 0;
      endcase
@@ -373,10 +350,9 @@ module control #
                      am_new_board_valid_out,
                      am_moves_ready,
                      initial_stalemate,
-                     initial_thrice_rep,
                      am_idle,
                      initial_fifty_move,
-                     am_move_ready,
+                     fan_ctrl_write_wr_en,
                      initial_insufficient_material,
                      initial_board_check,
                      am_clear_moves,

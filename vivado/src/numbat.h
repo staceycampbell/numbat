@@ -124,7 +124,6 @@ typedef struct board_t
         uint32_t black_in_check;
         uint32_t white_in_check;
         uint32_t capture;
-        uint32_t thrice_rep;
         uint32_t fifty_move;
         uint32_t pv;
         uci_t uci;
@@ -549,7 +548,7 @@ numbat_quiescence_moves(uint32_t quiescence_moves)
 
 static inline uint32_t
 numbat_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, uint32_t * stalemate,
-              uint32_t * thrice_rep, uint32_t * am_idle, uint32_t * fifty_move, uint32_t * insufficient, uint32_t * check)
+              uint32_t * am_idle, uint32_t * fifty_move, uint32_t * insufficient, uint32_t * check)
 {
         uint32_t val;
 
@@ -562,8 +561,6 @@ numbat_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, ui
                 *fifty_move = (val & (1 << 8)) != 0;
         if (am_idle)
                 *am_idle = (val & (1 << 7)) != 0;
-        if (thrice_rep)
-                *thrice_rep = (val & (1 << 6)) != 0;
         if (mate)
                 *mate = (val & (1 << 5)) != 0;
         if (stalemate)
@@ -603,8 +600,7 @@ numbat_read_black_is_attacking(void)
 }
 
 static inline uint32_t
-numbat_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint32_t * capture, uint32_t * thrice_rep, uint32_t * fifty_move,
-                     uint32_t * pv)
+numbat_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint32_t * capture, uint32_t * fifty_move, uint32_t * pv)
 {
         uint32_t val;
 
@@ -615,8 +611,6 @@ numbat_board_status0(uint32_t * black_in_check, uint32_t * white_in_check, uint3
                 *white_in_check = (val & (1 << 1)) != 0;
         if (black_in_check)
                 *black_in_check = (val & (1 << 2)) != 0;
-        if (thrice_rep)
-                *thrice_rep = (val & (1 << 3)) != 0;
         if (fifty_move)
                 *fifty_move = (val & (1 << 4)) != 0;
         if (pv)
@@ -669,31 +663,6 @@ numbat_move_count(void)
         val = numbat_read(135);
 
         return val;
-}
-
-static inline void
-numbat_repdet_write(uint32_t addr)
-{
-        numbat_write(0x12, 1 << 31 | addr);     // toggle write enable
-        numbat_write(0x12, addr);
-}
-
-static inline void
-numbat_repdet_depth(uint32_t depth)
-{
-        numbat_write(0x10, depth);
-}
-
-static inline void
-numbat_repdet_castle_mask(uint32_t castle_mask)
-{
-        numbat_write(0x11, castle_mask);
-}
-
-static inline void
-numbat_repdet_board(const uint32_t board[8])
-{
-        numbat_write256(0x18, (void *)board);
 }
 
 static inline void
@@ -845,7 +814,6 @@ extern void numbat_print_board(const board_t * board, uint32_t initial_board);
 extern uint32_t numbat_read_board(board_t * board, uint32_t index);
 extern void numbat_place(board_t * board, uint32_t row, uint32_t col, uint32_t piece);
 extern uint32_t numbat_get_piece(const board_t * board, uint32_t row, uint32_t col);
-extern void numbat_repdet_entry(uint32_t index, const uint32_t board[8], uint32_t castle_mask);
 extern void numbat_read_uci(uci_t * uci);
 
 extern void nm_init(void);

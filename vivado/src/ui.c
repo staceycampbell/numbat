@@ -23,7 +23,7 @@ do_both(void)
 {
         uint32_t move_count, key_hit, game_result;
         board_t best_board;
-        uint32_t mate, stalemate, thrice_rep, fifty_move, insufficient;
+        uint32_t mate, stalemate, fifty_move, insufficient;
         XTime t_end, t_start;
         uint64_t elapsed_ticks;
         double elapsed_time;
@@ -37,7 +37,7 @@ do_both(void)
                 numbat_write_board_basic(&best_board);
                 numbat_write_board_wait(&best_board, 0);
                 move_count = numbat_move_count();
-                numbat_status(0, 0, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, 0);
+                numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, &insufficient, 0);
                 numbat_reset_all_moves();
                 game[game_moves] = best_board;
                 ++game_moves;
@@ -53,7 +53,7 @@ do_both(void)
                 printf("\n");
                 key_hit = ui_data_available();
         }
-        while (move_count > 0 && !(mate || stalemate || thrice_rep || fifty_move || insufficient) && tc_status == TC_OK && !key_hit);
+        while (move_count > 0 && !(mate || stalemate || fifty_move || insufficient) && tc_status == TC_OK && !key_hit);
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
@@ -66,8 +66,8 @@ do_both(void)
         else
         {
                 printf("white clock: %d, black clock %d\n", tc.main_remaining[0], tc.main_remaining[1]);
-                printf("both done: mate %d, stalemate %d, thrice rep %d, fifty move: %d, insufficient: %d\n\n",
-                       mate, stalemate, thrice_rep, fifty_move, insufficient);
+                printf("both done: mate %d, stalemate %d, fifty move: %d, insufficient: %d\n\n",
+                       mate, stalemate, fifty_move, insufficient);
                 if (mate)
                         if (best_board.white_in_check)
                                 game_result = RESULT_BLACK_WIN;
@@ -319,11 +319,11 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 
         if (strcmp((char *)str, "status") == 0)
         {
-                uint32_t move_ready, moves_ready, mate, stalemate, thrice_rep, fifty_move, insufficient, check;
+                uint32_t move_ready, moves_ready, mate, stalemate, fifty_move, insufficient, check;
 
-                status = numbat_status(&move_ready, &moves_ready, &mate, &stalemate, &thrice_rep, 0, &fifty_move, &insufficient, &check);
-                printf("moves_ready=%d, mate=%d, stalemate=%d, thrice_rep=%d, fifty_move=%d, insufficient=%d, check=%d",
-                       moves_ready, mate, stalemate, thrice_rep, fifty_move, insufficient, check);
+                status = numbat_status(&move_ready, &moves_ready, &mate, &stalemate, 0, &fifty_move, &insufficient, &check);
+                printf("moves_ready=%d, mate=%d, stalemate=%d, fifty_move=%d, insufficient=%d, check=%d",
+                       moves_ready, mate, stalemate, fifty_move, insufficient, check);
                 if (moves_ready)
                         printf(", moves=%d, eval=%d", numbat_move_count(), numbat_initial_eval());
                 printf("\n");

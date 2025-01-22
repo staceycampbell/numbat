@@ -16,7 +16,6 @@ module numbat_top
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
-   localparam REPDET_WIDTH = 8;
    localparam HALF_MOVE_WIDTH = 10;
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, row/col to, row/col from
    localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
@@ -71,12 +70,6 @@ module numbat_top
    wire [31:0]          am_pv_ctrl_in;          // From control of control.v
    wire                 am_pv_out;              // From all_moves of all_moves.v
    wire                 am_quiescence_moves;    // From control of control.v
-   wire [`BOARD_WIDTH-1:0] am_repdet_board_in;  // From control of control.v
-   wire [3:0]           am_repdet_castle_mask_in;// From control of control.v
-   wire [REPDET_WIDTH-1:0] am_repdet_depth_in;  // From control of control.v
-   wire [REPDET_WIDTH-1:0] am_repdet_wr_addr_in;// From control of control.v
-   wire                 am_repdet_wr_en_in;     // From control of control.v
-   wire                 am_thrice_rep_out;      // From all_moves of all_moves.v
    wire [UCI_WIDTH-1:0] am_uci_out;             // From all_moves of all_moves.v
    wire                 am_white_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_white_is_attacking_out;// From all_moves of all_moves.v
@@ -106,7 +99,6 @@ module numbat_top
    wire [31:0]          initial_material_black; // From all_moves of all_moves.v
    wire [31:0]          initial_material_white; // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
-   wire                 initial_thrice_rep;     // From all_moves of all_moves.v
    wire [Q_TRANS_ADDRESS_WIDTH-1:0] q_trans_axi_araddr;// From q_trans of trans.v
    wire [1:0]           q_trans_axi_arburst;    // From q_trans of trans.v
    wire [3:0]           q_trans_axi_arcache;    // From q_trans of trans.v
@@ -287,7 +279,6 @@ module numbat_top
      (
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
       .EVAL_WIDTH (EVAL_WIDTH),
-      .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
       .UCI_WIDTH (UCI_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
@@ -299,7 +290,6 @@ module numbat_top
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
-      .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
       .initial_material_black           (initial_material_black[31:0]),
@@ -320,7 +310,6 @@ module numbat_top
       .white_is_attacking_out           (am_white_is_attacking_out[63:0]), // Templated
       .black_is_attacking_out           (am_black_is_attacking_out[63:0]), // Templated
       .eval_out                         (am_eval_out[EVAL_WIDTH-1:0]), // Templated
-      .thrice_rep_out                   (am_thrice_rep_out),     // Templated
       .half_move_out                    (am_half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .fifty_move_out                   (am_fifty_move_out),     // Templated
       .uci_out                          (am_uci_out[UCI_WIDTH-1:0]), // Templated
@@ -348,11 +337,6 @@ module numbat_top
       .killer_bonus0_in                 (am_killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
       .killer_bonus1_in                 (am_killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
       .pv_ctrl_in                       (am_pv_ctrl_in[31:0]),   // Templated
-      .repdet_board_in                  (am_repdet_board_in[`BOARD_WIDTH-1:0]), // Templated
-      .repdet_castle_mask_in            (am_repdet_castle_mask_in[3:0]), // Templated
-      .repdet_depth_in                  (am_repdet_depth_in[REPDET_WIDTH-1:0]), // Templated
-      .repdet_wr_addr_in                (am_repdet_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
-      .repdet_wr_en_in                  (am_repdet_wr_en_in),    // Templated
       .am_quiescence_moves              (am_quiescence_moves),
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));
@@ -524,7 +508,6 @@ module numbat_top
      (
       .EVAL_WIDTH (EVAL_WIDTH),
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
-      .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
       .UCI_WIDTH (UCI_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2)
@@ -540,11 +523,6 @@ module numbat_top
       .am_en_passant_col_out            (am_en_passant_col_in[3:0]), // Templated
       .am_white_to_move_out             (am_white_to_move_in),   // Templated
       .am_half_move_out                 (am_half_move_in[HALF_MOVE_WIDTH-1:0]), // Templated
-      .am_repdet_board_out              (am_repdet_board_in[`BOARD_WIDTH-1:0]), // Templated
-      .am_repdet_castle_mask_out        (am_repdet_castle_mask_in[3:0]), // Templated
-      .am_repdet_depth_out              (am_repdet_depth_in[REPDET_WIDTH-1:0]), // Templated
-      .am_repdet_wr_addr_out            (am_repdet_wr_addr_in[REPDET_WIDTH-1:0]), // Templated
-      .am_repdet_wr_en_out              (am_repdet_wr_en_in),    // Templated
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves),
       .am_quiescence_moves              (am_quiescence_moves),
@@ -612,7 +590,6 @@ module numbat_top
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
-      .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
       .initial_material_black           (initial_material_black[31:0]),
@@ -632,7 +609,6 @@ module numbat_top
       .am_black_is_attacking_in         (am_black_is_attacking_out[63:0]), // Templated
       .am_capture_in                    (am_capture_out),        // Templated
       .am_eval_in                       (am_eval_out[EVAL_WIDTH-1:0]), // Templated
-      .am_thrice_rep_in                 (am_thrice_rep_out),     // Templated
       .am_half_move_in                  (am_half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .am_fifty_move_in                 (am_fifty_move_out),     // Templated
       .am_uci_in                        (am_uci_out[UCI_WIDTH-1:0]), // Templated
@@ -743,7 +719,7 @@ module numbat_top
       .trans_axi_arcache                (trans_axi_arcache[3:0]),
       .trans_axi_arid                   (6'b0),                  // Templated
       .trans_axi_arlen                  (trans_axi_arlen[7:0]),
-      .trans_axi_arlock                 (trans_axi_arlock[0:0]),
+      .trans_axi_arlock                 (trans_axi_arlock),
       .trans_axi_arprot                 (trans_axi_arprot[2:0]),
       .trans_axi_arqos                  (trans_axi_arqos[3:0]),
       .trans_axi_arsize                 (trans_axi_arsize[2:0]),
@@ -754,7 +730,7 @@ module numbat_top
       .trans_axi_awcache                (trans_axi_awcache[3:0]),
       .trans_axi_awid                   (6'b0),                  // Templated
       .trans_axi_awlen                  (trans_axi_awlen[7:0]),
-      .trans_axi_awlock                 (trans_axi_awlock[0:0]),
+      .trans_axi_awlock                 (trans_axi_awlock),
       .trans_axi_awprot                 (trans_axi_awprot[2:0]),
       .trans_axi_awqos                  (trans_axi_awqos[3:0]),
       .trans_axi_awsize                 (trans_axi_awsize[2:0]),

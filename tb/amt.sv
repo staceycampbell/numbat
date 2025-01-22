@@ -4,7 +4,6 @@ module amt;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
-   localparam REPDET_WIDTH = 8;
    localparam HALF_MOVE_WIDTH = 10;
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, to, from
    localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
@@ -28,11 +27,6 @@ module amt;
 
    reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index = 0;
    reg                            display_move = 0;
-   reg [`BOARD_WIDTH - 1:0]       repdet_board = 0;
-   reg [3:0]                      repdet_castle_mask = 0;
-   reg [REPDET_WIDTH - 1:0]       repdet_depth = 0;
-   reg [REPDET_WIDTH - 1:0]       repdet_wr_addr = 0;
-   reg                            repdet_wr_en = 0;
    reg                            am_quiescence_moves = 0; // 0 - all moves to be considered for this testbench
    reg [`BOARD_WIDTH-1:0]         killer_board = 0;
    reg signed [EVAL_WIDTH-1:0]    killer_bonus0 = 0;
@@ -75,10 +69,8 @@ module amt;
    wire [31:0]          initial_material_black; // From all_moves of all_moves.v
    wire [31:0]          initial_material_white; // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
-   wire                 initial_thrice_rep;     // From all_moves of all_moves.v
    wire                 insufficient_material_out;// From all_moves of all_moves.v
    wire                 pv_out;                 // From all_moves of all_moves.v
-   wire                 thrice_rep_out;         // From all_moves of all_moves.v
    wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
    wire                 white_in_check_out;     // From all_moves of all_moves.v
    wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
@@ -168,8 +160,6 @@ module amt;
                    $display("checkmate");
                  else if (initial_stalemate)
                    $display("stalemate");
-                 if (initial_thrice_rep)
-                   $display("repetition");
                  state <= STATE_DONE_0;
               end
             else
@@ -210,7 +200,6 @@ module amt;
      (
       .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2),
       .EVAL_WIDTH (EVAL_WIDTH),
-      .REPDET_WIDTH (REPDET_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
       .UCI_WIDTH (UCI_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
@@ -222,7 +211,6 @@ module amt;
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
-      .initial_thrice_rep               (initial_thrice_rep),
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
       .initial_material_black           (initial_material_black[31:0]),
@@ -243,7 +231,6 @@ module amt;
       .white_is_attacking_out           (white_is_attacking_out[63:0]),
       .black_is_attacking_out           (black_is_attacking_out[63:0]),
       .eval_out                         (eval_out[EVAL_WIDTH-1:0]),
-      .thrice_rep_out                   (thrice_rep_out),
       .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
       .fifty_move_out                   (fifty_move_out),
       .uci_out                          (uci_out[UCI_WIDTH-1:0]),
@@ -271,11 +258,6 @@ module amt;
       .killer_bonus0_in                 (killer_bonus0[EVAL_WIDTH-1:0]), // Templated
       .killer_bonus1_in                 (killer_bonus1[EVAL_WIDTH-1:0]), // Templated
       .pv_ctrl_in                       (pv_ctrl[31:0]),         // Templated
-      .repdet_board_in                  (repdet_board[`BOARD_WIDTH-1:0]), // Templated
-      .repdet_castle_mask_in            (repdet_castle_mask[3:0]), // Templated
-      .repdet_depth_in                  (repdet_depth[REPDET_WIDTH-1:0]), // Templated
-      .repdet_wr_addr_in                (repdet_wr_addr[REPDET_WIDTH-1:0]), // Templated
-      .repdet_wr_en_in                  (repdet_wr_en),          // Templated
       .am_quiescence_moves              (am_quiescence_moves),
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));

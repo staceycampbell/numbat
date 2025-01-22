@@ -20,8 +20,6 @@
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
 
-static uint32_t repdet_game_moves;
-
 static uint64_t all_moves_ticks;
 static uint32_t nodes_visited, n_nodes_visited, q_nodes_visited, trans_collision, no_trans, q_no_trans;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
@@ -38,14 +36,52 @@ static uint32_t abort_test_move_count;
 
 static const uint32_t debug_pv_info = 1;
 
+static uint32_t
+board_match(const board_t * a, const board_t * b)
+{
+        int32_t cmp;
+
+        cmp = memcmp(a->board, b->board, 32);
+        if (cmp != 0)
+                return 0;
+
+        return a->castle_mask == b->castle_mask;
+}
+
+static uint32_t
+repeat_draw(uint32_t ply_count, const board_t * board)
+{
+        int32_t count, i;
+
+        count = 0;
+        i = (int32_t) ply_count - 1;
+        while (i >= 0 && count < 2)
+        {
+                if (board_match(board_vert[i], board))
+                        ++count;
+                --i;
+        }
+        if (count == 2)
+                return 1;
+        i = game_moves - 1;
+        while (i >= 0 && count < 2)
+        {
+                if (board_match(&game[i], board))
+                        ++count;
+                --i;
+        }
+
+        return count == 2;
+}
+
 static int32_t
 nm_initial_eval(uint32_t wtm, uint32_t ply)
 {
         int32_t value;
-        uint32_t thrice_rep, stalemate, fifty_move;
+        uint32_t stalemate, fifty_move;
 
-        numbat_status(0, 0, 0, &stalemate, &thrice_rep, 0, &fifty_move, 0, 0);
-        if (stalemate || fifty_move || thrice_rep)
+        numbat_status(0, 0, 0, &stalemate, 0, &fifty_move, 0, 0);
+        if (stalemate || fifty_move)
                 return 0;
 
         value = numbat_initial_eval();
@@ -73,81 +109,13 @@ abort_test(void)
         abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
 }
 
-static inline void
-rep_table_idle_test(const char *func, const char *file, uint32_t line)
-{
-        uint32_t am_idle;
-
-        numbat_status(0, 0, 0, 0, 0, &am_idle, 0, 0, 0);
-        if (!am_idle)
-        {
-                printf("%s: all moves state machine not idle, stopping (%s %d)\n", func, file, line);
-                while (1);
-        }
-}
-
-static void
-rep_table_entry(const uint32_t board[8], uint32_t castle_mask, uint32_t addr)
-{
-        numbat_repdet_board(board);
-        numbat_repdet_castle_mask(castle_mask);
-        numbat_repdet_write(addr);
-}
-
-static void
-rep_table_init(uint32_t exclude_initial_board)
-{
-        int32_t index;
-        uint32_t half_move_zero;
-
-        rep_table_idle_test(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        if (exclude_initial_board)
-        {
-                repdet_game_moves = 0;
-                index = (int32_t) game_moves - 2;
-                if (index < 0)
-                {
-                        numbat_repdet_depth(0);
-                        return;
-                }
-        }
-        else
-                index = game_moves - 1;
-        repdet_game_moves = 0;
-        half_move_zero = 0;
-        do
-        {
-                if (game[index].half_move_clock >= 0)
-                {
-                        rep_table_entry(game[index].board, game[index].castle_mask, repdet_game_moves);
-                        half_move_zero = game[index].half_move_clock == 0;
-                        ++repdet_game_moves;
-                }
-                --index;
-        }
-        while (index >= 0 && !half_move_zero);
-        numbat_repdet_depth(repdet_game_moves);
-}
-
-static void
-rep_table_load(const board_t * board, uint32_t ply)
-{
-        int32_t index, entries;
-
-        rep_table_idle_test(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-        index = repdet_game_moves + ply;
-        entries = index + 1;
-        rep_table_entry(board->board, board->castle_mask, entries);
-        numbat_repdet_depth(entries);
-}
-
 static uint32_t
 load_root_nodes(board_t boards[MAX_POSITIONS])
 {
         int32_t i;
         uint32_t moves_ready, move_count;
 
-        numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0, 0);
+        numbat_status(0, &moves_ready, 0, 0, 0, 0, 0, 0);
         if (!moves_ready)
         {
                 printf("%s: moves_ready not set (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -209,6 +177,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         uint32_t collision;
         trans_t trans;
         int32_t alpha_orig;
+        uint32_t in_check;
 
         ++nodes_visited;
         ++q_nodes_visited;
@@ -230,7 +199,11 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         XTime_GetTime(&am_t_stop);
         all_moves_ticks += am_t_stop - am_t_start;
 
-        numbat_status(0, 0, &mate, &stalemate, 0, 0, &fifty_move, 0, 0);
+        numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, 0, 0);
+
+        in_check = board->white_in_check || board->black_in_check;
+        if (repeat_draw(ply, board) && !in_check)
+                return 0;       // draw score
 
         value = nm_initial_eval(board->white_to_move, ply);
         move_count = numbat_move_count();
@@ -290,7 +263,6 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         }
 
         numbat_reset_all_moves();
-        rep_table_load(board, ply);     // update thrice rep table
 
         index = 0;
         do
@@ -299,10 +271,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
                 board_eval = board_ptr[index]->eval;
                 if (!board->white_to_move)
                         board_eval = -board_eval;
-                if (board_eval == GLOBAL_VALUE_KING)
-                        value = GLOBAL_VALUE_KING - ply;
-                else
-                        value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+                value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                 if (abort_search)
                         return 0;
                 if (value > alpha)
@@ -370,6 +339,21 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         numbat_write_board_basic(board);
         trans_lookup_init();    // trigger transposition table lookup
 
+        XTime_GetTime(&am_t_start);
+        numbat_write_board_wait(board, 0);
+        XTime_GetTime(&am_t_stop);
+        all_moves_ticks += am_t_stop - am_t_start;
+
+        value = nm_initial_eval(board->white_to_move, ply);
+        move_count = numbat_move_count();
+
+        if (move_count == 0)
+                return value;
+
+        in_check = board->white_in_check || board->black_in_check;
+        if (repeat_draw(ply, board) && !in_check)
+                return 0;       // draw score
+
         trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
         numbat_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.entry_valid);
         trans_collision += collision;
@@ -392,17 +376,6 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         if (abort_search)
                 return 0;       // will be ignored
 
-        XTime_GetTime(&am_t_start);
-        numbat_write_board_wait(board, 0);
-        XTime_GetTime(&am_t_stop);
-        all_moves_ticks += am_t_stop - am_t_start;
-
-        value = nm_initial_eval(board->white_to_move, ply);
-        move_count = numbat_move_count();
-
-        if (move_count == 0)
-                return value;
-
         board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
         for (index = 0; index < move_count; ++index)
         {
@@ -411,15 +384,13 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         }
 
         numbat_reset_all_moves();
-        rep_table_load(board, ply);     // update thrice rep table
 
-        in_check = board->white_in_check || board->black_in_check;
         index = 0;
-        eval_delta = depth * 15;
+        eval_delta = depth * 10;
         do
         {
                 board_vert[ply] = board_ptr[index];
-                if (board_ptr[index]->thrice_rep || board_ptr[index]->fifty_move)
+                if (board_ptr[index]->fifty_move)
                         board_eval = 0;
                 else
                 {
@@ -427,8 +398,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                         if (!board->white_to_move)
                                 board_eval = -board_eval;
                 }
-                if (depth <= 0
-                         && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
+                if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
                 {
                         value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                         if (abort_search)
@@ -552,7 +522,6 @@ nm_top(const tc_t * tc, uint32_t * resign)
         all_moves_ticks = 0;
 
         numbat_reset_all_moves();
-        rep_table_init(1);
         numbat_write_board_basic(&game[game_index]);
         numbat_write_board_wait(&game[game_index], 0);
         move_count = numbat_move_count();
@@ -574,7 +543,6 @@ nm_top(const tc_t * tc, uint32_t * resign)
         }
 
         numbat_reset_all_moves();
-        rep_table_init(0);
 
         for (i = 0; i < move_count; ++i)
                 board_ptr[i] = &root_node_boards[i];
@@ -584,12 +552,12 @@ nm_top(const tc_t * tc, uint32_t * resign)
         else
         {
                 duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES / 25.0) * (double)move_count + 0.5;
-                duration_seconds += (double)tc->increment * 7.0 / 8.0 + 0.5;
+                duration_seconds += (double)tc->increment * 0.6;
                 if (duration_seconds * 5 > tc->main_remaining[tc->side])
-                        duration_seconds /= 8;
+                        duration_seconds /= 10;
                 if (duration_seconds <= 0)
                         duration_seconds = 1;
-                if (duration_seconds > 60)
+                else if (duration_seconds > 60)
                         duration_seconds = 60;
         }
         printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);

@@ -18,7 +18,6 @@ module display_board #
     input                           white_in_check,
     input                           black_in_check,
     input signed [EVAL_WIDTH - 1:0] eval,
-    input                           thrice_rep,
     input [HALF_MOVE_WIDTH - 1:0]   half_move,
     input                           display,
     input [UCI_WIDTH - 1:0]         uci,
@@ -99,8 +98,8 @@ module display_board #
               else
                 if (black_in_check)
                   $display("Black in check.");
-              $display("castle=%04b en_passant=%04b capture=%1b, pv=%1b, eval=%2d thrice: %d, half_move: %2d",
-                       castle_mask, en_passant_col, capture, pv, eval, thrice_rep, half_move);
+              $display("castle=%04b en_passant=%04b capture=%1b, pv=%1b, eval=%2d half_move: %2d",
+                       castle_mask, en_passant_col, capture, pv, eval, half_move);
               $display("uci_promotion=%1d uci_to_row=%1d uci_to_col=%1d uci_from_row=%1d uci_from_col=%1d",
                        uci_promotion, uci_to_row, uci_to_col, uci_from_row, uci_from_col);
               display_done <= 1;

@@ -22,6 +22,5 @@ numbat/numbat_1.gen/sources_1/bd/mpsoc_block_diag/hdl/mpsoc_block_diag_wrapper.v
 ../numbat.vh
 ../popcount.sv
 ../random_constant.vh
-../rep_det.sv
 ../trans.sv
 ../xorshift32.sv
