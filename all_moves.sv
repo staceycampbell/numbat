@@ -1012,6 +1012,8 @@ module all_moves #
                 begin
                    initial_mate <= 0;
                    initial_stalemate <= 0;
+                   if (initial_thrice_rep || initial_fifty_move)
+                     initial_eval <= 0;
                 end
               am_moves_ready <= 1;
               if (am_clear_moves)
@@ -1137,7 +1139,10 @@ module all_moves #
               legal_uci_ram_wr <= attack_uci;
               legal_attack_white_pop_ram_wr <= attack_test_attack_white_pop;
               legal_attack_black_pop_ram_wr <= attack_test_attack_black_pop;
-	      legal_eval_ram_wr <= eval;
+              if (rd_thrice_rep || insufficient_material || half_move >= 99)
+	        legal_eval_ram_wr <= 0;
+              else
+	        legal_eval_ram_wr <= eval;
               legal_eval_pv_flag_wr <= eval_pv_flag;
               legal_thrice_rep_ram_wr <= rd_thrice_rep;
               legal_insufficent_material_ram_wr <= insufficient_material;
