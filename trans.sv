@@ -122,7 +122,7 @@ module trans #
    
    (* ram_style = "distributed" *) reg [79:0] zob_rand_board [0:767];
    (* ram_style = "distributed" *) reg [79:0] zob_rand_en_passant_col [0:31];
-   (* ram_style = "distributed" *) reg [3:0] zob_piece_lookup [1:14];
+   (* ram_style = "distributed" *) reg [3:0]  zob_piece_lookup [1:14];
    (* ram_style = "distributed" *) reg [79:0] zob_rand_castle_mask [0:15];
    reg [79:0]                             zob_rand_btm;
 
@@ -224,11 +224,22 @@ module trans #
      end
 
    always @(posedge clk)
+     begin
+        for (i = 0; i < 64; i = i + 1)
+          if (board[i * `PIECE_BITS+:`PIECE_BITS] != `EMPTY_POSN)
+            hash_0[i] <= zob_rand_board[zob_piece_lookup[board[i * `PIECE_BITS+:`PIECE_BITS]] << 6 | i];
+          else
+            hash_0[i] <= 0;
+        for (i = 0; i < 16; i = i + 1)
+          hash_1[i] <= hash_0[i * 4 + 0] ^ hash_0[i * 4 + 1] ^ hash_0[i * 4 + 2] ^ hash_0[i * 4 + 3];
+        for (i = 0; i < 4; i = i + 1)
+          hash_2[i] <= hash_1[i * 4 + 0] ^ hash_1[i * 4 + 1] ^ hash_1[i * 4 + 2] ^ hash_1[i * 4 + 3];
+     end
+
+   always @(posedge clk)
      case (state)
        STATE_IDLE :
          begin
-            entry_lookup <= entry_lookup_in && ~entry_lookup_in_z;
-            entry_store <= entry_store_in && ~entry_store_in_z;
             board <= board_in;
             white_to_move <= white_to_move_in;
             castle_mask <= castle_mask_in;
@@ -294,26 +305,11 @@ module trans #
        STATE_CLEAR_TRANS_DONE :
          state <= STATE_IDLE;
        STATE_HASH_0 :
-         begin
-            for (i = 0; i < 64; i = i + 1)
-              if (board[i * `PIECE_BITS+:`PIECE_BITS] != `EMPTY_POSN)
-                hash_0[i] <= zob_rand_board[zob_piece_lookup[board[i * `PIECE_BITS+:`PIECE_BITS]] << 6 | i];
-              else
-                hash_0[i] <= 0;
-            state <= STATE_HASH_1;
-         end
+         state <= STATE_HASH_1;
        STATE_HASH_1 :
-         begin
-            for (i = 0; i < 16; i = i + 1)
-              hash_1[i] <= hash_0[i * 4 + 0] ^ hash_0[i * 4 + 1] ^ hash_0[i * 4 + 2] ^ hash_0[i * 4 + 3];
-            state <= STATE_HASH_2;
-         end
+         state <= STATE_HASH_2;
        STATE_HASH_2 :
-         begin
-            for (i = 0; i < 4; i = i + 1)
-              hash_2[i] <= hash_1[i * 4 + 0] ^ hash_1[i * 4 + 1] ^ hash_1[i * 4 + 2] ^ hash_1[i * 4 + 3];
-            state <= STATE_HASH_3;
-         end
+         state <= STATE_HASH_3;
        STATE_HASH_3 :
          begin
             if (white_to_move)

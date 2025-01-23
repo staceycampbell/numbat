@@ -21,7 +21,7 @@ module evaluate_castling #
     output                               eval_valid
     );
 
-   localparam LATENCY_COUNT = 4;
+   localparam LATENCY_COUNT = 6;
 
    localparam OPPOSITION_QUEEN = WHITE_CASTLING ? `BLACK_QUEN : `WHITE_QUEN;
    localparam MY_KING = WHITE_CASTLING ? `WHITE_KING : `BLACK_KING;
@@ -34,8 +34,11 @@ module evaluate_castling #
    localparam ROOK_LONG = WHITE_CASTLING ? 0 << 3 | 0 : 7 << 3 | 0;
 
    reg signed [EVAL_WIDTH - 1:0]         enemy_queen_t1;
+   reg signed [EVAL_WIDTH - 1:0]         enemy_queen_t2;
    reg signed [EVAL_WIDTH - 1:0]         castle_eval_t1;
    reg signed [EVAL_WIDTH - 1:0]         castle_eval_t2;
+   reg signed [EVAL_WIDTH - 1:0]         castle_eval_t3;
+   reg signed [EVAL_WIDTH - 1:0]         castle_eval_t4;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -65,11 +68,14 @@ module evaluate_castling #
              else if (board[ROOK_LONG * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_ROOK)
                castle_eval_t1 <= -20; // lost castling via king move
           end
-        castle_eval_t2 <= castle_eval_t1 * enemy_queen_t1;
+        castle_eval_t2 <= castle_eval_t1;
+        enemy_queen_t2 <= enemy_queen_t1;
+        castle_eval_t3 <= castle_eval_t2 * enemy_queen_t2;
+        castle_eval_t4 <= castle_eval_t3;
         if (WHITE_CASTLING)
-          eval_mg <= castle_eval_t2;
+          eval_mg <= castle_eval_t4;
         else
-          eval_mg <= -castle_eval_t2;
+          eval_mg <= -castle_eval_t4;
      end
 
    /* latency_sm AUTO_TEMPLATE (

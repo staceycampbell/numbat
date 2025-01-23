@@ -25,6 +25,7 @@ module control #
     output reg [3:0]                      am_en_passant_col_out,
     output reg                            am_white_to_move_out,
     output reg [HALF_MOVE_WIDTH-1:0]      am_half_move_out,
+    output reg [3:0]                      am_castle_mask_orig_out,
 
     output reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index,
     output reg                            am_clear_moves,
@@ -192,6 +193,8 @@ module control #
             5'h02 : {am_white_to_move_out, am_castle_mask_out, am_en_passant_col_out} <= ctrl0_din;
             5'h03 : am_half_move_out <= ctrl0_din;
             5'h04 : am_quiescence_moves <= ctrl0_din[0];
+            5'h05 : am_castle_mask_orig_out[3:0] <= ctrl0_din[3:0];
+
             5'h08 : // 128 bit transaction
               for (byte_en = 0; byte_en < 16; byte_en = byte_en + 1)
                 if (ctrl0_we[byte_en])

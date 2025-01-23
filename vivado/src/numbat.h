@@ -181,6 +181,12 @@ numbat_read64(uint32_t reg)
         return val;
 }
 
+static inline void
+numbat_castle_mask_orig(uint32_t castle_mask)
+{
+        numbat_write(5, castle_mask);
+}
+
 #define FAN_MAX_DUTY_CYCLE 3999
 
 static inline void

@@ -40,6 +40,7 @@ module tb;
    reg [MAX_DEPTH_LOG2-1:0]       killer_ply = 2;
    reg                            killer_update = 0;
    reg [31:0]                     pv_ctrl = 0;
+   reg [3:0]                      castle_mask_orig = 4'b1111;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -329,6 +330,7 @@ module tb;
       .castle_mask_in                   (castle_mask[3:0]),      // Templated
       .en_passant_col_in                (en_passant_col[3:0]),   // Templated
       .half_move_in                     (half_move[HALF_MOVE_WIDTH-1:0]), // Templated
+      .castle_mask_orig_in              (castle_mask_orig[3:0]), // Templated
       .killer_ply_in                    (killer_ply[MAX_DEPTH_LOG2-1:0]), // Templated
       .killer_board_in                  (killer_board[`BOARD_WIDTH-1:0]), // Templated
       .killer_update_in                 (killer_update),         // Templated

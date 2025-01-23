@@ -25,6 +25,7 @@ module all_moves #
     input [3:0]                          castle_mask_in,
     input [3:0]                          en_passant_col_in,
     input [HALF_MOVE_WIDTH - 1:0]        half_move_in,
+    input [3:0]                          castle_mask_orig_in,
 
     input [MAX_DEPTH_LOG2 - 1:0]         killer_ply_in,
     input [`BOARD_WIDTH - 1:0]           killer_board_in,
@@ -91,8 +92,9 @@ module all_moves #
    reg [`BOARD_WIDTH - 1:0]              board;
    reg                                   white_to_move;
    reg [3:0]                             castle_mask;
-   reg [3:0]                             en_passant_col;
+   reg [3:0]                             en_passant_col, en_passant_col_r;
    reg [HALF_MOVE_WIDTH - 1:0]           half_move;
+   reg [3:0]                             castle_mask_orig;
 
    reg                                   legal_ram_wr_addr_init;
 
@@ -144,7 +146,6 @@ module all_moves #
    reg                                   initial_evaluate_go, legal_evaluate_go, evaluate_go_r;
    reg [UCI_WIDTH - 1:0]                 initial_evaluate_uci, legal_evaluate_uci, evaluate_uci_r;
    reg [3:0]                             initial_evaluate_castle_mask, legal_evaluate_castle_mask, evaluate_castle_mask_r;
-   reg [3:0]                             initial_evaluate_castle_mask_orig, legal_evaluate_castle_mask_orig, evaluate_castle_mask_orig_r;
    reg                                   initial_evaluate_white_to_move, legal_evaluate_white_to_move, evaluate_white_to_move_r;
 
    reg                                   initial_clear_eval, legal_clear_eval;
@@ -461,6 +462,8 @@ module all_moves #
         col_r <= col;
         row_r <= row;
 
+        en_passant_col_r <= en_passant_col;
+
         white_to_move_ram_wr <= ~white_to_move;
 
         if (initial_evaluation_complete)
@@ -469,7 +472,6 @@ module all_moves #
              evaluate_board_r <= legal_evaluate_board;
              evaluate_uci_r <= legal_evaluate_uci;
              evaluate_castle_mask_r <= legal_evaluate_castle_mask;
-             evaluate_castle_mask_orig_r <= legal_evaluate_castle_mask_orig;
              evaluate_white_to_move_r <= legal_evaluate_white_to_move;
           end
         else
@@ -478,7 +480,6 @@ module all_moves #
              evaluate_board_r <= initial_evaluate_board;
              evaluate_uci_r <= initial_evaluate_uci;
              evaluate_castle_mask_r <= initial_evaluate_castle_mask;
-             evaluate_castle_mask_orig_r <= initial_evaluate_castle_mask_orig;
              evaluate_white_to_move_r <= initial_evaluate_white_to_move;
           end
 
@@ -504,12 +505,12 @@ module all_moves #
         pawn_adv2 <= board[idx[pawn_row_adv1[2:0]][pawn_col_adv1[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN &&
                      board[idx[pawn_row_adv2[2:0]][pawn_col_adv2[2:0]]+:`PIECE_WIDTH] == `EMPTY_POSN;
 
-        pawn_en_passant_mask[0] <= en_passant_col[`EN_PASSANT_VALID_BIT] &&
+        pawn_en_passant_mask[0] <= en_passant_col_r[`EN_PASSANT_VALID_BIT] &&
                                    pawn_col_cap_left >= 0 &&
-                                   en_passant_col[2:0] == pawn_col_cap_left[2:0];
-        pawn_en_passant_mask[1] <= en_passant_col[`EN_PASSANT_VALID_BIT] &&
+                                   en_passant_col_r[2:0] == pawn_col_cap_left[2:0];
+        pawn_en_passant_mask[1] <= en_passant_col_r[`EN_PASSANT_VALID_BIT] &&
                                    pawn_col_cap_right <= 7 &&
-                                   en_passant_col[2:0] == pawn_col_cap_right[2:0];
+                                   en_passant_col_r[2:0] == pawn_col_cap_right[2:0];
         pawn_do_init <= row_r == pawn_init_row[white_to_move];
         pawn_do_en_passant <= row_r == pawn_en_passant_row[white_to_move];
         pawn_do_promote <= row_r == pawn_promote_row[white_to_move];
@@ -592,12 +593,12 @@ module all_moves #
               castle_mask <= castle_mask_in;
               en_passant_col <= en_passant_col_in;
               half_move <= half_move_in;
+              castle_mask_orig <= castle_mask_orig_in;
 
               initial_evaluate_board <= board_in;
               initial_evaluate_uci <= 0; // PV flag will not be assigned
               initial_evaluate_white_to_move <= white_to_move_in;
               initial_evaluate_castle_mask <= castle_mask_in;
-              initial_evaluate_castle_mask_orig <= castle_mask_in;
               initial_evaluate_go <= board_valid_in;
 
               initial_insufficient_material <= 0;
@@ -797,10 +798,10 @@ module all_moves #
            begin
               board_ram_wr <= board;
               board_ram_wr[idx[row_r[2:0]][col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
-              board_ram_wr[idx[row_r[2:0]][en_passant_col[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
-              board_ram_wr[idx[pawn_enp_row[pawn_en_passant_count][2:0]][en_passant_col[2:0]]+:`PIECE_WIDTH] <= piece;
+              board_ram_wr[idx[row_r[2:0]][en_passant_col_r[2:0]]+:`PIECE_WIDTH] <= `EMPTY_POSN;
+              board_ram_wr[idx[pawn_enp_row[pawn_en_passant_count][2:0]][en_passant_col_r[2:0]]+:`PIECE_WIDTH] <= piece;
               uci_to_row_ram_wr <= pawn_enp_row[pawn_en_passant_count][2:0];
-              uci_to_col_ram_wr <= en_passant_col[2:0];
+              uci_to_col_ram_wr <= en_passant_col_r[2:0];
               if (pawn_en_passant_mask[pawn_en_passant_count])
                 begin
                    capture_ram_wr <= 1;
@@ -1147,7 +1148,6 @@ module all_moves #
     .uci_in (evaluate_uci_r[]),
     .white_to_move (evaluate_white_to_move_r),
     .castle_mask (evaluate_castle_mask_r[]),
-    .castle_mask_orig (evaluate_castle_mask_orig_r[]),
     .board_valid (evaluate_go_r),
     .killer_\(.*\) (killer_\1_in[]),
     );*/
@@ -1177,7 +1177,7 @@ module all_moves #
       .board_in                         (evaluate_board_r[`BOARD_WIDTH-1:0]), // Templated
       .uci_in                           (evaluate_uci_r[UCI_WIDTH-1:0]), // Templated
       .castle_mask                      (evaluate_castle_mask_r[3:0]), // Templated
-      .castle_mask_orig                 (evaluate_castle_mask_orig_r[3:0]), // Templated
+      .castle_mask_orig                 (castle_mask_orig[3:0]),
       .clear_eval                       (clear_eval),
       .white_to_move                    (evaluate_white_to_move_r), // Templated
       .white_is_attacking               (white_is_attacking[63:0]),

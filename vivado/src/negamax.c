@@ -11,7 +11,7 @@
 #pragma GCC optimize ("O2")
 
 #define FIXED_TIME 60
-#define MID_GAME_HALF_MOVES 40
+#define MID_GAME_HALF_MOVES 60
 
 #define LARGE_EVAL (1 << 20)
 
@@ -55,6 +55,8 @@ repeat_draw(uint32_t ply_count, const board_t * board)
 
         count = 0;
         i = (int32_t) ply_count - 1;
+        if (board_vert[i]->half_move_clock < 2)
+                return 0;
         while (i >= 0 && count < 2)
         {
                 if (board_match(board_vert[i], board))
@@ -406,7 +408,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 else if (depth > 0)
                 {
-                        if (index == 0 || ply < 2 || in_check || board_eval + eval_delta > alpha || alpha > GLOBAL_VALUE_KING - 200)
+                        if (index == 0 || ply < 2 || in_check || board_eval + eval_delta > alpha)
                                 value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                         else
                                 value = -GLOBAL_VALUE_KING;
@@ -522,6 +524,7 @@ nm_top(const tc_t * tc, uint32_t * resign)
         all_moves_ticks = 0;
 
         numbat_reset_all_moves();
+        numbat_castle_mask_orig(game[game_index].castle_mask); // pre-search castle state
         numbat_write_board_basic(&game[game_index]);
         numbat_write_board_wait(&game[game_index], 0);
         move_count = numbat_move_count();
@@ -551,10 +554,10 @@ nm_top(const tc_t * tc, uint32_t * resign)
                 duration_seconds = UINT64_C(FIXED_TIME);
         else
         {
-                duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES / 25.0) * (double)move_count + 0.5;
-                duration_seconds += (double)tc->increment * 0.6;
+                duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES) + 0.5;
+                duration_seconds += (double)tc->increment * 0.8 + 0.5;
                 if (duration_seconds * 5 > tc->main_remaining[tc->side])
-                        duration_seconds /= 10;
+                        duration_seconds /= 8;
                 if (duration_seconds <= 0)
                         duration_seconds = 1;
                 else if (duration_seconds > 60)

@@ -45,6 +45,7 @@ module numbat_top
    wire [`BOARD_WIDTH-1:0] am_board_out;        // From all_moves of all_moves.v
    wire                 am_capture_out;         // From all_moves of all_moves.v
    wire [3:0]           am_castle_mask_in;      // From control of control.v
+   wire [3:0]           am_castle_mask_orig_in; // From control of control.v
    wire [3:0]           am_castle_mask_out;     // From all_moves of all_moves.v
    wire                 am_clear_moves;         // From control of control.v
    wire [3:0]           am_en_passant_col_in;   // From control of control.v
@@ -330,6 +331,7 @@ module numbat_top
       .castle_mask_in                   (am_castle_mask_in[3:0]), // Templated
       .en_passant_col_in                (am_en_passant_col_in[3:0]), // Templated
       .half_move_in                     (am_half_move_in[HALF_MOVE_WIDTH-1:0]), // Templated
+      .castle_mask_orig_in              (am_castle_mask_orig_in[3:0]), // Templated
       .killer_ply_in                    (am_killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
       .killer_board_in                  (am_killer_board_in[`BOARD_WIDTH-1:0]), // Templated
       .killer_update_in                 (am_killer_update_in),   // Templated
@@ -523,6 +525,7 @@ module numbat_top
       .am_en_passant_col_out            (am_en_passant_col_in[3:0]), // Templated
       .am_white_to_move_out             (am_white_to_move_in),   // Templated
       .am_half_move_out                 (am_half_move_in[HALF_MOVE_WIDTH-1:0]), // Templated
+      .am_castle_mask_orig_out          (am_castle_mask_orig_in[3:0]), // Templated
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves),
       .am_quiescence_moves              (am_quiescence_moves),
