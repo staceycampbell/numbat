@@ -21,7 +21,7 @@ module evaluate_tropism #
     output                               eval_valid
     );
 
-   localparam LATENCY_COUNT = 9;
+   localparam LATENCY_COUNT = 11;
    
    localparam MY_PAWN = WHITE ? `WHITE_PAWN : `BLACK_PAWN;
    localparam OP_PAWN = WHITE ? `BLACK_PAWN : `WHITE_PAWN;
@@ -67,6 +67,7 @@ module evaluate_tropism #
    reg [DEFECT_WIDTH - 1:0]              defects_t7;
    reg 					 castle_min3_t7;
    reg [3:0]                             defect_index_t8;
+   reg [7:0]                             ksi_final_t9;
    
    // should be empty
    /*AUTOREGINPUT*/
@@ -170,10 +171,11 @@ module evaluate_tropism #
         for (i = 0; i < 4; i = i + 1)
           ksi_t7[i] <= ksi_t6[i * 4 + 0] + ksi_t6[i * 4 + 1] + ksi_t6[i * 4 + 2] + ksi_t6[i * 4 + 3];
         ksi_t8 <= ksi_t7[0] + ksi_t7[1] + ksi_t7[2] + ksi_t7[3];
+        ksi_final_t9 <= (defect_index_t8 << 4) | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
         if (WHITE)
-          eval_mg <= king_safety[ksi_final_t8];
+          eval_mg <= king_safety[ksi_final_t9];
         else
-          eval_mg <= -king_safety[ksi_final_t8];
+          eval_mg <= -king_safety[ksi_final_t9];
      end
    
    always @(posedge clk)
