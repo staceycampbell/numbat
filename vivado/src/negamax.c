@@ -486,7 +486,7 @@ nm_init(void)
 }
 
 board_t
-nm_top(const tc_t * tc, uint32_t * resign)
+nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
 {
         int32_t i, game_index;
         int32_t alpha, beta;
@@ -560,8 +560,8 @@ nm_top(const tc_t * tc, uint32_t * resign)
                         duration_seconds /= 8;
                 if (duration_seconds <= 0)
                         duration_seconds = 1;
-                else if (duration_seconds > 60)
-                        duration_seconds = 60;
+                else if (duration_seconds > 15 && ! opponent_time)
+                        duration_seconds = 15; // deal with "moretime" people on FICS
         }
         printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
         time_limit = t_start + duration_seconds * UINT64_C(COUNTS_PER_SECOND);

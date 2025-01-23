@@ -823,7 +823,7 @@ extern uint32_t numbat_get_piece(const board_t * board, uint32_t row, uint32_t c
 extern void numbat_read_uci(uci_t * uci);
 
 extern void nm_init(void);
-extern board_t nm_top(const tc_t * tc, uint32_t * resign);
+extern board_t nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);
