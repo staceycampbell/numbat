@@ -11,7 +11,7 @@ then
     exit 1
 fi
 runno=0
-while [ $runno -lt 10 ]
+while [ $runno -lt 50 ]
 do
     seed=`hexdump -vn4 -e'"%08X" 1 "\n"' /dev/urandom`
     tmppath=~/tmp/timing/run_$seed
