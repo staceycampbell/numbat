@@ -342,14 +342,17 @@ module control #
 
 `include "random_constant.vh"
 
-       4096 : ctrl0_dout[0] <= `RANDOM_CONSTANT ^ par_rand_r;
+       1000 : ctrl0_dout[0] <= `RANDOM_CONSTANT ^ par_rand_r[31:0];
 
        default : ctrl0_dout <= 0;
      endcase
 
    always @(posedge clk)
      begin
-        par_rand <= {xorshift32_reg[19:0],
+        par_rand <= {
+                     am_capture_in,
+                     trans_hash_in[8:0],
+                     q_trans_eval_in[9:0],
                      am_new_board_valid_out,
                      am_moves_ready,
                      initial_stalemate,
