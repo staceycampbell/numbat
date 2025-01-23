@@ -1,0 +1,13 @@
+#!/bin/bash
+for i in */numbat_top_timing_summary_routed.rpt
+do
+	grep -h -C 2 VIOL $i  | fgrep 'Source:' | sed -e 's/\[\([^]]*\)\]/[]/g' | sort -u
+done | sort | uniq -c | sort -n -r
+for i in */numbat_top_timing_summary_routed.rpt
+do
+	fgrep VIOL $i > /dev/null 2>&1
+	if [ $? -eq 1 ]
+	then
+            printf '%s passed\n' "`dirname $i`"
+        fi
+done
