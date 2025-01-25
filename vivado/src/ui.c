@@ -33,7 +33,7 @@ do_both(void)
         tc_init(&tc, tc_main * 60, tc_increment);
         do
         {
-                best_board = nm_top(&tc, 0, 1);
+                best_board = nm_top(&tc, 0, 1, 0);
                 numbat_write_board_basic(&best_board);
                 numbat_write_board_wait(&best_board, 0);
                 move_count = numbat_move_count();
@@ -344,7 +344,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         tc_ignore(&tc);
                         trans_clear_table();    // for ease of debug
                         q_trans_clear_table();  // for ease of debug
-                        best_board = nm_top(&tc, 0, 0);
+                        best_board = nm_top(&tc, 0, 0, 0);
                         numbat_write_board_basic(&best_board);
                         numbat_write_board_wait(&best_board, 0);
                         numbat_print_board(&best_board, 1);
@@ -462,6 +462,10 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         else if (strcmp((char *)str, "tt") == 0)
         {
                 trans_test();
+        }
+        else if (strcmp((char *)str, "sp") == 0)
+        {
+                selfplay();
         }
         else
         {

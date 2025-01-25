@@ -828,7 +828,7 @@ extern uint32_t numbat_get_piece(const board_t * board, uint32_t row, uint32_t c
 extern void numbat_read_uci(uci_t * uci);
 
 extern void nm_init(void);
-extern board_t nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time);
+extern board_t nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quiet);
 extern void nm_tune(const tune_t *new_tune);
 extern tune_t nm_current_tune(void);
 

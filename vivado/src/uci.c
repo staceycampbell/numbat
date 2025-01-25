@@ -64,7 +64,7 @@ uci_go(tc_t * tc, uint32_t * resign)
                 return;         // this is not the place for recursion
 
         search_running = 1;
-        best_board = nm_top(tc, resign, 0);
+        best_board = nm_top(tc, resign, 0, 0);
         game[game_moves] = best_board;
         ++game_moves;
         search_running = 0;
@@ -229,7 +229,7 @@ uci_dispatch(void)
                 {
                         pondering = 1;
                         tc_set(&pondering_tc, ! side, 10 * 60 * 1000, 0); // ponder for 10 minutes or until interupted
-                        (void)nm_top(&pondering_tc, 0, 1);
+                        (void)nm_top(&pondering_tc, 0, 1, 0);
                         pondering = 0;
                 }
         }

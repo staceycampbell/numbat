@@ -274,7 +274,13 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
                 board_vert[ply] = board_ptr[index];
                 board_eval = board_ptr[index]->eval;
                 if (!board->white_to_move)
+                {
                         board_eval = -board_eval;
+                        if (board_eval == GLOBAL_VALUE_KING)
+                                board_eval -= ply;
+                        else if (board_eval == -GLOBAL_VALUE_KING)
+                                board_eval += ply;
+                }
                 value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
                 if (abort_search)
                         return 0;
@@ -329,12 +335,18 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 
         numbat_led(ply);
 
-        pv_array[pv_index] = zero_move;
-        pv_next_index = pv_index + MAX_DEPTH - ply;
-
         node_start = n_nodes_visited;
         ++nodes_visited;
         ++n_nodes_visited;
+
+        // mate distance pruning
+        alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
+        beta = valmin(beta, GLOBAL_VALUE_KING - ply);
+        if (alpha >= beta)
+                return alpha;
+
+        pv_array[pv_index] = zero_move;
+        pv_next_index = pv_index + MAX_DEPTH - ply;
 
         alpha_orig = alpha;
 
@@ -401,6 +413,10 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                         board_eval = board_ptr[index]->eval;
                         if (!board->white_to_move)
                                 board_eval = -board_eval;
+                        if (board_eval == GLOBAL_VALUE_KING)
+                                board_eval -= ply;
+                        else if (board_eval == -GLOBAL_VALUE_KING)
+                                board_eval += ply;
                 }
                 if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
                 {
@@ -408,22 +424,20 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                         if (abort_search)
                                 return 0;       // will be ignored
                 }
-                else if (depth > 0)
-                {
-                        if (index == 0 || ply < 2 || in_check || board_eval + eval_delta > alpha)
-                                value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
-                        else
-                                value = -GLOBAL_VALUE_KING;
-                        if (abort_search)
-                                return 0;       // will be ignored
-                        if (value > alpha && value < beta)
-                        {
-                                pv_array[pv_index] = board_ptr[index]->uci;
-                                local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
-                        }
-                }
-                else if (board_eval > alpha)
+                else if (depth == 0)
                         value = board_eval;
+                else if (depth > 2 || index == 0 || in_check || alpha >= GLOBAL_VALUE_KING - 200 || beta >= GLOBAL_VALUE_KING - 200
+                         || board_eval + eval_delta > alpha)
+                        value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
+                else
+                        value = -GLOBAL_VALUE_KING;     // prune
+                if (abort_search)
+                        return 0;       // will be ignored
+                if (value > alpha && value < beta)
+                {
+                        pv_array[pv_index] = board_ptr[index]->uci;
+                        local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+                }
                 if (value > alpha)
                         alpha = value;
 
@@ -484,23 +498,23 @@ nm_move_sort_compare(const void *p1, const void *p2)
 void
 nm_init(void)
 {
-	tune.nm_delta_mult = 10;
+        tune.nm_delta_mult = 10;
 }
 
 void
-nm_tune(const tune_t *new_tune)
+nm_tune(const tune_t * new_tune)
 {
-	tune = *new_tune;
+        tune = *new_tune;
 }
 
 tune_t
 nm_current_tune(void)
 {
-	return tune;
+        return tune;
 }
 
 board_t
-nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
+nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quiet)
 {
         int32_t i, game_index;
         int32_t alpha, beta;
@@ -548,8 +562,11 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
                 return best_board;
         }
 
-        tc_display(tc);
-        printf(" - %s to move - ", best_board.white_to_move ? "white" : "black");
+        if (!quiet)
+        {
+                tc_display(tc);
+                printf(" - %s to move - ", best_board.white_to_move ? "white" : "black");
+        }
 
         load_root_nodes(root_node_boards);
         best_board = root_node_boards[0];
@@ -583,7 +600,8 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
                 else if (duration_seconds > 15 && !opponent_time)
                         duration_seconds = 15;  // deal with "moretime" people on FICS
         }
-        printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
+        if (!quiet)
+                printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
         time_limit = t_start + duration_seconds * UINT64_C(COUNTS_PER_SECOND);
 
         abort_search = 0;
@@ -610,13 +628,17 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
                                 best_board = *board_ptr[i];
                                 best_evaluation = evaluate_move;
                                 overall_best = evaluate_move;
-                                printf("be=%d ", best_evaluation);
-                                fflush(stdout);
+                                if (!quiet)
+                                {
+                                        printf("be=%d ", best_evaluation);
+                                        fflush(stdout);
+                                }
                         }
                         ++i;
                 }
-                if (best_evaluation != -LARGE_EVAL)
-                        printf("\n");
+                if (!quiet)
+                        if (best_evaluation != -LARGE_EVAL)
+                                printf("\n");
                 if (debug_pv_info)
                 {
                         best_board.full_move_number = 1 + game_moves / 2;
@@ -624,8 +646,12 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
                         elapsed_ticks = t_report - t_start;
                         elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
                         nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
-                        uci_currmove(depth_limit, q_ply_reached, &board_ptr[0]->uci, best_board.full_move_number, best_evaluation);
-                        uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci, pv_array);
+                        if (!quiet)
+                        {
+                                uci_currmove(depth_limit, q_ply_reached, &board_ptr[0]->uci, best_board.full_move_number, best_evaluation);
+                                uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci,
+                                       pv_array);
+                        }
                 }
                 if (!abort_search)
                 {
@@ -651,15 +677,19 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
         elapsed_am_time = (double)all_moves_ticks / (double)COUNTS_PER_SECOND;
         q_trans_hit = q_nodes_visited - q_no_trans;
 
-        printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f, all_moves_time=%.2f%%\n",
-               overall_best, nodes_visited, elapsed_time, nps, (elapsed_am_time * 100.0) / elapsed_time);
-        printf("depth_limit=%d, q_depth=%d\n", depth_limit, valid_q_ply_reached);
-        printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
-               trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
-               ((double)trans_collision * 100.0) / (double)nodes_visited);
-        if (q_nodes_visited > 0)
-                printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%)\n", q_no_trans, q_trans_hit, ((double)q_trans_hit * 100.0) / (double)q_nodes_visited);
-        printf("temps: %.2fC (max %.2fC min %.2fC)\n", tmon_temperature, tmon_max_temperature, tmon_min_temperature);
+        if (!quiet)
+        {
+                printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f, all_moves_time=%.2f%%\n",
+                       overall_best, nodes_visited, elapsed_time, nps, (elapsed_am_time * 100.0) / elapsed_time);
+                printf("depth_limit=%d, q_depth=%d\n", depth_limit, valid_q_ply_reached);
+                printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
+                       trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
+                       ((double)trans_collision * 100.0) / (double)nodes_visited);
+                if (q_nodes_visited > 0)
+                        printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%)\n", q_no_trans, q_trans_hit,
+                               ((double)q_trans_hit * 100.0) / (double)q_nodes_visited);
+                printf("temps: %.2fC (max %.2fC min %.2fC)\n", tmon_temperature, tmon_max_temperature, tmon_min_temperature);
+        }
 
         numbat_led(0);
 
