@@ -36,6 +36,8 @@ static uint32_t abort_test_move_count;
 
 static const uint32_t debug_pv_info = 1;
 
+static tune_t tune;
+
 static uint32_t
 board_match(const board_t * a, const board_t * b)
 {
@@ -388,7 +390,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         numbat_reset_all_moves();
 
         index = 0;
-        eval_delta = depth * 10;
+        eval_delta = depth * tune.nm_delta_mult;
         do
         {
                 board_vert[ply] = board_ptr[index];
@@ -482,7 +484,19 @@ nm_move_sort_compare(const void *p1, const void *p2)
 void
 nm_init(void)
 {
-        // no ops just for now
+	tune.nm_delta_mult = 10;
+}
+
+void
+nm_tune(const tune_t *new_tune)
+{
+	tune = *new_tune;
+}
+
+tune_t
+nm_current_tune(void)
+{
+	return tune;
 }
 
 board_t
@@ -524,7 +538,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
         all_moves_ticks = 0;
 
         numbat_reset_all_moves();
-        numbat_castle_mask_orig(game[game_index].castle_mask); // pre-search castle state
+        numbat_castle_mask_orig(game[game_index].castle_mask);  // pre-search castle state
         numbat_write_board_basic(&game[game_index]);
         numbat_write_board_wait(&game[game_index], 0);
         move_count = numbat_move_count();
@@ -551,7 +565,13 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
                 board_ptr[i] = &root_node_boards[i];
 
         if (!tc->valid)
+        {
                 duration_seconds = UINT64_C(FIXED_TIME);
+        }
+        else if (tc->fixed)
+        {
+                duration_seconds = tc->fixed;
+        }
         else
         {
                 duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES) + 0.5;
@@ -560,8 +580,8 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time)
                         duration_seconds /= 8;
                 if (duration_seconds <= 0)
                         duration_seconds = 1;
-                else if (duration_seconds > 15 && ! opponent_time)
-                        duration_seconds = 15; // deal with "moretime" people on FICS
+                else if (duration_seconds > 15 && !opponent_time)
+                        duration_seconds = 15;  // deal with "moretime" people on FICS
         }
         printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
         time_limit = t_start + duration_seconds * UINT64_C(COUNTS_PER_SECOND);

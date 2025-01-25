@@ -39,12 +39,20 @@ void
 tc_init(tc_t * tc, int32_t main, int32_t increment)
 {
         tc->valid = 1;
+	tc->fixed = 0;
         tc->main = main;
         tc->increment = increment;
         tc->main_remaining[0] = main;
         tc->main_remaining[1] = main;
         tc->side = 0;
         XTime_GetTime(&tc->control_start);
+}
+
+void
+tc_fixed(tc_t *tc, int32_t seconds)
+{
+	tc->valid = 0;
+	tc->fixed = seconds;
 }
 
 void

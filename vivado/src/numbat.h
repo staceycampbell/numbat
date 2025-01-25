@@ -84,6 +84,7 @@
 typedef struct tc_t
 {
         uint32_t valid;
+	uint32_t fixed;
         uint32_t side;
         int32_t main;
         int32_t increment;
@@ -127,8 +128,12 @@ typedef struct board_t
         uint32_t fifty_move;
         uint32_t pv;
         uci_t uci;
-}
-board_t;
+} board_t;
+
+typedef struct tune_t
+{
+        int32_t nm_delta_mult;
+} tune_t;
 
 static inline void
 numbat_write(uint32_t reg, uint32_t val)
@@ -824,6 +829,8 @@ extern void numbat_read_uci(uci_t * uci);
 
 extern void nm_init(void);
 extern board_t nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time);
+extern void nm_tune(const tune_t *new_tune);
+extern tune_t nm_current_tune(void);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);
@@ -856,6 +863,7 @@ extern uint32_t tc_clock_toggle(tc_t * tc);
 extern void tc_ignore(tc_t * tc);
 extern void tc_display(const tc_t * tc);
 extern void tc_set(tc_t * tc, uint32_t side, int32_t main_remaining, int32_t increment);
+extern void tc_fixed(tc_t *tc, int32_t seconds);
 
 extern int tmon_init(void);
 extern int tmon_poll(void);
@@ -865,3 +873,5 @@ extern XTime tmon_temperature_check_time;
 extern float tmon_temperature;
 extern float tmon_max_temperature;
 extern float tmon_min_temperature;
+
+extern void selfplay(void);
