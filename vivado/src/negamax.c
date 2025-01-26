@@ -50,6 +50,12 @@ board_match(const board_t * a, const board_t * b)
         return a->castle_mask == b->castle_mask;
 }
 
+static inline int32_t
+next_full_move(void)
+{
+        return 1 + game_moves / 2;
+}
+
 static uint32_t
 repeat_draw(uint32_t ply_count, const board_t * board)
 {
@@ -514,6 +520,9 @@ nm_current_tune(void)
         return tune;
 }
 
+#define LBS_COUNT 4
+#define LBS_RESIGN -700         // if this is seen LBS_COUNT times return resign as true
+
 board_t
 nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quiet)
 {
@@ -521,6 +530,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         int32_t alpha, beta;
         int32_t depth_limit;
         uint32_t move_count;
+        uint32_t wtm;
         uint64_t elapsed_ticks;
         int64_t duration_seconds;
         double elapsed_time, nps, elapsed_am_time;
@@ -530,7 +540,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
         char uci_str[6];
-        static int32_t last_best_score[3];
+        static int32_t last_best_score[2][LBS_COUNT];
 
         if (game_moves == 0)
         {
@@ -542,6 +552,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 
         game_index = game_moves - 1;
         best_board = game[game_index];
+        wtm = best_board.white_to_move;
         if (resign)
                 *resign = 0;
 
@@ -575,6 +586,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         if (move_count == 1)
         {
                 printf("one move possible\n");
+                best_board.full_move_number = next_full_move();
                 return best_board;
         }
 
@@ -645,7 +657,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
                                 printf("\n");
                 if (debug_pv_info)
                 {
-                        best_board.full_move_number = 1 + game_moves / 2;
+                        best_board.full_move_number = next_full_move();
                         XTime_GetTime(&t_report);
                         elapsed_ticks = t_report - t_start;
                         elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
@@ -666,12 +678,16 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
                 if (q_ply_reached > valid_q_ply_reached)
                         valid_q_ply_reached = q_ply_reached;
         }
-        best_board.full_move_number = 1 + game_moves / 2;
+        best_board.full_move_number = next_full_move();
 
-        last_best_score[game_index % 3] = overall_best;
-        if (game_index > 2 && last_best_score[0] <= -700 && last_best_score[1] <= -700 && last_best_score[2] <= -700)
-                if (resign)
-                        *resign = 1;
+        last_best_score[wtm][(game_index / 2) % LBS_COUNT] = overall_best;
+        if (resign && game_index >= LBS_COUNT)
+        {
+                i = 0;
+                while (i < LBS_COUNT && last_best_score[wtm][i] <= LBS_RESIGN)
+                        ++i;
+                *resign = i == LBS_COUNT;
+        }
 
         XTime_GetTime(&t_end);
         elapsed_ticks = t_end - t_start;

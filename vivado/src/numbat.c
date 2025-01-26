@@ -97,6 +97,12 @@ numbat_print_board(const board_t * board, uint32_t initial_board)
                                 printf(" %c ", piece_char[piece]);
                         printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);        // sgr0
                 }
+                if (y == 7)
+                        printf(" %c%c%c%c%c Black", 27, 91, 51, 50, 109);
+                else if (y == 0)
+                        printf(" %c%c%c%c%c White", 27, 91, 51, 49, 109);
+                if (y == 7 || y == 0)
+                        printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);        // sgr0
                 printf("\n");
         }
         printf("   %c%c%c%c", 27, 91, 50, 109); // dim
