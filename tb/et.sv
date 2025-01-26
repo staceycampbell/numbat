@@ -45,8 +45,6 @@ module et;
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 insufficient_material;  // From evaluate of evaluate.v
    wire                 is_attacking_done;      // From board_attack of board_attack.v
-   wire [31:0]          material_black;         // From evaluate of evaluate.v
-   wire [31:0]          material_white;         // From evaluate of evaluate.v
    wire                 white_in_check;         // From board_attack of board_attack.v
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
@@ -98,8 +96,6 @@ module et;
       .eval                             (eval[EVAL_WIDTH-1:0]),
       .eval_pv_flag                     (eval_pv_flag),
       .eval_valid                       (eval_valid),
-      .material_black                   (material_black[31:0]),
-      .material_white                   (material_white[31:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

@@ -50,7 +50,7 @@ selfplay(void)
         uint32_t player_a_win, player_b_win, draw;
 
         tc_fixed(&tc, 5);       // seconds per move
-        numbat_random_score_mask(1); // random eval bit masK
+        numbat_random_score_mask(1);    // random eval bit masK
 
         player_a_tune = nm_current_tune();
         player_b_tune = nm_current_tune();
@@ -61,7 +61,8 @@ selfplay(void)
         player_a_win = 0;
         player_b_win = 0;
         draw = 0;
-        for (round = 0; round < 1; ++round)
+        key_hit = 0;
+        for (round = 0; round < 1 && ! key_hit; ++round)
         {
                 newgame_init();
                 opening = random_opening_string();
@@ -97,6 +98,8 @@ selfplay(void)
                                 nm_tune(&player_a_tune);        // player a's move
                         else
                                 nm_tune(&player_b_tune);        // player b's move
+                        trans_clear_table();
+                        q_trans_clear_table();
                         best_board = nm_top(&tc, 0, 0, 1);
                         numbat_write_board_basic(&best_board);
                         numbat_write_board_wait(&best_board, 0);
@@ -124,6 +127,10 @@ selfplay(void)
                                 ++player_b_win;
                 else
                         ++draw;
+                if (player_a_white)
+                        printf("player a white, player b black: ");
+                else
+                        printf("player a black, player b white: ");
                 printf("a win: %4d, b win: %4d, draw: %4d\n", player_a_win, player_b_win, draw);
         }
 }

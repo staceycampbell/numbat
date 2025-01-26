@@ -22,14 +22,10 @@ module evaluate_general #
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval_mg,
     output signed [EVAL_WIDTH - 1:0] eval_eg,
-    output                           eval_valid,
-    output reg [31:0]                material_black,
-    output reg [31:0]                material_white
+    output                           eval_valid
     );
 
    localparam LATENCY_COUNT = 7;
-
-   localparam MATERIAL_WIDTH = 32;
 
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_mg [`EMPTY_POSN:`BLACK_KING][0:63];
@@ -52,13 +48,6 @@ module evaluate_general #
    reg signed [EVAL_WIDTH - 1:0]                     eval_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]                     eval_eg_t6;
    
-   reg [MATERIAL_WIDTH - 1:0]                        material_b_t1 [0:63];
-   reg [MATERIAL_WIDTH - 1:0]                        material_b_t2 [0:15];
-   reg [MATERIAL_WIDTH - 1:0]                        material_b_t3 [0:3];
-   reg [MATERIAL_WIDTH - 1:0]                        material_w_t1 [0:63];
-   reg [MATERIAL_WIDTH - 1:0]                        material_w_t2 [0:15];
-   reg [MATERIAL_WIDTH - 1:0]                        material_w_t3 [0:3];
-
    reg [1:0]                                         isw_t1 [0:63];
    reg [1:0]                                         isb_t1 [0:63];
    reg [8:0]                                         isw_accum_t3;
@@ -121,31 +110,6 @@ module evaluate_general #
                         isb_t1[48] + isb_t1[49] + isb_t1[50] + isb_t1[51] + isb_t1[52] + isb_t1[53] + isb_t1[54] + isb_t1[55] +
                         isb_t1[56] + isb_t1[57] + isb_t1[58] + isb_t1[59] + isb_t1[60] + isb_t1[61] + isb_t1[62] + isb_t1[63];
         insufficient_material_t4 <= ((isw_accum_t3 == 0 && isb_accum_t3 <= 1) || (isw_accum_t3 <= 1 && isb_accum_t3 == 0));
-        
-        for (i = 0; i < 64; i = i + 1)
-          if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN &&
-              board[i * `PIECE_WIDTH+:`PIECE_WIDTH - 1] != `PIECE_KING) // exclude kings
-            if (board[i * `PIECE_WIDTH+:`PIECE_WIDTH] & (1 << `BLACK_BIT))
-              material_b_t1[i] <= value[board[i * `PIECE_WIDTH+:`PIECE_WIDTH - 1]]; // use positive value for black material
-            else
-              material_w_t1[i] <= value[board[i * `PIECE_WIDTH+:`PIECE_WIDTH - 1]];
-          else
-            begin
-               material_b_t1[i] <= 0;
-               material_w_t1[i] <= 0;
-            end
-        for (i = 0; i < 16; i = i + 1)
-          begin
-             material_b_t2[i] <= material_b_t1[i * 4 + 0] + material_b_t1[i * 4 + 1] + material_b_t1[i * 4 + 2] + material_b_t1[i * 4 + 3];
-             material_w_t2[i] <= material_w_t1[i * 4 + 0] + material_w_t1[i * 4 + 1] + material_w_t1[i * 4 + 2] + material_w_t1[i * 4 + 3];
-          end
-        for (i = 0; i < 4; i = i + 1)
-          begin
-             material_b_t3[i] <= material_b_t2[i * 4 + 0] + material_b_t2[i * 4 + 1] + material_b_t2[i * 4 + 2] + material_b_t2[i * 4 + 3];
-             material_w_t3[i] <= material_w_t2[i * 4 + 0] + material_w_t2[i * 4 + 1] + material_w_t2[i * 4 + 2] + material_w_t2[i * 4 + 3];
-          end
-        material_black <= material_b_t3[0] + material_b_t3[1] + material_b_t3[2] + material_b_t3[3];
-        material_white <= material_w_t2[0] + material_w_t2[1] + material_w_t2[2] + material_w_t2[3];
         
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)

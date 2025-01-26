@@ -12,6 +12,8 @@
 #include <lwip/tcp.h>
 #include "numbat.h"
 
+extern uint32_t enable_lwip;
+
 extern volatile int TcpFastTmrFlag;
 extern volatile int TcpSlowTmrFlag;
 extern struct netif *uci_netif;

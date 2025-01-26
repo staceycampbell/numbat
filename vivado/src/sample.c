@@ -5,10 +5,10 @@
 #include <xil_printf.h>
 #include "numbat.h"
 
-// 6k1/3b4/1p1p4/p1n2p2/1PP1p3/P3q1p1/1R1R2P1/3B1KNr b - - 3 10
+// "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1"
 
 static char *sample[] = {
-        "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1"
+        "8/7p/K3b2k/8/8/1r6/8/2r5 b - - 9 65"
 };
 
 uint32_t

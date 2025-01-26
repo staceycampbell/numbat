@@ -18,6 +18,8 @@
 
 #define UCI_INPUT_BUFFER_SIZE 4096
 
+extern uint32_t enable_lwip;
+
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
 extern uint32_t tc_main, tc_increment;
@@ -302,30 +304,35 @@ uci_input_poll(void)
         uint32_t uci_search_action;
 
         tmon_poll();
-#if UCI_TCP_COMMS == 1
-        tcp_task();
-        if (tcp_uci_fifo_count() == 0)
-                return UCI_SEARCH_CONT;
-        if (pondering)
-                return UCI_SEARCH_STOP;
-        c = tcp_uci_read_char();
-#else
-        if (!XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR))
-                return UCI_SEARCH_CONT;
-        c = XUartPs_ReadReg(XPAR_XUARTPS_1_BASEADDR, XUARTPS_FIFO_OFFSET);
-#endif
-        uci_input_buffer[uci_input_index] = c;
-        uci_input_buffer[uci_input_index + 1] = '\0';
-        ++uci_input_index;
-        if (uci_input_index >= UCI_INPUT_BUFFER_SIZE - 1)
+        if (enable_lwip)
         {
-                printf("%s: input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
-                while (1);
+#if UCI_TCP_COMMS == 1
+                tcp_task();
+                if (tcp_uci_fifo_count() == 0)
+                        return UCI_SEARCH_CONT;
+                if (pondering)
+                        return UCI_SEARCH_STOP;
+                c = tcp_uci_read_char();
+#else
+                if (!XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR))
+                        return UCI_SEARCH_CONT;
+                c = XUartPs_ReadReg(XPAR_XUARTPS_1_BASEADDR, XUARTPS_FIFO_OFFSET);
+#endif
+                uci_input_buffer[uci_input_index] = c;
+                uci_input_buffer[uci_input_index + 1] = '\0';
+                ++uci_input_index;
+                if (uci_input_index >= UCI_INPUT_BUFFER_SIZE - 1)
+                {
+                        printf("%s: input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
+                        while (1);
+                }
+                if (c != '\n')
+                        return UCI_SEARCH_CONT;
+                uci_search_action = uci_dispatch();
+                uci_input_reset();
         }
-        if (c != '\n')
-                return UCI_SEARCH_CONT;
-        uci_search_action = uci_dispatch();
-        uci_input_reset();
+        else
+                uci_search_action = UCI_SEARCH_CONT;
 
         return uci_search_action;
 }

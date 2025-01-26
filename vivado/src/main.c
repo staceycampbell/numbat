@@ -14,6 +14,8 @@
 
 #define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
 
+uint32_t enable_lwip = 1; // disable lwip for debugging, required to avoid timer interrupts hitting debugger
+
 board_t game[GAME_MAX];
 uint32_t game_moves;
 uint32_t tc_main = 15;          // minutes
@@ -71,22 +73,25 @@ main(void)
         tmon_init();
         numbat_fan_pwm(500);
 
-        IP4_ADDR(&ipaddr, 192, 168, 0, 90);
-        IP4_ADDR(&netmask, 255, 255, 255, 0);
-        IP4_ADDR(&gw, 192, 168, 0, 1);
-        lwip_init();
-
-        if (!xemac_add(uci_netif, &ipaddr, &netmask, &gw, mac_ethernet_address, PLATFORM_EMAC_BASEADDR))
+        if (enable_lwip)
         {
-                printf("%s: error adding N/W interface, stopping\n", __PRETTY_FUNCTION__);
-                while (1);
-        }
-        netif_set_default(uci_netif);
+                IP4_ADDR(&ipaddr, 192, 168, 0, 90);
+                IP4_ADDR(&netmask, 255, 255, 255, 0);
+                IP4_ADDR(&gw, 192, 168, 0, 1);
+                lwip_init();
 
-        platform_enable_interrupts();
-        netif_set_up(uci_netif);
-        print_ip_settings(&ipaddr, &netmask, &gw);
-        start_application();
+                if (!xemac_add(uci_netif, &ipaddr, &netmask, &gw, mac_ethernet_address, PLATFORM_EMAC_BASEADDR))
+                {
+                        printf("%s: error adding N/W interface, stopping\n", __PRETTY_FUNCTION__);
+                        while (1);
+                }
+                netif_set_default(uci_netif);
+
+                platform_enable_interrupts();
+                netif_set_up(uci_netif);
+                print_ip_settings(&ipaddr, &netmask, &gw);
+                start_application();
+        }
 
         index = 0;
         com_status = 0;
@@ -106,8 +111,11 @@ main(void)
         {
                 if (XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR))
                         com_status = process_serial_port(cmdbuf, &index);
-                tcp_task();
-                uci_input_poll();
+                if (enable_lwip)
+                {
+                        tcp_task();
+                        uci_input_poll();
+                }
                 if (com_status)
                 {
                         process_cmd(cmdbuf);

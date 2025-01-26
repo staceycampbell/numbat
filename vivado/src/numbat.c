@@ -68,7 +68,7 @@ numbat_print_board(const board_t * board, uint32_t initial_board)
         int y, x, rev;
         char uci_str[6];
         uint32_t piece;
-        int32_t eval, material_black, material_white, material;
+        int32_t eval;
         uint32_t mate, stalemate, fifty_move;
         uint32_t btm;
 
@@ -107,24 +107,15 @@ numbat_print_board(const board_t * board, uint32_t initial_board)
         {
                 eval = numbat_initial_eval();
                 numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, 0, 0);
-                material_white = numbat_initial_material_white();
-                material_black = numbat_initial_material_black();
-                material = material_white - material_black;
         }
         else
-        {
                 eval = board->eval;
-                material = 0;
-        }
         if (!initial_board)
-                printf("capture: %d, half move: %d", board->capture, board->half_move_clock);
+                printf("capture: %d, half move: %d\n", board->capture, board->half_move_clock);
         else
-        {
                 printf("mate: %d, stalemate: %d, fifty move: %d\n", mate, stalemate, fifty_move);
-                printf("material: %.2f - %.2f = %.2f", (double)material_white / 100.0, (double)material_black / 100, (double)material / 100.0);
-        }
         uci_string(&board->uci, uci_str);
-        printf(", eval: %d, uci: %s\n", eval, uci_str);
+        printf("eval: %d, uci: %s\n", eval, uci_str);
         if (board->black_in_check)
                 printf("Black in check\n");
         if (board->white_in_check)

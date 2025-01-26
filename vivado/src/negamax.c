@@ -10,7 +10,7 @@
 
 #pragma GCC optimize ("O2")
 
-#define FIXED_TIME 60
+#define FIXED_TIME 5
 #define MID_GAME_HALF_MOVES 60
 
 #define LARGE_EVAL (1 << 20)
@@ -91,6 +91,10 @@ nm_initial_eval(uint32_t wtm, uint32_t ply)
         value = numbat_initial_eval();
         if (!wtm)
                 value = -value;
+        if (value == GLOBAL_VALUE_KING)
+                value = GLOBAL_VALUE_KING - ply;
+        else if (value == -GLOBAL_VALUE_KING)
+                value = -GLOBAL_VALUE_KING + ply;
 
         return value;
 }
@@ -171,7 +175,7 @@ local_movcpy(uci_t * p_dst, const uci_t * p_src, int32_t n)
 static int32_t
 quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int32_t pv_index)
 {
-        uint32_t move_count, index, endgame;
+        uint32_t move_count, index;
         uint32_t mate, stalemate, fifty_move;
         int32_t value;
         XTime am_t_start, am_t_stop;
@@ -241,9 +245,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         }
         else
         {
-                // https://talkchess.com/viewtopic.php?p=930531&sid=748ca5279f802b33c538fae0e82da09a#p930531
-                endgame = numbat_initial_material_black() < 1700 && numbat_initial_material_white() < 1700;
-                if (!endgame && value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
+                if (value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
                         return alpha;
         }
 
@@ -340,7 +342,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         ++n_nodes_visited;
 
         // mate distance pruning
-        alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply - 1);
+        alpha = valmax(alpha, -GLOBAL_VALUE_KING + ply);
         beta = valmin(beta, GLOBAL_VALUE_KING - ply);
         if (alpha >= beta)
                 return alpha;
@@ -362,7 +364,6 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 
         value = nm_initial_eval(board->white_to_move, ply);
         move_count = numbat_move_count();
-
         if (move_count == 0)
                 return value;
 
@@ -528,6 +529,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         XTime t_end, t_report, t_start;
         board_t root_node_boards[MAX_POSITIONS];
         board_t *board_ptr[MAX_POSITIONS];
+        char uci_str[6];
         static int32_t last_best_score[3];
 
         if (game_moves == 0)
@@ -621,6 +623,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
                 while (i < move_count && !abort_search)
                 {
                         board_vert[0] = board_ptr[i];
+                        uci_string(&board_ptr[i]->uci, uci_str);
                         evaluate_move = -negamax(board_ptr[i], depth_limit, alpha, beta, 0, 0);
                         board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
                         if (!abort_search && evaluate_move > best_evaluation)
@@ -630,7 +633,8 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
                                 overall_best = evaluate_move;
                                 if (!quiet)
                                 {
-                                        printf("be=%d ", best_evaluation);
+                                        uci_string(&best_board.uci, uci_str);
+                                        printf("be=%d (%s) ", best_evaluation, uci_str);
                                         fflush(stdout);
                                 }
                         }

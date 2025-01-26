@@ -466,6 +466,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
         else if (strcmp((char *)str, "sp") == 0)
         {
                 selfplay();
+                str[0] = '\0';
         }
         else
         {

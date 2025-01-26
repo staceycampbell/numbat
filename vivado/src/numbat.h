@@ -208,26 +208,6 @@ numbat_led(uint32_t led_mask)
         numbat_write(256, led_mask);
 }
 
-static inline int32_t
-numbat_initial_material_black(void)
-{
-        int32_t material;
-
-        material = (int32_t) numbat_read(141);
-
-        return material;
-}
-
-static inline int32_t
-numbat_initial_material_white(void)
-{
-        int32_t material;
-
-        material = (int32_t) numbat_read(142);
-
-        return material;
-}
-
 static inline uint32_t
 numbat_random(void)
 {

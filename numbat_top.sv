@@ -97,8 +97,6 @@ module numbat_top
    wire                 initial_fifty_move;     // From all_moves of all_moves.v
    wire                 initial_insufficient_material;// From all_moves of all_moves.v
    wire                 initial_mate;           // From all_moves of all_moves.v
-   wire [31:0]          initial_material_black; // From all_moves of all_moves.v
-   wire [31:0]          initial_material_white; // From all_moves of all_moves.v
    wire                 initial_stalemate;      // From all_moves of all_moves.v
    wire [Q_TRANS_ADDRESS_WIDTH-1:0] q_trans_axi_araddr;// From q_trans of trans.v
    wire [1:0]           q_trans_axi_arburst;    // From q_trans of trans.v
@@ -293,8 +291,6 @@ module numbat_top
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
-      .initial_material_black           (initial_material_black[31:0]),
-      .initial_material_white           (initial_material_white[31:0]),
       .initial_board_check              (initial_board_check),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),
@@ -595,8 +591,6 @@ module numbat_top
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),
       .initial_fifty_move               (initial_fifty_move),
       .initial_insufficient_material    (initial_insufficient_material),
-      .initial_material_black           (initial_material_black[31:0]),
-      .initial_material_white           (initial_material_white[31:0]),
       .initial_board_check              (initial_board_check),
       .am_idle                          (am_idle),
       .am_moves_ready                   (am_moves_ready),

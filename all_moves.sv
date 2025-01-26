@@ -45,8 +45,6 @@ module all_moves #
     output reg signed [EVAL_WIDTH - 1:0] initial_eval,
     output reg                           initial_fifty_move = 0,
     output reg                           initial_insufficient_material = 0,
-    output reg [31:0]                    initial_material_black,
-    output reg [31:0]                    initial_material_white,
     output reg                           initial_board_check,
 
     output reg                           am_idle,
@@ -218,8 +216,6 @@ module all_moves #
    wire [LEGAL_RAM_WIDTH-1:0] legal_ram_rd_data;// From move_sort_legal of move_sort.v
    wire [MAX_POSITIONS_LOG2-1:0] legal_ram_wr_addr;// From move_sort_legal of move_sort.v
    wire                 legal_sort_complete;    // From move_sort_legal of move_sort.v
-   wire [31:0]          material_black;         // From evaluate of evaluate.v
-   wire [31:0]          material_white;         // From evaluate of evaluate.v
    wire                 white_in_check;         // From board_attack of board_attack.v
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
@@ -629,8 +625,6 @@ module all_moves #
 
               initial_eval <= eval;
               initial_insufficient_material <= insufficient_material;
-              initial_material_black <= material_black;
-              initial_material_white <= material_white;
 
               initial_clear_eval <= 1;
               initial_clear_attack <= 1;
@@ -1165,8 +1159,6 @@ module all_moves #
       .eval                             (eval[EVAL_WIDTH-1:0]),
       .eval_pv_flag                     (eval_pv_flag),
       .eval_valid                       (eval_valid),
-      .material_black                   (material_black[31:0]),
-      .material_white                   (material_white[31:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
