@@ -51,16 +51,18 @@ selfplay(void)
         uint32_t player_a_win, player_b_win, draw;
         uint32_t resign;
 
-        tc_fixed(&tc, 5);       // seconds per move
+        tc_fixed(&tc, 3);       // seconds per move
 
         player_a_tune = nm_current_tune();
         player_b_tune = nm_current_tune();
 
-        player_a_tune.nm_delta_mult = 10;
-        player_a_tune.futility_depth = 2;
+        player_a_tune.nm_delta_mult = 0;
+        player_a_tune.futility_depth = 4;
+        player_a_tune.algorithm_enable = 0;
 
-        player_b_tune.nm_delta_mult = 10;
-        player_b_tune.futility_depth = 1;
+        player_b_tune.nm_delta_mult = 0;
+        player_b_tune.futility_depth = 4;
+        player_a_tune.algorithm_enable = 1; // mobility eval
 
         player_a_win = 0;
         player_b_win = 0;

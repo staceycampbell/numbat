@@ -12,7 +12,7 @@ module numbat_top
    );
 
    // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 1;
+   localparam EVAL_MOBILITY_DISABLE = 0;
 
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
@@ -34,6 +34,7 @@ module numbat_top
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [31:0]          algorithm_enable;       // From control of control.v
    wire [31:0]          all_moves_bram_addr;    // From all_moves of all_moves.v
    wire [511:0]         all_moves_bram_din;     // From all_moves of all_moves.v
    wire [511:0]         all_moves_bram_dout;    // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
@@ -321,6 +322,7 @@ module numbat_top
       .reset                            (soft_reset),            // Templated
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (xorshift32_reg[EVAL_WIDTH-1:0]), // Templated
+      .algorithm_enable                 (algorithm_enable[31:0]),
       .board_valid_in                   (am_board_valid_in),     // Templated
       .board_in                         (am_board_in[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (am_white_to_move_in),   // Templated
@@ -515,6 +517,7 @@ module numbat_top
       // Outputs
       .soft_reset                       (soft_reset),
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
+      .algorithm_enable                 (algorithm_enable[31:0]),
       .am_new_board_valid_out           (am_new_board_valid_in), // Templated
       .am_new_board_out                 (am_new_board_in[`BOARD_WIDTH-1:0]), // Templated
       .am_castle_mask_out               (am_castle_mask_in[3:0]), // Templated

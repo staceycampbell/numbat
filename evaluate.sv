@@ -17,6 +17,8 @@ module evaluate #
     input [EVAL_WIDTH - 1:0]         random_score_mask,
     input [EVAL_WIDTH - 1:0]         random_number,
 
+    input [31:0]                     algorithm_enable,
+
     input                            board_valid,
     input                            is_attacking_done,
     input [`BOARD_WIDTH - 1:0]       board_in,
@@ -353,6 +355,7 @@ module evaluate #
            /* evaluate_mob AUTO_TEMPLATE (
             .board_valid (local_board_valid),
             .eval_valid (eval_mob_valid),
+            .enable (algorithm_enable[0]),
             .eval_\([me]\)g (eval_\1g_mob[]),
             );*/
            evaluate_mob #
@@ -368,6 +371,7 @@ module evaluate #
               // Inputs
               .clk                      (clk),
               .reset                    (reset),
+              .enable                   (algorithm_enable[0]),   // Templated
               .board_valid              (local_board_valid),     // Templated
               .board                    (board[`BOARD_WIDTH-1:0]),
               .clear_eval               (clear_eval));

@@ -11,6 +11,8 @@ module evaluate_mob #
     input                                clk,
     input                                reset,
 
+    input                                enable,
+
     input                                board_valid,
     input [`BOARD_WIDTH - 1:0]           board,
     input                                clear_eval,
@@ -207,8 +209,16 @@ module evaluate_mob #
         eval_black_eg_t5 <= eval_blackbish_eg_t4 + eval_blackknit_eg_t4 + eval_blackquen_eg_t4 + eval_blackrook_eg_t4;
         eval_black_mg_t5 <= eval_blackbish_mg_t4 + eval_blackknit_mg_t4 + eval_blackquen_mg_t4 + eval_blackrook_mg_t4;
 
-        eval_eg <= eval_white_eg_t5 + eval_black_eg_t5;
-        eval_mg <= eval_white_mg_t5 + eval_black_mg_t5;
+        if (enable)
+          begin
+             eval_eg <= eval_white_eg_t5 + eval_black_eg_t5;
+             eval_mg <= eval_white_mg_t5 + eval_black_mg_t5;
+          end
+        else
+          begin
+             eval_eg <= 0;
+             eval_mg <= 0;
+          end
      end
 
    generate

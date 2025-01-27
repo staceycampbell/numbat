@@ -19,6 +19,8 @@ module control #
 
     output reg [EVAL_WIDTH - 1:0]         random_score_mask = 0,
 
+    output reg [31:0]                     algorithm_enable = 0,
+
     output reg                            am_new_board_valid_out,
     output reg [`BOARD_WIDTH - 1:0]       am_new_board_out,
     output reg [3:0]                      am_castle_mask_out,
@@ -208,6 +210,8 @@ module control #
                  fan_ctrl_write_wr_data <= ctrl0_din;
                  fan_ctrl_write_wr_en <= 1;
               end
+
+            300 : algorithm_enable <= ctrl0_din;
 
             520 :
               begin

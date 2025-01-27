@@ -19,6 +19,8 @@ module all_moves #
     input [EVAL_WIDTH - 1:0]             random_score_mask,
     input [EVAL_WIDTH - 1:0]             random_number,
 
+    input [31:0]                         algorithm_enable,
+
     input                                board_valid_in,
     input [`BOARD_WIDTH - 1:0]           board_in,
     input                                white_to_move_in,
@@ -1164,6 +1166,7 @@ module all_moves #
       .reset                            (reset),
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
+      .algorithm_enable                 (algorithm_enable[31:0]),
       .board_valid                      (evaluate_go_r),         // Templated
       .is_attacking_done                (is_attacking_done),
       .board_in                         (evaluate_board_r[`BOARD_WIDTH-1:0]), // Templated

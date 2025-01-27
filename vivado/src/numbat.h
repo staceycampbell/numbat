@@ -128,12 +128,14 @@ typedef struct board_t
         uint32_t fifty_move;
         uint32_t pv;
         uci_t uci;
-} board_t;
+}
+board_t;
 
 typedef struct tune_t
 {
         int32_t nm_delta_mult;
         int32_t futility_depth;
+        uint32_t algorithm_enable;
 } tune_t;
 
 static inline void
@@ -185,6 +187,12 @@ numbat_read64(uint32_t reg)
         val = *ptr;
 
         return val;
+}
+
+static inline void
+numbat_algorithm_enable(uint32_t algorithm)
+{
+        numbat_write(300, algorithm);
 }
 
 static inline void

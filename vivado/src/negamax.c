@@ -13,6 +13,9 @@
 #define FIXED_TIME 5
 #define MID_GAME_HALF_MOVES 60
 
+#define LBS_COUNT 3             // number of most recent best scores for one side
+#define LBS_RESIGN -600         // if this is seen LBS_COUNT times return resign as true
+
 #define LARGE_EVAL (1 << 20)
 
 #define Q_DELTA 200             // stop q search if eval + this doesn't beat alpha
@@ -507,6 +510,7 @@ nm_init(void)
 {
         tune.nm_delta_mult = 10;
         tune.futility_depth = 2;
+        tune.algorithm_enable = 0;
 }
 
 void
@@ -520,9 +524,6 @@ nm_current_tune(void)
 {
         return tune;
 }
-
-#define LBS_COUNT 4
-#define LBS_RESIGN -700         // if this is seen LBS_COUNT times return resign as true
 
 board_t
 nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quiet)
@@ -556,6 +557,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         wtm = best_board.white_to_move;
         if (resign)
                 *resign = 0;
+        numbat_algorithm_enable(tune.algorithm_enable);
 
         nodes_visited = 0;
         q_nodes_visited = 0;
