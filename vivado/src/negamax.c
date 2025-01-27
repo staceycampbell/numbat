@@ -433,7 +433,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
                 }
                 else if (depth == 0)
                         value = board_eval;
-                else if (depth > 2 || index == 0 || in_check || alpha >= GLOBAL_VALUE_KING - 200 || beta >= GLOBAL_VALUE_KING - 200
+                else if (depth > tune.futility_depth || index == 0 || in_check || alpha >= GLOBAL_VALUE_KING - 200 || beta >= GLOBAL_VALUE_KING - 200
                          || board_eval + eval_delta > alpha)
                         value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
                 else
@@ -506,6 +506,7 @@ void
 nm_init(void)
 {
         tune.nm_delta_mult = 10;
+        tune.futility_depth = 2;
 }
 
 void
@@ -585,7 +586,8 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         best_board = root_node_boards[0];
         if (move_count == 1)
         {
-                printf("one move possible\n");
+                if (!quiet)
+                        printf("one move possible\n");
                 best_board.full_move_number = next_full_move();
                 return best_board;
         }

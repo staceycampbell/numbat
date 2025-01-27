@@ -52,22 +52,25 @@ selfplay(void)
         uint32_t resign;
 
         tc_fixed(&tc, 5);       // seconds per move
-        numbat_random_score_mask(1);    // random eval bit masK
 
         player_a_tune = nm_current_tune();
         player_b_tune = nm_current_tune();
 
-        player_a_tune.nm_delta_mult = 0;
-        player_b_tune.nm_delta_mult = 20;
+        player_a_tune.nm_delta_mult = 10;
+        player_a_tune.futility_depth = 2;
+
+        player_b_tune.nm_delta_mult = 10;
+        player_b_tune.futility_depth = 1;
 
         player_a_win = 0;
         player_b_win = 0;
         draw = 0;
         key_hit = 0;
-        for (round = 0; round < 10 && !key_hit; ++round)
+        for (round = 0; round < 50 && !key_hit; ++round)
         {
                 newgame_init();
                 opening = random_opening_string();
+                numbat_random_score_mask(1);    // random eval bit masK
                 if (strlen(opening) >= sizeof(buffer) - 1)
                 {
                         printf("%s: problem, stopping (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
@@ -93,7 +96,6 @@ selfplay(void)
                         printf("player a white, player b black\n");
                 else
                         printf("player b white, player a black\n");
-                numbat_print_board(&game[game_moves - 1], 1);
                 do
                 {
                         game_index = game_moves - 1;
@@ -105,22 +107,22 @@ selfplay(void)
                         q_trans_clear_table();
 
                         best_board = nm_top(&tc, &resign, 0, 1);
-
                         eval = best_board.eval;
 
+                        game[game_moves] = best_board;
+                        ++game_moves;
                         numbat_write_board_basic(&best_board);
                         numbat_write_board_wait(&best_board, 0);
                         move_count = numbat_move_count();
                         numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, &insufficient, 0);
                         numbat_reset_all_moves();
-                        game[game_moves] = best_board;
-                        ++game_moves;
                         game_active = !mate && !stalemate && !fifty_move && !insufficient && move_count > 0 && !resign;
-                        printf("e=%6d m=%d r=%d d=%d ", eval, mate, resign, stalemate || fifty_move || insufficient);
+                        printf("e:%6d %.2fC ", eval, tmon_temperature);
                         fen_print(&best_board);
                         key_hit = ui_data_available();
                 }
                 while (!key_hit && game_active);
+                printf("m=%d r=%d d=%d\n", mate, resign, stalemate || fifty_move || insufficient);
                 numbat_print_board(&best_board, 1);
                 if (mate)
                 {

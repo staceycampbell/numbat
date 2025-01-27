@@ -84,7 +84,7 @@
 typedef struct tc_t
 {
         uint32_t valid;
-	uint32_t fixed;
+        uint32_t fixed;
         uint32_t side;
         int32_t main;
         int32_t increment;
@@ -133,6 +133,7 @@ typedef struct board_t
 typedef struct tune_t
 {
         int32_t nm_delta_mult;
+        int32_t futility_depth;
 } tune_t;
 
 static inline void
@@ -809,7 +810,7 @@ extern void numbat_read_uci(uci_t * uci);
 
 extern void nm_init(void);
 extern board_t nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quiet);
-extern void nm_tune(const tune_t *new_tune);
+extern void nm_tune(const tune_t * new_tune);
 extern tune_t nm_current_tune(void);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);
@@ -843,7 +844,7 @@ extern uint32_t tc_clock_toggle(tc_t * tc);
 extern void tc_ignore(tc_t * tc);
 extern void tc_display(const tc_t * tc);
 extern void tc_set(tc_t * tc, uint32_t side, int32_t main_remaining, int32_t increment);
-extern void tc_fixed(tc_t *tc, int32_t seconds);
+extern void tc_fixed(tc_t * tc, int32_t seconds);
 
 extern int tmon_init(void);
 extern int tmon_poll(void);
