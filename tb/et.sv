@@ -30,6 +30,7 @@ module et;
    reg [UCI_WIDTH-1:0]           uci_in = 0;
    reg [EVAL_WIDTH - 1:0]        random_number = 0;
    reg [EVAL_WIDTH - 1:0]        random_score_mask = 0;
+   reg [31:0]                    algorithm_enable = 0;
 
    //should be empty
    /*AUTOREGINPUT*/
@@ -101,6 +102,7 @@ module et;
       .reset                            (reset),
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
+      .algorithm_enable                 (algorithm_enable[31:0]),
       .board_valid                      (board_valid),
       .is_attacking_done                (is_attacking_done),
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated

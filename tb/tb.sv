@@ -41,6 +41,7 @@ module tb;
    reg                            killer_update = 0;
    reg [31:0]                     pv_ctrl = 0;
    reg [3:0]                      castle_mask_orig = 4'b1111;
+   reg [31:0]                     algorithm_enable = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -320,6 +321,7 @@ module tb;
       .reset                            (reset),
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
+      .algorithm_enable                 (algorithm_enable[31:0]),
       .board_valid_in                   (board_valid),           // Templated
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated

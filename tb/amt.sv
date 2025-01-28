@@ -38,42 +38,43 @@ module amt;
    reg [EVAL_WIDTH - 1:0]         random_number = 0;
    reg [EVAL_WIDTH - 1:0]         random_score_mask = 0;
    reg [3:0]                      castle_mask_orig = 4'b1111;
+   reg [31:0]                     algorithm_enable = 0;
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0]          all_moves_bram_addr;    // From all_moves of all_moves.v
-   wire [511:0]         all_moves_bram_din;     // From all_moves of all_moves.v
-   wire [63:0]          all_moves_bram_we;      // From all_moves of all_moves.v
-   wire                 am_idle;                // From all_moves of all_moves.v
-   wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
-   wire                 am_move_ready;          // From all_moves of all_moves.v
-   wire                 am_moves_ready;         // From all_moves of all_moves.v
-   wire [5:0]           attack_black_pop_out;   // From all_moves of all_moves.v
-   wire [5:0]           attack_white_pop_out;   // From all_moves of all_moves.v
-   wire                 black_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]          black_is_attacking_out; // From all_moves of all_moves.v
-   wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
-   wire                 capture_out;            // From all_moves of all_moves.v
-   wire [3:0]           castle_mask_out;        // From all_moves of all_moves.v
-   wire [3:0]           en_passant_col_out;     // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] eval_out;       // From all_moves of all_moves.v
-   wire                 fifty_move_out;         // From all_moves of all_moves.v
-   wire [HALF_MOVE_WIDTH-1:0] half_move_out;    // From all_moves of all_moves.v
-   wire                 initial_board_check;    // From all_moves of all_moves.v
-   wire signed [EVAL_WIDTH-1:0] initial_eval;   // From all_moves of all_moves.v
-   wire                 initial_fifty_move;     // From all_moves of all_moves.v
-   wire                 initial_insufficient_material;// From all_moves of all_moves.v
-   wire                 initial_mate;           // From all_moves of all_moves.v
-   wire                 initial_stalemate;      // From all_moves of all_moves.v
-   wire                 insufficient_material_out;// From all_moves of all_moves.v
-   wire                 pv_out;                 // From all_moves of all_moves.v
-   wire [UCI_WIDTH-1:0] uci_out;                // From all_moves of all_moves.v
-   wire                 white_in_check_out;     // From all_moves of all_moves.v
-   wire [63:0]          white_is_attacking_out; // From all_moves of all_moves.v
-   wire                 white_to_move_out;      // From all_moves of all_moves.v
+   wire [31:0]                    all_moves_bram_addr;    // From all_moves of all_moves.v
+   wire [511:0]                   all_moves_bram_din;     // From all_moves of all_moves.v
+   wire [63:0]                    all_moves_bram_we;      // From all_moves of all_moves.v
+   wire                           am_idle;                // From all_moves of all_moves.v
+   wire [MAX_POSITIONS_LOG2-1:0]  am_move_count; // From all_moves of all_moves.v
+   wire                           am_move_ready;          // From all_moves of all_moves.v
+   wire                           am_moves_ready;         // From all_moves of all_moves.v
+   wire [5:0]                     attack_black_pop_out;   // From all_moves of all_moves.v
+   wire [5:0]                     attack_white_pop_out;   // From all_moves of all_moves.v
+   wire                           black_in_check_out;     // From all_moves of all_moves.v
+   wire [63:0]                    black_is_attacking_out; // From all_moves of all_moves.v
+   wire [`BOARD_WIDTH-1:0]        board_out;           // From all_moves of all_moves.v
+   wire                           capture_out;            // From all_moves of all_moves.v
+   wire [3:0]                     castle_mask_out;        // From all_moves of all_moves.v
+   wire [3:0]                     en_passant_col_out;     // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0]   eval_out;       // From all_moves of all_moves.v
+   wire                           fifty_move_out;         // From all_moves of all_moves.v
+   wire [HALF_MOVE_WIDTH-1:0]     half_move_out;    // From all_moves of all_moves.v
+   wire                           initial_board_check;    // From all_moves of all_moves.v
+   wire signed [EVAL_WIDTH-1:0]   initial_eval;   // From all_moves of all_moves.v
+   wire                           initial_fifty_move;     // From all_moves of all_moves.v
+   wire                           initial_insufficient_material;// From all_moves of all_moves.v
+   wire                           initial_mate;           // From all_moves of all_moves.v
+   wire                           initial_stalemate;      // From all_moves of all_moves.v
+   wire                           insufficient_material_out;// From all_moves of all_moves.v
+   wire                           pv_out;                 // From all_moves of all_moves.v
+   wire [UCI_WIDTH-1:0]           uci_out;                // From all_moves of all_moves.v
+   wire                           white_in_check_out;     // From all_moves of all_moves.v
+   wire [63:0]                    white_is_attacking_out; // From all_moves of all_moves.v
+   wire                           white_to_move_out;      // From all_moves of all_moves.v
    // End of automatics
 
    initial
@@ -242,6 +243,7 @@ module amt;
       .reset                            (reset),
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
+      .algorithm_enable                 (algorithm_enable[31:0]),
       .board_valid_in                   (board_valid),           // Templated
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .white_to_move_in                 (white_to_move),         // Templated
