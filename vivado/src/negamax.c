@@ -23,7 +23,6 @@
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
 
-static uint64_t all_moves_ticks;
 static uint32_t nodes_visited, n_nodes_visited, q_nodes_visited, trans_collision, no_trans, q_no_trans;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
@@ -187,7 +186,6 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         uint32_t move_count, index;
         uint32_t mate, stalemate, fifty_move;
         int32_t value;
-        XTime am_t_start, am_t_stop;
         board_t *board_ptr[MAX_POSITIONS];
         int32_t pv_next_index;
         int32_t board_eval;
@@ -211,13 +209,8 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         numbat_write_board_basic(board);
         q_trans_lookup_init();  // trigger transposition table lookup
 
-        XTime_GetTime(&am_t_start);
         numbat_write_board_wait(board, 1);
-        XTime_GetTime(&am_t_stop);
-        all_moves_ticks += am_t_stop - am_t_start;
-
         numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, 0, 0);
-
         in_check = board->white_in_check || board->black_in_check;
         if (repeat_draw(ply, board) && !in_check)
                 return 0;       // draw score
@@ -332,7 +325,6 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         int32_t alpha_orig;
         uint32_t collision;
         trans_t trans;
-        XTime am_t_start, am_t_stop;
         board_t *board_ptr[MAX_POSITIONS];
         uint64_t node_start, node_stop, nodes;
         int32_t pv_next_index;
@@ -366,10 +358,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
         numbat_write_board_basic(board);
         trans_lookup_init();    // trigger transposition table lookup
 
-        XTime_GetTime(&am_t_start);
         numbat_write_board_wait(board, 0);
-        XTime_GetTime(&am_t_stop);
-        all_moves_ticks += am_t_stop - am_t_start;
 
         value = nm_initial_eval(board->white_to_move, ply);
         move_count = numbat_move_count();
@@ -536,7 +525,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         uint32_t wtm;
         uint64_t elapsed_ticks;
         int64_t duration_seconds;
-        double elapsed_time, nps, elapsed_am_time;
+        double elapsed_time, nps;
         int32_t evaluate_move, best_evaluation, overall_best, trans_hit, q_trans_hit;
         board_t best_board = { 0 };
         XTime t_end, t_report, t_start;
@@ -566,7 +555,6 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         no_trans = 0;
         trans_collision = 0;
         q_no_trans = 0;
-        all_moves_ticks = 0;
 
         numbat_reset_all_moves();
         numbat_castle_mask_orig(game[game_index].castle_mask);  // pre-search castle state
@@ -699,13 +687,12 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
         elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
         nps = (double)nodes_visited / elapsed_time;
         trans_hit = nodes_visited - no_trans;
-        elapsed_am_time = (double)all_moves_ticks / (double)COUNTS_PER_SECOND;
         q_trans_hit = q_nodes_visited - q_no_trans;
 
         if (!quiet)
         {
-                printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f, all_moves_time=%.2f%%\n",
-                       overall_best, nodes_visited, elapsed_time, nps, (elapsed_am_time * 100.0) / elapsed_time);
+                printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f\n",
+                       overall_best, nodes_visited, elapsed_time, nps);
                 printf("depth_limit=%d, q_depth=%d\n", depth_limit, valid_q_ply_reached);
                 printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
                        trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,

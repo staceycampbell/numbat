@@ -111,7 +111,6 @@ gtkwave wave.vcd
   - Transposition table lookup and write via AXI4 DMA
     - 2GByte TT in PS DDR4 HIGH address space for negamax
     - 2MByte TT in URAM for quiescence
-  - Thrice repetition draw detection.
 * The PS side (a single Arm Cortex-A53 MPCore) is coded in C. Functions performed are:
   - Negamax algorithm.
     - alpha beta pruning
@@ -120,6 +119,7 @@ gtkwave wave.vcd
     - quiescence search
     - crude futility pruning
   - Game time control.
+  - Thrice repetition draw detection.
   - Lwip TCP stack for UCI communication.
   - UART for debug input/output.
 
