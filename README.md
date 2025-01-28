@@ -123,6 +123,19 @@ gtkwave wave.vcd
   - Lwip TCP stack for UCI communication.
   - UART for debug input/output.
 
+### PS/PL Communication
+
+* Data is passed beween the PS and PL using AXI BRAM controllers.
+* The AXI4 ports of the Zynq are 128 bits wide and the PL Verilog will read/write
+  32, 64, or 128 bit data through those ports.
+* Other than the fan controller, PL logic is currently clocked at 300MHz using `pl_clk0`.
+  The Zynq AXI interface is capable of 333MHz however at 333MHz I have been unable to close timing
+  between the PS and the AXI BRAM controller that transfers all generated moves from the PL
+  to PS. Adding an AXI register slice does allow timing to close, but the added
+  one clock latency lowers the overall nodes-per-second of the logic.
+* The fan controller logic is clocked at 100MHz using `pl_clk1`. This frequency should not
+  be modified without a corresponding change to PWM pulse calculations in `fan_ctrl.sv`.
+
 ## Code Notes
 
 * The top level module is `numbat_top.sv`. The Vivado block diagram wrapper is instantiated
