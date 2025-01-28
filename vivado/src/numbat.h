@@ -136,6 +136,7 @@ typedef struct tune_t
         int32_t nm_delta_mult;
         int32_t futility_depth;
         uint32_t algorithm_enable;
+        int32_t q_delta;
 } tune_t;
 
 static inline void
@@ -825,7 +826,7 @@ extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);
 
 extern void process_cmd(uint8_t cmd[BUF_SIZE]);
-extern void fen_print(const board_t * board);
+extern void fen_print(const board_t * board, uint32_t nl);
 extern uint32_t fen_board(uint8_t buffer[BUF_SIZE], board_t * board);
 
 extern void uci_input_reset(void);

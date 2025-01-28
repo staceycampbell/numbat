@@ -254,7 +254,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
         }
         else
         {
-                if (value + Q_DELTA < alpha && !(board->black_in_check || board->white_in_check))
+                if (value + tune.q_delta < alpha && !(board->black_in_check || board->white_in_check))
                         return alpha;
         }
 
@@ -510,7 +510,8 @@ nm_init(void)
 {
         tune.nm_delta_mult = 10;
         tune.futility_depth = 2;
-        tune.algorithm_enable = 0;
+        tune.algorithm_enable = 1;
+        tune.q_delta = Q_DELTA;
 }
 
 void

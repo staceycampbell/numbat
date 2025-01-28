@@ -49,7 +49,7 @@ do_both(void)
                         while (1);
                 }
                 numbat_print_board(&best_board, 1);
-                fen_print(&best_board);
+                fen_print(&best_board, 1);
                 printf("\n");
                 key_hit = ui_data_available();
         }
@@ -66,8 +66,7 @@ do_both(void)
         else
         {
                 printf("white clock: %d, black clock %d\n", tc.main_remaining[0], tc.main_remaining[1]);
-                printf("both done: mate %d, stalemate %d, fifty move: %d, insufficient: %d\n\n",
-                       mate, stalemate, fifty_move, insufficient);
+                printf("both done: mate %d, stalemate %d, fifty move: %d, insufficient: %d\n\n", mate, stalemate, fifty_move, insufficient);
                 if (mate)
                         if (best_board.white_in_check)
                                 game_result = RESULT_BLACK_WIN;
@@ -80,7 +79,7 @@ do_both(void)
 }
 
 void
-fen_print(const board_t * board)
+fen_print(const board_t * board, uint32_t nl)
 {
         int row, col, empty, i;
         uint32_t piece;
@@ -152,7 +151,9 @@ fen_print(const board_t * board)
                 else
                         printf("%c3", en_passant_col);
         }
-        printf(" %d %d\n", board->half_move_clock, board->full_move_number);
+        printf(" %d %d", board->half_move_clock, board->full_move_number);
+        if (nl)
+                printf("\n");
 }
 
 uint32_t
@@ -348,7 +349,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         numbat_write_board_basic(&best_board);
                         numbat_write_board_wait(&best_board, 0);
                         numbat_print_board(&best_board, 1);
-                        fen_print(&best_board);
+                        fen_print(&best_board, 1);
                         numbat_reset_all_moves();
                         game[game_moves] = best_board;
                         ++game_moves;
@@ -410,7 +411,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
                         numbat_write_board_basic(&game[game_moves - 1]);
                         numbat_write_board_wait(&game[game_moves - 1], 0);
                         numbat_print_board(&game[game_moves - 1], 1);
-                        fen_print(&game[game_moves - 1]);
+                        fen_print(&game[game_moves - 1], 1);
                         numbat_reset_all_moves();
                 }
                 else

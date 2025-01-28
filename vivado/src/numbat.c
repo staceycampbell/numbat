@@ -161,7 +161,7 @@ numbat_write_board_wait(const board_t * board, uint32_t quiescence)
                 if (board)
                 {
                         numbat_print_board(board, 1);
-                        fen_print(board);
+                        fen_print(board, 1);
                 }
                 xil_printf("%s: stopping here, %s %d\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
                 while (1);

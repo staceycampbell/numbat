@@ -57,12 +57,12 @@ selfplay(void)
         player_b_tune = nm_current_tune();
 
         player_a_tune.nm_delta_mult = 0;
-        player_a_tune.futility_depth = 4;
+        player_a_tune.futility_depth = 2;
         player_a_tune.algorithm_enable = 0;
 
         player_b_tune.nm_delta_mult = 0;
-        player_b_tune.futility_depth = 4;
-        player_a_tune.algorithm_enable = 1; // mobility eval
+        player_b_tune.futility_depth = 2;
+        player_b_tune.algorithm_enable = 1;
 
         player_a_win = 0;
         player_b_win = 0;
@@ -120,11 +120,13 @@ selfplay(void)
                         numbat_reset_all_moves();
                         game_active = !mate && !stalemate && !fifty_move && !insufficient && move_count > 0 && !resign;
                         printf("e:%6d %.2fC ", eval, tmon_temperature);
-                        fen_print(&best_board);
+                        fen_print(&best_board, 0);
+                        printf("        \r");
+                        fflush(stdout);
                         key_hit = ui_data_available();
                 }
                 while (!key_hit && game_active);
-                printf("m=%d r=%d d=%d\n", mate, resign, stalemate || fifty_move || insufficient);
+                printf("\nm=%d r=%d d=%d\n", mate, resign, stalemate || fifty_move || insufficient);
                 numbat_print_board(&best_board, 1);
                 if (mate)
                 {
