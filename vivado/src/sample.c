@@ -8,7 +8,7 @@
 // "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1"
 
 static char *sample[] = {
-        "8/7p/K3b2k/8/8/1r6/8/2r5 b - - 9 65"
+        "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1"
 };
 
 uint32_t

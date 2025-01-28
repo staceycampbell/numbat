@@ -11,9 +11,6 @@ module numbat_top
    output test_point
    );
 
-   // 1 for fast debug builds, 0 for release
-   localparam EVAL_MOBILITY_DISABLE = 0;
-
    localparam EVAL_WIDTH = 24;
    localparam MAX_POSITIONS_LOG2 = $clog2(`MAX_POSITIONS);
    localparam HALF_MOVE_WIDTH = 10;
@@ -281,8 +278,7 @@ module numbat_top
       .EVAL_WIDTH (EVAL_WIDTH),
       .HALF_MOVE_WIDTH (HALF_MOVE_WIDTH),
       .UCI_WIDTH (UCI_WIDTH),
-      .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
-      .EVAL_MOBILITY_DISABLE (EVAL_MOBILITY_DISABLE)
+      .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2)
       )
    all_moves
      (/*AUTOINST*/

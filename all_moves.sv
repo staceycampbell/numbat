@@ -9,8 +9,7 @@ module all_moves #
    parameter EVAL_WIDTH = 0,
    parameter HALF_MOVE_WIDTH = 0,
    parameter UCI_WIDTH = 4 + 6 + 6,
-   parameter MAX_DEPTH_LOG2 = 0,
-   parameter EVAL_MOBILITY_DISABLE = 0
+   parameter MAX_DEPTH_LOG2 = 0
    )
    (
     input                                clk,
@@ -1151,7 +1150,6 @@ module all_moves #
      (
       .EVAL_WIDTH (EVAL_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
-      .EVAL_MOBILITY_DISABLE (EVAL_MOBILITY_DISABLE),
       .UCI_WIDTH (UCI_WIDTH)
       )
    evaluate

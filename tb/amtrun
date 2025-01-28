@@ -16,7 +16,7 @@ srclist="`make srclist`"
 mkdir -p $amtdir $amtdir/tb
 cp $srclist $amtdir
 cp amt.sv $amtdir/tb
-cp ../attack_mask.vh ../numbat.vh ../mobility*.vh ../evaluate*.vh $amtdir
+cp ../attack_mask.vh ../numbat.vh ../evaluate*.vh $amtdir
 while [ $stop -eq 0 ]
 do
     gameno=`shuf -i 1-12998 -n 1`

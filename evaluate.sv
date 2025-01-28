@@ -7,7 +7,6 @@ module evaluate #
   (
    parameter EVAL_WIDTH = 0,
    parameter MAX_DEPTH_LOG2 = 0,
-   parameter EVAL_MOBILITY_DISABLE = 0,
    parameter UCI_WIDTH = 0
    )
    (
@@ -81,7 +80,6 @@ module evaluate #
    wire signed [EVAL_WIDTH-1:0] eval_eg_bishops_white;// From evaluate_bishops_white of evaluate_bishops.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_general;// From evaluate_general of evaluate_general.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_killer; // From evaluate_killer of evaluate_killer.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_mob;    // From evaluate_mob of evaluate_mob.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_black;// From evaluate_pawns_black of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_eg_rooks_black;// From evaluate_rooks_black of evaluate_rooks.v
@@ -92,14 +90,12 @@ module evaluate #
    wire signed [EVAL_WIDTH-1:0] eval_mg_bishops_white;// From evaluate_bishops_white of evaluate_bishops.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_general;// From evaluate_general of evaluate_general.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_killer; // From evaluate_killer of evaluate_killer.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_mob;    // From evaluate_mob of evaluate_mob.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_black;// From evaluate_pawns_black of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_rooks_black;// From evaluate_rooks_black of evaluate_rooks.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_rooks_white;// From evaluate_rooks_white of evaluate_rooks.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_tropism_black;// From evaluate_tropism_black of evaluate_tropism.v
    wire signed [EVAL_WIDTH-1:0] eval_mg_tropism_white;// From evaluate_tropism_white of evaluate_tropism.v
-   wire                 eval_mob_valid;         // From evaluate_mob of evaluate_mob.v
    wire                 eval_pawns_black_valid; // From evaluate_pawns_black of evaluate_pawns.v
    wire                 eval_pawns_white_valid; // From evaluate_pawns_white of evaluate_pawns.v
    wire                 eval_pv_valid;          // From evaluate_pv of evaluate_pv.v
@@ -126,7 +122,6 @@ module evaluate #
                                                      eval_rooks_black_valid,
                                                      eval_rooks_white_valid,
                                                      eval_killer_valid,
-                                                     eval_mob_valid,
                                                      eval_pawns_black_valid,
                                                      eval_pawns_white_valid,
                                                      eval_general_valid
@@ -158,12 +153,12 @@ module evaluate #
           phase <= occupied_count;
         phase_r <= phase;
         eval_a_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black;
-        eval_b_mg_t1 <= eval_mg_mob + eval_mg_killer + eval_mg_bishops_white + eval_mg_bishops_black;
+        eval_b_mg_t1 <= eval_mg_killer + eval_mg_bishops_white + eval_mg_bishops_black;
         eval_c_mg_t1 <= eval_castling_white_mg + eval_castling_black_mg + eval_mg_rooks_white + eval_mg_rooks_black;
         eval_d_mg_t1 <= eval_mg_tropism_white + eval_mg_tropism_black;
         
         eval_a_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black;
-        eval_b_eg_t1 <= eval_eg_mob + eval_eg_killer + eval_eg_bishops_white + eval_eg_bishops_black;
+        eval_b_eg_t1 <= eval_eg_killer + eval_eg_bishops_white + eval_eg_bishops_black;
         eval_c_eg_t1 <= eval_eg_rooks_white + eval_eg_rooks_black;
         
         eval_mg_t2 <= eval_a_mg_t1 + eval_b_mg_t1 + eval_c_mg_t1 + eval_d_mg_t1;
@@ -349,41 +344,6 @@ module evaluate #
       .board                            (board[`BOARD_WIDTH-1:0]),
       .clear_eval                       (clear_eval));
    
-   generate
-      if (! EVAL_MOBILITY_DISABLE)
-        begin : eval_mob_blk
-           /* evaluate_mob AUTO_TEMPLATE (
-            .board_valid (local_board_valid),
-            .eval_valid (eval_mob_valid),
-            .enable (algorithm_enable[0]),
-            .eval_\([me]\)g (eval_\1g_mob[]),
-            );*/
-           evaluate_mob #
-             (
-              .EVAL_WIDTH (EVAL_WIDTH)
-              )
-           evaluate_mob
-             (/*AUTOINST*/
-              // Outputs
-              .eval_mg                  (eval_mg_mob[EVAL_WIDTH-1:0]), // Templated
-              .eval_eg                  (eval_eg_mob[EVAL_WIDTH-1:0]), // Templated
-              .eval_valid               (eval_mob_valid),        // Templated
-              // Inputs
-              .clk                      (clk),
-              .reset                    (reset),
-              .enable                   (algorithm_enable[0]),   // Templated
-              .board_valid              (local_board_valid),     // Templated
-              .board                    (board[`BOARD_WIDTH-1:0]),
-              .clear_eval               (clear_eval));
-        end
-      else
-        begin
-           assign eval_mob_valid = 1;
-           assign eval_mg_mob = 0;
-           assign eval_eg_mob = 0;
-        end
-   endgenerate
-
    /* evaluate_killer AUTO_TEMPLATE (
     .board_valid (local_board_valid),
     .eval_valid (eval_killer_valid),

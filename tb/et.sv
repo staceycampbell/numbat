@@ -2,7 +2,6 @@
 
 module et;
 
-   localparam EVAL_MOBILITY_DISABLE = 1;
    localparam EVAL_WIDTH = 24;
    localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, to, from
@@ -87,7 +86,6 @@ module et;
      (
       .EVAL_WIDTH (EVAL_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
-      .EVAL_MOBILITY_DISABLE (EVAL_MOBILITY_DISABLE),
       .UCI_WIDTH (UCI_WIDTH)
       )
    evaluate

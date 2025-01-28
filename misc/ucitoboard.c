@@ -10,7 +10,7 @@ static board_t game[GAME_MAX];
 static uint32_t game_moves;
 
 void
-fen_print(const board_t * board)
+fen_print(const board_t * board, uint32_t nl)
 {
         int row, col, empty, i;
         uint32_t piece;
@@ -347,7 +347,7 @@ main(int argc, char *argv[])
         } while (next);
 
 	for (i = 0; i < game_moves; ++i)
-		fen_print(&game[i]);
+		fen_print(&game[i], 1);
 
         return 0;
 }

@@ -13,7 +13,7 @@ srclist="`make evsrclist`"
 mkdir -p $etdir $etdir/et
 cp $srclist $etdir
 cp et.sv $etdir/et
-cp ../attack_mask.vh ../numbat.vh ../mobility*.vh ../evaluate*.vh $etdir
+cp ../attack_mask.vh ../numbat.vh ../evaluate*.vh $etdir
 while [ $stop -eq 0 ]
 do
     gameno=`shuf -i 1-12998 -n 1`
