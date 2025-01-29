@@ -36,7 +36,7 @@ static const uci_t zero_move = { 0, 0, 0, 0, 0 };
 
 static uint32_t abort_test_move_count;
 
-static const uint32_t debug_pv_info = 1;
+static const uint32_t debug_pv_info = 0;
 
 static tune_t tune;
 
@@ -639,7 +639,11 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
                                 if (!quiet)
                                 {
                                         uci_string(&best_board.uci, uci_str);
+                                        if (!opponent_time)
+                                                printf("%c%c%c%c", 27, 91, 49, 109);    // bold
                                         printf("be=%d (%s) ", best_evaluation, uci_str);
+                                        if (!opponent_time)
+                                                printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109); // sgr0
                                         fflush(stdout);
                                 }
                         }
@@ -691,8 +695,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 
         if (!quiet)
         {
-                printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f\n",
-                       overall_best, nodes_visited, elapsed_time, nps);
+                printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f\n", overall_best, nodes_visited, elapsed_time, nps);
                 printf("depth_limit=%d, q_depth=%d\n", depth_limit, valid_q_ply_reached);
                 printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
                        trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
