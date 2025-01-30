@@ -14,10 +14,11 @@ rules of chess before I started coding. From there I read many lines of C code, 
 wikis, and several forums dedicated to traditional (non-[neural net](https://en.wikipedia.org/wiki/Neural_network_(machine_learning)))
 chess algorithms.
 
-As such I'd like to acknowledge and thank the following for their work in expanding knowledge in this area:
+As such I'd like to acknowledge and thank the following for their work expanding knowledge and providing tools:
 
-* [Bob Hyatt](https://en.wikipedia.org/wiki/Robert_Hyatt), author of [crafty](https://en.wikipedia.org/wiki/Crafty)
+* [Bob Hyatt](https://en.wikipedia.org/wiki/Robert_Hyatt), author of [crafty](https://en.wikipedia.org/wiki/Crafty).
   and [Cray Blitz](https://en.wikipedia.org/wiki/Cray_Blitz), and the entire crafty team.
+* David J. Barnes for [pgn-extract](https://www.cs.kent.ac.uk/people/staff/djb/pgn-extract/).
 * [Tim Mann](https://www.tim-mann.org), author of [xboard](https://www.gnu.org/software/xboard/) and WinBoard.
 * [Dušan Dobeš](https://www.chessprogramming.org/Du%C5%A1an_Dobe%C5%A1) author of [Phalanx](https://github.com/scchess/Phalanx-XXIII).
 * The creators and contributors to [Chess Programming Wiki](https://www.chessprogramming.org).
