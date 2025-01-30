@@ -179,6 +179,11 @@ module control #
         q_trans_entry_store_out <= 0;
         q_trans_entry_lookup_out <= 0;
 
+        // auto-clear board valid, clear-moves, and soft reset
+        am_new_board_valid_out <= 0;
+        am_clear_moves <= 0;
+        soft_reset <= 0;
+
         // assume all 32 bit transactions have 'h000f for byte enable
         // assume all 64 bit transactions have 'h00ff for byte enable
         if (ctrl0_wr_valid)
