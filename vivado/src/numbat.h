@@ -137,6 +137,7 @@ typedef struct tune_t
         int32_t futility_depth;
         uint32_t algorithm_enable;
         int32_t q_delta;
+	int32_t initial_depth_limit;
 } tune_t;
 
 static inline void
@@ -509,12 +510,11 @@ numbat_misc_status(void)
 }
 
 static inline void
-numbat_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves, uint32_t use_random_bit)
+numbat_write_control(uint32_t soft_reset, uint32_t new_board_valid, uint32_t clear_moves)
 {
         uint32_t val;
 
         soft_reset = (soft_reset != 0) << 31;
-        use_random_bit = (use_random_bit != 0) << 30;
         new_board_valid = (new_board_valid != 0) << 0;
         clear_moves = (clear_moves != 0) << 1;
 
@@ -685,8 +685,7 @@ numbat_read_half_move(void)
 static inline void
 numbat_reset_all_moves(void)
 {
-        numbat_write_control(1, 0, 0, 0);       // soft reset, new board valid, clear moves
-        numbat_write_control(0, 0, 0, 0);
+        numbat_write_control(1, 0, 0);       // soft reset auto-clear
 }
 
 static inline uint32_t

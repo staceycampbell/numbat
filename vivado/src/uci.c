@@ -33,607 +33,607 @@ static int pondering = 0;
 static void
 uci_reply(char *str)
 {
-        tcp_write_uci(str);
-        printf("uci out: %s", str);
+	tcp_write_uci(str);
+	printf("uci out: %s", str);
 }
 #else
 static inline void
 uci_outbyte(char c)
 {
-        XUartPs_SendByte(XPAR_XUARTPS_1_BASEADDR, c);
-        usleep(1000);           // 1ms delay per char tx seems to be ok
+	XUartPs_SendByte(XPAR_XUARTPS_1_BASEADDR, c);
+	usleep(1000);		// 1ms delay per char tx seems to be ok
 }
 
 static void
 uci_reply(const char *str)
 {
-        int32_t len, i;
+	int32_t len, i;
 
-        len = strlen(str);
-        for (i = 0; i < len; ++i)
-                uci_outbyte(str[i]);
-        printf("uci out: %s\n", str);
+	len = strlen(str);
+	for (i = 0; i < len; ++i)
+		uci_outbyte(str[i]);
+	printf("uci out: %s\n", str);
 }
 #endif
 
 static void
 uci_go(tc_t * tc, uint32_t * resign)
 {
-        board_t best_board;
-        static uint32_t search_running = 0;
+	board_t best_board;
+	static uint32_t search_running = 0;
 
-        if (search_running)
-                return;         // this is not the place for recursion
+	if (search_running)
+		return;		// this is not the place for recursion
 
-        search_running = 1;
-        best_board = nm_top(tc, resign, 0, 0);
-        game[game_moves] = best_board;
-        ++game_moves;
-        search_running = 0;
+	search_running = 1;
+	best_board = nm_top(tc, resign, 0, 0);
+	game[game_moves] = best_board;
+	++game_moves;
+	search_running = 0;
 }
 
 static uint32_t
 uci_dispatch(void)
 {
-        int32_t i, len;
-        char *p, *next;
-        uint32_t uci_search_action;
-        uint32_t resign;
+	int32_t i, len;
+	char *p, *next;
+	uint32_t uci_search_action;
+	uint32_t resign;
 
-        uci_search_action = UCI_SEARCH_STOP;    // default action for UCI protocol, overridden below
-        p = uci_input_buffer;
-        next = p;
+	uci_search_action = UCI_SEARCH_STOP;	// default action for UCI protocol, overridden below
+	p = uci_input_buffer;
+	next = p;
 
-        len = strnlen(p, UCI_INPUT_BUFFER_SIZE - 1);
-        if (len >= UCI_INPUT_BUFFER_SIZE - 1)
-        {
-                printf("%s: uci input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
-                while (1);
-        }
-        for (i = 0; i < len; ++i)
-                if (p[i] == '\n' || p[i] == '\r')
-                        p[i] = '\0';
-                else if (p[i] == '\t')
-                        p[i] = ' ';
+	len = strnlen(p, UCI_INPUT_BUFFER_SIZE - 1);
+	if (len >= UCI_INPUT_BUFFER_SIZE - 1)
+	{
+		printf("%s: uci input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
+		while (1);
+	}
+	for (i = 0; i < len; ++i)
+		if (p[i] == '\n' || p[i] == '\r')
+			p[i] = '\0';
+		else if (p[i] == '\t')
+			p[i] = ' ';
 
-        printf("uci in: %s\n", uci_input_buffer);
+	printf("uci in: %s\n", uci_input_buffer);
 
-        p = strsep(&next, " ");
-        if (!p || strlen(p) <= 1)
-                return UCI_SEARCH_CONT;
-        if (strcmp(p, "uci") == 0)
-        {
-                uci_reply("id name numbat\n");
-                uci_reply("id author Stacey Campbell\n");
-                uci_reply("option name OwnBook type check default false\n");
-                // uci_reply("option name UCI_DrawOffers type check default true\n"); // currently hangs xboard
-                uci_reply("uciok\n");
-        }
-        else if (strcmp(p, "isready") == 0)
-        {
-                uci_search_action = UCI_SEARCH_CONT;
-                uci_reply("readyok\n");
-        }
-        else if (strcmp(p, "ucinewgame") == 0)
-        {
-                killer_clear_table();
-                trans_clear_table();
-                q_trans_clear_table();
-                uci_init();
-                nm_init();
-        }
-        else if (strcmp(p, "position") == 0)
-        {
-                p = strsep(&next, " ");
-                if (!p)
-                        return UCI_SEARCH_CONT;
-                if (strcmp(p, "fen") == 0)
-                {
-                        fen_board((uint8_t *) next, &game[0]);
-                        game_moves = 1;
-                }
-                else if (strcmp(p, "startpos") == 0)
-                {
-                        numbat_write_half_move(0);
-                        uci_init();
-                }
-                p = strstr(next, "moves");
-                if (!p)
-                        return UCI_SEARCH_CONT;
-                p += strlen("moves ");
-                next = p;
-                while ((p = strsep(&next, " ")) != 0)
-                        if (uci_move(p))
-                        {
-                                xil_printf("%s: unkown uci move %s\n", __PRETTY_FUNCTION__, p);
-                                return UCI_SEARCH_CONT;
-                        }
-        }
-        else if (strcmp(p, "go") == 0)
-        {
-                int32_t main, increment;
-                int32_t w_main, w_increment;
-                int32_t b_main, b_increment;
-                uint32_t side;
-                char uci_str[6];
-                char best_move[128];
-                static tc_t tc;
-                static tc_t pondering_tc;
+	p = strsep(&next, " ");
+	if (!p || strlen(p) <= 1)
+		return UCI_SEARCH_CONT;
+	if (strcmp(p, "uci") == 0)
+	{
+		uci_reply("id name numbat\n");
+		uci_reply("id author Stacey Campbell\n");
+		uci_reply("option name OwnBook type check default false\n");
+		// uci_reply("option name UCI_DrawOffers type check default true\n"); // currently hangs xboard
+		uci_reply("uciok\n");
+	}
+	else if (strcmp(p, "isready") == 0)
+	{
+		uci_search_action = UCI_SEARCH_CONT;
+		uci_reply("readyok\n");
+	}
+	else if (strcmp(p, "ucinewgame") == 0)
+	{
+		killer_clear_table();
+		trans_clear_table();
+		q_trans_clear_table();
+		uci_init();
+		nm_init();
+	}
+	else if (strcmp(p, "position") == 0)
+	{
+		p = strsep(&next, " ");
+		if (!p)
+			return UCI_SEARCH_CONT;
+		if (strcmp(p, "fen") == 0)
+		{
+			fen_board((uint8_t *) next, &game[0]);
+			game_moves = 1;
+		}
+		else if (strcmp(p, "startpos") == 0)
+		{
+			numbat_write_half_move(0);
+			uci_init();
+		}
+		p = strstr(next, "moves");
+		if (!p)
+			return UCI_SEARCH_CONT;
+		p += strlen("moves ");
+		next = p;
+		while ((p = strsep(&next, " ")) != 0)
+			if (uci_move(p))
+			{
+				xil_printf("%s: unkown uci move %s\n", __PRETTY_FUNCTION__, p);
+				return UCI_SEARCH_CONT;
+			}
+	}
+	else if (strcmp(p, "go") == 0)
+	{
+		int32_t main, increment;
+		int32_t w_main, w_increment;
+		int32_t b_main, b_increment;
+		uint32_t side;
+		char uci_str[6];
+		char best_move[128];
+		static tc_t tc;
+		static tc_t pondering_tc;
 
-                if (game_moves < 1)
-                {
-                        printf("%s: attempt to use uninitialized game, stopping (%s %d).\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                        while (1);
-                }
-                if (game[game_moves - 1].white_to_move)
-                        side = 0;
-                else
-                        side = 1;
-                w_main = 30 * 1000;
-                w_increment = 0;
-                b_main = 30 * 1000;
-                b_increment = 0;
-                while ((p = strsep(&next, " ")) != 0)
-                {
-                        if (strcmp(p, "wtime") == 0)
-                        {
-                                p = strsep(&next, " ");
-                                if (!p)
-                                        return UCI_SEARCH_CONT;
-                                w_main = strtoul(p, 0, 0);
-                        }
-                        else if (strcmp(p, "winc") == 0)
-                        {
-                                p = strsep(&next, " ");
-                                if (!p)
-                                        return UCI_SEARCH_CONT;
-                                w_increment = strtoul(p, 0, 0);
-                        }
-                        if (strcmp(p, "btime") == 0)
-                        {
-                                p = strsep(&next, " ");
-                                if (!p)
-                                        return UCI_SEARCH_CONT;
-                                b_main = strtoul(p, 0, 0);
-                        }
-                        else if (strcmp(p, "binc") == 0)
-                        {
-                                p = strsep(&next, " ");
-                                if (!p)
-                                        return UCI_SEARCH_CONT;
-                                b_increment = strtoul(p, 0, 0);
-                        }
-                        else if (strcmp(p, "infinite") == 0)
-                        {
-                                w_main = 3600 * 1000;;
-                                w_increment = 0;
-                                b_main = 3600 * 1000;;
-                                b_increment = 0;
-                        }
-                }
-                if (side == 0)
-                {
-                        main = w_main / 1000;
-                        increment = w_increment / 1000;
-                }
-                else
-                {
-                        main = b_main / 1000;
-                        increment = b_increment / 1000;
-                }
-                tc_set(&tc, side, main, increment);
-                uci_go(&tc, &resign);   // resign ignored for now, xboard hang
-                uci_string(&game[game_moves - 1].uci, uci_str);
-                strcpy(best_move, "bestmove ");
-                strcat(best_move, uci_str);
-                strcat(best_move, "\n");
-                uci_reply(best_move);
-                {
-                        pondering = 1;
-                        tc_set(&pondering_tc, ! side, 10 * 60 * 1000, 0); // ponder for 10 minutes or until interupted
-                        (void)nm_top(&pondering_tc, 0, 1, 0);
-                        pondering = 0;
-                }
-        }
-        else if (strcmp(p, "stop") == 0)
-        {
-                uci_search_action = UCI_SEARCH_STOP;    // redundant, here for clarity
-        }
+		if (game_moves < 1)
+		{
+			printf("%s: attempt to use uninitialized game, stopping (%s %d).\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+			while (1);
+		}
+		if (game[game_moves - 1].white_to_move)
+			side = 0;
+		else
+			side = 1;
+		w_main = 30 * 1000;
+		w_increment = 0;
+		b_main = 30 * 1000;
+		b_increment = 0;
+		while ((p = strsep(&next, " ")) != 0)
+		{
+			if (strcmp(p, "wtime") == 0)
+			{
+				p = strsep(&next, " ");
+				if (!p)
+					return UCI_SEARCH_CONT;
+				w_main = strtoul(p, 0, 0);
+			}
+			else if (strcmp(p, "winc") == 0)
+			{
+				p = strsep(&next, " ");
+				if (!p)
+					return UCI_SEARCH_CONT;
+				w_increment = strtoul(p, 0, 0);
+			}
+			if (strcmp(p, "btime") == 0)
+			{
+				p = strsep(&next, " ");
+				if (!p)
+					return UCI_SEARCH_CONT;
+				b_main = strtoul(p, 0, 0);
+			}
+			else if (strcmp(p, "binc") == 0)
+			{
+				p = strsep(&next, " ");
+				if (!p)
+					return UCI_SEARCH_CONT;
+				b_increment = strtoul(p, 0, 0);
+			}
+			else if (strcmp(p, "infinite") == 0)
+			{
+				w_main = 3600 * 1000;;
+				w_increment = 0;
+				b_main = 3600 * 1000;;
+				b_increment = 0;
+			}
+		}
+		if (side == 0)
+		{
+			main = w_main / 1000;
+			increment = w_increment / 1000;
+		}
+		else
+		{
+			main = b_main / 1000;
+			increment = b_increment / 1000;
+		}
+		tc_set(&tc, side, main, increment);
+		uci_go(&tc, &resign);	// resign ignored for now, xboard hang
+		uci_string(&game[game_moves - 1].uci, uci_str);
+		strcpy(best_move, "bestmove ");
+		strcat(best_move, uci_str);
+		strcat(best_move, "\n");
+		uci_reply(best_move);
+		{
+			pondering = 1;
+			tc_set(&pondering_tc, !side, 10 * 60 * 1000, 0);	// ponder for 10 minutes or until interupted
+			(void)nm_top(&pondering_tc, 0, 1, 0);
+			pondering = 0;
+		}
+	}
+	else if (strcmp(p, "stop") == 0)
+	{
+		uci_search_action = UCI_SEARCH_STOP;	// redundant, here for clarity
+	}
 
-        return uci_search_action;
+	return uci_search_action;
 }
 
 void
 uci_resign(void)
 {
-        uci_reply("info string resign\n");
+	uci_reply("info string resign\n");
 }
 
 void
 uci_currmove(int32_t depth, int32_t seldepth, const uci_t * currmove, int32_t currmovenumber, int32_t score)
 {
-        char uci_str[7];
-        char info_str[1024];
+	char uci_str[7];
+	char info_str[1024];
 
-        if (pondering)
-                return;
-        uci_string(currmove, uci_str);
-        snprintf(info_str, sizeof(info_str), "info depth %d seldepth %d currmove %s currmovenumber %d score cp %d\n",
-                 depth, seldepth, uci_str, currmovenumber, score);
-        uci_reply(info_str);
+	if (pondering)
+		return;
+	uci_string(currmove, uci_str);
+	snprintf(info_str, sizeof(info_str), "info depth %d seldepth %d currmove %s currmovenumber %d score cp %d\n",
+		 depth, seldepth, uci_str, currmovenumber, score);
+	uci_reply(info_str);
 }
 
 void
 uci_pv(int32_t depth, int32_t score, uint32_t time_ms, uint32_t nodes, uint32_t nps, const uci_t * ply0_move, const uci_t * pv)
 {
-        int32_t i;
-        char depth_str[64];
-        char score_str[64];
-        char pv_str[512];
-        char uci_str[7];
-        char info_str[1024];
+	int32_t i;
+	char depth_str[64];
+	char score_str[64];
+	char pv_str[512];
+	char uci_str[7];
+	char info_str[1024];
 
-        if (pondering)
-                return;
-        snprintf(depth_str, sizeof(depth_str), "%d", depth);
-        snprintf(score_str, sizeof(score_str), "%d", score);
-        uci_string(ply0_move, pv_str);
-        uci_str[0] = ' ';
-        for (i = 0; i < PV_ARRAY_COUNT && uci_nonzero(&pv[i]); ++i)
-        {
-                uci_string(&pv[i], &uci_str[1]);
-                strncat(pv_str, uci_str, sizeof(pv_str) - 1);
-        }
-        pv_str[sizeof(pv_str) - 1] = '\0';
-        snprintf(info_str, sizeof(info_str), "info depth %s score cp %s time %d nodes %d nps %d pv %s\n",
-                 depth_str, score_str, time_ms, nodes, nps, pv_str);
-        uci_reply(info_str);
+	if (pondering)
+		return;
+	snprintf(depth_str, sizeof(depth_str), "%d", depth);
+	snprintf(score_str, sizeof(score_str), "%d", score);
+	uci_string(ply0_move, pv_str);
+	uci_str[0] = ' ';
+	for (i = 0; i < PV_ARRAY_COUNT && uci_nonzero(&pv[i]); ++i)
+	{
+		uci_string(&pv[i], &uci_str[1]);
+		strncat(pv_str, uci_str, sizeof(pv_str) - 1);
+	}
+	pv_str[sizeof(pv_str) - 1] = '\0';
+	snprintf(info_str, sizeof(info_str), "info depth %s score cp %s time %d nodes %d nps %d pv %s\n",
+		 depth_str, score_str, time_ms, nodes, nps, pv_str);
+	uci_reply(info_str);
 }
 
 void
 uci_input_reset(void)
 {
-        memset(uci_input_buffer, 0, UCI_INPUT_BUFFER_SIZE);
-        uci_input_index = 0;
+	memset(uci_input_buffer, 0, UCI_INPUT_BUFFER_SIZE);
+	uci_input_index = 0;
 }
 
 uint32_t
 uci_input_poll(void)
 {
-        char c;
-        uint32_t uci_search_action;
+	char c;
+	uint32_t uci_search_action;
 
-        tmon_poll();
-        if (enable_lwip)
-        {
+	tmon_poll();
+	if (enable_lwip)
+	{
 #if UCI_TCP_COMMS == 1
-                tcp_task();
-                if (tcp_uci_fifo_count() == 0)
-                        return UCI_SEARCH_CONT;
-                if (pondering)
-                        return UCI_SEARCH_STOP;
-                c = tcp_uci_read_char();
+		tcp_task();
+		if (tcp_uci_fifo_count() == 0)
+			return UCI_SEARCH_CONT;
+		if (pondering)
+			return UCI_SEARCH_STOP;
+		c = tcp_uci_read_char();
 #else
-                if (!XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR))
-                        return UCI_SEARCH_CONT;
-                c = XUartPs_ReadReg(XPAR_XUARTPS_1_BASEADDR, XUARTPS_FIFO_OFFSET);
+		if (!XUartPs_IsReceiveData(XPAR_XUARTPS_1_BASEADDR))
+			return UCI_SEARCH_CONT;
+		c = XUartPs_ReadReg(XPAR_XUARTPS_1_BASEADDR, XUARTPS_FIFO_OFFSET);
 #endif
-                uci_input_buffer[uci_input_index] = c;
-                uci_input_buffer[uci_input_index + 1] = '\0';
-                ++uci_input_index;
-                if (uci_input_index >= UCI_INPUT_BUFFER_SIZE - 1)
-                {
-                        printf("%s: input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
-                        while (1);
-                }
-                if (c != '\n')
-                        return UCI_SEARCH_CONT;
-                uci_search_action = uci_dispatch();
-                uci_input_reset();
-        }
-        else
-                uci_search_action = UCI_SEARCH_CONT;
+		uci_input_buffer[uci_input_index] = c;
+		uci_input_buffer[uci_input_index + 1] = '\0';
+		++uci_input_index;
+		if (uci_input_index >= UCI_INPUT_BUFFER_SIZE - 1)
+		{
+			printf("%s: input buffer overflow, stopping\n", __PRETTY_FUNCTION__);
+			while (1);
+		}
+		if (c != '\n')
+			return UCI_SEARCH_CONT;
+		uci_search_action = uci_dispatch();
+		uci_input_reset();
+	}
+	else
+		uci_search_action = UCI_SEARCH_CONT;
 
-        return uci_search_action;
+	return uci_search_action;
 }
 
 void
 uci_init(void)
 {
-        int32_t i, j;
+	int32_t i, j;
 
-        for (i = 2; i <= 5; ++i)
-                for (j = 0; j < 8; ++j)
-                        numbat_place(&game[0], i, j, EMPTY_POSN);
-        for (j = 0; j < 8; ++j)
-        {
-                numbat_place(&game[0], 1, j, WHITE_PAWN);
-                numbat_place(&game[0], 6, j, BLACK_PAWN);
-        }
-        numbat_place(&game[0], 0, 0, WHITE_ROOK);
-        numbat_place(&game[0], 0, 1, WHITE_KNIT);
-        numbat_place(&game[0], 0, 2, WHITE_BISH);
-        numbat_place(&game[0], 0, 3, WHITE_QUEN);
-        numbat_place(&game[0], 0, 4, WHITE_KING);
-        numbat_place(&game[0], 0, 5, WHITE_BISH);
-        numbat_place(&game[0], 0, 6, WHITE_KNIT);
-        numbat_place(&game[0], 0, 7, WHITE_ROOK);
+	for (i = 2; i <= 5; ++i)
+		for (j = 0; j < 8; ++j)
+			numbat_place(&game[0], i, j, EMPTY_POSN);
+	for (j = 0; j < 8; ++j)
+	{
+		numbat_place(&game[0], 1, j, WHITE_PAWN);
+		numbat_place(&game[0], 6, j, BLACK_PAWN);
+	}
+	numbat_place(&game[0], 0, 0, WHITE_ROOK);
+	numbat_place(&game[0], 0, 1, WHITE_KNIT);
+	numbat_place(&game[0], 0, 2, WHITE_BISH);
+	numbat_place(&game[0], 0, 3, WHITE_QUEN);
+	numbat_place(&game[0], 0, 4, WHITE_KING);
+	numbat_place(&game[0], 0, 5, WHITE_BISH);
+	numbat_place(&game[0], 0, 6, WHITE_KNIT);
+	numbat_place(&game[0], 0, 7, WHITE_ROOK);
 
-        numbat_place(&game[0], 7, 0, BLACK_ROOK);
-        numbat_place(&game[0], 7, 1, BLACK_KNIT);
-        numbat_place(&game[0], 7, 2, BLACK_BISH);
-        numbat_place(&game[0], 7, 3, BLACK_QUEN);
-        numbat_place(&game[0], 7, 4, BLACK_KING);
-        numbat_place(&game[0], 7, 5, BLACK_BISH);
-        numbat_place(&game[0], 7, 6, BLACK_KNIT);
-        numbat_place(&game[0], 7, 7, BLACK_ROOK);
+	numbat_place(&game[0], 7, 0, BLACK_ROOK);
+	numbat_place(&game[0], 7, 1, BLACK_KNIT);
+	numbat_place(&game[0], 7, 2, BLACK_BISH);
+	numbat_place(&game[0], 7, 3, BLACK_QUEN);
+	numbat_place(&game[0], 7, 4, BLACK_KING);
+	numbat_place(&game[0], 7, 5, BLACK_BISH);
+	numbat_place(&game[0], 7, 6, BLACK_KNIT);
+	numbat_place(&game[0], 7, 7, BLACK_ROOK);
 
-        game[0].en_passant_col = 0 << EN_PASSANT_VALID_BIT;
-        game[0].castle_mask = 0xF;
-        game[0].white_to_move = 1;
-        game[0].half_move_clock = 0;
-        game[0].full_move_number = 1;
+	game[0].en_passant_col = 0 << EN_PASSANT_VALID_BIT;
+	game[0].castle_mask = 0xF;
+	game[0].white_to_move = 1;
+	game[0].half_move_clock = 0;
+	game[0].full_move_number = 1;
 
-        game_moves = 1;
+	game_moves = 1;
 }
 
 int32_t
 uci_move(char *p)
 {
-        int32_t col_from, row_from, col_to, row_to;
-        uint32_t piece, promotion, piece_type;
-        board_t *previous_board, next_board;
+	int32_t col_from, row_from, col_to, row_to;
+	uint32_t piece, promotion, piece_type;
+	board_t *previous_board, next_board;
 
-        if (game_moves == 0)
-        {
-                printf("%s: no game has been started, ignoring %s\n", __PRETTY_FUNCTION__, p);
-                return -3;
-        }
-        previous_board = &game[game_moves - 1];
-        next_board = *previous_board;
-        next_board.capture = 0;
-        next_board.white_to_move = !previous_board->white_to_move;
-        if (game_moves == 1)
-        {
-                next_board.full_move_number = 1;
-                next_board.half_move_clock = 0;
-        }
-        else
-        {
-                if (next_board.white_to_move)
-                        ++next_board.full_move_number;
-                ++next_board.half_move_clock;   // overridden below where required
-        }
-        next_board.en_passant_col = 0 << EN_PASSANT_VALID_BIT;
+	if (game_moves == 0)
+	{
+		printf("%s: no game has been started, ignoring %s\n", __PRETTY_FUNCTION__, p);
+		return -3;
+	}
+	previous_board = &game[game_moves - 1];
+	next_board = *previous_board;
+	next_board.capture = 0;
+	next_board.white_to_move = !previous_board->white_to_move;
+	if (game_moves == 1)
+	{
+		next_board.full_move_number = 1;
+		next_board.half_move_clock = 0;
+	}
+	else
+	{
+		if (next_board.white_to_move)
+			++next_board.full_move_number;
+		++next_board.half_move_clock;	// overridden below where required
+	}
+	next_board.en_passant_col = 0 << EN_PASSANT_VALID_BIT;
 
-        col_from = p[0] - 'a';
-        row_from = p[1] - '1';
-        col_to = p[2] - 'a';
-        row_to = p[3] - '1';
-        if (col_from < 0 || col_from > 7 || row_from < 0 || row_from > 7 || col_to < 0 || col_to > 7 || row_to < 0 || row_to > 7)
-        {
-                xil_printf("%s: bad uci move (%s)\n", __PRETTY_FUNCTION__, p);
-                return -2;
-        }
-        switch (p[4])
-        {
-        case 'Q':
-        case 'q':
-                promotion = PIECE_QUEN;
-                break;
-        case 'N':
-        case 'n':
-                promotion = PIECE_KNIT;
-                break;
-        case 'B':
-        case 'b':
-                promotion = PIECE_BISH;
-                break;
-        case 'R':
-        case 'r':
-                promotion = PIECE_ROOK;
-                break;
-        case '\0':
-                promotion = EMPTY_POSN;
-                break;
-        default:
-                fprintf(stderr, "%s: problems (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
-                return -1;
-        }
-        if (promotion != EMPTY_POSN)
-        {
-                if (previous_board->white_to_move)
-                        promotion |= 0 << BLACK_BIT;
-                else
-                        promotion |= 1 << BLACK_BIT;
-        }
-        next_board.uci.row_from = row_from;
-        next_board.uci.col_from = col_from;
-        next_board.uci.row_to = row_to;
-        next_board.uci.col_to = col_to;
-        next_board.uci.promotion = promotion;
+	col_from = p[0] - 'a';
+	row_from = p[1] - '1';
+	col_to = p[2] - 'a';
+	row_to = p[3] - '1';
+	if (col_from < 0 || col_from > 7 || row_from < 0 || row_from > 7 || col_to < 0 || col_to > 7 || row_to < 0 || row_to > 7)
+	{
+		xil_printf("%s: bad uci move (%s)\n", __PRETTY_FUNCTION__, p);
+		return -2;
+	}
+	switch (p[4])
+	{
+	case 'Q':
+	case 'q':
+		promotion = PIECE_QUEN;
+		break;
+	case 'N':
+	case 'n':
+		promotion = PIECE_KNIT;
+		break;
+	case 'B':
+	case 'b':
+		promotion = PIECE_BISH;
+		break;
+	case 'R':
+	case 'r':
+		promotion = PIECE_ROOK;
+		break;
+	case '\0':
+		promotion = EMPTY_POSN;
+		break;
+	default:
+		fprintf(stderr, "%s: problems (%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+		return -1;
+	}
+	if (promotion != EMPTY_POSN)
+	{
+		if (previous_board->white_to_move)
+			promotion |= 0 << BLACK_BIT;
+		else
+			promotion |= 1 << BLACK_BIT;
+	}
+	next_board.uci.row_from = row_from;
+	next_board.uci.col_from = col_from;
+	next_board.uci.row_to = row_to;
+	next_board.uci.col_to = col_to;
+	next_board.uci.promotion = promotion;
 
-        piece = numbat_get_piece(previous_board, row_from, col_from);
-        piece_type = piece & ~(1 << BLACK_BIT);
+	piece = numbat_get_piece(previous_board, row_from, col_from);
+	piece_type = piece & ~(1 << BLACK_BIT);
 
-        // unconditionally vacate "from" square
-        numbat_place(&next_board, row_from, col_from, EMPTY_POSN);
+	// unconditionally vacate "from" square
+	numbat_place(&next_board, row_from, col_from, EMPTY_POSN);
 
-        if (row_to == 0)
-        {
-                if (col_to == 7)
-                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_SHORT);
-                if (col_to == 0)
-                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_LONG);
-        }
-        if (row_to == 7)
-        {
-                if (col_to == 7)
-                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_SHORT);
-                if (col_to == 0)
-                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_LONG);
-        }
+	if (row_to == 0)
+	{
+		if (col_to == 7)
+			next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_SHORT);
+		if (col_to == 0)
+			next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_LONG);
+	}
+	if (row_to == 7)
+	{
+		if (col_to == 7)
+			next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_SHORT);
+		if (col_to == 0)
+			next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_LONG);
+	}
 
-        if (piece == WHITE_ROOK && row_from == 0)
-        {
-                if (col_from == 7)
-                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_SHORT);
-                else if (col_from == 0)
-                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_LONG);
-        }
-        else if (piece == BLACK_ROOK && row_from == 7)
-        {
-                if (col_from == 7)
-                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_SHORT);
-                else if (col_from == 0)
-                        next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_LONG);
-        }
-        else if (piece == WHITE_KING)
-                next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_SHORT | 1 << CASTLE_WHITE_LONG);
-        else if (piece == BLACK_KING)
-                next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_SHORT | 1 << CASTLE_BLACK_LONG);
+	if (piece == WHITE_ROOK && row_from == 0)
+	{
+		if (col_from == 7)
+			next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_SHORT);
+		else if (col_from == 0)
+			next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_LONG);
+	}
+	else if (piece == BLACK_ROOK && row_from == 7)
+	{
+		if (col_from == 7)
+			next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_SHORT);
+		else if (col_from == 0)
+			next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_LONG);
+	}
+	else if (piece == WHITE_KING)
+		next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_WHITE_SHORT | 1 << CASTLE_WHITE_LONG);
+	else if (piece == BLACK_KING)
+		next_board.castle_mask = previous_board->castle_mask & ~(1 << CASTLE_BLACK_SHORT | 1 << CASTLE_BLACK_LONG);
 
-        // castling
-        if (piece == WHITE_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 6)
-        {
-                numbat_place(&next_board, row_from, 7, EMPTY_POSN);
-                numbat_place(&next_board, row_from, 5, WHITE_ROOK);
-                numbat_place(&next_board, row_from, 6, WHITE_KING);
-        }
-        else if (piece == WHITE_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 2)
-        {
-                numbat_place(&next_board, row_from, 0, EMPTY_POSN);
-                numbat_place(&next_board, row_from, 1, EMPTY_POSN);
-                numbat_place(&next_board, row_from, 3, WHITE_ROOK);
-                numbat_place(&next_board, row_from, 2, WHITE_KING);
-        }
-        else if (piece == BLACK_KING && row_from == 7 && row_to == 7 && col_from == 4 && col_to == 6)
-        {
-                numbat_place(&next_board, row_from, 7, EMPTY_POSN);
-                numbat_place(&next_board, row_from, 5, BLACK_ROOK);
-                numbat_place(&next_board, row_from, 6, BLACK_KING);
-        }
-        else if (piece == BLACK_KING && row_from == 7 && row_to == 7 && col_from == 4 && col_to == 2)
-        {
-                numbat_place(&next_board, row_from, 0, EMPTY_POSN);
-                numbat_place(&next_board, row_from, 1, EMPTY_POSN);
-                numbat_place(&next_board, row_from, 3, BLACK_ROOK);
-                numbat_place(&next_board, row_from, 2, BLACK_KING);
-        }
-        // en-passant target
-        else if (piece == WHITE_PAWN && row_from == 1 && row_to == 3)
-        {
-                numbat_place(&next_board, row_to, col_to, WHITE_PAWN);
-                next_board.half_move_clock = 0;
-                next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
-        }
-        else if (piece == BLACK_PAWN && row_from == 6 && row_to == 4)
-        {
-                numbat_place(&next_board, row_to, col_to, BLACK_PAWN);
-                next_board.half_move_clock = 0;
-                next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
-        }
-        // en-passant capture
-        else if (piece == WHITE_PAWN && numbat_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
-        {
-                numbat_place(&next_board, row_to, col_to, WHITE_PAWN);
-                numbat_place(&next_board, row_from, col_to, EMPTY_POSN);
-                next_board.capture = 1;
-                next_board.half_move_clock = 0;
-        }
-        else if (piece == BLACK_PAWN && numbat_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
-        {
-                numbat_place(&next_board, row_to, col_to, BLACK_PAWN);
-                numbat_place(&next_board, row_from, col_to, EMPTY_POSN);
-                next_board.capture = 1;
-                next_board.half_move_clock = 0;
-        }
-        // promotion
-        else if (piece == WHITE_PAWN && row_to == 7)
-        {
-                numbat_place(&next_board, 7, col_to, promotion);
-                next_board.capture = numbat_get_piece(previous_board, 7, col_to) != EMPTY_POSN;
-                next_board.half_move_clock = 0;
-        }
-        else if (piece == BLACK_PAWN && row_to == 0)
-        {
-                numbat_place(&next_board, 0, col_to, promotion);
-                next_board.capture = numbat_get_piece(previous_board, 7, col_to) != EMPTY_POSN;
-                next_board.half_move_clock = 0;
-        }
-        // all other moves
-        else
-        {
-                numbat_place(&next_board, row_to, col_to, piece);
-                next_board.capture = numbat_get_piece(previous_board, row_to, col_to) != EMPTY_POSN;
-                if (next_board.capture || piece_type == PIECE_PAWN)
-                        next_board.half_move_clock = 0;
-        }
-        game[game_moves] = next_board;
-        ++game_moves;
+	// castling
+	if (piece == WHITE_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 6)
+	{
+		numbat_place(&next_board, row_from, 7, EMPTY_POSN);
+		numbat_place(&next_board, row_from, 5, WHITE_ROOK);
+		numbat_place(&next_board, row_from, 6, WHITE_KING);
+	}
+	else if (piece == WHITE_KING && row_from == 0 && row_to == 0 && col_from == 4 && col_to == 2)
+	{
+		numbat_place(&next_board, row_from, 0, EMPTY_POSN);
+		numbat_place(&next_board, row_from, 1, EMPTY_POSN);
+		numbat_place(&next_board, row_from, 3, WHITE_ROOK);
+		numbat_place(&next_board, row_from, 2, WHITE_KING);
+	}
+	else if (piece == BLACK_KING && row_from == 7 && row_to == 7 && col_from == 4 && col_to == 6)
+	{
+		numbat_place(&next_board, row_from, 7, EMPTY_POSN);
+		numbat_place(&next_board, row_from, 5, BLACK_ROOK);
+		numbat_place(&next_board, row_from, 6, BLACK_KING);
+	}
+	else if (piece == BLACK_KING && row_from == 7 && row_to == 7 && col_from == 4 && col_to == 2)
+	{
+		numbat_place(&next_board, row_from, 0, EMPTY_POSN);
+		numbat_place(&next_board, row_from, 1, EMPTY_POSN);
+		numbat_place(&next_board, row_from, 3, BLACK_ROOK);
+		numbat_place(&next_board, row_from, 2, BLACK_KING);
+	}
+	// en-passant target
+	else if (piece == WHITE_PAWN && row_from == 1 && row_to == 3)
+	{
+		numbat_place(&next_board, row_to, col_to, WHITE_PAWN);
+		next_board.half_move_clock = 0;
+		next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
+	}
+	else if (piece == BLACK_PAWN && row_from == 6 && row_to == 4)
+	{
+		numbat_place(&next_board, row_to, col_to, BLACK_PAWN);
+		next_board.half_move_clock = 0;
+		next_board.en_passant_col = 1 << EN_PASSANT_VALID_BIT | col_to;
+	}
+	// en-passant capture
+	else if (piece == WHITE_PAWN && numbat_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
+	{
+		numbat_place(&next_board, row_to, col_to, WHITE_PAWN);
+		numbat_place(&next_board, row_from, col_to, EMPTY_POSN);
+		next_board.capture = 1;
+		next_board.half_move_clock = 0;
+	}
+	else if (piece == BLACK_PAWN && numbat_get_piece(previous_board, row_to, col_to) == EMPTY_POSN && col_from != col_to)
+	{
+		numbat_place(&next_board, row_to, col_to, BLACK_PAWN);
+		numbat_place(&next_board, row_from, col_to, EMPTY_POSN);
+		next_board.capture = 1;
+		next_board.half_move_clock = 0;
+	}
+	// promotion
+	else if (piece == WHITE_PAWN && row_to == 7)
+	{
+		numbat_place(&next_board, 7, col_to, promotion);
+		next_board.capture = numbat_get_piece(previous_board, 7, col_to) != EMPTY_POSN;
+		next_board.half_move_clock = 0;
+	}
+	else if (piece == BLACK_PAWN && row_to == 0)
+	{
+		numbat_place(&next_board, 0, col_to, promotion);
+		next_board.capture = numbat_get_piece(previous_board, 7, col_to) != EMPTY_POSN;
+		next_board.half_move_clock = 0;
+	}
+	// all other moves
+	else
+	{
+		numbat_place(&next_board, row_to, col_to, piece);
+		next_board.capture = numbat_get_piece(previous_board, row_to, col_to) != EMPTY_POSN;
+		if (next_board.capture || piece_type == PIECE_PAWN)
+			next_board.half_move_clock = 0;
+	}
+	game[game_moves] = next_board;
+	++game_moves;
 
-        return 0;
+	return 0;
 }
 
 void
 uci_print_game(uint32_t result)
 {
-        uint32_t i;
-        char uci_str[6];
-        static const char *result_str[4] = { "1/2-1/2", "1-0", "0-1", "" };
+	uint32_t i;
+	char uci_str[6];
+	static const char *result_str[4] = { "1/2-1/2", "1-0", "0-1", "" };
 
-        if (game_moves <= 1)
-                return;
-        for (i = 1; i < game_moves; ++i)
-        {
-                uci_string(&game[i].uci, uci_str);
-                printf("%s ", uci_str);
-                if (i % 16 == 0)
-                        printf("\n");
-        }
-        if (result >= sizeof(result_str) / sizeof(result_str[0]))
-        {
-                printf("%s: Bad result value!\n", __PRETTY_FUNCTION__);
-                return;
-        }
-        printf("%s\n", result_str[result]);
+	if (game_moves <= 1)
+		return;
+	for (i = 1; i < game_moves; ++i)
+	{
+		uci_string(&game[i].uci, uci_str);
+		printf("%s ", uci_str);
+		if (i % 16 == 0)
+			printf("\n");
+	}
+	if (result >= sizeof(result_str) / sizeof(result_str[0]))
+	{
+		printf("%s: Bad result value!\n", __PRETTY_FUNCTION__);
+		return;
+	}
+	printf("%s\n", result_str[result]);
 }
 
 void
 uci_string(const uci_t * uci, char *str)
 {
-        char ch;
-        uint32_t promotion_type;
+	char ch;
+	uint32_t promotion_type;
 
-        str[0] = uci->col_from + 'a';
-        str[1] = uci->row_from + '1';
-        str[2] = uci->col_to + 'a';
-        str[3] = uci->row_to + '1';
+	str[0] = uci->col_from + 'a';
+	str[1] = uci->row_from + '1';
+	str[2] = uci->col_to + 'a';
+	str[3] = uci->row_to + '1';
 
-        if (uci->promotion != EMPTY_POSN)
-        {
-                promotion_type = uci->promotion & ~(1 << BLACK_BIT);
-                switch (promotion_type)
-                {
-                case PIECE_QUEN:
-                        ch = 'Q';
-                        break;
-                case PIECE_ROOK:
-                        ch = 'R';
-                        break;
-                case PIECE_BISH:
-                        ch = 'B';
-                        break;
-                case PIECE_KNIT:
-                        ch = 'N';
-                        break;
-                default:
-                        ch = '?';
-                        break;
-                }
-                str[4] = ch;
-                str[5] = '\0';
-        }
-        else
-                str[4] = '\0';
+	if (uci->promotion != EMPTY_POSN)
+	{
+		promotion_type = uci->promotion & ~(1 << BLACK_BIT);
+		switch (promotion_type)
+		{
+		case PIECE_QUEN:
+			ch = 'Q';
+			break;
+		case PIECE_ROOK:
+			ch = 'R';
+			break;
+		case PIECE_BISH:
+			ch = 'B';
+			break;
+		case PIECE_KNIT:
+			ch = 'N';
+			break;
+		default:
+			ch = '?';
+			break;
+		}
+		str[4] = ch;
+		str[5] = '\0';
+	}
+	else
+		str[4] = '\0';
 }
