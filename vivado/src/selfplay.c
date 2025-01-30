@@ -57,13 +57,16 @@ selfplay(void)
 	player_b_tune = nm_current_tune();
 
 	player_a_tune.initial_depth_limit = 1;
-	player_b_tune.initial_depth_limit = 3;
+	player_a_tune.use_pv = 1;
+
+	player_b_tune.initial_depth_limit = 1;
+	player_b_tune.use_pv = 0;
 
 	player_a_win = 0;
 	player_b_win = 0;
 	draw = 0;
 	key_hit = 0;
-	for (round = 0; round < 50 && !key_hit; ++round)
+	for (round = 0; round < 150 && !key_hit; ++round)
 	{
 		newgame_init();
 		opening = random_opening_string();

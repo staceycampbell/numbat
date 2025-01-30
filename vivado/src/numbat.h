@@ -138,6 +138,7 @@ typedef struct tune_t
         uint32_t algorithm_enable;
         int32_t q_delta;
 	int32_t initial_depth_limit;
+	uint32_t use_pv;
 } tune_t;
 
 static inline void

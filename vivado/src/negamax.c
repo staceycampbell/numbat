@@ -248,8 +248,11 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	if (value > alpha)
 	{
 		alpha = value;
-		pv_array[pv_index] = board->uci;
-		local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+		if (tune.use_pv)
+		{
+			pv_array[pv_index] = board->uci;
+			local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+		}
 	}
 	else
 	{
@@ -324,7 +327,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	trans_t trans;
 	board_t *board_ptr[MAX_POSITIONS];
 	uint64_t node_start, node_stop, nodes;
-	int32_t pv_next_index;
+	int32_t pv_next_index = 0;
 	int32_t eval_delta;
 
 	if (ply >= MAX_DEPTH - 1)
@@ -345,8 +348,11 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	if (alpha >= beta)
 		return alpha;
 
-	pv_array[pv_index] = zero_move;
-	pv_next_index = pv_index + MAX_DEPTH - ply;
+	if (tune.use_pv)
+	{
+		pv_array[pv_index] = zero_move;
+		pv_next_index = pv_index + MAX_DEPTH - ply;
+	}
 
 	alpha_orig = alpha;
 
@@ -418,11 +424,12 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 			value = -GLOBAL_VALUE_KING;     // prune
 		if (abort_search)
 			return 0;       // will be ignored
-		if (value > alpha && value < beta)
-		{
-			pv_array[pv_index] = board_ptr[index]->uci;
-			local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
-		}
+		if (tune.use_pv)
+			if (value > alpha && value < beta)
+			{
+				pv_array[pv_index] = board_ptr[index]->uci;
+				local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+			}
 		if (value > alpha)
 			alpha = value;
 
@@ -497,9 +504,10 @@ nm_init(void)
 {
 	tune.nm_delta_mult = 10;
 	tune.futility_depth = 2;
-	tune.algorithm_enable = 1;
+	tune.algorithm_enable = 0;
 	tune.q_delta = Q_DELTA;
 	tune.initial_depth_limit = 0;
+	tune.use_pv = 1;
 }
 
 board_t
@@ -639,24 +647,26 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		if (!quiet)
 			if (best_evaluation != -LARGE_EVAL)
 				printf("\n");
-		if (debug_pv_info)
-		{
-			best_board.full_move_number = next_full_move();
-			XTime_GetTime(&t_report);
-			elapsed_ticks = t_report - t_start;
-			elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
-			nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
-			if (!quiet)
+		if (tune.use_pv)
+			if (debug_pv_info)
 			{
-				uci_currmove(depth_limit, q_ply_reached, &board_ptr[0]->uci, best_board.full_move_number, best_evaluation);
-				uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci,
-				       pv_array);
+				best_board.full_move_number = next_full_move();
+				XTime_GetTime(&t_report);
+				elapsed_ticks = t_report - t_start;
+				elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
+				nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
+				if (!quiet)
+				{
+					uci_currmove(depth_limit, q_ply_reached, &board_ptr[0]->uci, best_board.full_move_number, best_evaluation);
+					uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci,
+					       pv_array);
+				}
 			}
-		}
 		if (!abort_search)
 		{
 			qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
-			pv_load_table(pv_array);
+			if (tune.use_pv)
+				pv_load_table(pv_array);
 			++depth_limit;
 		}
 		if (q_ply_reached > valid_q_ply_reached)
