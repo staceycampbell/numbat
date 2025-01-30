@@ -511,35 +511,6 @@ module all_moves #
         pawn_do_init <= row_r == pawn_init_row[white_to_move];
         pawn_do_en_passant <= row_r == pawn_en_passant_row[white_to_move];
         pawn_do_promote <= row_r == pawn_promote_row[white_to_move];
-
-        // black to move
-        castle_short_legal[0] <= castle_mask[`CASTLE_BLACK_SHORT] &&
-                                 board[idx[7][5]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                 board[idx[7][6]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                 white_is_attacking[7 << 3 | 4] == 1'b0 &&
-                                 white_is_attacking[7 << 3 | 5] == 1'b0 &&
-                                 white_is_attacking[7 << 3 | 6] == 1'b0;
-        castle_long_legal[0] <= castle_mask[`CASTLE_BLACK_LONG] &&
-                                board[idx[7][1]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                board[idx[7][2]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                board[idx[7][3]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                white_is_attacking[7 << 3 | 2] == 1'b0 &&
-                                white_is_attacking[7 << 3 | 3] == 1'b0 &&
-                                white_is_attacking[7 << 3 | 4] == 1'b0;
-        // white to move
-        castle_short_legal[1] <= castle_mask[`CASTLE_WHITE_SHORT] &&
-                                 board[idx[0][5]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                 board[idx[0][6]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                 black_is_attacking[0 << 3 | 4] == 1'b0 &&
-                                 black_is_attacking[0 << 3 | 5] == 1'b0 &&
-                                 black_is_attacking[0 << 3 | 6] == 1'b0;
-        castle_long_legal[1] <= castle_mask[`CASTLE_WHITE_LONG] &&
-                                board[idx[0][1]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                board[idx[0][2]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                board[idx[0][3]+:`PIECE_WIDTH] == `EMPTY_POSN &&
-                                black_is_attacking[0 << 3 | 2] == 1'b0 &&
-                                black_is_attacking[0 << 3 | 3] == 1'b0 &&
-                                black_is_attacking[0 << 3 | 4] == 1'b0;
      end
 
    localparam STATE_IDLE = 0;
@@ -623,6 +594,35 @@ module all_moves #
               for (s = 0; s < 64; s = s + 1)
                 square_active[s] <= board[s * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN && // square not empty
                        board[s * `PIECE_WIDTH + `BLACK_BIT] == black_to_move; // my piece
+              
+              // black to move
+              castle_short_legal[0] <= castle_mask[`CASTLE_BLACK_SHORT] &&
+                                       board[idx[7][5]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                       board[idx[7][6]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                       white_is_attacking[7 << 3 | 4] == 1'b0 &&
+                                       white_is_attacking[7 << 3 | 5] == 1'b0 &&
+                                       white_is_attacking[7 << 3 | 6] == 1'b0;
+              castle_long_legal[0] <= castle_mask[`CASTLE_BLACK_LONG] &&
+                                      board[idx[7][1]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                      board[idx[7][2]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                      board[idx[7][3]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                      white_is_attacking[7 << 3 | 2] == 1'b0 &&
+                                      white_is_attacking[7 << 3 | 3] == 1'b0 &&
+                                      white_is_attacking[7 << 3 | 4] == 1'b0;
+              // white to move
+              castle_short_legal[1] <= castle_mask[`CASTLE_WHITE_SHORT] &&
+                                       board[idx[0][5]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                       board[idx[0][6]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                       black_is_attacking[0 << 3 | 4] == 1'b0 &&
+                                       black_is_attacking[0 << 3 | 5] == 1'b0 &&
+                                       black_is_attacking[0 << 3 | 6] == 1'b0;
+              castle_long_legal[1] <= castle_mask[`CASTLE_WHITE_LONG] &&
+                                      board[idx[0][1]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                      board[idx[0][2]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                      board[idx[0][3]+:`PIECE_WIDTH] == `EMPTY_POSN &&
+                                      black_is_attacking[0 << 3 | 2] == 1'b0 &&
+                                      black_is_attacking[0 << 3 | 3] == 1'b0 &&
+                                      black_is_attacking[0 << 3 | 4] == 1'b0;
 
               initial_eval <= eval;
               initial_insufficient_material <= insufficient_material;
