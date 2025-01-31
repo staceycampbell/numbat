@@ -13,24 +13,27 @@ module evaluate_pawns #
    parameter WHITE_PAWNS = 0
    )
    (
-    input 			     clk,
-    input 			     reset,
+    input                            clk,
+    input                            reset,
 
-    input 			     board_valid,
-    input [`BOARD_WIDTH - 1:0] 	     board,
-    input 			     clear_eval,
-    input [63:0] 		     white_is_attacking,
-    input [63:0] 		     black_is_attacking,
+    input                            board_valid,
+    input [`BOARD_WIDTH - 1:0]       board,
+    input                            white_to_move,
+    input                            clear_eval,
+    input [63:0]                     white_is_attacking,
+    input [63:0]                     black_is_attacking,
 
     output signed [EVAL_WIDTH - 1:0] eval_mg,
     output signed [EVAL_WIDTH - 1:0] eval_eg,
-    output 			     eval_valid
+    output                           eval_valid
     );
 
    localparam LATENCY_COUNT = 7;
 
    localparam MY_PAWN = WHITE_PAWNS ? `WHITE_PAWN : `BLACK_PAWN;
    localparam OP_PAWN = WHITE_PAWNS ? `BLACK_PAWN : `WHITE_PAWN;
+   localparam MY_KING = WHITE_PAWNS ? `WHITE_KING : `BLACK_KING;
+   localparam OP_KING = WHITE_PAWNS ? `BLACK_KING : `WHITE_KING;
 
    reg signed [EVAL_WIDTH - 1:0]     pawns_isolated_mg [0:7];
    reg signed [EVAL_WIDTH - 1:0]     pawns_isolated_eg [0:7];
@@ -41,16 +44,28 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     pawns_backward_mg [0:7];
    reg signed [EVAL_WIDTH - 1:0]     pawns_backward_eg [0:7];
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn [0:7];
-   reg [63:0] 			     not_passed_mask [0:63];
-   reg [63:0] 			     passed_pawn_path [0:63];
+   reg [63:0]                        not_passed_mask [0:63];
+   reg [63:0]                        passed_pawn_path [0:63];
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn_base_mg;
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn_base_eg;
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn_free_advance;
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn_defended;
+   reg signed [EVAL_WIDTH - 1:0]     pawn_can_promote;
 
-   reg [63:0] 			     board_neutral_t1;
-   reg [63:0] 			     enemy_neutral_t2;
-   reg [7:0] 			     col_with_pawn_t1;
+   reg [63:0]                        board_neutral_t1;
+   reg [63:0]                        enemy_neutral_t2;
+   reg [7:0]                         col_with_pawn_t1;
+
+   reg [2:0]                         my_king_row, my_king_col;
+   reg [2:0]                         op_king_row, op_king_col;
+   reg                               my_occupied;
+   reg                               op_occupied;
+   reg                               opposition;
+   reg                               on_move;
+   reg [2:0]                         my_king_a8_dist, my_king_h8_dist;
+   reg [2:0]                         op_king_a8_dist, op_king_h8_dist;
+   reg [2:0]                         my_king_pawn_dist_t3 [0:7];
+   reg [2:0]                         op_king_pawn_dist_t3 [0:7];
 
    reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t2 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t2 [0:63];
@@ -61,7 +76,7 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t5;
    reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t5;
 
-   reg [3:0] 			     doubled_distance_t2 [0:63];
+   reg [3:0]                         doubled_distance_t2 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     doubled_eg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t4 [0:7];
@@ -71,7 +86,7 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     doubled_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]     doubled_eg_t6;
 
-   reg [63:0] 			     connected_t2;
+   reg [63:0]                        connected_t2;
    reg signed [EVAL_WIDTH - 1:0]     connected_mg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     connected_eg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     connected_mg_t4 [0:15];
@@ -81,7 +96,7 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     connected_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]     connected_eg_t6;
 
-   reg [63:0] 			     backward_t2;
+   reg [63:0]                        backward_t2;
    reg signed [EVAL_WIDTH - 1:0]     backward_mg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     backward_eg_t3 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     backward_mg_t4 [0:15];
@@ -91,8 +106,8 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     backward_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]     backward_eg_t6;
 
-   reg [2:0] 			     most_adv_row_t2 [0:7];
-   reg [7:0] 			     passed_pawn_t3;
+   reg [2:0]                         most_adv_row_t2 [0:7];
+   reg [7:0]                         passed_pawn_t3;
    reg signed [EVAL_WIDTH - 1:0]     bonus_t3 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     score_mult_t3 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     passed_mg_t4 [0:7];
@@ -105,9 +120,9 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     eval_mg_t7;
    reg signed [EVAL_WIDTH - 1:0]     eval_eg_t7;
 
-   reg [2:0] 			     row_flip [0:1][0:7];
-   reg [63:0] 			     enemy_is_attacking;
-   reg [63:0] 			     square_is_defended;
+   reg [2:0]                         row_flip [0:1][0:7];
+   reg [63:0]                        enemy_is_attacking;
+   reg [63:0]                        square_is_defended;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -119,12 +134,118 @@ module evaluate_pawns #
    assign eval_mg = WHITE_PAWNS ? eval_mg_t7 : -eval_mg_t7;
    assign eval_eg = WHITE_PAWNS ? eval_eg_t7 : -eval_eg_t7;
 
+   initial
+     begin
+        $dumpfile("wave.vcd");
+        for (i = 0; i < 7; i = i + 1)
+          begin
+             $dumpvars(0, bonus_t3[i]);
+             $dumpvars(0, most_adv_row_t2[i]);
+             $dumpvars(0, my_king_pawn_dist_t3[i]);
+             $dumpvars(0, op_king_pawn_dist_t3[i]);
+          end
+     end
+   
+   function [2:0] dist_x  (input [2:0] x0, input [2:0] x1);
+      begin
+         reg [2:0] diff;
+
+         if (x0 > x1)
+           diff = x0 - x1;
+         else
+           diff = x1 - x0;
+         
+         dist_x = diff;
+      end
+   endfunction
+
+   function [2:0] dist_max (input [2:0] dist_row, input [2:0] dist_col);
+      begin
+         if (dist_row > dist_col)
+           dist_max = dist_row;
+         else
+           dist_max = dist_col;
+      end
+   endfunction
+
+   // note: only correct within scope of usage in this module!
+   function has_opposition (input [2:0] my_k_row, input [2:0] my_k_col, input [2:0] op_k_row, input [2:0] op_k_col, input on_move);
+      begin
+         reg outcome;
+         reg [2:0] col_distance, row_distance;
+
+         col_distance = dist_x(my_k_col, op_k_col);
+         row_distance = dist_x(my_k_row, op_k_row);
+         outcome = 0;
+         if (row_distance < 2)
+           outcome = 1;
+         else
+           begin
+              if (on_move)
+                begin
+                   if (row_distance & 1)
+                     row_distance = row_distance - 1;
+                   if (col_distance & 1)
+                     col_distance = col_distance - 1;
+                end
+              if (!(col_distance & 1) && !(row_distance & 1))
+                outcome = 1;
+           end
+         has_opposition = outcome;
+      end
+   endfunction
+
+   function [2:0] distance (input [2:0] row0, input [2:0] col0, input [2:0] row1, input [2:0] col1);
+      begin
+         reg [2:0] dist_row, dist_col;
+
+         dist_row = dist_x(row0, row1);
+         dist_col = dist_x(col0, col1);
+         distance = dist_max(dist_row, dist_col);
+      end
+   endfunction
+
    always @(posedge clk)
      begin
         col_with_pawn_t1 <= 0;
+        my_occupied <= 0;
+        op_occupied <= 0;
         for (row = 0; row < 8; row = row + 1)
           for (col = 0; col < 8; col = col + 1)
             begin
+               if (WHITE_PAWNS)
+                 case (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH])
+                   `WHITE_ROOK : my_occupied <= 1;
+                   `WHITE_KNIT : my_occupied <= 1;
+                   `WHITE_BISH : my_occupied <= 1;
+                   `WHITE_QUEN : my_occupied <= 1;
+                   `BLACK_ROOK : op_occupied <= 1;
+                   `BLACK_KNIT : op_occupied <= 1;
+                   `BLACK_BISH : op_occupied <= 1;
+                   `BLACK_QUEN : op_occupied <= 1;
+                 endcase
+               else
+                 case (board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH])
+                   `BLACK_ROOK : my_occupied <= 1;
+                   `BLACK_KNIT : my_occupied <= 1;
+                   `BLACK_BISH : my_occupied <= 1;
+                   `BLACK_QUEN : my_occupied <= 1;
+                   `WHITE_ROOK : op_occupied <= 1;
+                   `WHITE_KNIT : op_occupied <= 1;
+                   `WHITE_BISH : op_occupied <= 1;
+                   `WHITE_QUEN : op_occupied <= 1;
+                 endcase
+               
+               if (board[((row_flip[WHITE_PAWNS][row] << 3) | col) * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_KING)
+                 begin
+                    my_king_col <= col;
+                    my_king_row <= row_flip[WHITE_PAWNS][row];
+                 end
+               if (board[((row_flip[WHITE_PAWNS][row] << 3) | col) * `PIECE_WIDTH+:`PIECE_WIDTH] == OP_KING)
+                 begin
+                    op_king_col <= col;
+                    op_king_row <= row_flip[WHITE_PAWNS][row];
+                 end
                if (row != 0 && row != 7)
                  begin
                     board_neutral_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN;
@@ -151,6 +272,23 @@ module evaluate_pawns #
                  end
             end
 
+        my_king_a8_dist <= distance(7, 0, my_king_row, my_king_col);
+        my_king_h8_dist <= distance(7, 7, my_king_row, my_king_col);
+        op_king_a8_dist <= distance(7, 0, op_king_row, op_king_col);
+        op_king_h8_dist <= distance(7, 7, op_king_row, op_king_col);
+
+        on_move <= (white_to_move && WHITE_PAWNS) || (! white_to_move && ! WHITE_PAWNS);
+        opposition <= has_opposition(my_king_row, my_king_col, op_king_row, op_king_col, on_move);
+
+        for (col = 0; col < 8; col = col + 1)
+          begin
+             my_king_pawn_dist_t3[col] <= distance(my_king_row, my_king_col, most_adv_row_t2[col], col);
+             op_king_pawn_dist_t3[col] <= distance(op_king_row, op_king_col, most_adv_row_t2[col], col);
+          end
+     end
+
+   always @(posedge clk)
+     begin
         eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6 + passed_mg_t6;
         eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6 + passed_eg_t6;
      end
@@ -396,11 +534,11 @@ module evaluate_pawns #
    latency_sm
      (/*AUTOINST*/
       // Outputs
-      .eval_valid			(eval_valid),
+      .eval_valid                       (eval_valid),
       // Inputs
-      .clk				(clk),
-      .reset				(reset),
-      .board_valid			(board_valid),
-      .clear_eval			(clear_eval));
+      .clk                              (clk),
+      .reset                            (reset),
+      .board_valid                      (board_valid),
+      .clear_eval                       (clear_eval));
 
 endmodule
