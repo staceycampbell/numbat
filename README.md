@@ -8,7 +8,7 @@ It is targeted to run on a [Kria KR260 robotics starter kit](https://www.amd.com
 The project is currently configured to be built on a Linux system using [AMD Vivado 2022.2](https://www.xilinx.com/support/download.html).
 
 The UCI interface is accessed via TCP. The KR260 will appear at a static IP address. To modify that address change the
-following lines in `numbat/vivado/main.c`.
+following lines in `numbat/vivado/src/main.c`.
 
 ```
 IP4_ADDR(&ipaddr, 192, 168, 0, 90);

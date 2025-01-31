@@ -248,11 +248,8 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	if (value > alpha)
 	{
 		alpha = value;
-		if (tune.use_pv)
-		{
-			pv_array[pv_index] = board->uci;
-			local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
-		}
+		pv_array[pv_index] = board->uci;
+		local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
 	}
 	else
 	{
@@ -348,11 +345,8 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	if (alpha >= beta)
 		return alpha;
 
-	if (tune.use_pv)
-	{
-		pv_array[pv_index] = zero_move;
-		pv_next_index = pv_index + MAX_DEPTH - ply;
-	}
+	pv_array[pv_index] = zero_move;
+	pv_next_index = pv_index + MAX_DEPTH - ply;
 
 	alpha_orig = alpha;
 
@@ -424,12 +418,11 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 			value = -GLOBAL_VALUE_KING;     // prune
 		if (abort_search)
 			return 0;       // will be ignored
-		if (tune.use_pv)
-			if (value > alpha && value < beta)
-			{
-				pv_array[pv_index] = board_ptr[index]->uci;
-				local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
-			}
+		if (value > alpha && value < beta)
+		{
+			pv_array[pv_index] = board_ptr[index]->uci;
+			local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
+		}
 		if (value > alpha)
 			alpha = value;
 
@@ -507,7 +500,6 @@ nm_init(void)
 	tune.algorithm_enable = 0;
 	tune.q_delta = Q_DELTA;
 	tune.initial_depth_limit = 0;
-	tune.use_pv = 1;
 }
 
 board_t
@@ -615,6 +607,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	alpha = -LARGE_EVAL;
 	beta = LARGE_EVAL;
 	overall_best = -LARGE_EVAL;
+	best_evaluation = -LARGE_EVAL;
 	depth_limit = tune.initial_depth_limit;
 	while (depth_limit < MAX_DEPTH - 1 && !abort_search)
 	{
@@ -647,26 +640,24 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		if (!quiet)
 			if (best_evaluation != -LARGE_EVAL)
 				printf("\n");
-		if (tune.use_pv)
-			if (debug_pv_info)
+		if (debug_pv_info)
+		{
+			best_board.full_move_number = next_full_move();
+			XTime_GetTime(&t_report);
+			elapsed_ticks = t_report - t_start;
+			elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
+			nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
+			if (!quiet)
 			{
-				best_board.full_move_number = next_full_move();
-				XTime_GetTime(&t_report);
-				elapsed_ticks = t_report - t_start;
-				elapsed_time = (double)elapsed_ticks / ((double)COUNTS_PER_SECOND / 1000.0);
-				nps = (double)nodes_visited / ((double)elapsed_ticks / (double)COUNTS_PER_SECOND);
-				if (!quiet)
-				{
-					uci_currmove(depth_limit, q_ply_reached, &board_ptr[0]->uci, best_board.full_move_number, best_evaluation);
-					uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci,
-					       pv_array);
-				}
+				uci_currmove(depth_limit, q_ply_reached, &board_ptr[0]->uci, best_board.full_move_number, best_evaluation);
+				uci_pv(depth_limit, best_evaluation, (uint32_t) elapsed_time, nodes_visited, (uint32_t) nps, &board_ptr[0]->uci,
+				       pv_array);
 			}
+		}
 		if (!abort_search)
 		{
 			qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
-			if (tune.use_pv)
-				pv_load_table(pv_array);
+			pv_load_table(pv_array);
 			++depth_limit;
 		}
 		if (q_ply_reached > valid_q_ply_reached)
@@ -689,6 +680,13 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	nps = (double)nodes_visited / elapsed_time;
 	trans_hit = nodes_visited - no_trans;
 	q_trans_hit = q_nodes_visited - q_no_trans;
+
+	if (! quiet)
+	{
+		uci_currmove(depth_limit, valid_q_ply_reached, &best_board.uci, best_board.full_move_number, overall_best);
+		uci_pv(depth_limit, overall_best, (uint32_t) elapsed_time * 1000.0, nodes_visited, (uint32_t) nps,
+		       &best_board.uci, pv_array);
+	}
 
 	if (!quiet)
 	{
