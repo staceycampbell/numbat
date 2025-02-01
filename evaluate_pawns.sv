@@ -51,6 +51,7 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn_free_advance;
    reg signed [EVAL_WIDTH - 1:0]     passed_pawn_defended;
    reg signed [EVAL_WIDTH - 1:0]     pawn_can_promote;
+   reg [63:0]                        pawn_race [0:1];
 
    reg [63:0]                        board_neutral_t1;
    reg [63:0]                        enemy_neutral_t2;
@@ -117,6 +118,9 @@ module evaluate_pawns #
    reg signed [EVAL_WIDTH - 1:0]     passed_mg_t6;
    reg signed [EVAL_WIDTH - 1:0]     passed_eg_t6;
 
+   reg                               simple_pawn_can_promote_bonus_t3;
+   reg signed [EVAL_WIDTH - 1:0]     pawn_can_promote_bonus_t4;
+
    reg signed [EVAL_WIDTH - 1:0]     eval_mg_t7;
    reg signed [EVAL_WIDTH - 1:0]     eval_eg_t7;
 
@@ -145,7 +149,7 @@ module evaluate_pawns #
              $dumpvars(0, op_king_pawn_dist_t3[i]);
           end
      end
-   
+
    function [2:0] dist_x  (input [2:0] x0, input [2:0] x1);
       begin
          reg [2:0] diff;
@@ -154,7 +158,7 @@ module evaluate_pawns #
            diff = x0 - x1;
          else
            diff = x1 - x0;
-         
+
          dist_x = diff;
       end
    endfunction
@@ -168,7 +172,7 @@ module evaluate_pawns #
       end
    endfunction
 
-   // note: only correct within scope of usage in this module!
+   // note: only correct within scope of usage in this module, not a general solution!
    function has_opposition (input [2:0] my_k_row, input [2:0] my_k_col, input [2:0] op_k_row, input [2:0] op_k_col, input on_move);
       begin
          reg outcome;
@@ -235,7 +239,7 @@ module evaluate_pawns #
                    `WHITE_BISH : op_occupied <= 1;
                    `WHITE_QUEN : op_occupied <= 1;
                  endcase
-               
+
                if (board[((row_flip[WHITE_PAWNS][row] << 3) | col) * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_KING)
                  begin
                     my_king_col <= col;
@@ -290,7 +294,36 @@ module evaluate_pawns #
    always @(posedge clk)
      begin
         eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6 + passed_mg_t6;
-        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6 + passed_eg_t6;
+        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6 + passed_eg_t6 + pawn_can_promote_bonus_t4;
+     end
+
+   // pawn race
+   always @(posedge clk)
+     begin
+        simple_pawn_can_promote_bonus_t3 <= 0;
+        if (board_neutral_t1 != 0 && enemy_neutral_t2 == 0 && my_occupied == 0 && op_occupied == 0)
+          for (col = 0; col < 8; col = col + 1)
+            if (most_adv_row_t2[col] != 0)
+              begin
+                 if (my_king_row > most_adv_row_t2[col])
+                   begin
+                      if (col == 0 && my_king_col == 1 && my_king_a8_dist < op_king_a8_dist)
+                        simple_pawn_can_promote_bonus_t3 <= 1;
+                      if (col == 7 && my_king_col == 6 && my_king_h8_dist < op_king_h8_dist)
+                        simple_pawn_can_promote_bonus_t3 <= 0;
+                   end
+                 if (my_king_pawn_dist_t3[col] < op_king_pawn_dist_t3[col])
+                   begin
+                      if (my_king_row > most_adv_row_t2[col] - 1)
+                        simple_pawn_can_promote_bonus_t3 <= 1;
+                      if (my_king_row == 5)
+                        simple_pawn_can_promote_bonus_t3 <= 1;
+                   end
+              end // if (most_adv_row_t2[col] != 0)
+        if (simple_pawn_can_promote_bonus_t3)
+          pawn_can_promote_bonus_t4 <= pawn_can_promote;
+        else
+          pawn_can_promote_bonus_t4 <= 0;
      end
 
    // passed pawns
@@ -523,6 +556,135 @@ module evaluate_pawns #
           end
 
 `include "evaluate_pawns.vh"
+
+        pawn_race[0][ 0] = 64'h0000000000000000;
+        pawn_race[0][ 1] = 64'h0000000000000000;
+        pawn_race[0][ 2] = 64'h0000000000000000;
+        pawn_race[0][ 3] = 64'h0000000000000000;
+        pawn_race[0][ 4] = 64'h0000000000000000;
+        pawn_race[0][ 5] = 64'h0000000000000000;
+        pawn_race[0][ 6] = 64'h0000000000000000;
+        pawn_race[0][ 7] = 64'h0000000000000000;
+        pawn_race[0][ 8] = 64'h0000000000000303;
+        pawn_race[0][ 9] = 64'h0000000000000707;
+        pawn_race[0][10] = 64'h0000000000000e0e;
+        pawn_race[0][11] = 64'h0000000000001c1c;
+        pawn_race[0][12] = 64'h0000000000003838;
+        pawn_race[0][13] = 64'h0000000000007070;
+        pawn_race[0][14] = 64'h000000000000e0e0;
+        pawn_race[0][15] = 64'h000000000000c0c0;
+        pawn_race[0][16] = 64'h0000000000070707;
+        pawn_race[0][17] = 64'h00000000000f0f0f;
+        pawn_race[0][18] = 64'h00000000001f1f1f;
+        pawn_race[0][19] = 64'h00000000003e3e3e;
+        pawn_race[0][20] = 64'h00000000007c7c7c;
+        pawn_race[0][21] = 64'h0000000000f8f8f8;
+        pawn_race[0][22] = 64'h0000000000f0f0f0;
+        pawn_race[0][23] = 64'h0000000000e0e0e0;
+        pawn_race[0][24] = 64'h000000000f0f0f0f;
+        pawn_race[0][25] = 64'h000000001f1f1f1f;
+        pawn_race[0][26] = 64'h000000003f3f3f3f;
+        pawn_race[0][27] = 64'h000000007f7f7f7f;
+        pawn_race[0][28] = 64'h00000000fefefefe;
+        pawn_race[0][29] = 64'h00000000fcfcfcfc;
+        pawn_race[0][30] = 64'h00000000f8f8f8f8;
+        pawn_race[0][31] = 64'h00000000f0f0f0f0;
+        pawn_race[0][32] = 64'h0000001f1f1f1f1f;
+        pawn_race[0][33] = 64'h0000003f3f3f3f3f;
+        pawn_race[0][34] = 64'h0000007f7f7f7f7f;
+        pawn_race[0][35] = 64'h000000ffffffffff;
+        pawn_race[0][36] = 64'h000000ffffffffff;
+        pawn_race[0][37] = 64'h000000fefefefefe;
+        pawn_race[0][38] = 64'h000000fcfcfcfcfc;
+        pawn_race[0][39] = 64'h000000f8f8f8f8f8;
+        pawn_race[0][40] = 64'h00003f3f3f3f3f3f;
+        pawn_race[0][41] = 64'h00007f7f7f7f7f7f;
+        pawn_race[0][42] = 64'h0000ffffffffffff;
+        pawn_race[0][43] = 64'h0000ffffffffffff;
+        pawn_race[0][44] = 64'h0000ffffffffffff;
+        pawn_race[0][45] = 64'h0000ffffffffffff;
+        pawn_race[0][46] = 64'h0000fefefefefefe;
+        pawn_race[0][47] = 64'h0000fcfcfcfcfcfc;
+        pawn_race[0][48] = 64'h00003f3f3f3f3f3f;
+        pawn_race[0][49] = 64'h00007f7f7f7f7f7f;
+        pawn_race[0][50] = 64'h0000ffffffffffff;
+        pawn_race[0][51] = 64'h0000ffffffffffff;
+        pawn_race[0][52] = 64'h0000ffffffffffff;
+        pawn_race[0][53] = 64'h0000ffffffffffff;
+        pawn_race[0][54] = 64'h0000fefefefefefe;
+        pawn_race[0][55] = 64'h0000fcfcfcfcfcfc;
+        pawn_race[0][56] = 64'h0000000000000000;
+        pawn_race[0][57] = 64'h0000000000000000;
+        pawn_race[0][58] = 64'h0000000000000000;
+        pawn_race[0][59] = 64'h0000000000000000;
+        pawn_race[0][60] = 64'h0000000000000000;
+        pawn_race[0][61] = 64'h0000000000000000;
+        pawn_race[0][62] = 64'h0000000000000000;
+        pawn_race[0][63] = 64'h0000000000000000;
+        pawn_race[1][ 0] = 64'h0000000000000000;
+        pawn_race[1][ 1] = 64'h0000000000000000;
+        pawn_race[1][ 2] = 64'h0000000000000000;
+        pawn_race[1][ 3] = 64'h0000000000000000;
+        pawn_race[1][ 4] = 64'h0000000000000000;
+        pawn_race[1][ 5] = 64'h0000000000000000;
+        pawn_race[1][ 6] = 64'h0000000000000000;
+        pawn_race[1][ 7] = 64'h0000000000000000;
+        pawn_race[1][ 8] = 64'h0000000000070707;
+        pawn_race[1][ 9] = 64'h00000000000f0f0f;
+        pawn_race[1][10] = 64'h00000000001f1f1f;
+        pawn_race[1][11] = 64'h00000000003e3e3e;
+        pawn_race[1][12] = 64'h00000000007c7c7c;
+        pawn_race[1][13] = 64'h0000000000f8f8f8;
+        pawn_race[1][14] = 64'h0000000000f0f0f0;
+        pawn_race[1][15] = 64'h0000000000e0e0e0;
+        pawn_race[1][16] = 64'h000000000f0f0f0f;
+        pawn_race[1][17] = 64'h000000001f1f1f1f;
+        pawn_race[1][18] = 64'h000000003f3f3f3f;
+        pawn_race[1][19] = 64'h000000007f7f7f7f;
+        pawn_race[1][20] = 64'h00000000fefefefe;
+        pawn_race[1][21] = 64'h00000000fcfcfcfc;
+        pawn_race[1][22] = 64'h00000000f8f8f8f8;
+        pawn_race[1][23] = 64'h00000000f0f0f0f0;
+        pawn_race[1][24] = 64'h0000001f1f1f1f1f;
+        pawn_race[1][25] = 64'h0000003f3f3f3f3f;
+        pawn_race[1][26] = 64'h0000007f7f7f7f7f;
+        pawn_race[1][27] = 64'h000000ffffffffff;
+        pawn_race[1][28] = 64'h000000ffffffffff;
+        pawn_race[1][29] = 64'h000000fefefefefe;
+        pawn_race[1][30] = 64'h000000fcfcfcfcfc;
+        pawn_race[1][31] = 64'h000000f8f8f8f8f8;
+        pawn_race[1][32] = 64'h00003f3f3f3f3f3f;
+        pawn_race[1][33] = 64'h00007f7f7f7f7f7f;
+        pawn_race[1][34] = 64'h0000ffffffffffff;
+        pawn_race[1][35] = 64'h0000ffffffffffff;
+        pawn_race[1][36] = 64'h0000ffffffffffff;
+        pawn_race[1][37] = 64'h0000ffffffffffff;
+        pawn_race[1][38] = 64'h0000fefefefefefe;
+        pawn_race[1][39] = 64'h0000fcfcfcfcfcfc;
+        pawn_race[1][40] = 64'h007f7f7f7f7f7f7f;
+        pawn_race[1][41] = 64'h00ffffffffffffff;
+        pawn_race[1][42] = 64'h00ffffffffffffff;
+        pawn_race[1][43] = 64'h00ffffffffffffff;
+        pawn_race[1][44] = 64'h00ffffffffffffff;
+        pawn_race[1][45] = 64'h00ffffffffffffff;
+        pawn_race[1][46] = 64'h00ffffffffffffff;
+        pawn_race[1][47] = 64'h00fefefefefefefe;
+        pawn_race[1][48] = 64'h007f7f7f7f7f7f7f;
+        pawn_race[1][49] = 64'h00ffffffffffffff;
+        pawn_race[1][50] = 64'h00ffffffffffffff;
+        pawn_race[1][51] = 64'h00ffffffffffffff;
+        pawn_race[1][52] = 64'h00ffffffffffffff;
+        pawn_race[1][53] = 64'h00ffffffffffffff;
+        pawn_race[1][54] = 64'h00ffffffffffffff;
+        pawn_race[1][55] = 64'h00fefefefefefefe;
+        pawn_race[1][56] = 64'h0000000000000000;
+        pawn_race[1][57] = 64'h0000000000000000;
+        pawn_race[1][58] = 64'h0000000000000000;
+        pawn_race[1][59] = 64'h0000000000000000;
+        pawn_race[1][60] = 64'h0000000000000000;
+        pawn_race[1][61] = 64'h0000000000000000;
+        pawn_race[1][62] = 64'h0000000000000000;
+        pawn_race[1][63] = 64'h0000000000000000;
      end
 
    /* latency_sm AUTO_TEMPLATE (
@@ -542,3 +704,4 @@ module evaluate_pawns #
       .clear_eval                       (clear_eval));
 
 endmodule
+
