@@ -63,9 +63,9 @@ module evaluate_pawns #
    reg                               opposition;
    reg                               on_move;
    reg [2:0]                         my_king_a8_dist, my_king_h8_dist;
-   reg [2:0]                         op_king_a8_dist, op_king_h8_dist;
    reg [2:0]                         my_king_pawn_dist_t3 [0:7];
    reg [2:0]                         op_king_pawn_dist_t3 [0:7];
+   reg [2:0]                         op_king_row7_dist [0:7];
 
    reg signed [EVAL_WIDTH - 1:0]     isolated_mg_t2 [0:63];
    reg signed [EVAL_WIDTH - 1:0]     isolated_eg_t2 [0:63];
@@ -108,6 +108,7 @@ module evaluate_pawns #
 
    reg [2:0]                         most_adv_row_t2 [0:7];
    reg [7:0]                         passed_pawn_t3;
+   reg [2:0]                         dist_to_queen_t3 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     bonus_t3 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     score_mult_t3 [0:7];
    reg signed [EVAL_WIDTH - 1:0]     passed_mg_t4 [0:7];
@@ -119,6 +120,8 @@ module evaluate_pawns #
 
    reg                               simple_pawn_can_promote_bonus_t3;
    reg signed [EVAL_WIDTH - 1:0]     pawn_can_promote_bonus_t4;
+   reg signed [EVAL_WIDTH - 1:0]     pawn_race_win_t4;
+   reg signed [EVAL_WIDTH - 1:0]     queener_t5;
 
    reg signed [EVAL_WIDTH - 1:0]     eval_mg_t7;
    reg signed [EVAL_WIDTH - 1:0]     eval_eg_t7;
@@ -140,12 +143,11 @@ module evaluate_pawns #
    initial
      begin
         $dumpfile("wave.vcd");
-        for (i = 0; i < 7; i = i + 1)
+        for (i = 0; i < 8; i = i + 1)
           begin
-             $dumpvars(0, bonus_t3[i]);
              $dumpvars(0, most_adv_row_t2[i]);
-             $dumpvars(0, my_king_pawn_dist_t3[i]);
-             $dumpvars(0, op_king_pawn_dist_t3[i]);
+             $dumpvars(0, op_king_row7_dist[i]);
+             $dumpvars(0, dist_to_queen_t3[i]);
           end
      end
 
@@ -242,12 +244,12 @@ module evaluate_pawns #
                if (board[((row_flip[WHITE_PAWNS][row] << 3) | col) * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_KING)
                  begin
                     my_king_col <= col;
-                    my_king_row <= row_flip[WHITE_PAWNS][row];
+                    my_king_row <= row;
                  end
                if (board[((row_flip[WHITE_PAWNS][row] << 3) | col) * `PIECE_WIDTH+:`PIECE_WIDTH] == OP_KING)
                  begin
                     op_king_col <= col;
-                    op_king_row <= row_flip[WHITE_PAWNS][row];
+                    op_king_row <= row;
                  end
                if (row != 0 && row != 7)
                  begin
@@ -277,8 +279,8 @@ module evaluate_pawns #
 
         my_king_a8_dist <= distance(7, 0, my_king_row, my_king_col);
         my_king_h8_dist <= distance(7, 7, my_king_row, my_king_col);
-        op_king_a8_dist <= distance(7, 0, op_king_row, op_king_col);
-        op_king_h8_dist <= distance(7, 7, op_king_row, op_king_col);
+        for (col = 0; col < 8; col = col + 1)
+          op_king_row7_dist[col] <= distance(7, col, op_king_row, op_king_col);
 
         on_move <= (white_to_move && WHITE_PAWNS) || (! white_to_move && ! WHITE_PAWNS);
         opposition <= has_opposition(my_king_row, my_king_col, op_king_row, op_king_col, on_move);
@@ -288,15 +290,21 @@ module evaluate_pawns #
              my_king_pawn_dist_t3[col] <= distance(my_king_row, my_king_col, most_adv_row_t2[col], col);
              op_king_pawn_dist_t3[col] <= distance(op_king_row, op_king_col, most_adv_row_t2[col], col);
           end
+
+        for (col = 0; col < 8; col = col + 1)
+          if (most_adv_row_t2[col] == 1)
+            dist_to_queen_t3[col] <= 8 - most_adv_row_t2[col] - 1 - on_move;
+          else
+            dist_to_queen_t3[col] <= 8 - most_adv_row_t2[col] - on_move;
      end
 
    always @(posedge clk)
      begin
         eval_mg_t7 <= isolated_mg_t5 + doubled_mg_t6 + connected_mg_t6 + backward_mg_t6 + passed_mg_t6;
-        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6 + passed_eg_t6 + pawn_can_promote_bonus_t4;
+        eval_eg_t7 <= isolated_eg_t5 + doubled_eg_t6 + connected_eg_t6 + backward_eg_t6 + passed_eg_t6 + queener_t5;
      end
 
-   // pawn race
+   // pawn race simple
    always @(posedge clk)
      begin
         simple_pawn_can_promote_bonus_t3 <= 0;
@@ -306,9 +314,9 @@ module evaluate_pawns #
               begin
                  if (my_king_row > most_adv_row_t2[col])
                    begin
-                      if (col == 0 && my_king_col == 1 && my_king_a8_dist < op_king_a8_dist)
+                      if (col == 0 && my_king_col == 1 && my_king_a8_dist < op_king_row7_dist[0]) // A8
                         simple_pawn_can_promote_bonus_t3 <= 1;
-                      if (col == 7 && my_king_col == 6 && my_king_h8_dist < op_king_h8_dist)
+                      if (col == 7 && my_king_col == 6 && my_king_h8_dist < op_king_row7_dist[7]) // H8
                         simple_pawn_can_promote_bonus_t3 <= 1;
                    end
                  if (my_king_pawn_dist_t3[col] < op_king_pawn_dist_t3[col])
@@ -323,6 +331,20 @@ module evaluate_pawns #
           pawn_can_promote_bonus_t4 <= pawn_can_promote;
         else
           pawn_can_promote_bonus_t4 <= 0;
+
+        pawn_race_win_t4 <= 0;
+        if (enemy_neutral_t2 == 0)
+          for (col = 0; col < 8; col = col + 1)
+            if (passed_pawn_t3[col])
+              if (dist_to_queen_t3[col] < op_king_row7_dist[col])
+                pawn_race_win_t4 <= pawn_can_promote; // todo: weight final award on closeness to row7
+
+        if (pawn_can_promote_bonus_t4 > 0)
+          queener_t5 <= pawn_can_promote_bonus_t4;
+        else if (pawn_race_win_t4 > 0)
+          queener_t5 <= pawn_can_promote;
+        else
+          queener_t5 <= 0;
      end
 
    // passed pawns

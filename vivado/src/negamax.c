@@ -412,7 +412,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 		else if (depth == 0)
 			value = board_eval;
 		else if (depth > tune.futility_depth || index == 0 || in_check || alpha >= GLOBAL_VALUE_KING - 200 || beta >= GLOBAL_VALUE_KING - 200
-			 || board_eval + eval_delta > alpha)
+			 || board_eval + eval_delta > alpha || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check)
 			value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
 		else
 			value = -GLOBAL_VALUE_KING;     // prune
@@ -496,10 +496,10 @@ void
 nm_init(void)
 {
 	tune.nm_delta_mult = 10;
-	tune.futility_depth = 2;
+	tune.futility_depth = 3;
 	tune.algorithm_enable = 0;
 	tune.q_delta = Q_DELTA;
-	tune.initial_depth_limit = 0;
+	tune.initial_depth_limit = 1;
 }
 
 board_t

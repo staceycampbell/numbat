@@ -114,12 +114,24 @@ module tb;
         // blocked
         // echo '8/8/8/3k1p2/1K3P2/8/8/8 b - - 0 1' | ../misc/fenconv
         
-        // passed
+        // btm, passed
         // echo '8/8/8/3k1p2/1K6/8/8/8 b - - 0 1' | ../misc/fenconv
-        board[4 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
-        board[4 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[3 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
-        white_to_move = 0;
+
+        // btm, passed and queener
+        // echo 'k7/8/8/7p/8/8/8/K7 b - - 0 1' | ../misc/fenconv
+
+        // btm, passed but caught
+        // echo 'k7/8/8/7p/8/8/8/4K3 b - - 0 1' | ../misc/fenconv
+
+        // black to move, white can queen
+        // echo 'K7/8/8/7P/8/8/8/k7 b - - 0 1' | ../misc/fenconv
+
+        // wtm, passed but caught
+        // echo 'K4k2/8/8/7P/8/8/8/8 w - - 0 1' | ../misc/fenconv
+        board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        board[7 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KING;
+        board[4 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
+        white_to_move = 1;
         castle_mask = 4'h0;
         en_passant_col = 4'h0;
         half_move = 0;

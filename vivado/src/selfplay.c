@@ -56,7 +56,7 @@ selfplay(void)
 	player_a_tune = nm_current_tune();
 	player_b_tune = nm_current_tune();
 
-	player_a_tune.initial_depth_limit = 1;
+	player_a_tune.initial_depth_limit = 0;
 
 	player_b_tune.initial_depth_limit = 1;
 
