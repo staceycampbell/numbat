@@ -140,17 +140,6 @@ module evaluate_pawns #
    assign eval_mg = WHITE_PAWNS ? eval_mg_t7 : -eval_mg_t7;
    assign eval_eg = WHITE_PAWNS ? eval_eg_t7 : -eval_eg_t7;
 
-   initial
-     begin
-        $dumpfile("wave.vcd");
-        for (i = 0; i < 8; i = i + 1)
-          begin
-             $dumpvars(0, most_adv_row_t2[i]);
-             $dumpvars(0, op_king_row7_dist[i]);
-             $dumpvars(0, dist_to_queen_t3[i]);
-          end
-     end
-
    function [2:0] dist_x  (input [2:0] x0, input [2:0] x1);
       begin
          reg [2:0] diff;
