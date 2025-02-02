@@ -22,7 +22,7 @@ module evaluate_tropism #
     );
 
    localparam LATENCY_COUNT = 11;
-   
+
    localparam MY_PAWN = WHITE ? `WHITE_PAWN : `BLACK_PAWN;
    localparam OP_PAWN = WHITE ? `BLACK_PAWN : `WHITE_PAWN;
    localparam CASTLE_SHORT = WHITE ? `CASTLE_WHITE_SHORT : `CASTLE_BLACK_SHORT;
@@ -32,7 +32,7 @@ module evaluate_tropism #
    localparam MAX_LUT_INDEX_LOG2 = $clog2(MAX_LUT_INDEX);
    localparam LUT_SUM_LOG2 = MAX_LUT_INDEX_LOG2 + $clog2(64);
    localparam DEFECT_WIDTH = $clog2(MAX_LUT_INDEX) + 8;
-   
+
    localparam LUT_COUNT = (`PIECE_KING + 1) << 3;
    localparam MY_KING = WHITE ? `WHITE_KING : `BLACK_KING;
    localparam ENEMY_KNIT = WHITE ? `BLACK_KNIT : `WHITE_KNIT;
@@ -44,7 +44,7 @@ module evaluate_tropism #
    reg [DEFECT_WIDTH - 1:0]              half_open_file [0:7];
    reg [DEFECT_WIDTH - 1:0]              pawn_defects [0:7];
    reg [2:0]                             row_flip [0:1][0:7];
-   
+
    reg [63:0]                            board_neutral_t1;
    reg [63:0]                            enemy_neutral_t1;
    reg [7:0]                             col_with_pawn_t1;
@@ -68,26 +68,29 @@ module evaluate_tropism #
    reg 					 castle_min3_t7;
    reg [3:0]                             defect_index_t8;
    reg [7:0]                             ksi_final_t9;
-   
+   reg signed [EVAL_WIDTH - 1:0]         eval_mg_t10;
+
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
 
    integer                               row, col, i, j;
-   
+
    genvar 				 col_g;
 
    wire [DEFECT_WIDTH - 1:0]             file_defects_t5 [0:7];
-   
+
    wire [7:0]                            ksi_final_t8 = (defect_index_t8 << 4) | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
-   
+
+   assign eval_mg = eval_mg_t10;
+
    function [4:0] abs_dist (input signed [4:0] x);
       begin
          abs_dist = x < 0 ? -x : x;
       end
    endfunction
-   
+
    function [2:0] max_dist (input [2:0] a, input [2:0] b);
       begin
          max_dist = a > b ? a : b;
@@ -173,11 +176,11 @@ module evaluate_tropism #
         ksi_t8 <= ksi_t7[0] + ksi_t7[1] + ksi_t7[2] + ksi_t7[3];
         ksi_final_t9 <= (defect_index_t8 << 4) | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
         if (WHITE)
-          eval_mg <= king_safety[ksi_final_t9];
+          eval_mg_t10 <= king_safety[ksi_final_t9];
         else
-          eval_mg <= -king_safety[ksi_final_t9];
+          eval_mg_t10 <= -king_safety[ksi_final_t9];
      end
-   
+
    always @(posedge clk)
      for (row = 0; row < 8; row = row + 1)
        for (col = 0; col < 8; col = col + 1)
@@ -209,7 +212,7 @@ module evaluate_tropism #
 	   reg [DEFECT_WIDTH - 1:0] defect_row2_bonus_t3;
 	   reg [DEFECT_WIDTH - 1:0] file_defect_a_t4, file_defect_b_t4;
 	   reg [DEFECT_WIDTH - 1:0] file_defect_t5;
-	   
+	
 	   integer 		    ri;
 
 	   assign file_defects_t5[col_g] = file_defect_t5;
@@ -274,9 +277,9 @@ module evaluate_tropism #
              row_flip[0][i] = 7 - i;
              row_flip[1][i] = i;
           end
-        
+
 `include "evaluate_tropism.vh"
-        
+
      end
 
    /* latency_sm AUTO_TEMPLATE (

@@ -47,7 +47,7 @@ module evaluate #
     output reg                       eval_valid = 0
     );
 
-   localparam LATENCY_COUNT = 8;
+   localparam LATENCY_COUNT = 9 - 3; // 3 clocks latency in state machine
    localparam EVALUATION_COUNT = 13;
    localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
 
