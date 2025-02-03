@@ -37,9 +37,9 @@ module evaluate #
     input                            killer_clear,
     input signed [EVAL_WIDTH - 1:0]  killer_bonus0,
     input signed [EVAL_WIDTH - 1:0]  killer_bonus1,
-   
+
     input [31:0]                     pv_ctrl_in,
-   
+
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
     output                           eval_pv_flag,
@@ -63,6 +63,8 @@ module evaluate #
    reg signed [PHASE_CALC_WIDTH - 1:0]              score_t5;
    reg signed [PHASE_CALC_WIDTH - 1:0]              score_t6, score_t7;
    reg signed [EVAL_WIDTH - 1:0]                    eval_t8;
+   reg [EVALUATION_COUNT - 1:0]                     eval_done_locked;
+   reg [EVALUATION_COUNT - 1:0]                     eval_done_status_r;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -106,6 +108,7 @@ module evaluate #
    // End of automatics
 
    genvar                                           c;
+   integer                                          i;
 
    wire [63:0]                                      occupied;
 
@@ -155,11 +158,11 @@ module evaluate #
         eval_b_mg_t1 <= eval_mg_killer + eval_mg_bishops_white + eval_mg_bishops_black;
         eval_c_mg_t1 <= eval_castling_white_mg + eval_castling_black_mg + eval_mg_rooks_white + eval_mg_rooks_black;
         eval_d_mg_t1 <= eval_mg_tropism_white + eval_mg_tropism_black;
-        
+
         eval_a_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black;
         eval_b_eg_t1 <= eval_eg_killer + eval_eg_bishops_white + eval_eg_bishops_black;
         eval_c_eg_t1 <= eval_eg_rooks_white + eval_eg_rooks_black;
-        
+
         eval_mg_t2 <= eval_a_mg_t1 + eval_b_mg_t1 + eval_c_mg_t1 + eval_d_mg_t1;
         eval_eg_t2 <= eval_a_eg_t1 + eval_b_eg_t1 + eval_b_eg_t1;
         score_mg_t3 <= eval_mg_t2 * phase_r;
@@ -192,7 +195,7 @@ module evaluate #
               eval_valid <= 0;
               latency <= 0;
               if (board_valid && ~board_valid_r)
-                state <= STATE_WS; // note: one ws required for board to valid, flopped for timing
+                state <= STATE_WS; // note: one ws required for board to be valid, flopped for timing
            end
          STATE_WS :
            begin
@@ -200,10 +203,8 @@ module evaluate #
               state <= STATE_WAIT_EVAL;
            end
          STATE_WAIT_EVAL :
-           begin
-              if (eval_done_status == evals_complete)
-                state <= STATE_WAIT_LATENCY;
-           end
+           if (eval_done_locked == evals_complete)
+             state <= STATE_WAIT_LATENCY;
          STATE_WAIT_LATENCY :
            begin
               latency <= latency + 1;
@@ -218,7 +219,20 @@ module evaluate #
            end
          default :
            state <= STATE_IDLE;
-       endcase
+       endcase // case (state)
+
+   always @(posedge clk)
+     begin
+        if (board_valid && ~board_valid_r)
+          begin
+             eval_done_locked <= 0;
+             eval_done_status_r <= 0;
+          end
+        eval_done_status_r <= eval_done_status;
+        for (i = 0; i < EVALUATION_COUNT; i = i + 1)
+          if (eval_done_status[i] && ~eval_done_status_r[i])
+            eval_done_locked[i] <= 1'b1;
+     end
 
    /* evaluate_general AUTO_TEMPLATE (
     .board_valid (local_board_valid),
@@ -343,7 +357,7 @@ module evaluate #
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
       .clear_eval                       (clear_eval));
-   
+
    /* evaluate_killer AUTO_TEMPLATE (
     .board_valid (local_board_valid),
     .eval_valid (eval_killer_valid),
@@ -467,7 +481,7 @@ module evaluate #
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
       .clear_eval                       (clear_eval));
-   
+
    /* evaluate_tropism AUTO_TEMPLATE (
     .board_valid (local_board_valid),
     .eval_valid (eval_tropism_white_valid),
@@ -537,7 +551,7 @@ module evaluate #
       .pv_ply                           (killer_ply[MAX_DEPTH_LOG2-1:0]), // Templated
       .clear_eval                       (clear_eval),
       .pv_ctrl_in                       (pv_ctrl_in[31:0]));
-   
+
    /* popcount AUTO_TEMPLATE (
     .population (occupied_count[]),
     .x0 (occupied[]),
@@ -552,3 +566,4 @@ module evaluate #
       .x0                               (occupied[63:0]));        // Templated
 
 endmodule
+
