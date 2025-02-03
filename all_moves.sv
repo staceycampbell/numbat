@@ -121,7 +121,7 @@ module all_moves #
    reg [63:0]                            legal_black_is_attacking_ram_wr;
    reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
    reg                                   legal_eval_pv_flag_wr;
-   reg                                   legal_insufficent_material_ram_wr;
+   reg                                   legal_insufficient_material_ram_wr;
    reg [5:0]                             legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr;
    reg [UCI_WIDTH - 1:0]                 legal_uci_ram_wr;
    reg                                   legal_ram_wr = 0;
@@ -139,10 +139,11 @@ module all_moves #
    reg [UCI_WIDTH - 1:0]                 attack_uci;
    reg [5:0]                             attack_test_attack_white_pop, attack_test_attack_black_pop;
 
-   reg                                   initial_evaluation_complete;
+   reg                                   initial_evaluation_complete = 0;
 
    reg [`BOARD_WIDTH - 1:0]              initial_evaluate_board, legal_evaluate_board, evaluate_board_r;
-   reg                                   initial_evaluate_go, legal_evaluate_go, evaluate_go_r;
+   reg                                   initial_attack_go = 0, legal_attack_go = 0, attack_go_r;
+   reg                                   initial_evaluate_go = 0, legal_evaluate_go = 0, evaluate_go_r;
    reg [UCI_WIDTH - 1:0]                 initial_evaluate_uci, legal_evaluate_uci, evaluate_uci_r;
    reg [3:0]                             initial_evaluate_castle_mask, legal_evaluate_castle_mask, evaluate_castle_mask_r;
    reg                                   initial_evaluate_white_to_move, legal_evaluate_white_to_move, evaluate_white_to_move_r;
@@ -252,7 +253,7 @@ module all_moves #
    wire                                  clear_eval = initial_evaluation_complete ? legal_clear_eval : initial_clear_eval;
    wire                                  clear_attack = initial_evaluation_complete ? legal_clear_attack : initial_clear_attack;
 
-   wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {legal_insufficent_material_ram_wr,
+   wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {legal_insufficient_material_ram_wr,
                                                               legal_attack_white_pop_ram_wr[5:0],
 							      legal_attack_black_pop_ram_wr[5:0],
 							      legal_uci_ram_wr[UCI_WIDTH - 1:0],
@@ -465,6 +466,7 @@ module all_moves #
 
         if (initial_evaluation_complete)
           begin
+             attack_go_r <= legal_attack_go;
              evaluate_go_r <= legal_evaluate_go;
              evaluate_board_r <= legal_evaluate_board;
              evaluate_uci_r <= legal_evaluate_uci;
@@ -473,6 +475,7 @@ module all_moves #
           end
         else
           begin
+             attack_go_r <= initial_attack_go;
              evaluate_go_r <= initial_evaluate_go;
              evaluate_board_r <= initial_evaluate_board;
              evaluate_uci_r <= initial_evaluate_uci;
@@ -514,28 +517,29 @@ module all_moves #
      end
 
    localparam STATE_IDLE = 0;
-   localparam STATE_INIT_WAIT = 1;
-   localparam STATE_INIT = 2;
-   localparam STATE_INIT_WS = 3;
-   localparam STATE_FIND_PIECE = 4;
-   localparam STATE_DO_SQUARE = 5;
-   localparam STATE_SLIDER_INIT = 6;
-   localparam STATE_SLIDER = 7;
-   localparam STATE_DISCRETE_INIT = 8;
-   localparam STATE_DISCRETE = 9;
-   localparam STATE_PAWN_INIT_0 = 10;
-   localparam STATE_PAWN_INIT_1 = 11;
-   localparam STATE_PAWN_ROW_1 = 12;
-   localparam STATE_PAWN_ROW_4 = 13;
-   localparam STATE_PAWN_ROW_6 = 14;
-   localparam STATE_PAWN_ADVANCE = 15;
-   localparam STATE_NEXT = 16;
-   localparam STATE_CASTLE_SHORT = 17;
-   localparam STATE_CASTLE_LONG = 18;
-   localparam STATE_ALL_MOVES_DONE = 19;
-   localparam STATE_START_LEGAL = 20;
-   localparam STATE_WAIT_LEGAL = 21;
-   localparam STATE_DONE = 22;
+   localparam STATE_INIT_WAIT_ATTACK = 1;
+   localparam STATE_INIT_WAIT_EVAL = 2;
+   localparam STATE_INIT = 3;
+   localparam STATE_INIT_WS = 4;
+   localparam STATE_FIND_PIECE = 5;
+   localparam STATE_DO_SQUARE = 6;
+   localparam STATE_SLIDER_INIT = 7;
+   localparam STATE_SLIDER = 8;
+   localparam STATE_DISCRETE_INIT = 9;
+   localparam STATE_DISCRETE = 10;
+   localparam STATE_PAWN_INIT_0 = 11;
+   localparam STATE_PAWN_INIT_1 = 12;
+   localparam STATE_PAWN_ROW_1 = 13;
+   localparam STATE_PAWN_ROW_4 = 14;
+   localparam STATE_PAWN_ROW_6 = 15;
+   localparam STATE_PAWN_ADVANCE = 16;
+   localparam STATE_NEXT = 17;
+   localparam STATE_CASTLE_SHORT = 18;
+   localparam STATE_CASTLE_LONG = 19;
+   localparam STATE_ALL_MOVES_DONE = 20;
+   localparam STATE_START_LEGAL = 21;
+   localparam STATE_WAIT_LEGAL = 22;
+   localparam STATE_DONE = 23;
 
    reg [4:0] state = STATE_IDLE;
 
@@ -567,7 +571,7 @@ module all_moves #
               initial_evaluate_uci <= 0; // PV flag will not be assigned
               initial_evaluate_white_to_move <= white_to_move_in;
               initial_evaluate_castle_mask <= castle_mask_in;
-              initial_evaluate_go <= board_valid_in;
+              initial_attack_go <= board_valid_in;
 
               initial_insufficient_material <= 0;
               initial_fifty_move <= half_move_in >= 100;
@@ -578,23 +582,42 @@ module all_moves #
               initial_clear_attack <= 0;
 
               if (board_valid_in)
-                state <= STATE_INIT_WAIT;
+                state <= STATE_INIT_WAIT_ATTACK;
            end
-         STATE_INIT_WAIT :
+         STATE_INIT_WAIT_ATTACK :
            begin
               legal_ram_wr_addr_init <= 0;
               if (initial_fifty_move)
                 state <= STATE_DONE;
-              else if (is_attacking_done && eval_valid)
-                state <= STATE_INIT;
+              else if (is_attacking_done)
+                begin
+                   initial_evaluate_go <= 1;
+                   state <= STATE_INIT_WAIT_EVAL;
+                end
            end
+         STATE_INIT_WAIT_EVAL :
+           if (eval_valid)
+             state <= STATE_INIT;
          STATE_INIT :
            begin
+              initial_clear_eval <= 1;
+              initial_clear_attack <= 1;
+              initial_evaluate_go <= 0;
+              initial_attack_go <= 0;
+
+              initial_eval <= eval;
+              initial_insufficient_material <= insufficient_material;
+              initial_board_check <= (white_to_move && white_in_check) || (black_to_move && black_in_check);
+
+              ram_wr_addr_init <= 0;
+              ram_wr <= 0;
+
               // bitmask of all potentially moveable pieces
               for (s = 0; s < 64; s = s + 1)
                 square_active[s] <= board[s * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN && // square not empty
                        board[s * `PIECE_WIDTH + `BLACK_BIT] == black_to_move; // my piece
-              
+
+              // castling possibilities
               // black to move
               castle_short_legal[0] <= castle_mask[`CASTLE_BLACK_SHORT] &&
                                        board[idx[7][5]+:`PIECE_WIDTH] == `EMPTY_POSN &&
@@ -624,15 +647,6 @@ module all_moves #
                                       black_is_attacking[0 << 3 | 3] == 1'b0 &&
                                       black_is_attacking[0 << 3 | 4] == 1'b0;
 
-              initial_eval <= eval;
-              initial_insufficient_material <= insufficient_material;
-
-              initial_clear_eval <= 1;
-              initial_clear_attack <= 1;
-              initial_evaluate_go <= 0;
-              initial_board_check <= (white_to_move && white_in_check) || (black_to_move && black_in_check);
-              ram_wr_addr_init <= 0;
-              ram_wr <= 0;
               state <= STATE_INIT_WS;
            end
          STATE_INIT_WS :
@@ -952,11 +966,12 @@ module all_moves #
    localparam LEGAL_LOAD = 1;
    localparam LEGAL_KING_POS = 2;
    localparam LEGAL_ATTACK_WAIT = 3;
-   localparam LEGAL_MOVE = 4;
-   localparam LEGAL_NEXT = 5;
-   localparam LEGAL_MOVE_SORT_INIT = 6;
-   localparam LEGAL_MOVE_SORT = 7;
-   localparam LEGAL_DONE = 8;
+   localparam LEGAL_EVAL_WAIT = 4;
+   localparam LEGAL_MOVE = 5;
+   localparam LEGAL_NEXT = 6;
+   localparam LEGAL_MOVE_SORT_INIT = 7;
+   localparam LEGAL_MOVE_SORT = 8;
+   localparam LEGAL_DONE = 9;
 
    reg [3:0] legal = LEGAL_INIT;
 
@@ -974,6 +989,7 @@ module all_moves #
               legal_sort_start <= 0;
               legal_sort_clear <= 0;
               legal_eval_done <= 0;
+              legal_attack_go <= 0;
               legal_evaluate_go <= 0;
               ram_rd_addr <= 0;
               if (ram_wr_addr > 0)
@@ -986,6 +1002,7 @@ module all_moves #
                attack_test_castle_mask, attack_test_white_to_move, attack_test_board} <= ram_rd_data;
               ram_rd_addr <= ram_rd_addr + 1;
 
+              legal_attack_go <= 0;
               legal_evaluate_go <= 0;
               legal_clear_eval <= 0;
               legal_clear_attack <= 0;
@@ -1018,12 +1035,22 @@ module all_moves #
               legal_evaluate_white_to_move <= attack_test_white_to_move;
               legal_evaluate_board <= attack_test_board;
               legal_evaluate_uci <= attack_uci;
-              legal_evaluate_go <= 1;
+              legal_attack_go <= 1;
 
               legal <= LEGAL_ATTACK_WAIT;
            end
          LEGAL_ATTACK_WAIT :
+           if (is_attacking_done)
+             if ((white_to_move && white_in_check) || (black_to_move && black_in_check))
+               legal <= LEGAL_NEXT; // invalid position, side to move still in check
+             else
+               begin
+                  legal_evaluate_go <= 1;
+                  legal <= LEGAL_EVAL_WAIT; // eval a legal move
+               end
+         LEGAL_EVAL_WAIT :
            begin
+              legal_attack_go <= 0;
               legal_evaluate_go <= 0;
               attack_test_white_in_check <= white_in_check;
               attack_test_black_in_check <= black_in_check;
@@ -1032,11 +1059,8 @@ module all_moves #
               attack_test_attack_white_pop <= attack_white_pop;
               attack_test_attack_black_pop <= attack_black_pop;
 
-              if (is_attacking_done && eval_valid)
-                if ((white_to_move && white_in_check) || (black_to_move && black_in_check))
-                  legal <= LEGAL_NEXT; // invalid position, side to move still in check
-                else
-                  legal <= LEGAL_MOVE; // store a legal move
+              if (eval_valid)
+                legal <= LEGAL_MOVE; // store a legal move
            end
          LEGAL_MOVE :
            begin
@@ -1054,7 +1078,7 @@ module all_moves #
               legal_attack_black_pop_ram_wr <= attack_test_attack_black_pop;
               legal_eval_ram_wr <= eval;
               legal_eval_pv_flag_wr <= eval_pv_flag;
-              legal_insufficent_material_ram_wr <= insufficient_material;
+              legal_insufficient_material_ram_wr <= insufficient_material;
               if (attack_pawn_zero_half_move || attack_test_capture)
                 begin
                    legal_half_move_ram_wr <= 0;
@@ -1068,6 +1092,8 @@ module all_moves #
               legal_ram_wr <= am_quiescence_moves ? attack_test_capture : 1;
               legal_clear_eval <= 1;
               legal_clear_attack <= 1;
+              legal_attack_go <= 0;
+              legal_evaluate_go <= 0;
               legal <= LEGAL_NEXT;
            end
          LEGAL_NEXT :
@@ -1075,6 +1101,8 @@ module all_moves #
               legal_ram_wr <= 0;
               legal_clear_eval <= 1;
               legal_clear_attack <= 1;
+              legal_attack_go <= 0;
+              legal_evaluate_go <= 0;
               if (all_generated_moves_complete && ram_wr_addr == ram_rd_addr) // all moves checked for legality and evaluated
                 if (am_move_count == 0)
                   legal <= LEGAL_DONE; // no legal moves, either mate or stalemate
@@ -1119,7 +1147,7 @@ module all_moves #
 
    /* board_attack AUTO_TEMPLATE (
     .board (evaluate_board_r[]),
-    .board_valid (evaluate_go_r),
+    .board_valid (attack_go_r),
     );*/
    board_attack board_attack
      (/*AUTOINST*/
@@ -1135,7 +1163,7 @@ module all_moves #
       .reset                            (reset),
       .clk                              (clk),
       .board                            (evaluate_board_r[`BOARD_WIDTH-1:0]), // Templated
-      .board_valid                      (evaluate_go_r),         // Templated
+      .board_valid                      (attack_go_r),           // Templated
       .clear_attack                     (clear_attack));
 
    /* evaluate AUTO_TEMPLATE (
@@ -1166,7 +1194,6 @@ module all_moves #
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
       .algorithm_enable                 (algorithm_enable[31:0]),
       .board_valid                      (evaluate_go_r),         // Templated
-      .is_attacking_done                (is_attacking_done),
       .board_in                         (evaluate_board_r[`BOARD_WIDTH-1:0]), // Templated
       .uci_in                           (evaluate_uci_r[UCI_WIDTH-1:0]), // Templated
       .castle_mask                      (evaluate_castle_mask_r[3:0]), // Templated

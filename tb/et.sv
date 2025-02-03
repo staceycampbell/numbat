@@ -71,7 +71,7 @@ module et;
      begin
         t <= t + 1;
         reset <= t < 64;
-        board_valid <= t >= 128;
+        board_valid <= is_attacking_done;
         if (eval_valid)
           begin
              $display("eval=%0d", eval);
@@ -102,7 +102,6 @@ module et;
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
       .algorithm_enable                 (algorithm_enable[31:0]),
       .board_valid                      (board_valid),
-      .is_attacking_done                (is_attacking_done),
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .uci_in                           (uci_in[UCI_WIDTH-1:0]),
       .castle_mask                      (castle_mask[3:0]),

@@ -110,6 +110,11 @@ module tb;
 	// echo 'FEN line goes here' | ../misc/fenconv
         // echo '' | ../misc/fenconv
 	// echo 'rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1' | ../misc/fenconv
+
+        // many illegal mves
+	// echo 'r1b1kb1r/ppp1qppp/8/3n4/2B5/P1N2N2/RP3PPP/2Q1K2R w Kkq - 1 12' | ../misc/fenconv
+        
+	// echo 'rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1' | ../misc/fenconv
         board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
         board[7 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
         board[7 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
@@ -145,7 +150,7 @@ module tb;
         en_passant_col = 4'h0;
         half_move = 0;
         full_move_number = 1;
-
+        
         forever
           #1 clk = ~clk;
      end

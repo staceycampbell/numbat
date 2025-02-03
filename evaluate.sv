@@ -19,7 +19,6 @@ module evaluate #
     input [31:0]                     algorithm_enable,
 
     input                            board_valid,
-    input                            is_attacking_done,
     input [`BOARD_WIDTH - 1:0]       board_in,
     input [UCI_WIDTH - 1:0]          uci_in,
     input [3:0]                      castle_mask,
@@ -174,7 +173,7 @@ module evaluate #
      end
 
    localparam STATE_IDLE = 0;
-   localparam STATE_WAIT_ATTACKING_DONE = 1;
+   localparam STATE_WS = 1;
    localparam STATE_WAIT_EVAL = 2;
    localparam STATE_WAIT_LATENCY = 3;
    localparam STATE_WAIT_CLEAR = 4;
@@ -193,14 +192,13 @@ module evaluate #
               eval_valid <= 0;
               latency <= 0;
               if (board_valid && ~board_valid_r)
-                state <= STATE_WAIT_ATTACKING_DONE; // note: one ws required for board to valid, flopped for timing
+                state <= STATE_WS; // note: one ws required for board to valid, flopped for timing
            end
-         STATE_WAIT_ATTACKING_DONE :
-           if (is_attacking_done)
-             begin
-                local_board_valid <= 1;
-                state <= STATE_WAIT_EVAL;
-             end
+         STATE_WS :
+           begin
+              local_board_valid <= 1;
+              state <= STATE_WAIT_EVAL;
+           end
          STATE_WAIT_EVAL :
            begin
               if (eval_done_status == evals_complete)
