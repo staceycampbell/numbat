@@ -236,8 +236,9 @@ module evaluate #
 
    /* evaluate_general AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_general_valid),
-    .eval_\([me]\)g (eval_\1g_general[]),
+    .eval_valid_t7 (eval_general_valid),
+    .eval_\([me]\)g_t7 (eval_\1g_general[]),
+    .insufficient_material_t7 (insufficient_material),
     );*/
    evaluate_general #
      (
@@ -246,19 +247,17 @@ module evaluate #
    evaluate_general
      (/*AUTOINST*/
       // Outputs
-      .insufficient_material            (insufficient_material),
-      .eval_mg                          (eval_mg_general[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_general[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_general_valid),    // Templated
+      .insufficient_material_t7         (insufficient_material), // Templated
+      .eval_mg_t7                       (eval_mg_general[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t7                       (eval_eg_general[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t7                    (eval_general_valid),    // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
       .board_valid                      (local_board_valid),     // Templated
-      .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval),
-      .white_to_move                    (white_to_move));
+      .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_pawns AUTO_TEMPLATE (
     .board_valid (local_board_valid),
