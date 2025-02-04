@@ -430,8 +430,8 @@ module evaluate #
 
    /* evaluate_rooks AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_rooks_white_valid),
-    .eval_\([me]\)g (eval_\1g_rooks_white[]),
+    .eval_valid_t5 (eval_rooks_white_valid),
+    .eval_\([me]\)g_t5 (eval_\1g_rooks_white[]),
     );*/
    evaluate_rooks #
      (
@@ -441,20 +441,19 @@ module evaluate #
    evaluate_rooks_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_mg_rooks_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_rooks_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_rooks_white_valid), // Templated
+      .eval_mg_t5                       (eval_mg_rooks_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t5                       (eval_eg_rooks_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t5                    (eval_rooks_white_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
-      .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+      .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_rooks AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_rooks_black_valid),
-    .eval_\([me]\)g (eval_\1g_rooks_black[]),
+    .eval_valid_t5 (eval_rooks_black_valid),
+    .eval_\([me]\)g_t5 (eval_\1g_rooks_black[]),
     );*/
    evaluate_rooks #
      (
@@ -464,15 +463,14 @@ module evaluate #
    evaluate_rooks_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_mg_rooks_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_rooks_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_rooks_black_valid), // Templated
+      .eval_mg_t5                       (eval_mg_rooks_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t5                       (eval_eg_rooks_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t5                    (eval_rooks_black_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
-      .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+      .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_tropism AUTO_TEMPLATE (
     .board_valid (local_board_valid),
