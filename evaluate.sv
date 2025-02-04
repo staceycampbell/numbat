@@ -357,8 +357,8 @@ module evaluate #
 
    /* evaluate_killer AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_killer_valid),
-    .eval_\([me]\)g (eval_\1g_killer[]),
+    .eval_valid_t3 (eval_killer_valid),
+    .eval_\([me]\)g_t3 (eval_\1g_killer[]),
     );*/
    evaluate_killer #
      (
@@ -368,15 +368,14 @@ module evaluate #
    evaluate_killer
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_mg_killer[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_killer[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_killer_valid),     // Templated
+      .eval_mg_t3                       (eval_mg_killer[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t3                       (eval_eg_killer[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t3                    (eval_killer_valid),     // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval),
       .white_to_move                    (white_to_move),
       .killer_ply                       (killer_ply[MAX_DEPTH_LOG2-1:0]),
       .killer_board                     (killer_board[`BOARD_WIDTH-1:0]),

@@ -20,8 +20,6 @@ module evaluate_castling #
     output reg                           eval_valid_t5
     );
 
-   localparam LATENCY_COUNT = 6;
-
    localparam OPPOSITION_QUEEN = WHITE_CASTLING ? `BLACK_QUEN : `WHITE_QUEN;
    localparam MY_KING = WHITE_CASTLING ? `WHITE_KING : `BLACK_KING;
    localparam MY_ROOK = WHITE_CASTLING ? `WHITE_ROOK : `BLACK_ROOK;
