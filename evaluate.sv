@@ -314,8 +314,8 @@ module evaluate #
 
    /* evaluate_bishops AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_bishops_white_valid),
-    .eval_\([me]\)g (eval_\1g_bishops_white[]),
+    .eval_valid_t7 (eval_bishops_white_valid),
+    .eval_\([me]\)g_t7 (eval_\1g_bishops_white[]),
     );*/
    evaluate_bishops #
      (
@@ -325,20 +325,19 @@ module evaluate #
    evaluate_bishops_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_mg_bishops_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_bishops_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_bishops_white_valid), // Templated
+      .eval_mg_t7                       (eval_mg_bishops_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t7                       (eval_eg_bishops_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t7                    (eval_bishops_white_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
-      .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+      .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_bishops AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_bishops_black_valid),
-    .eval_\([me]\)g (eval_\1g_bishops_black[]),
+    .eval_valid_t7 (eval_bishops_black_valid),
+    .eval_\([me]\)g_t7 (eval_\1g_bishops_black[]),
     );*/
    evaluate_bishops #
      (
@@ -348,15 +347,14 @@ module evaluate #
    evaluate_bishops_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_mg_bishops_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg                          (eval_eg_bishops_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_bishops_black_valid), // Templated
+      .eval_mg_t7                       (eval_mg_bishops_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t7                       (eval_eg_bishops_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t7                    (eval_bishops_black_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
-      .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+      .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_killer AUTO_TEMPLATE (
     .board_valid (local_board_valid),
