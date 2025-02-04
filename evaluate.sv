@@ -522,7 +522,8 @@ module evaluate #
 
    /* evaluate_pv AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_pv_valid),
+    .eval_valid_t1 (eval_pv_valid),
+    .eval_pv_flag_t1 (eval_pv_flag),
     .pv_ply (killer_ply[]), // this works for now, create a pv ply if that changes
     );*/
    evaluate_pv #
@@ -533,15 +534,14 @@ module evaluate #
    evaluate_pv
      (/*AUTOINST*/
       // Outputs
-      .eval_pv_flag                     (eval_pv_flag),
-      .eval_valid                       (eval_pv_valid),         // Templated
+      .eval_pv_flag_t1                  (eval_pv_flag),          // Templated
+      .eval_valid_t1                    (eval_pv_valid),         // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .uci_in                           (uci_in[UCI_WIDTH-1:0]),
       .pv_ply                           (killer_ply[MAX_DEPTH_LOG2-1:0]), // Templated
-      .clear_eval                       (clear_eval),
       .pv_ctrl_in                       (pv_ctrl_in[31:0]));
 
    /* popcount AUTO_TEMPLATE (
