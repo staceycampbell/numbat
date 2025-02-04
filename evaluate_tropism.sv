@@ -15,13 +15,10 @@ module evaluate_tropism #
     input                                board_valid,
     input [3:0]                          castle_mask,
     input [`BOARD_WIDTH - 1:0]           board,
-    input                                clear_eval,
 
-    output reg signed [EVAL_WIDTH - 1:0] eval_mg,
-    output                               eval_valid
+    output reg signed [EVAL_WIDTH - 1:0] eval_mg_t10,
+    output reg                           eval_valid_t10
     );
-
-   localparam LATENCY_COUNT = 11;
 
    localparam MY_PAWN = WHITE ? `WHITE_PAWN : `BLACK_PAWN;
    localparam OP_PAWN = WHITE ? `BLACK_PAWN : `WHITE_PAWN;
@@ -68,7 +65,12 @@ module evaluate_tropism #
    reg 					 castle_min3_t7;
    reg [3:0]                             defect_index_t8;
    reg [7:0]                             ksi_final_t9;
-   reg signed [EVAL_WIDTH - 1:0]         eval_mg_t10;
+
+   reg [3:0]                             castle_mask_t1, castle_mask_t2, castle_mask_t3, castle_mask_t4, castle_mask_t5, castle_mask_t6;
+   reg [2:0]                             my_king_col_t2, my_king_col_t3, my_king_col_t4, my_king_col_t5, my_king_col_t6;
+   reg [`BOARD_WIDTH - 1:0]              board_t1, board_t2, board_t3, board_t4;
+   reg                                   eval_valid_t1, eval_valid_t2, eval_valid_t3, eval_valid_t4, eval_valid_t5,
+                                         eval_valid_t6, eval_valid_t7, eval_valid_t8, eval_valid_t9;
 
    // should be empty
    /*AUTOREGINPUT*/
@@ -83,7 +85,9 @@ module evaluate_tropism #
 
    wire [7:0]                            ksi_final_t8 = (defect_index_t8 << 4) | (ksi_t8 < 16 ? ksi_t8[3:0] : 15);
 
-   assign eval_mg = eval_mg_t10;
+   wire [3:0]                            castle_mask_t0 = castle_mask;
+   wire [`BOARD_WIDTH - 1:0]             board_t0 = board;
+   wire                                  eval_valid_t0 = board_valid;
 
    function [4:0] abs_dist (input signed [4:0] x);
       begin
@@ -101,7 +105,7 @@ module evaluate_tropism #
       begin
          enemy_tropism_piece = p == ENEMY_KNIT || p == ENEMY_BISH || p == ENEMY_ROOK || p == ENEMY_QUEN;
       end
-   endfunction // enemy_tropism_piece
+   endfunction
 
    wire [DEFECT_WIDTH - 1:0] min_q_m_t6 = defects_q_t6 < defects_m_t6 ? defects_q_t6 : defects_m_t6;
    wire [DEFECT_WIDTH - 1:0] min_k_m_t6 = defects_k_t6 < defects_m_t6 ? defects_k_t6 : defects_m_t6;
@@ -115,20 +119,20 @@ module evaluate_tropism #
 
 	defects_t7 <= 0;
 	castle_min3_t7 <= 0;
-	if (castle_mask[CASTLE_SHORT] == 1'b0 && castle_mask[CASTLE_LONG] == 1'b0)
+	if (castle_mask_t6[CASTLE_SHORT] == 1'b0 && castle_mask_t6[CASTLE_LONG] == 1'b0)
 	  begin
-	     if (my_king_col_t1 > 4)
+	     if (my_king_col_t6 > 4)
 	       defects_t7 <= defects_k_t6;
-	     else if (my_king_col_t1 < 3)
+	     else if (my_king_col_t6 < 3)
 	       defects_t7 <= defects_q_t6;
 	     else
 	       defects_t7 <= defects_m_t6;
 	  end
 	else
 	  begin
-	     if (castle_mask[CASTLE_SHORT] == 1'b1 && castle_mask[CASTLE_LONG] == 1'b1)
+	     if (castle_mask_t6[CASTLE_SHORT] == 1'b1 && castle_mask_t6[CASTLE_LONG] == 1'b1)
 	       defects_t7 <= min_q_m_k_t6;
-	     else if (castle_mask[CASTLE_SHORT] == 1'b1)
+	     else if (castle_mask_t6[CASTLE_SHORT] == 1'b1)
 	       defects_t7 <= min_k_m_t6;
 	     else
 	       defects_t7 <= min_k_m_t6;
@@ -148,7 +152,7 @@ module evaluate_tropism #
      begin
         for (row = 0; row < 8; row = row + 1)
           for (col = 0; col < 8; col = col + 1)
-            if (board[(row << 3 | col) * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_KING)
+            if (board_t0[(row << 3 | col) * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_KING)
               begin
                  my_king_row_t1 <= row;
                  my_king_col_t1 <= col;
@@ -162,9 +166,12 @@ module evaluate_tropism #
             distance_t3[row << 3 | col] <= max_dist(row_dist_t2[row], col_dist_t2[col]);
         for (row = 0; row < 8; row = row + 1)
           for (col = 0; col < 8; col = col + 1)
+            lut_index_t4[row << 3 | col] <= board_t3[(row << 3 | col) * `PIECE_WIDTH+:`PIECE_WIDTH - 1] << 3 | distance_t3[row << 3 | col];
+
+        for (row = 0; row < 8; row = row + 1)
+          for (col = 0; col < 8; col = col + 1)
             begin
-               lut_index_t4[row << 3 | col] <= board[(row << 3 | col) * `PIECE_WIDTH+:`PIECE_WIDTH - 1] << 3 | distance_t3[row << 3 | col];
-               if (enemy_tropism_piece(board[(row << 3 | col) * `PIECE_WIDTH+:`PIECE_WIDTH]))
+               if (enemy_tropism_piece(board_t4[(row << 3 | col) * `PIECE_WIDTH+:`PIECE_WIDTH]))
                  ksi_t5[row << 3 | col] <= tropism_lut[lut_index_t4[row << 3 | col]];
                else
                  ksi_t5[row << 3 | col] <= 0;
@@ -186,8 +193,8 @@ module evaluate_tropism #
        for (col = 0; col < 8; col = col + 1)
          if (row != 0 && row != 7)
            begin
-              board_neutral_t1[(row_flip[WHITE][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN;
-              enemy_neutral_t1[(row_flip[WHITE][row] << 3) | col] <= board[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == OP_PAWN;
+              board_neutral_t1[(row_flip[WHITE][row] << 3) | col] <= board_t0[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN;
+              enemy_neutral_t1[(row_flip[WHITE][row] << 3) | col] <= board_t0[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == OP_PAWN;
            end
          else
            begin
@@ -268,6 +275,38 @@ module evaluate_tropism #
 	end
    endgenerate
 
+   always @(posedge clk)
+     begin
+	castle_mask_t1 <= castle_mask_t0;
+	castle_mask_t2 <= castle_mask_t1;
+	castle_mask_t3 <= castle_mask_t2;
+	castle_mask_t4 <= castle_mask_t3;
+	castle_mask_t5 <= castle_mask_t4;
+	castle_mask_t6 <= castle_mask_t5;
+
+	my_king_col_t2 <= my_king_col_t1;
+	my_king_col_t3 <= my_king_col_t2;
+	my_king_col_t4 <= my_king_col_t3;
+	my_king_col_t5 <= my_king_col_t4;
+	my_king_col_t6 <= my_king_col_t5;
+
+	board_t1 <= board_t0;
+	board_t2 <= board_t1;
+	board_t3 <= board_t2;
+	board_t4 <= board_t3;
+
+	eval_valid_t1 <= eval_valid_t0;
+	eval_valid_t2 <= eval_valid_t1;
+	eval_valid_t3 <= eval_valid_t2;
+	eval_valid_t4 <= eval_valid_t3;
+	eval_valid_t5 <= eval_valid_t4;
+	eval_valid_t6 <= eval_valid_t5;
+	eval_valid_t7 <= eval_valid_t6;
+	eval_valid_t8 <= eval_valid_t7;
+	eval_valid_t9 <= eval_valid_t8;
+	eval_valid_t10 <= eval_valid_t9;
+     end
+
    initial
      begin
         for (i = 0; i < LUT_COUNT; i = i + 1)
@@ -281,21 +320,5 @@ module evaluate_tropism #
 `include "evaluate_tropism.vh"
 
      end
-
-   /* latency_sm AUTO_TEMPLATE (
-    );*/
-   latency_sm #
-     (
-      .LATENCY_COUNT (LATENCY_COUNT)
-      )
-   latency_sm
-     (/*AUTOINST*/
-      // Outputs
-      .eval_valid                       (eval_valid),
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .board_valid                      (board_valid),
-      .clear_eval                       (clear_eval));
 
 endmodule

@@ -474,8 +474,8 @@ module evaluate #
 
    /* evaluate_tropism AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_tropism_white_valid),
-    .eval_\([me]\)g (eval_\1g_tropism_white[]),
+    .eval_valid_t10 (eval_tropism_white_valid),
+    .eval_\([me]\)g_t10 (eval_\1g_tropism_white[]),
     );*/
    evaluate_tropism #
      (
@@ -485,20 +485,19 @@ module evaluate #
    evaluate_tropism_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_mg_tropism_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_tropism_white_valid), // Templated
+      .eval_mg_t10                      (eval_mg_tropism_white[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t10                   (eval_tropism_white_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .castle_mask                      (castle_mask[3:0]),
-      .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+      .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_tropism AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_tropism_black_valid),
-    .eval_\([me]\)g (eval_\1g_tropism_black[]),
+    .eval_valid_t10 (eval_tropism_black_valid),
+    .eval_\([me]\)g_t10 (eval_\1g_tropism_black[]),
     );*/
    evaluate_tropism #
      (
@@ -508,15 +507,14 @@ module evaluate #
    evaluate_tropism_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_mg_tropism_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_tropism_black_valid), // Templated
+      .eval_mg_t10                      (eval_mg_tropism_black[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t10                   (eval_tropism_black_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .castle_mask                      (castle_mask[3:0]),
-      .board                            (board[`BOARD_WIDTH-1:0]),
-      .clear_eval                       (clear_eval));
+      .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_pv AUTO_TEMPLATE (
     .board_valid (local_board_valid),
