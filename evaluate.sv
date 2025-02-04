@@ -388,8 +388,8 @@ module evaluate #
 
    /* evaluate_castling AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_castling_white_valid),
-    .eval_mg (eval_castling_white_mg[]),
+    .eval_valid_t5 (eval_castling_white_valid),
+    .eval_mg_t5 (eval_castling_white_mg[]),
     );*/
    evaluate_castling #
      (
@@ -399,21 +399,20 @@ module evaluate #
    evaluate_castling_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_castling_white_mg[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_castling_white_valid), // Templated
+      .eval_mg_t5                       (eval_castling_white_mg[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t5                    (eval_castling_white_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
       .castle_mask                      (castle_mask[3:0]),
-      .castle_mask_orig                 (castle_mask_orig[3:0]),
-      .clear_eval                       (clear_eval));
+      .castle_mask_orig                 (castle_mask_orig[3:0]));
 
    /* evaluate_castling AUTO_TEMPLATE (
     .board_valid (local_board_valid),
-    .eval_valid (eval_castling_black_valid),
-    .eval_mg (eval_castling_black_mg[]),
+    .eval_valid_t5 (eval_castling_black_valid),
+    .eval_mg_t5 (eval_castling_black_mg[]),
     );*/
    evaluate_castling #
      (
@@ -423,16 +422,15 @@ module evaluate #
    evaluate_castling_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg                          (eval_castling_black_mg[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid                       (eval_castling_black_valid), // Templated
+      .eval_mg_t5                       (eval_castling_black_mg[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t5                    (eval_castling_black_valid), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .board_valid                      (local_board_valid),     // Templated
       .board                            (board[`BOARD_WIDTH-1:0]),
       .castle_mask                      (castle_mask[3:0]),
-      .castle_mask_orig                 (castle_mask_orig[3:0]),
-      .clear_eval                       (clear_eval));
+      .castle_mask_orig                 (castle_mask_orig[3:0]));
 
    /* evaluate_rooks AUTO_TEMPLATE (
     .board_valid (local_board_valid),
