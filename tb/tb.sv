@@ -53,8 +53,6 @@ module tb;
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
    wire                 am_moves_ready;         // From all_moves of all_moves.v
-   wire [5:0]           attack_black_pop_out;   // From all_moves of all_moves.v
-   wire [5:0]           attack_white_pop_out;   // From all_moves of all_moves.v
    wire                 black_in_check_out;     // From all_moves of all_moves.v
    wire [63:0]          black_is_attacking_out; // From all_moves of all_moves.v
    wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
@@ -114,7 +112,7 @@ module tb;
         // many illegal mves
 	// echo 'r1b1kb1r/ppp1qppp/8/3n4/2B5/P1N2N2/RP3PPP/2Q1K2R w Kkq - 1 12' | ../misc/fenconv
         
-	// echo 'rnbqkb1r/1p2pppp/B2p4/8/3Nn3/2N5/PPP2PPP/R1BQK2R b KQkq - 0 0' | ../misc/fenconv
+	// echo 'rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 1' | ../misc/fenconv
         board[7 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_ROOK;
         board[7 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
         board[7 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_BISH;
@@ -127,10 +125,11 @@ module tb;
         board[6 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
         board[6 * `SIDE_WIDTH + 6 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
         board[6 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
-        board[5 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
+        board[5 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
         board[5 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_PAWN;
+        board[5 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
         board[3 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
-        board[3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `BLACK_KNIT;
+        board[3 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
         board[2 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KNIT;
         board[1 * `SIDE_WIDTH + 0 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
         board[1 * `SIDE_WIDTH + 1 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_PAWN;
@@ -142,12 +141,13 @@ module tb;
         board[0 * `SIDE_WIDTH + 2 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
         board[0 * `SIDE_WIDTH + 3 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_QUEN;
         board[0 * `SIDE_WIDTH + 4 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_KING;
+        board[0 * `SIDE_WIDTH + 5 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_BISH;
         board[0 * `SIDE_WIDTH + 7 * `PIECE_WIDTH+:`PIECE_WIDTH] = `WHITE_ROOK;
-        white_to_move = 0;
+        white_to_move = 1;
         castle_mask = 4'hF;
         en_passant_col = 4'h0;
         half_move = 0;
-        full_move_number = 0;
+        full_move_number = 1;
         
         forever
           #1 clk = ~clk;
@@ -311,8 +311,6 @@ module tb;
       .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
       .fifty_move_out                   (fifty_move_out),
       .uci_out                          (uci_out[UCI_WIDTH-1:0]),
-      .attack_white_pop_out             (attack_white_pop_out[5:0]),
-      .attack_black_pop_out             (attack_black_pop_out[5:0]),
       .insufficient_material_out        (insufficient_material_out),
       .all_moves_bram_addr              (all_moves_bram_addr[31:0]),
       .all_moves_bram_din               (all_moves_bram_din[511:0]),

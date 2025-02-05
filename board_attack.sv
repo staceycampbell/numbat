@@ -16,9 +16,7 @@ module board_attack
    output [63:0]              white_is_attacking,
    output [63:0]              black_is_attacking,
    output                     white_in_check,
-   output                     black_in_check,
-   output [5:0]               attack_white_pop,
-   output [5:0]               attack_black_pop
+   output                     black_in_check
    );
 
    // should be empty
@@ -36,14 +34,16 @@ module board_attack
 
    localparam STATE_IDLE = 0;
    localparam STATE_RUN = 1;
-   localparam STATE_POP_COUNT_WS = 2;
-   localparam STATE_DONE = 3;
+   localparam STATE_DONE = 2;
 
    reg [1:0]                  state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
-       state <= STATE_IDLE;
+       begin
+          is_attacking_done <= 0;
+          state <= STATE_IDLE;
+       end
      else
        case (state)
          STATE_IDLE :
@@ -54,45 +54,17 @@ module board_attack
            end
          STATE_RUN :
            if (white_is_attacking_valid != 0)
-             state <= STATE_POP_COUNT_WS;
-         STATE_POP_COUNT_WS : // wait for pop count to be valid
-           state <= STATE_DONE;
+             begin
+                is_attacking_done <= 1;
+                state <= STATE_DONE;
+             end
          STATE_DONE :
-           begin
-              is_attacking_done <= 1;
-              if (clear_attack)
-                state <= STATE_IDLE;
-           end
+           if (clear_attack)
+             state <= STATE_IDLE;
          default :
            state <= STATE_IDLE;
        endcase
 
-   /* popcount AUTO_TEMPLATE (
-    .x0 (white_is_attacking[]),
-    .population (attack_white_pop[]),
-    );*/
-   popcount popcount_white
-     (/*AUTOINST*/
-      // Outputs
-      .population                       (attack_white_pop[5:0]), // Templated
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .x0                               (white_is_attacking[63:0])); // Templated
-
-   /* popcount AUTO_TEMPLATE (
-    .x0 (black_is_attacking[]),
-    .population (attack_black_pop[]),
-    );*/
-   popcount popcount_black
-     (/*AUTOINST*/
-      // Outputs
-      .population                       (attack_black_pop[5:0]), // Templated
-      // Inputs
-      .clk                              (clk),
-      .reset                            (reset),
-      .x0                               (black_is_attacking[63:0])); // Templated
-   
    generate
       for (row = 0; row < 8; row = row + 1)
         begin : row_attacking_blk

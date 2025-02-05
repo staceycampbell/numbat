@@ -36,8 +36,6 @@ module numbat_top
    wire [511:0]         all_moves_bram_din;     // From all_moves of all_moves.v
    wire [511:0]         all_moves_bram_dout;    // From mpsoc_block_diag_wrapper of mpsoc_block_diag_wrapper.v
    wire [63:0]          all_moves_bram_we;      // From all_moves of all_moves.v
-   wire [5:0]           am_attack_black_pop_out;// From all_moves of all_moves.v
-   wire [5:0]           am_attack_white_pop_out;// From all_moves of all_moves.v
    wire                 am_black_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_black_is_attacking_out;// From all_moves of all_moves.v
    wire [`BOARD_WIDTH-1:0] am_board_out;        // From all_moves of all_moves.v
@@ -307,8 +305,6 @@ module numbat_top
       .half_move_out                    (am_half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .fifty_move_out                   (am_fifty_move_out),     // Templated
       .uci_out                          (am_uci_out[UCI_WIDTH-1:0]), // Templated
-      .attack_white_pop_out             (am_attack_white_pop_out[5:0]), // Templated
-      .attack_black_pop_out             (am_attack_black_pop_out[5:0]), // Templated
       .insufficient_material_out        (am_insufficient_material_out), // Templated
       .all_moves_bram_addr              (all_moves_bram_addr[31:0]),
       .all_moves_bram_din               (all_moves_bram_din[511:0]),
@@ -608,8 +604,6 @@ module numbat_top
       .am_half_move_in                  (am_half_move_out[HALF_MOVE_WIDTH-1:0]), // Templated
       .am_fifty_move_in                 (am_fifty_move_out),     // Templated
       .am_uci_in                        (am_uci_out[UCI_WIDTH-1:0]), // Templated
-      .am_attack_white_pop_in           (am_attack_white_pop_out[5:0]), // Templated
-      .am_attack_black_pop_in           (am_attack_black_pop_out[5:0]), // Templated
       .am_insufficient_material_in      (am_insufficient_material_out), // Templated
       .am_pv_in                         (am_pv_out),             // Templated
       .misc_status                      (misc_status[31:0]),

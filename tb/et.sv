@@ -38,8 +38,6 @@ module et;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [5:0]           attack_black_pop;       // From board_attack of board_attack.v
-   wire [5:0]           attack_white_pop;       // From board_attack of board_attack.v
    wire                 black_in_check;         // From board_attack of board_attack.v
    wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
    wire [BYPASS_WIDTH-1:0] bp_out;              // From evaluate of evaluate.v
@@ -135,8 +133,6 @@ module et;
       .black_is_attacking               (black_is_attacking[63:0]),
       .white_in_check                   (white_in_check),
       .black_in_check                   (black_in_check),
-      .attack_white_pop                 (attack_white_pop[5:0]),
-      .attack_black_pop                 (attack_black_pop[5:0]),
       // Inputs
       .reset                            (reset),
       .clk                              (clk),

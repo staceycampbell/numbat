@@ -67,8 +67,6 @@ module all_moves #
     output [HALF_MOVE_WIDTH - 1:0]       half_move_out,
     output                               fifty_move_out,
     output [UCI_WIDTH - 1:0]             uci_out,
-    output [5:0]                         attack_white_pop_out,
-    output [5:0]                         attack_black_pop_out,
     output                               insufficient_material_out,
 
     output [31:0]                        all_moves_bram_addr,
@@ -78,9 +76,9 @@ module all_moves #
 
    // board + castle mask + en passant col + color to move
    localparam INITIAL_WIDTH = `BOARD_WIDTH + 4 + 4 + 1;
-   // white/black pop counts, UCI, initial width + capture + pawn adv (to zero-out half move)
-   localparam RAM_WIDTH = 6 + 6 + UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
-   localparam LEGAL_RAM_WIDTH = 463; // to verify, increase to excessively large number then look for x's on bus in sim
+   // UCI, initial width + capture + pawn adv (to zero-out half move)
+   localparam RAM_WIDTH = UCI_WIDTH + INITIAL_WIDTH + 1 + 1;
+   localparam LEGAL_RAM_WIDTH = 451; // to verify, increase to excessively large number then look for x's on bus in sim
 
    reg [RAM_WIDTH - 1:0]                 move_ram [0:`MAX_POSITIONS - 1];
    reg [RAM_WIDTH - 1:0]                 ram_rd_data;
@@ -119,7 +117,6 @@ module all_moves #
    reg                                   legal_black_in_check_ram_wr;
    reg [63:0]                            legal_white_is_attacking_ram_wr;
    reg [63:0]                            legal_black_is_attacking_ram_wr;
-   reg [5:0]                             legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr;
    reg [UCI_WIDTH - 1:0]                 legal_uci_ram_wr;
    reg                                   legal_ram_wr = 0;
 
@@ -202,8 +199,6 @@ module all_moves #
    reg [HALF_MOVE_WIDTH - 1:0]           presort_half_move_out;
    reg                                   presort_fifty_move_out;
    reg [UCI_WIDTH - 1:0]                 presort_uci_out;
-   reg [5:0]                             presort_attack_white_pop_out;
-   reg [5:0]                             presort_attack_black_pop_out;
    reg                                   presort_insufficient_material_out;
 
    reg [63:0]                            square_active;
@@ -216,8 +211,6 @@ module all_moves #
    wire [31:0]          all_moves_bram_intermediate_addr;// From move_sort_legal of move_sort.v
    wire [511:0]         all_moves_bram_intermediate_din;// From move_sort_legal of move_sort.v
    wire [63:0]          all_moves_bram_intermediate_we;// From move_sort_legal of move_sort.v
-   wire [5:0]           attack_black_pop;       // From board_attack of board_attack.v
-   wire [5:0]           attack_white_pop;       // From board_attack of board_attack.v
    wire                 black_in_check;         // From board_attack of board_attack.v
    wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
@@ -255,8 +248,6 @@ module all_moves #
    wire [HALF_MOVE_WIDTH - 1:0]          all_moves_bram_half_move_out;
    wire                                  all_moves_bram_fifty_move_out;
    wire [UCI_WIDTH - 1:0]                all_moves_bram_uci_out;
-   wire [5:0]                            all_moves_bram_attack_white_pop_out;
-   wire [5:0]                            all_moves_bram_attack_black_pop_out;
    wire                                  all_moves_bram_insufficient_material_out;
 
    wire [`BOARD_WIDTH - 1:0]             ebp_board_out;
@@ -273,8 +264,6 @@ module all_moves #
    wire [HALF_MOVE_WIDTH - 1:0]          ebp_half_move_out;
    wire                                  ebp_fifty_move_out;
    wire [UCI_WIDTH - 1:0]                ebp_uci_out;
-   wire [5:0]                            ebp_attack_white_pop_out;
-   wire [5:0]                            ebp_attack_black_pop_out;
    wire                                  ebp_insufficient_material_out;
 
    wire                                  black_to_move = ~white_to_move;
@@ -282,8 +271,6 @@ module all_moves #
    wire                                  clear_attack = initial_evaluation_complete ? legal_clear_attack : initial_clear_attack;
 
    wire [LEGAL_RAM_WIDTH - 1:0]          legal_bypass = {1'b0, // insufficient
-                                                         legal_attack_white_pop_ram_wr[5:0],
-							 legal_attack_black_pop_ram_wr[5:0],
 							 legal_uci_ram_wr[UCI_WIDTH - 1:0],
                                                          legal_fifty_move_ram_wr,
 							 legal_half_move_ram_wr[HALF_MOVE_WIDTH - 1:0],
@@ -300,8 +287,6 @@ module all_moves #
                                                          {EVAL_WIDTH{1'b0}}}; // eval
 
    wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {presort_insufficient_material_out,
-                                                              presort_attack_white_pop_out[5:0],
-                                                              presort_attack_black_pop_out[5:0],
                                                               presort_uci_out[UCI_WIDTH - 1:0],
                                                               presort_fifty_move_out,
                                                               presort_half_move_out[HALF_MOVE_WIDTH - 1:0],
@@ -318,8 +303,6 @@ module all_moves #
                                                               presort_eval_out[EVAL_WIDTH - 1:0]};
 
    assign {insufficient_material_out,
-	   attack_white_pop_out[5:0],
-	   attack_black_pop_out[5:0],
 	   uci_out[UCI_WIDTH - 1:0],
            fifty_move_out,
 	   half_move_out[HALF_MOVE_WIDTH - 1:0],
@@ -336,8 +319,6 @@ module all_moves #
            eval_out[EVAL_WIDTH - 1:0]} = legal_ram_rd_data;
 
    assign {ebp_insufficient_material_out, // dummy, ignored
-           ebp_attack_white_pop_out[5:0],
-           ebp_attack_black_pop_out[5:0],
            ebp_uci_out[UCI_WIDTH - 1:0],
            ebp_fifty_move_out,
            ebp_half_move_out[HALF_MOVE_WIDTH - 1:0],
@@ -355,8 +336,6 @@ module all_moves #
            } = eval_bypass_out;
 
    assign {all_moves_bram_insufficient_material_out,
-	   all_moves_bram_attack_white_pop_out[5:0],
-	   all_moves_bram_attack_black_pop_out[5:0],
 	   all_moves_bram_uci_out[UCI_WIDTH - 1:0],
            all_moves_bram_fifty_move_out,
 	   all_moves_bram_half_move_out[HALF_MOVE_WIDTH - 1:0],
@@ -494,8 +473,6 @@ module all_moves #
         legal_ram_wr <= eval_valid;
 
         {presort_insufficient_material_out,
-         presort_attack_white_pop_out[5:0],
-         presort_attack_black_pop_out[5:0],
          presort_uci_out[UCI_WIDTH - 1:0],
          presort_fifty_move_out,
          presort_half_move_out[HALF_MOVE_WIDTH - 1:0],
@@ -511,8 +488,6 @@ module all_moves #
          presort_black_in_check_out,
          presort_eval_out[EVAL_WIDTH - 1:0]} <=
                                                {insufficient_material, // from evaluation
-                                                ebp_attack_white_pop_out[5:0],
-                                                ebp_attack_black_pop_out[5:0],
                                                 ebp_uci_out[UCI_WIDTH - 1:0],
                                                 ebp_fifty_move_out,
                                                 ebp_half_move_out[HALF_MOVE_WIDTH - 1:0],
@@ -1182,8 +1157,6 @@ module all_moves #
               legal_black_in_check_ram_wr <= black_in_check;
               legal_white_is_attacking_ram_wr <= white_is_attacking;
               legal_black_is_attacking_ram_wr <= black_is_attacking;
-              legal_attack_white_pop_ram_wr <= attack_white_pop;
-              legal_attack_black_pop_ram_wr <= attack_black_pop;
 
               legal <= LEGAL_NEXT;
            end
@@ -1256,8 +1229,6 @@ module all_moves #
       .black_is_attacking               (black_is_attacking[63:0]),
       .white_in_check                   (white_in_check),
       .black_in_check                   (black_in_check),
-      .attack_white_pop                 (attack_white_pop[5:0]),
-      .attack_black_pop                 (attack_black_pop[5:0]),
       // Inputs
       .reset                            (reset),
       .clk                              (clk),

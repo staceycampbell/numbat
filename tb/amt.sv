@@ -50,8 +50,6 @@ module amt;
    wire [MAX_POSITIONS_LOG2-1:0] am_move_count; // From all_moves of all_moves.v
    wire                 am_move_ready;          // From all_moves of all_moves.v
    wire                 am_moves_ready;         // From all_moves of all_moves.v
-   wire [5:0]           attack_black_pop_out;   // From all_moves of all_moves.v
-   wire [5:0]           attack_white_pop_out;   // From all_moves of all_moves.v
    wire                 black_in_check_out;     // From all_moves of all_moves.v
    wire [63:0]          black_is_attacking_out; // From all_moves of all_moves.v
    wire [`BOARD_WIDTH-1:0] board_out;           // From all_moves of all_moves.v
@@ -229,8 +227,6 @@ module amt;
       .half_move_out                    (half_move_out[HALF_MOVE_WIDTH-1:0]),
       .fifty_move_out                   (fifty_move_out),
       .uci_out                          (uci_out[UCI_WIDTH-1:0]),
-      .attack_white_pop_out             (attack_white_pop_out[5:0]),
-      .attack_black_pop_out             (attack_black_pop_out[5:0]),
       .insufficient_material_out        (insufficient_material_out),
       .all_moves_bram_addr              (all_moves_bram_addr[31:0]),
       .all_moves_bram_din               (all_moves_bram_din[511:0]),
