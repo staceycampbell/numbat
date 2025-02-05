@@ -7,7 +7,8 @@ module evaluate #
   (
    parameter EVAL_WIDTH = 0,
    parameter MAX_DEPTH_LOG2 = 0,
-   parameter UCI_WIDTH = 0
+   parameter UCI_WIDTH = 0,
+   parameter BYPASS_WIDTH = 0
    )
    (
     input                            clk,
@@ -23,8 +24,8 @@ module evaluate #
     input [UCI_WIDTH - 1:0]          uci_in,
     input [3:0]                      castle_mask,
     input [3:0]                      castle_mask_orig,
-    input                            clear_eval,
     input                            white_to_move,
+    input [BYPASS_WIDTH - 1:0]       bp_in,
 
     input [63:0]                     white_is_attacking,
     input [63:0]                     black_is_attacking,
@@ -43,100 +44,102 @@ module evaluate #
     output                           insufficient_material,
     output signed [EVAL_WIDTH - 1:0] eval,
     output                           eval_pv_flag,
-    output reg                       eval_valid = 0
+    output                           eval_valid,
+    output [BYPASS_WIDTH - 1:0]      bp_out
     );
 
-   localparam LATENCY_COUNT = 9 - 3; // 3 clocks latency in state machine
    localparam EVALUATION_COUNT = 13;
+   localparam SUM_WIDTH = EVAL_WIDTH + EVALUATION_COUNT;
    localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
-
-   reg                               board_valid_r = 0;
-   reg                               local_board_valid = 0;
-   reg [`BOARD_WIDTH - 1:0]          board, board_pre;
-   reg [2:0]                         latency;
-   reg signed [7:0]                  phase, phase_r;
-   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_mg_t1, eval_b_mg_t1, eval_c_mg_t1, eval_d_mg_t1;
-   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_a_eg_t1, eval_b_eg_t1, eval_c_eg_t1;
-   reg signed [EVAL_WIDTH + EVALUATION_COUNT - 1:0] eval_mg_t2, eval_eg_t2;
-   reg signed [PHASE_CALC_WIDTH - 1:0]              score_mg_t3, score_eg_t3;
-   reg signed [PHASE_CALC_WIDTH - 1:0]              score_mg_t4, score_eg_t4;
-   reg signed [PHASE_CALC_WIDTH - 1:0]              score_t5;
-   reg signed [PHASE_CALC_WIDTH - 1:0]              score_t6, score_t7;
-   reg signed [EVAL_WIDTH - 1:0]                    eval_t8;
-   reg [EVALUATION_COUNT - 1:0]                     eval_done_locked;
-   reg [EVALUATION_COUNT - 1:0]                     eval_done_status_r;
+   
+   reg signed [SUM_WIDTH - 1:0]      sum_mg_t4, sum_mg_t5, sum_mg_t6, sum_mg_t7, sum_mg_t8, sum_mg_t9, sum_mg_t10, sum_mg_t11;
+   reg signed [SUM_WIDTH - 1:0]      sum_eg_t4, sum_eg_t5, sum_eg_t6, sum_eg_t7, sum_eg_t8, sum_eg_t9, sum_eg_t10, sum_eg_t11;
+   
+   reg signed [PHASE_CALC_WIDTH - 1:0] score_mg_t12, score_eg_t12;
+   reg signed [PHASE_CALC_WIDTH - 1:0] score_mg_t13, score_eg_t13;
+   reg signed [PHASE_CALC_WIDTH - 1:0] score_t14;
+   reg signed [PHASE_CALC_WIDTH - 1:0] score_t15, score_t16;
+   reg signed [EVAL_WIDTH - 1:0]       eval_t17;
+   
+   reg signed [7:0]                    phase_t2, phase_t3, phase_t4, phase_t5, phase_t6, phase_t7, phase_t8, phase_t9, phase_t10, phase_t11;
+   reg                                 insufficient_material_t8, insufficient_material_t9, insufficient_material_t10,
+                                       insufficient_material_t11, insufficient_material_t12, insufficient_material_t13,
+                                       insufficient_material_t14, insufficient_material_t15, insufficient_material_t16,
+                                       insufficient_material_t17;
+   reg                                 eval_pv_flag_t1, eval_pv_flag_t2, eval_pv_flag_t3, eval_pv_flag_t4, eval_pv_flag_t5,
+                                       eval_pv_flag_t6, eval_pv_flag_t7, eval_pv_flag_t8, eval_pv_flag_t9, eval_pv_flag_t10,
+                                       eval_pv_flag_t11, eval_pv_flag_t12, eval_pv_flag_t13, eval_pv_flag_t14, eval_pv_flag_t15,
+                                       eval_pv_flag_t16, eval_pv_flag_t17;
+   reg [BYPASS_WIDTH - 1:0]            bp_t1, bp_t2, bp_t3, bp_t4, bp_t5, bp_t6, bp_t7, bp_t8, bp_t9, bp_t10, bp_t11, bp_t12,
+                                       bp_t13, bp_t14, bp_t15, bp_t16, bp_t17;
+   reg                                 eval_valid_t1, eval_valid_t2, eval_valid_t3, eval_valid_t4, eval_valid_t5, eval_valid_t6,
+                                       eval_valid_t7, eval_valid_t8, eval_valid_t9, eval_valid_t10, eval_valid_t11, eval_valid_t12,
+                                       eval_valid_t13, eval_valid_t14, eval_valid_t15, eval_valid_t16, eval_valid_t17;
 
    // should be empty
    /*AUTOREGINPUT*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 eval_bishops_black_valid;// From evaluate_bishops_black of evaluate_bishops.v
-   wire                 eval_bishops_white_valid;// From evaluate_bishops_white of evaluate_bishops.v
-   wire signed [EVAL_WIDTH-1:0] eval_castling_black_mg;// From evaluate_castling_black of evaluate_castling.v
-   wire                 eval_castling_black_valid;// From evaluate_castling_black of evaluate_castling.v
-   wire signed [EVAL_WIDTH-1:0] eval_castling_white_mg;// From evaluate_castling_white of evaluate_castling.v
-   wire                 eval_castling_white_valid;// From evaluate_castling_white of evaluate_castling.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_bishops_black;// From evaluate_bishops_black of evaluate_bishops.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_bishops_white;// From evaluate_bishops_white of evaluate_bishops.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_general;// From evaluate_general of evaluate_general.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_killer; // From evaluate_killer of evaluate_killer.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_black;// From evaluate_pawns_black of evaluate_pawns.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_rooks_black;// From evaluate_rooks_black of evaluate_rooks.v
-   wire signed [EVAL_WIDTH-1:0] eval_eg_rooks_white;// From evaluate_rooks_white of evaluate_rooks.v
-   wire                 eval_general_valid;     // From evaluate_general of evaluate_general.v
-   wire                 eval_killer_valid;      // From evaluate_killer of evaluate_killer.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_bishops_black;// From evaluate_bishops_black of evaluate_bishops.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_bishops_white;// From evaluate_bishops_white of evaluate_bishops.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_general;// From evaluate_general of evaluate_general.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_killer; // From evaluate_killer of evaluate_killer.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_black;// From evaluate_pawns_black of evaluate_pawns.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_pawns_white;// From evaluate_pawns_white of evaluate_pawns.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_rooks_black;// From evaluate_rooks_black of evaluate_rooks.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_rooks_white;// From evaluate_rooks_white of evaluate_rooks.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_tropism_black;// From evaluate_tropism_black of evaluate_tropism.v
-   wire signed [EVAL_WIDTH-1:0] eval_mg_tropism_white;// From evaluate_tropism_white of evaluate_tropism.v
-   wire                 eval_pawns_black_valid; // From evaluate_pawns_black of evaluate_pawns.v
-   wire                 eval_pawns_white_valid; // From evaluate_pawns_white of evaluate_pawns.v
-   wire                 eval_pv_valid;          // From evaluate_pv of evaluate_pv.v
-   wire                 eval_rooks_black_valid; // From evaluate_rooks_black of evaluate_rooks.v
-   wire                 eval_rooks_white_valid; // From evaluate_rooks_white of evaluate_rooks.v
-   wire                 eval_tropism_black_valid;// From evaluate_tropism_black of evaluate_tropism.v
-   wire                 eval_tropism_white_valid;// From evaluate_tropism_white of evaluate_tropism.v
-   wire [5:0]           occupied_count;         // From popcount_occupied of popcount.v
+   wire                 eval_pv_valid_t1;       // From evaluate_pv of evaluate_pv.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_bishops_black_eg_t7;// From evaluate_bishops_black of evaluate_bishops.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_bishops_black_mg_t7;// From evaluate_bishops_black of evaluate_bishops.v
+   wire                 evaluate_bishops_black_valid_t7;// From evaluate_bishops_black of evaluate_bishops.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_bishops_white_eg_t7;// From evaluate_bishops_white of evaluate_bishops.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_bishops_white_mg_t7;// From evaluate_bishops_white of evaluate_bishops.v
+   wire                 evaluate_bishops_white_valid_t7;// From evaluate_bishops_white of evaluate_bishops.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_castling_black_mg_t5;// From evaluate_castling_black of evaluate_castling.v
+   wire                 evaluate_castling_black_valid_t5;// From evaluate_castling_black of evaluate_castling.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_castling_white_mg_t5;// From evaluate_castling_white of evaluate_castling.v
+   wire                 evaluate_castling_white_valid_t5;// From evaluate_castling_white of evaluate_castling.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_general_eg_t7;// From evaluate_general of evaluate_general.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_general_mg_t7;// From evaluate_general of evaluate_general.v
+   wire                 evaluate_general_valid_t7;// From evaluate_general of evaluate_general.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_killer_eg_t3;// From evaluate_killer of evaluate_killer.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_killer_mg_t3;// From evaluate_killer of evaluate_killer.v
+   wire                 evaluate_killer_valid_t3;// From evaluate_killer of evaluate_killer.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_pawns_black_eg_t8;// From evaluate_pawns_black of evaluate_pawns.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_pawns_black_mg_t8;// From evaluate_pawns_black of evaluate_pawns.v
+   wire                 evaluate_pawns_black_valid_t8;// From evaluate_pawns_black of evaluate_pawns.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_pawns_white_eg_t8;// From evaluate_pawns_white of evaluate_pawns.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_pawns_white_mg_t8;// From evaluate_pawns_white of evaluate_pawns.v
+   wire                 evaluate_pawns_white_valid_t8;// From evaluate_pawns_white of evaluate_pawns.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_rooks_black_eg_t5;// From evaluate_rooks_black of evaluate_rooks.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_rooks_black_mg_t5;// From evaluate_rooks_black of evaluate_rooks.v
+   wire                 evaluate_rooks_black_valid_t5;// From evaluate_rooks_black of evaluate_rooks.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_rooks_white_eg_t5;// From evaluate_rooks_white of evaluate_rooks.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_rooks_white_mg_t5;// From evaluate_rooks_white of evaluate_rooks.v
+   wire                 evaluate_rooks_white_valid_t5;// From evaluate_rooks_white of evaluate_rooks.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_tropism_black_mg_t10;// From evaluate_tropism_black of evaluate_tropism.v
+   wire                 evaluate_tropism_black_valid_t10;// From evaluate_tropism_black of evaluate_tropism.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_tropism_white_mg_t10;// From evaluate_tropism_white of evaluate_tropism.v
+   wire                 evaluate_tropism_white_valid_t10;// From evaluate_tropism_white of evaluate_tropism.v
+   wire                 insufficient_material_t7;// From evaluate_general of evaluate_general.v
+   wire [5:0]           occupied_count_t1;      // From popcount_occupied of popcount.v
    // End of automatics
 
-   genvar                                           c;
-   integer                                          i;
+   genvar                              c;
+   integer                             i;
+   
+   wire [`BOARD_WIDTH - 1:0]           board = board_in;
+   wire [`BOARD_WIDTH - 1:0]           board_t0 = board_in;
+   wire [BYPASS_WIDTH - 1:0]           bp_t0 = bp_in;
+   wire                                eval_valid_t0 = board_valid;
 
-   wire [63:0]                                      occupied;
+   wire [63:0]                         occupied_t0;
 
-   wire [EVALUATION_COUNT - 1:0]                    eval_done_status =
-                                                    {
-                                                     eval_pv_valid,
-                                                     eval_tropism_black_valid,
-                                                     eval_tropism_white_valid,
-                                                     eval_castling_black_valid,
-                                                     eval_castling_white_valid,
-                                                     eval_bishops_black_valid,
-                                                     eval_bishops_white_valid,
-                                                     eval_rooks_black_valid,
-                                                     eval_rooks_white_valid,
-                                                     eval_killer_valid,
-                                                     eval_pawns_black_valid,
-                                                     eval_pawns_white_valid,
-                                                     eval_general_valid
-                                                     };
-   wire [EVALUATION_COUNT - 1:0]                    evals_complete = ~0;
-
-   assign eval = eval_t8;
+   assign eval = eval_t17;
+   assign eval_pv_flag = eval_pv_flag_t17;
+   assign insufficient_material = insufficient_material_t17;
+   assign bp_out = bp_t17;
+   assign eval_valid = eval_valid_t17;
 
    generate
       for (c = 0; c < 64; c = c + 1)
         begin : occupied_block
-           assign occupied[c] = board[c * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN &&
-                                board[c * `PIECE_WIDTH+:`PIECE_WIDTH - 1] != `PIECE_PAWN;
+           assign occupied_t0[c] = board_t0[c * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN &&
+                                   board_t0[c * `PIECE_WIDTH+:`PIECE_WIDTH - 1] != `PIECE_PAWN &&
+                                   board_t0[c * `PIECE_WIDTH+:`PIECE_WIDTH - 1] != `PIECE_KING;
         end
    endgenerate
 
@@ -146,99 +149,137 @@ module evaluate #
    // note: "occupied" excludes pawns in crafty phase calc
    always @(posedge clk)
      begin
-        board_valid_r <= board_valid;
-        board <= board_pre; // flopped for timing
-
-        if (occupied_count > 62)
-          phase <= 62;
+        if (occupied_count_t1 > 62)
+          phase_t2 <= 62;
         else
-          phase <= occupied_count;
-        phase_r <= phase;
-        eval_a_mg_t1 <= eval_mg_general + eval_mg_pawns_white + eval_mg_pawns_black;
-        eval_b_mg_t1 <= eval_mg_killer + eval_mg_bishops_white + eval_mg_bishops_black;
-        eval_c_mg_t1 <= eval_castling_white_mg + eval_castling_black_mg + eval_mg_rooks_white + eval_mg_rooks_black;
-        eval_d_mg_t1 <= eval_mg_tropism_white + eval_mg_tropism_black;
+          phase_t2 <= occupied_count_t1;
 
-        eval_a_eg_t1 <= eval_eg_general + eval_eg_pawns_white + eval_eg_pawns_black;
-        eval_b_eg_t1 <= eval_eg_killer + eval_eg_bishops_white + eval_eg_bishops_black;
-        eval_c_eg_t1 <= eval_eg_rooks_white + eval_eg_rooks_black;
+        sum_mg_t4 <= evaluate_killer_mg_t3;
+        sum_eg_t4 <= evaluate_killer_eg_t3;
 
-        eval_mg_t2 <= eval_a_mg_t1 + eval_b_mg_t1 + eval_c_mg_t1 + eval_d_mg_t1;
-        eval_eg_t2 <= eval_a_eg_t1 + eval_b_eg_t1 + eval_b_eg_t1;
-        score_mg_t3 <= eval_mg_t2 * phase_r;
-        score_eg_t3 <= eval_eg_t2 * (62 - phase_r);
-        score_mg_t4 <= score_mg_t3;
-        score_eg_t4 <= score_eg_t3;
-        score_t5 <= score_mg_t4 + score_eg_t4;
-        score_t6 <= score_t5 * $signed(32'h100000 / 62);
-        score_t7 <= score_t6 / $signed(32'h100000);
-        eval_t8 <= score_t7;
+        sum_mg_t5 <= sum_mg_t4;
+        sum_eg_t5 <= sum_eg_t4;
+
+        sum_mg_t6 <= sum_mg_t5 +
+                     evaluate_castling_black_mg_t5 + evaluate_castling_white_mg_t5 +
+                     evaluate_rooks_black_mg_t5 + evaluate_rooks_white_mg_t5;
+        sum_eg_t6 <= sum_eg_t5 +
+                     evaluate_rooks_black_eg_t5 + evaluate_rooks_white_eg_t5;
+
+        sum_mg_t7 <= sum_mg_t6;
+        sum_eg_t7 <= sum_eg_t6;
+
+        sum_mg_t8 <= sum_mg_t7 +
+                     evaluate_bishops_black_mg_t7 + evaluate_bishops_white_mg_t7 +
+                     evaluate_general_mg_t7;
+        sum_eg_t8 <= sum_eg_t7 +
+                     evaluate_bishops_black_eg_t7 + evaluate_bishops_white_eg_t7 +
+                     evaluate_general_eg_t7;
+
+        sum_mg_t9 <= sum_mg_t8 +
+                     evaluate_pawns_black_mg_t8 + evaluate_pawns_white_mg_t8;
+        sum_eg_t9 <= sum_eg_t8 +
+                     evaluate_pawns_black_eg_t8 + evaluate_pawns_white_eg_t8;
+
+        sum_mg_t10 <= sum_mg_t9;
+        sum_eg_t10 <= sum_eg_t9;
+
+        sum_mg_t11 <= sum_mg_t10 +
+                      evaluate_tropism_black_mg_t10 + evaluate_tropism_white_mg_t10;
+        sum_eg_t11 <= sum_eg_t10;
+        
+        score_mg_t12 <= sum_mg_t11 * phase_t11;
+        score_eg_t12 <= sum_eg_t11 * (62 - phase_t11);
+        score_mg_t13 <= score_mg_t12;
+        score_eg_t13 <= score_eg_t12;
+        score_t14 <= score_mg_t13 + score_eg_t13;
+        score_t15 <= score_t14 * $signed(32'h100000 / 62);
+        score_t16 <= score_t15 / $signed(32'h100000);
+        eval_t17 <= score_t16;
      end
 
-   localparam STATE_IDLE = 0;
-   localparam STATE_WS = 1;
-   localparam STATE_WAIT_EVAL = 2;
-   localparam STATE_WAIT_LATENCY = 3;
-   localparam STATE_WAIT_CLEAR = 4;
-
-   reg [2:0]                                            state = STATE_IDLE;
-
-   always @(posedge clk)
-     if (reset)
-       state <= STATE_IDLE;
-     else
-       case (state)
-         STATE_IDLE :
-           begin
-              board_pre <= board_in;
-              local_board_valid <= 0;
-              eval_valid <= 0;
-              latency <= 0;
-              if (board_valid && ~board_valid_r)
-                state <= STATE_WS; // note: one ws required for board to be valid, flopped for timing
-           end
-         STATE_WS :
-           begin
-              local_board_valid <= 1;
-              state <= STATE_WAIT_EVAL;
-           end
-         STATE_WAIT_EVAL :
-           if (eval_done_locked == evals_complete)
-             state <= STATE_WAIT_LATENCY;
-         STATE_WAIT_LATENCY :
-           begin
-              latency <= latency + 1;
-              if (latency == LATENCY_COUNT - 1)
-                state <= STATE_WAIT_CLEAR;
-           end
-         STATE_WAIT_CLEAR :
-           begin
-              eval_valid <= 1;
-              if (clear_eval)
-                state <= STATE_IDLE;
-           end
-         default :
-           state <= STATE_IDLE;
-       endcase // case (state)
-
+   // infer shift regs
    always @(posedge clk)
      begin
-        if (board_valid && ~board_valid_r)
-          begin
-             eval_done_locked <= 0;
-             eval_done_status_r <= 0;
-          end
-        eval_done_status_r <= eval_done_status;
-        for (i = 0; i < EVALUATION_COUNT; i = i + 1)
-          if (eval_done_status[i] && ~eval_done_status_r[i])
-            eval_done_locked[i] <= 1'b1;
+        phase_t3 <= phase_t2;
+	phase_t4 <= phase_t3;
+	phase_t5 <= phase_t4;
+	phase_t6 <= phase_t5;
+	phase_t7 <= phase_t6;
+	phase_t8 <= phase_t7;
+	phase_t9 <= phase_t8;
+	phase_t10 <= phase_t9;
+	phase_t11 <= phase_t10;
+        
+	insufficient_material_t8 <= insufficient_material_t7;
+	insufficient_material_t9 <= insufficient_material_t8;
+	insufficient_material_t10 <= insufficient_material_t9;
+	insufficient_material_t11 <= insufficient_material_t10;
+	insufficient_material_t12 <= insufficient_material_t11;
+	insufficient_material_t13 <= insufficient_material_t12;
+	insufficient_material_t14 <= insufficient_material_t13;
+	insufficient_material_t15 <= insufficient_material_t14;
+	insufficient_material_t16 <= insufficient_material_t15;
+	insufficient_material_t17 <= insufficient_material_t16;
+        
+	eval_pv_flag_t2 <= eval_pv_flag_t1;
+	eval_pv_flag_t3 <= eval_pv_flag_t2;
+	eval_pv_flag_t4 <= eval_pv_flag_t3;
+	eval_pv_flag_t5 <= eval_pv_flag_t4;
+	eval_pv_flag_t6 <= eval_pv_flag_t5;
+	eval_pv_flag_t7 <= eval_pv_flag_t6;
+	eval_pv_flag_t8 <= eval_pv_flag_t7;
+	eval_pv_flag_t9 <= eval_pv_flag_t8;
+	eval_pv_flag_t10 <= eval_pv_flag_t9;
+	eval_pv_flag_t11 <= eval_pv_flag_t10;
+	eval_pv_flag_t12 <= eval_pv_flag_t11;
+	eval_pv_flag_t13 <= eval_pv_flag_t12;
+	eval_pv_flag_t14 <= eval_pv_flag_t13;
+	eval_pv_flag_t15 <= eval_pv_flag_t14;
+	eval_pv_flag_t16 <= eval_pv_flag_t15;
+	eval_pv_flag_t17 <= eval_pv_flag_t16;
+        
+	bp_t1 <= bp_t0;
+	bp_t2 <= bp_t1;
+	bp_t3 <= bp_t2;
+	bp_t4 <= bp_t3;
+	bp_t5 <= bp_t4;
+	bp_t6 <= bp_t5;
+	bp_t7 <= bp_t6;
+	bp_t8 <= bp_t7;
+	bp_t9 <= bp_t8;
+	bp_t10 <= bp_t9;
+	bp_t11 <= bp_t10;
+	bp_t12 <= bp_t11;
+	bp_t13 <= bp_t12;
+	bp_t14 <= bp_t13;
+	bp_t15 <= bp_t14;
+	bp_t16 <= bp_t15;
+	bp_t17 <= bp_t16;
+        
+	eval_valid_t1 <= eval_valid_t0;
+	eval_valid_t2 <= eval_valid_t1;
+	eval_valid_t3 <= eval_valid_t2;
+	eval_valid_t4 <= eval_valid_t3;
+	eval_valid_t5 <= eval_valid_t4;
+	eval_valid_t6 <= eval_valid_t5;
+	eval_valid_t7 <= eval_valid_t6;
+	eval_valid_t8 <= eval_valid_t7;
+	eval_valid_t9 <= eval_valid_t8;
+	eval_valid_t10 <= eval_valid_t9;
+	eval_valid_t11 <= eval_valid_t10;
+	eval_valid_t12 <= eval_valid_t11;
+	eval_valid_t13 <= eval_valid_t12;
+	eval_valid_t14 <= eval_valid_t13;
+	eval_valid_t15 <= eval_valid_t14;
+	eval_valid_t16 <= eval_valid_t15;
+	eval_valid_t17 <= eval_valid_t16;
      end
 
    /* evaluate_general AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t7 (eval_general_valid),
-    .eval_\([me]\)g_t7 (eval_\1g_general[]),
-    .insufficient_material_t7 (insufficient_material),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
+    .insufficient_material_\(.*\) (insufficient_material_\1),
     );*/
    evaluate_general #
      (
@@ -247,22 +288,21 @@ module evaluate #
    evaluate_general
      (/*AUTOINST*/
       // Outputs
-      .insufficient_material_t7         (insufficient_material), // Templated
-      .eval_mg_t7                       (eval_mg_general[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg_t7                       (eval_eg_general[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t7                    (eval_general_valid),    // Templated
+      .insufficient_material_t7         (insufficient_material_t7), // Templated
+      .eval_mg_t7                       (evaluate_general_mg_t7[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t7                       (evaluate_general_eg_t7[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t7                    (evaluate_general_valid_t7), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_pawns AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t8 (eval_pawns_white_valid),
-    .eval_\([me]\)g_t8 (eval_\1g_pawns_white[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_pawns #
      (
@@ -272,22 +312,21 @@ module evaluate #
    evaluate_pawns_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t8                       (eval_mg_pawns_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg_t8                       (eval_eg_pawns_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t8                    (eval_pawns_white_valid), // Templated
+      .eval_mg_t8                       (evaluate_pawns_white_mg_t8[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t8                       (evaluate_pawns_white_eg_t8[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t8                    (evaluate_pawns_white_valid_t8), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]),
       .white_to_move                    (white_to_move),
       .white_is_attacking               (white_is_attacking[63:0]),
       .black_is_attacking               (black_is_attacking[63:0]));
 
    /* evaluate_pawns AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t8 (eval_pawns_black_valid),
-    .eval_\([me]\)g_t8 (eval_\1g_pawns_black[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_pawns #
      (
@@ -297,22 +336,21 @@ module evaluate #
    evaluate_pawns_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t8                       (eval_mg_pawns_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg_t8                       (eval_eg_pawns_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t8                    (eval_pawns_black_valid), // Templated
+      .eval_mg_t8                       (evaluate_pawns_black_mg_t8[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t8                       (evaluate_pawns_black_eg_t8[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t8                    (evaluate_pawns_black_valid_t8), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]),
       .white_to_move                    (white_to_move),
       .white_is_attacking               (white_is_attacking[63:0]),
       .black_is_attacking               (black_is_attacking[63:0]));
 
    /* evaluate_bishops AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t7 (eval_bishops_white_valid),
-    .eval_\([me]\)g_t7 (eval_\1g_bishops_white[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_bishops #
      (
@@ -322,19 +360,18 @@ module evaluate #
    evaluate_bishops_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t7                       (eval_mg_bishops_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg_t7                       (eval_eg_bishops_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t7                    (eval_bishops_white_valid), // Templated
+      .eval_mg_t7                       (evaluate_bishops_white_mg_t7[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t7                       (evaluate_bishops_white_eg_t7[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t7                    (evaluate_bishops_white_valid_t7), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_bishops AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t7 (eval_bishops_black_valid),
-    .eval_\([me]\)g_t7 (eval_\1g_bishops_black[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_bishops #
      (
@@ -344,19 +381,18 @@ module evaluate #
    evaluate_bishops_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t7                       (eval_mg_bishops_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg_t7                       (eval_eg_bishops_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t7                    (eval_bishops_black_valid), // Templated
+      .eval_mg_t7                       (evaluate_bishops_black_mg_t7[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t7                       (evaluate_bishops_black_eg_t7[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t7                    (evaluate_bishops_black_valid_t7), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_killer AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t3 (eval_killer_valid),
-    .eval_\([me]\)g_t3 (eval_\1g_killer[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_killer #
      (
@@ -366,13 +402,13 @@ module evaluate #
    evaluate_killer
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t3                       (eval_mg_killer[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg_t3                       (eval_eg_killer[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t3                    (eval_killer_valid),     // Templated
+      .eval_mg_t3                       (evaluate_killer_mg_t3[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t3                       (evaluate_killer_eg_t3[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t3                    (evaluate_killer_valid_t3), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]),
       .white_to_move                    (white_to_move),
       .killer_ply                       (killer_ply[MAX_DEPTH_LOG2-1:0]),
@@ -383,9 +419,8 @@ module evaluate #
       .killer_bonus1                    (killer_bonus1[EVAL_WIDTH-1:0]));
 
    /* evaluate_castling AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t5 (eval_castling_white_valid),
-    .eval_mg_t5 (eval_castling_white_mg[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_castling #
      (
@@ -395,20 +430,19 @@ module evaluate #
    evaluate_castling_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t5                       (eval_castling_white_mg[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t5                    (eval_castling_white_valid), // Templated
+      .eval_mg_t5                       (evaluate_castling_white_mg_t5[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t5                    (evaluate_castling_white_valid_t5), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]),
       .castle_mask                      (castle_mask[3:0]),
       .castle_mask_orig                 (castle_mask_orig[3:0]));
 
    /* evaluate_castling AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t5 (eval_castling_black_valid),
-    .eval_mg_t5 (eval_castling_black_mg[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_castling #
      (
@@ -418,20 +452,19 @@ module evaluate #
    evaluate_castling_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t5                       (eval_castling_black_mg[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t5                    (eval_castling_black_valid), // Templated
+      .eval_mg_t5                       (evaluate_castling_black_mg_t5[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t5                    (evaluate_castling_black_valid_t5), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]),
       .castle_mask                      (castle_mask[3:0]),
       .castle_mask_orig                 (castle_mask_orig[3:0]));
 
    /* evaluate_rooks AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t5 (eval_rooks_white_valid),
-    .eval_\([me]\)g_t5 (eval_\1g_rooks_white[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_rooks #
      (
@@ -441,19 +474,18 @@ module evaluate #
    evaluate_rooks_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t5                       (eval_mg_rooks_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg_t5                       (eval_eg_rooks_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t5                    (eval_rooks_white_valid), // Templated
+      .eval_mg_t5                       (evaluate_rooks_white_mg_t5[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t5                       (evaluate_rooks_white_eg_t5[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t5                    (evaluate_rooks_white_valid_t5), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_rooks AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t5 (eval_rooks_black_valid),
-    .eval_\([me]\)g_t5 (eval_\1g_rooks_black[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_rooks #
      (
@@ -463,19 +495,18 @@ module evaluate #
    evaluate_rooks_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t5                       (eval_mg_rooks_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_eg_t5                       (eval_eg_rooks_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t5                    (eval_rooks_black_valid), // Templated
+      .eval_mg_t5                       (evaluate_rooks_black_mg_t5[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t5                       (evaluate_rooks_black_eg_t5[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t5                    (evaluate_rooks_black_valid_t5), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_tropism AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t10 (eval_tropism_white_valid),
-    .eval_\([me]\)g_t10 (eval_\1g_tropism_white[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_tropism #
      (
@@ -485,19 +516,18 @@ module evaluate #
    evaluate_tropism_white
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t10                      (eval_mg_tropism_white[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t10                   (eval_tropism_white_valid), // Templated
+      .eval_mg_t10                      (evaluate_tropism_white_mg_t10[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t10                   (evaluate_tropism_white_valid_t10), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .castle_mask                      (castle_mask[3:0]),
       .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_tropism AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t10 (eval_tropism_black_valid),
-    .eval_\([me]\)g_t10 (eval_\1g_tropism_black[]),
+    .eval_valid_\(.*\) (@"vl-cell-name"_valid_\1[]),
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
    evaluate_tropism #
      (
@@ -507,19 +537,18 @@ module evaluate #
    evaluate_tropism_black
      (/*AUTOINST*/
       // Outputs
-      .eval_mg_t10                      (eval_mg_tropism_black[EVAL_WIDTH-1:0]), // Templated
-      .eval_valid_t10                   (eval_tropism_black_valid), // Templated
+      .eval_mg_t10                      (evaluate_tropism_black_mg_t10[EVAL_WIDTH-1:0]), // Templated
+      .eval_valid_t10                   (evaluate_tropism_black_valid_t10), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .castle_mask                      (castle_mask[3:0]),
       .board                            (board[`BOARD_WIDTH-1:0]));
 
    /* evaluate_pv AUTO_TEMPLATE (
-    .board_valid (local_board_valid),
-    .eval_valid_t1 (eval_pv_valid),
-    .eval_pv_flag_t1 (eval_pv_flag),
+    .eval_valid_\(.*\) (eval_pv_valid_\1),
+    .eval_pv_flag_\(.*\) (eval_pv_flag_\1),
     .pv_ply (killer_ply[]), // this works for now, create a pv ply if that changes
     );*/
    evaluate_pv #
@@ -530,28 +559,35 @@ module evaluate #
    evaluate_pv
      (/*AUTOINST*/
       // Outputs
-      .eval_pv_flag_t1                  (eval_pv_flag),          // Templated
-      .eval_valid_t1                    (eval_pv_valid),         // Templated
+      .eval_pv_flag_t1                  (eval_pv_flag_t1),       // Templated
+      .eval_valid_t1                    (eval_pv_valid_t1),      // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .board_valid                      (local_board_valid),     // Templated
+      .board_valid                      (board_valid),
       .uci_in                           (uci_in[UCI_WIDTH-1:0]),
       .pv_ply                           (killer_ply[MAX_DEPTH_LOG2-1:0]), // Templated
       .pv_ctrl_in                       (pv_ctrl_in[31:0]));
 
    /* popcount AUTO_TEMPLATE (
-    .population (occupied_count[]),
-    .x0 (occupied[]),
+    .population (occupied_count_t1[]),
+    .x0 (occupied_t0[]),
     );*/
    popcount popcount_occupied
      (/*AUTOINST*/
       // Outputs
-      .population                       (occupied_count[5:0]),   // Templated
+      .population                       (occupied_count_t1[5:0]), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .x0                               (occupied[63:0]));        // Templated
+      .x0                               (occupied_t0[63:0]));     // Templated
 
 endmodule
+
+// Local Variables:
+// verilog-auto-inst-param-value:t
+// verilog-library-directories:(
+//     "."
+//     )
+// End:
 

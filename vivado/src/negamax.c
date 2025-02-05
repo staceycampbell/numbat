@@ -272,6 +272,10 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 		if (!board_ptr[index]->capture)
 		{
 			printf("%s - non capture move in quiescence, stopping.\n", __PRETTY_FUNCTION__);
+			printf("am input board: ");
+			fen_print(board, 1);
+			printf("am generated board: ");
+			fen_print(board_ptr[index], 1);
 			while (1);
 		}
 	}

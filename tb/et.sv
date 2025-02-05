@@ -6,6 +6,7 @@ module et;
    localparam MAX_DEPTH_LOG2 = $clog2(`MAX_DEPTH);
    localparam UCI_WIDTH = 4 + 6 + 6; // promotion, to, from
    localparam HALF_MOVE_WIDTH = 10;
+   localparam BYPASS_WIDTH = 2;
 
    reg                  reset = 1;
    reg                  clk = 0;
@@ -26,10 +27,11 @@ module et;
    reg [3:0]                     castle_mask_orig = 4'b1111;
    reg                           white_to_move = 0;
    reg                           clear_attack = 0;
-   reg [UCI_WIDTH-1:0]           uci_in = 0;
+   reg [UCI_WIDTH - 1:0]         uci_in = 0;
    reg [EVAL_WIDTH - 1:0]        random_number = 0;
    reg [EVAL_WIDTH - 1:0]        random_score_mask = 0;
    reg [31:0]                    algorithm_enable = 0;
+   reg [BYPASS_WIDTH - 1:0]      bp_in = 0;
 
    //should be empty
    /*AUTOREGINPUT*/
@@ -40,6 +42,7 @@ module et;
    wire [5:0]           attack_white_pop;       // From board_attack of board_attack.v
    wire                 black_in_check;         // From board_attack of board_attack.v
    wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
+   wire [BYPASS_WIDTH-1:0] bp_out;              // From evaluate of evaluate.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
    wire                 eval_pv_flag;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
@@ -48,6 +51,7 @@ module et;
    wire                 white_in_check;         // From board_attack of board_attack.v
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
+   
 
    integer                       t = 0;
    integer                       i;
@@ -95,6 +99,7 @@ module et;
       .eval                             (eval[EVAL_WIDTH-1:0]),
       .eval_pv_flag                     (eval_pv_flag),
       .eval_valid                       (eval_valid),
+      .bp_out                           (bp_out[BYPASS_WIDTH-1:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -106,8 +111,8 @@ module et;
       .uci_in                           (uci_in[UCI_WIDTH-1:0]),
       .castle_mask                      (castle_mask[3:0]),
       .castle_mask_orig                 (castle_mask_orig[3:0]),
-      .clear_eval                       (clear_eval),
       .white_to_move                    (white_to_move),
+      .bp_in                            (bp_in[BYPASS_WIDTH-1:0]),
       .white_is_attacking               (white_is_attacking[63:0]),
       .black_is_attacking               (black_is_attacking[63:0]),
       .white_in_check                   (white_in_check),

@@ -119,9 +119,6 @@ module all_moves #
    reg                                   legal_black_in_check_ram_wr;
    reg [63:0]                            legal_white_is_attacking_ram_wr;
    reg [63:0]                            legal_black_is_attacking_ram_wr;
-   reg signed [EVAL_WIDTH - 1:0]         legal_eval_ram_wr;
-   reg                                   legal_eval_pv_flag_wr;
-   reg                                   legal_insufficient_material_ram_wr;
    reg [5:0]                             legal_attack_white_pop_ram_wr, legal_attack_black_pop_ram_wr;
    reg [UCI_WIDTH - 1:0]                 legal_uci_ram_wr;
    reg                                   legal_ram_wr = 0;
@@ -131,13 +128,8 @@ module all_moves #
    reg [3:0]                             attack_test_castle_mask;
    reg                                   attack_test_white_to_move;
    reg                                   attack_test_capture;
-   reg                                   attack_test_white_in_check;
-   reg                                   attack_test_black_in_check;
-   reg [63:0]                            attack_test_white_is_attacking;
-   reg [63:0]                            attack_test_black_is_attacking;
    reg                                   attack_pawn_zero_half_move;
    reg [UCI_WIDTH - 1:0]                 attack_uci;
-   reg [5:0]                             attack_test_attack_white_pop, attack_test_attack_black_pop;
 
    reg                                   initial_evaluation_complete = 0;
 
@@ -148,7 +140,6 @@ module all_moves #
    reg [3:0]                             initial_evaluate_castle_mask, legal_evaluate_castle_mask, evaluate_castle_mask_r;
    reg                                   initial_evaluate_white_to_move, legal_evaluate_white_to_move, evaluate_white_to_move_r;
 
-   reg                                   initial_clear_eval, legal_clear_eval;
    reg                                   initial_clear_attack = 0, legal_clear_attack = 0;
 
    reg signed [3:0]                      row, col;
@@ -195,6 +186,25 @@ module all_moves #
 
    reg                                   all_generated_moves_complete = 0;
    reg                                   legal_eval_done = 0;
+   reg [MAX_POSITIONS_LOG2 - 1:0]        eval_input_count;
+
+   reg [`BOARD_WIDTH - 1:0]              presort_board_out;
+   reg                                   presort_white_to_move_out;
+   reg [3:0]                             presort_castle_mask_out;
+   reg [3:0]                             presort_en_passant_col_out;
+   reg                                   presort_capture_out;
+   reg                                   presort_pv_out;
+   reg                                   presort_white_in_check_out;
+   reg                                   presort_black_in_check_out;
+   reg [63:0]                            presort_white_is_attacking_out;
+   reg [63:0]                            presort_black_is_attacking_out;
+   reg signed [EVAL_WIDTH - 1:0]         presort_eval_out;
+   reg [HALF_MOVE_WIDTH - 1:0]           presort_half_move_out;
+   reg                                   presort_fifty_move_out;
+   reg [UCI_WIDTH - 1:0]                 presort_uci_out;
+   reg [5:0]                             presort_attack_white_pop_out;
+   reg [5:0]                             presort_attack_black_pop_out;
+   reg                                   presort_insufficient_material_out;
 
    reg [63:0]                            square_active;
 
@@ -211,6 +221,7 @@ module all_moves #
    wire                 black_in_check;         // From board_attack of board_attack.v
    wire [63:0]          black_is_attacking;     // From board_attack of board_attack.v
    wire signed [EVAL_WIDTH-1:0] eval;           // From evaluate of evaluate.v
+   wire [LEGAL_RAM_WIDTH-1:0] eval_bypass_out;  // From evaluate of evaluate.v
    wire                 eval_pv_flag;           // From evaluate of evaluate.v
    wire                 eval_valid;             // From evaluate of evaluate.v
    wire                 insufficient_material;  // From evaluate of evaluate.v
@@ -248,28 +259,63 @@ module all_moves #
    wire [5:0]                            all_moves_bram_attack_black_pop_out;
    wire                                  all_moves_bram_insufficient_material_out;
 
+   wire [`BOARD_WIDTH - 1:0]             ebp_board_out;
+   wire                                  ebp_white_to_move_out;
+   wire [3:0]                            ebp_castle_mask_out;
+   wire [3:0]                            ebp_en_passant_col_out;
+   wire                                  ebp_capture_out;
+   wire                                  ebp_pv_out;
+   wire                                  ebp_white_in_check_out;
+   wire                                  ebp_black_in_check_out;
+   wire [63:0]                           ebp_white_is_attacking_out;
+   wire [63:0]                           ebp_black_is_attacking_out;
+   wire signed [EVAL_WIDTH - 1:0]        ebp_eval_out;
+   wire [HALF_MOVE_WIDTH - 1:0]          ebp_half_move_out;
+   wire                                  ebp_fifty_move_out;
+   wire [UCI_WIDTH - 1:0]                ebp_uci_out;
+   wire [5:0]                            ebp_attack_white_pop_out;
+   wire [5:0]                            ebp_attack_black_pop_out;
+   wire                                  ebp_insufficient_material_out;
+
    wire                                  black_to_move = ~white_to_move;
 
-   wire                                  clear_eval = initial_evaluation_complete ? legal_clear_eval : initial_clear_eval;
    wire                                  clear_attack = initial_evaluation_complete ? legal_clear_attack : initial_clear_attack;
 
-   wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {legal_insufficient_material_ram_wr,
-                                                              legal_attack_white_pop_ram_wr[5:0],
-							      legal_attack_black_pop_ram_wr[5:0],
-							      legal_uci_ram_wr[UCI_WIDTH - 1:0],
-                                                              legal_fifty_move_ram_wr,
-							      legal_half_move_ram_wr[HALF_MOVE_WIDTH - 1:0],
-                                                              legal_white_is_attacking_ram_wr[63:0],
-							      legal_black_is_attacking_ram_wr[63:0],
-                                                              legal_en_passant_col_ram_wr[3:0],
-							      legal_castle_mask_ram_wr[3:0],
-                                                              legal_board_ram_wr[`BOARD_WIDTH - 1:0],
-                                                              legal_white_to_move_ram_wr,
-                                                              legal_eval_pv_flag_wr,
-                                                              legal_capture_ram_wr,
-                                                              legal_white_in_check_ram_wr,
-                                                              legal_black_in_check_ram_wr,
-                                                              legal_eval_ram_wr[EVAL_WIDTH - 1:0]};
+   wire [LEGAL_RAM_WIDTH - 1:0]          legal_bypass = {1'b0, // insufficient
+                                                         legal_attack_white_pop_ram_wr[5:0],
+							 legal_attack_black_pop_ram_wr[5:0],
+							 legal_uci_ram_wr[UCI_WIDTH - 1:0],
+                                                         legal_fifty_move_ram_wr,
+							 legal_half_move_ram_wr[HALF_MOVE_WIDTH - 1:0],
+                                                         legal_white_is_attacking_ram_wr[63:0],
+							 legal_black_is_attacking_ram_wr[63:0],
+                                                         legal_en_passant_col_ram_wr[3:0],
+							 legal_castle_mask_ram_wr[3:0],
+                                                         legal_board_ram_wr[`BOARD_WIDTH - 1:0],
+                                                         legal_white_to_move_ram_wr,
+                                                         1'b0, // pv flag
+                                                         legal_capture_ram_wr,
+                                                         legal_white_in_check_ram_wr,
+                                                         legal_black_in_check_ram_wr,
+                                                         {EVAL_WIDTH{1'b0}}}; // eval
+
+   wire [LEGAL_RAM_WIDTH - 1:0]          legal_ram_wr_data = {presort_insufficient_material_out,
+                                                              presort_attack_white_pop_out[5:0],
+                                                              presort_attack_black_pop_out[5:0],
+                                                              presort_uci_out[UCI_WIDTH - 1:0],
+                                                              presort_fifty_move_out,
+                                                              presort_half_move_out[HALF_MOVE_WIDTH - 1:0],
+                                                              presort_white_is_attacking_out[63:0],
+                                                              presort_black_is_attacking_out[63:0],
+                                                              presort_en_passant_col_out[3:0],
+                                                              presort_castle_mask_out[3:0],
+                                                              presort_board_out[`BOARD_WIDTH - 1:0],
+                                                              presort_white_to_move_out,
+                                                              presort_pv_out,
+                                                              presort_capture_out,
+                                                              presort_white_in_check_out,
+                                                              presort_black_in_check_out,
+                                                              presort_eval_out[EVAL_WIDTH - 1:0]};
 
    assign {insufficient_material_out,
 	   attack_white_pop_out[5:0],
@@ -288,6 +334,25 @@ module all_moves #
 	   white_in_check_out,
 	   black_in_check_out,
            eval_out[EVAL_WIDTH - 1:0]} = legal_ram_rd_data;
+
+   assign {ebp_insufficient_material_out, // dummy, ignored
+           ebp_attack_white_pop_out[5:0],
+           ebp_attack_black_pop_out[5:0],
+           ebp_uci_out[UCI_WIDTH - 1:0],
+           ebp_fifty_move_out,
+           ebp_half_move_out[HALF_MOVE_WIDTH - 1:0],
+           ebp_white_is_attacking_out[63:0],
+           ebp_black_is_attacking_out[63:0],
+           ebp_en_passant_col_out[3:0],
+           ebp_castle_mask_out[3:0],
+           ebp_board_out[`BOARD_WIDTH - 1:0],
+           ebp_white_to_move_out,
+           ebp_pv_out, // dummy, ignored
+           ebp_capture_out,
+           ebp_white_in_check_out,
+           ebp_black_in_check_out,
+           ebp_eval_out[EVAL_WIDTH - 1:0] // dummy, ignored
+           } = eval_bypass_out;
 
    assign {all_moves_bram_insufficient_material_out,
 	   all_moves_bram_attack_white_pop_out[5:0],
@@ -423,6 +488,47 @@ module all_moves #
         castle_row[1] = 0; // white to move
      end
 
+   // merge evaluation data into position information, write to sort ram
+   always @(posedge clk)
+     begin
+        legal_ram_wr <= eval_valid;
+
+        {presort_insufficient_material_out,
+         presort_attack_white_pop_out[5:0],
+         presort_attack_black_pop_out[5:0],
+         presort_uci_out[UCI_WIDTH - 1:0],
+         presort_fifty_move_out,
+         presort_half_move_out[HALF_MOVE_WIDTH - 1:0],
+         presort_white_is_attacking_out[63:0],
+         presort_black_is_attacking_out[63:0],
+         presort_en_passant_col_out[3:0],
+         presort_castle_mask_out[3:0],
+         presort_board_out[`BOARD_WIDTH - 1:0],
+         presort_white_to_move_out,
+         presort_pv_out,
+         presort_capture_out,
+         presort_white_in_check_out,
+         presort_black_in_check_out,
+         presort_eval_out[EVAL_WIDTH - 1:0]} <=
+                                               {insufficient_material, // from evaluation
+                                                ebp_attack_white_pop_out[5:0],
+                                                ebp_attack_black_pop_out[5:0],
+                                                ebp_uci_out[UCI_WIDTH - 1:0],
+                                                ebp_fifty_move_out,
+                                                ebp_half_move_out[HALF_MOVE_WIDTH - 1:0],
+                                                ebp_white_is_attacking_out[63:0],
+                                                ebp_black_is_attacking_out[63:0],
+                                                ebp_en_passant_col_out[3:0],
+                                                ebp_castle_mask_out[3:0],
+                                                ebp_board_out[`BOARD_WIDTH - 1:0],
+                                                ebp_white_to_move_out,
+                                                eval_pv_flag, // from evaluation
+                                                ebp_capture_out,
+                                                ebp_white_in_check_out,
+                                                ebp_black_in_check_out,
+                                                eval[EVAL_WIDTH - 1:0]}; // from evaluation
+     end
+
    always @(posedge clk)
      begin
         ram_rd_data <= move_ram[ram_rd_addr];
@@ -549,7 +655,6 @@ module all_moves #
           state <= STATE_IDLE;
           all_generated_moves_complete <= 0;
           initial_evaluation_complete <= 0;
-          legal_ram_wr_addr_init <= 1;
           ram_wr_addr_init <= 1;
        end
      else
@@ -576,38 +681,33 @@ module all_moves #
               initial_insufficient_material <= 0;
               initial_fifty_move <= half_move_in >= 100;
 
-              legal_ram_wr_addr_init <= 1; // clear legal generated move counter
               ram_wr_addr_init <= 1;
-              initial_clear_eval <= 0;
               initial_clear_attack <= 0;
 
               if (board_valid_in)
                 state <= STATE_INIT_WAIT_ATTACK;
            end
          STATE_INIT_WAIT_ATTACK :
-           begin
-              legal_ram_wr_addr_init <= 0;
-              if (initial_fifty_move)
-                state <= STATE_DONE;
-              else if (is_attacking_done)
-                begin
-                   initial_evaluate_go <= 1;
-                   state <= STATE_INIT_WAIT_EVAL;
-                end
-           end
+           if (initial_fifty_move)
+             state <= STATE_DONE;
+           else if (is_attacking_done)
+             begin
+                initial_evaluate_go <= 1;
+                state <= STATE_INIT_WAIT_EVAL;
+             end
          STATE_INIT_WAIT_EVAL :
-           if (eval_valid)
-             state <= STATE_INIT;
-         STATE_INIT :
            begin
-              initial_clear_eval <= 1;
-              initial_clear_attack <= 1;
               initial_evaluate_go <= 0;
-              initial_attack_go <= 0;
-
               initial_eval <= eval;
               initial_insufficient_material <= insufficient_material;
               initial_board_check <= (white_to_move && white_in_check) || (black_to_move && black_in_check);
+              if (eval_valid)
+                state <= STATE_INIT;
+           end
+         STATE_INIT :
+           begin
+              initial_clear_attack <= 1;
+              initial_attack_go <= 0;
 
               ram_wr_addr_init <= 0;
               ram_wr <= 0;
@@ -651,7 +751,6 @@ module all_moves #
            end
          STATE_INIT_WS :
            begin
-              initial_clear_eval <= 0;
               initial_clear_attack <= 0;
               state <= STATE_FIND_PIECE;
            end
@@ -683,7 +782,6 @@ module all_moves #
            end
          STATE_DO_SQUARE :
            begin
-              initial_clear_eval <= 0;
               initial_clear_attack <= 0;
               castle_mask_ram_wr <= castle_mask;
               en_passant_col_ram_wr <= 4'b0;
@@ -966,12 +1064,13 @@ module all_moves #
    localparam LEGAL_LOAD = 1;
    localparam LEGAL_KING_POS = 2;
    localparam LEGAL_ATTACK_WAIT = 3;
-   localparam LEGAL_EVAL_WAIT = 4;
-   localparam LEGAL_MOVE = 5;
-   localparam LEGAL_NEXT = 6;
-   localparam LEGAL_MOVE_SORT_INIT = 7;
-   localparam LEGAL_MOVE_SORT = 8;
-   localparam LEGAL_DONE = 9;
+   localparam LEGAL_EVAL = 4;
+   localparam LEGAL_NEXT = 5;
+   localparam LEGAL_WS = 6;
+   localparam LEGAL_WAIT_EVAL_FLUSH = 7;
+   localparam LEGAL_MOVE_SORT_INIT = 8;
+   localparam LEGAL_MOVE_SORT = 9;
+   localparam LEGAL_DONE = 10;
 
    reg [3:0] legal = LEGAL_INIT;
 
@@ -980,12 +1079,14 @@ module all_moves #
        begin
           legal <= LEGAL_INIT;
           legal_eval_done <= 0;
-          legal_ram_wr <= 0;
+          legal_evaluate_go <= 0;
+          legal_ram_wr_addr_init <= 1;
        end
      else
        case (legal)
          LEGAL_INIT :
            begin
+              legal_ram_wr_addr_init <= 1;
               legal_sort_start <= 0;
               legal_sort_clear <= 0;
               legal_eval_done <= 0;
@@ -997,6 +1098,7 @@ module all_moves #
            end
          LEGAL_LOAD :
            begin
+              legal_ram_wr_addr_init <= 0;
 
               {attack_uci, attack_pawn_zero_half_move, attack_test_capture, attack_test_en_passant_col,
                attack_test_castle_mask, attack_test_white_to_move, attack_test_board} <= ram_rd_data;
@@ -1004,7 +1106,6 @@ module all_moves #
 
               legal_attack_go <= 0;
               legal_evaluate_go <= 0;
-              legal_clear_eval <= 0;
               legal_clear_attack <= 0;
               legal <= LEGAL_KING_POS;
            end
@@ -1041,44 +1142,30 @@ module all_moves #
            end
          LEGAL_ATTACK_WAIT :
            if (is_attacking_done)
-             if ((white_to_move && white_in_check) || (black_to_move && black_in_check))
-               legal <= LEGAL_NEXT; // invalid position, side to move still in check
-             else
-               begin
-                  legal_evaluate_go <= 1;
-                  legal <= LEGAL_EVAL_WAIT; // eval a legal move
-               end
-         LEGAL_EVAL_WAIT :
+             begin
+                legal_attack_go <= 0;
+                legal_clear_attack <= 1;
+                if ((white_to_move && white_in_check) ||
+                    (black_to_move && black_in_check) ||
+                    (am_quiescence_moves && ! attack_test_capture))
+                  legal <= LEGAL_NEXT; // side to move still in check, or user only wants captures (see todo)
+                else
+                  legal <= LEGAL_EVAL; // evaluate a legal move
+             end
+         LEGAL_EVAL :
            begin
-              legal_attack_go <= 0;
-              legal_evaluate_go <= 0;
-              attack_test_white_in_check <= white_in_check;
-              attack_test_black_in_check <= black_in_check;
-              attack_test_white_is_attacking <= white_is_attacking;
-              attack_test_black_is_attacking <= black_is_attacking;
-              attack_test_attack_white_pop <= attack_white_pop;
-              attack_test_attack_black_pop <= attack_black_pop;
+              legal_clear_attack <= 0;
+              legal_evaluate_go <= 1; // enable evaluation pipeline for this position info
 
-              if (eval_valid)
-                legal <= LEGAL_MOVE; // store a legal move
-           end
-         LEGAL_MOVE :
-           begin
+              // fen info
               legal_board_ram_wr <= attack_test_board;
               legal_en_passant_col_ram_wr <= attack_test_en_passant_col;
               legal_castle_mask_ram_wr <= attack_test_castle_mask;
               legal_white_to_move_ram_wr <= attack_test_white_to_move;
+
+              // info found during make-all-moves
               legal_capture_ram_wr <= attack_test_capture;
-              legal_white_in_check_ram_wr <= attack_test_white_in_check;
-              legal_black_in_check_ram_wr <= attack_test_black_in_check;
-              legal_white_is_attacking_ram_wr <= attack_test_white_is_attacking;
-              legal_black_is_attacking_ram_wr <= attack_test_black_is_attacking;
               legal_uci_ram_wr <= attack_uci;
-              legal_attack_white_pop_ram_wr <= attack_test_attack_white_pop;
-              legal_attack_black_pop_ram_wr <= attack_test_attack_black_pop;
-              legal_eval_ram_wr <= eval;
-              legal_eval_pv_flag_wr <= eval_pv_flag;
-              legal_insufficient_material_ram_wr <= insufficient_material;
               if (attack_pawn_zero_half_move || attack_test_capture)
                 begin
                    legal_half_move_ram_wr <= 0;
@@ -1089,29 +1176,35 @@ module all_moves #
                    legal_half_move_ram_wr <= half_move + 1;
                    legal_fifty_move_ram_wr <= half_move >= 99;
                 end
-              legal_ram_wr <= am_quiescence_moves ? attack_test_capture : 1;
-              legal_clear_eval <= 1;
-              legal_clear_attack <= 1;
-              legal_attack_go <= 0;
-              legal_evaluate_go <= 0;
+
+              // info found during attack test
+              legal_white_in_check_ram_wr <= white_in_check;
+              legal_black_in_check_ram_wr <= black_in_check;
+              legal_white_is_attacking_ram_wr <= white_is_attacking;
+              legal_black_is_attacking_ram_wr <= black_is_attacking;
+              legal_attack_white_pop_ram_wr <= attack_white_pop;
+              legal_attack_black_pop_ram_wr <= attack_black_pop;
+
               legal <= LEGAL_NEXT;
            end
          LEGAL_NEXT :
            begin
-              legal_ram_wr <= 0;
-              legal_clear_eval <= 1;
-              legal_clear_attack <= 1;
-              legal_attack_go <= 0;
               legal_evaluate_go <= 0;
-              if (all_generated_moves_complete && ram_wr_addr == ram_rd_addr) // all moves checked for legality and evaluated
+              legal_clear_attack <= 0;
+              if (all_generated_moves_complete && ram_wr_addr == ram_rd_addr) // all moves checked for legality
                 if (am_move_count == 0)
                   legal <= LEGAL_DONE; // no legal moves, either mate or stalemate
                 else
-                  legal <= LEGAL_MOVE_SORT_INIT; // legal moves made
+                  legal <= LEGAL_WS;
               else
                 if (ram_rd_addr < ram_wr_addr) // wait for more moves to be generated
                   legal <= LEGAL_LOAD;
            end
+         LEGAL_WS :
+           legal <= LEGAL_WAIT_EVAL_FLUSH;
+         LEGAL_WAIT_EVAL_FLUSH :
+           if (eval_input_count == legal_ram_wr_addr)
+             legal <= LEGAL_MOVE_SORT_INIT;
          LEGAL_MOVE_SORT_INIT :
            begin
               legal_sort_start <= 1;
@@ -1129,8 +1222,6 @@ module all_moves #
          LEGAL_DONE :
            begin
               legal_sort_clear <= 0;
-              legal_clear_eval <= 0;
-              legal_clear_attack <= 0;
               legal_eval_done <= 1;
               if (state == STATE_IDLE && ram_wr_addr == 0)
                 begin
@@ -1141,6 +1232,14 @@ module all_moves #
          default :
            legal <= LEGAL_INIT;
        endcase
+
+   always @(posedge clk)
+     begin
+        if (! initial_evaluation_complete)
+          eval_input_count <= 0;
+        if (evaluate_go_r)
+          eval_input_count <= eval_input_count + 1;
+     end
 
    always @(posedge clk)
      am_idle <= legal == LEGAL_INIT && state == STATE_IDLE;
@@ -1173,12 +1272,15 @@ module all_moves #
     .castle_mask (evaluate_castle_mask_r[]),
     .board_valid (evaluate_go_r),
     .killer_\(.*\) (killer_\1_in[]),
+    .bp_in (legal_bypass[]),
+    .bp_out (eval_bypass_out[]),
     );*/
    evaluate #
      (
       .EVAL_WIDTH (EVAL_WIDTH),
       .MAX_DEPTH_LOG2 (MAX_DEPTH_LOG2),
-      .UCI_WIDTH (UCI_WIDTH)
+      .UCI_WIDTH (UCI_WIDTH),
+      .BYPASS_WIDTH (LEGAL_RAM_WIDTH)
       )
    evaluate
      (/*AUTOINST*/
@@ -1187,6 +1289,7 @@ module all_moves #
       .eval                             (eval[EVAL_WIDTH-1:0]),
       .eval_pv_flag                     (eval_pv_flag),
       .eval_valid                       (eval_valid),
+      .bp_out                           (eval_bypass_out[LEGAL_RAM_WIDTH-1:0]), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
@@ -1198,8 +1301,8 @@ module all_moves #
       .uci_in                           (evaluate_uci_r[UCI_WIDTH-1:0]), // Templated
       .castle_mask                      (evaluate_castle_mask_r[3:0]), // Templated
       .castle_mask_orig                 (castle_mask_orig[3:0]),
-      .clear_eval                       (clear_eval),
       .white_to_move                    (evaluate_white_to_move_r), // Templated
+      .bp_in                            (legal_bypass[LEGAL_RAM_WIDTH-1:0]), // Templated
       .white_is_attacking               (white_is_attacking[63:0]),
       .black_is_attacking               (black_is_attacking[63:0]),
       .white_in_check                   (white_in_check),
