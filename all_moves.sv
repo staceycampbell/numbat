@@ -1165,10 +1165,10 @@ module all_moves #
               legal_evaluate_go <= 0;
               legal_clear_attack <= 0;
               if (all_generated_moves_complete && ram_wr_addr == ram_rd_addr) // all moves checked for legality
-                if (am_move_count == 0)
-                  legal <= LEGAL_DONE; // no legal moves, either mate or stalemate
+                if (legal_evaluate_go == 0 && eval_input_count == 0)
+                  legal <= LEGAL_DONE; // no legal moves, either mate, stalemate, or quiescence with no capture, etc moves
                 else
-                  legal <= LEGAL_WS;
+                  legal <= LEGAL_WS; // legal moves, start eval sort
               else
                 if (ram_rd_addr < ram_wr_addr) // wait for more moves to be generated
                   legal <= LEGAL_LOAD;
