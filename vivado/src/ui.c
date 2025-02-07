@@ -16,6 +16,12 @@ extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
 extern uint32_t tc_main, tc_increment;
 
+const char ansi_sgr0[] = {27, 40, 66, 27, 91, 109, 0};
+const char ansi_dim[] = {27, 91, 50, 109, 0};
+const char ansi_green[] = {27, 91, 51, 50, 109, 0};
+const char ansi_red[] = {27, 91, 51, 49, 109, 0};
+const char ansi_bold[] = {27, 91, 49, 109, 0};
+
 static tc_t tc;
 
 void

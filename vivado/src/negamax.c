@@ -617,6 +617,8 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	{
 		i = 0;
 		best_evaluation = -LARGE_EVAL;
+		if (!quiet)
+			printf("dl=%d ", depth_limit);
 		while (i < move_count && !abort_search)
 		{
 			board_vert[0] = board_ptr[i];
@@ -632,18 +634,17 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 				{
 					uci_string(&best_board.uci, uci_str);
 					if (!opponent_time)
-						printf("%c%c%c%c", 27, 91, 49, 109);    // bold
+						printf("%s", ansi_bold);
 					printf("be=%d (%s) ", best_evaluation, uci_str);
 					if (!opponent_time)
-						printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109); // sgr0
+						printf("%s", ansi_sgr0);
 					fflush(stdout);
 				}
 			}
 			++i;
 		}
 		if (!quiet)
-			if (best_evaluation != -LARGE_EVAL)
-				printf("\n");
+			printf("\n");
 		if (debug_pv_info)
 		{
 			best_board.full_move_number = next_full_move();
@@ -694,15 +695,25 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 
 	if (!quiet)
 	{
-		printf("best_evaluation=%d, nodes_visited=%u, seconds=%.2f, nps=%.0f\n", overall_best, nodes_visited, elapsed_time, nps);
-		printf("depth_limit=%d, q_depth=%d\n", depth_limit, valid_q_ply_reached);
-		printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
-		       trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
-		       ((double)trans_collision * 100.0) / (double)nodes_visited);
-		if (q_nodes_visited > 0)
-			printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%)\n", q_no_trans, q_trans_hit,
-			       ((double)q_trans_hit * 100.0) / (double)q_nodes_visited);
-		printf("temps: %.2fC (max %.2fC min %.2fC)\n", tmon_temperature, tmon_max_temperature, tmon_min_temperature);
+		printf("%sbest_evaluation=%s%d%s, %snps=%.0f%s, nodes_visited=%u, seconds=%.2f\n",
+		       opponent_time ? "" : ansi_bold,
+		       opponent_time ? "" : overall_best < 0 ? ansi_red : overall_best > 0 ? ansi_green : "",
+		       overall_best, ansi_sgr0,
+		       opponent_time ? "" : ansi_bold, nps, ansi_sgr0, nodes_visited, elapsed_time);
+		if (0) // disabled for now
+		{
+			printf("depth_limit=%d, q_depth=%d\n", depth_limit, valid_q_ply_reached);
+			printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
+			       trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
+			       ((double)trans_collision * 100.0) / (double)nodes_visited);
+			if (q_nodes_visited > 0)
+				printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%)\n", q_no_trans, q_trans_hit,
+				       ((double)q_trans_hit * 100.0) / (double)q_nodes_visited);
+		}
+		printf("temps: %s%.2fC%s (max %s%.2fC%s min %s%.2fC%s)\n",
+		       ansi_bold, tmon_temperature, ansi_sgr0,
+		       ansi_red, tmon_max_temperature, ansi_sgr0,
+		       ansi_green, tmon_min_temperature, ansi_sgr0);
 	}
 
 	numbat_led(0);

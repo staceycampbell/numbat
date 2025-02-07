@@ -75,8 +75,8 @@ numbat_print_board(const board_t * board, uint32_t initial_board)
 	btm = board->white_to_move;	// move from board to display is inverse of next to move
 	for (y = 7; y >= 0; --y)
 	{
-		printf("%c%c%c%c %c ", 27, 91, 50, 109, '1' + y);	// dim
-		printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);	// sgr0
+		printf("%s %c ", ansi_dim, '1' + y);	// dim
+		printf("%s", ansi_sgr0);
 		for (x = 0; x < 8; ++x)
 		{
 			piece = numbat_get_piece(board, y, x);
@@ -86,29 +86,27 @@ numbat_print_board(const board_t * board, uint32_t initial_board)
 			else
 				printf("%c%c%c%c%c", 27, 91, 52, 48, 109);	// setb 0, black bg
 			if ((piece & (1 << BLACK_BIT)) != 0 || (btm && y == board->uci.row_from && x == board->uci.col_from))
-				printf("%c%c%c%c%c", 27, 91, 51, 50, 109);	// green
+				printf("%s", ansi_green);
 			else
-				printf("%c%c%c%c%c", 27, 91, 51, 49, 109);	// red
+				printf("%s", ansi_red);
 			if ((y == board->uci.row_to && x == board->uci.col_to) || (y == board->uci.row_from && x == board->uci.col_from))
-				printf("%c%c%c%c", 27, 91, 49, 109);	// bold
+				printf("%s", ansi_bold);
 			if (y == board->uci.row_from && x == board->uci.col_from)
 				printf(" . ");
 			else
 				printf(" %c ", piece_char[piece]);
-			printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);	// sgr0
+			printf("%s", ansi_sgr0);
 		}
 		if (y == 7)
-			printf(" %c%c%c%c%c Black", 27, 91, 51, 50, 109);
+			printf(" %s Black%s", ansi_green, ansi_sgr0);
 		else if (y == 0)
-			printf(" %c%c%c%c%c White", 27, 91, 51, 49, 109);
-		if (y == 7 || y == 0)
-			printf("%c%c%c%c%c%c", 27, 40, 66, 27, 91, 109);	// sgr0
+			printf(" %s White%s", ansi_red, ansi_sgr0);
 		printf("\n");
 	}
-	printf("   %c%c%c%c", 27, 91, 50, 109);	// dim
+	printf("   %s", ansi_dim);
 	for (x = 0; x < 8; ++x)
 		printf(" %c ", 'a' + x);
-	printf("%c%c%c%c%c%c\n", 27, 40, 66, 27, 91, 109);	// sgr0
+	printf("%s\n", ansi_sgr0);
 	if (initial_board)
 	{
 		eval = numbat_initial_eval();

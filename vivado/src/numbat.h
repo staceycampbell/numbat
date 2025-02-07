@@ -864,3 +864,9 @@ extern float tmon_max_temperature;
 extern float tmon_min_temperature;
 
 extern void selfplay(void);
+
+extern const char ansi_sgr0[];
+extern const char ansi_dim[];
+extern const char ansi_green[];
+extern const char ansi_red[];
+extern const char ansi_bold[];
