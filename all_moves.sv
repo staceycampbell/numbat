@@ -226,7 +226,7 @@ module all_moves #
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
 
-   integer                               i, x, y, ri, s;
+   integer                               i, x, y, ri, s, sy, sx;
 
    wire signed [4:0]                     pawn_adv1_row [0:2];
    wire signed [4:0]                     pawn_adv1_col [0:2];
@@ -470,7 +470,7 @@ module all_moves #
    // merge evaluation data into position information, write to sort ram
    always @(posedge clk)
      begin
-        legal_ram_wr <= eval_valid;
+        legal_ram_wr <= eval_valid && initial_evaluation_complete;
 
         {presort_insufficient_material_out,
          presort_uci_out[UCI_WIDTH - 1:0],
@@ -734,21 +734,23 @@ module all_moves #
               initial_evaluation_complete <= 1;
               if (white_to_move)
                 begin
-                   for (s = 63; s >= 0; s = s - 1)
-                     if (square_active[s])
-                       begin
-                          row <= s >> 3;
-                          col <= s & 7;
-                       end
+                   for (sy = 7; sy >= 0; sy = sy - 1)
+                     for (sx = 0; sx <= 7; sx = sx + 1)
+                       if (square_active[sy << 3 | sx])
+                         begin
+                            row <= sy;
+                            col <= sx;
+                         end
                 end
               else
                 begin
-                   for (s = 0; s < 64; s = s + 1)
-                     if (square_active[s])
-                       begin
-                          row <= s >> 3;
-                          col <= s & 7;
-                       end
+                   for (sy = 0; sy <= 7; sy = sy + 1)
+                     for (sx = 0; sx <= 7; sx = sx + 1)
+                       if (square_active[sy << 3 | sx])
+                         begin
+                            row <= sy;
+                            col <= sx;
+                         end
                 end
               if (square_active == 64'b0)
                 state <= STATE_CASTLE_SHORT; // all individual piece moves done
