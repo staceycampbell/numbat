@@ -132,7 +132,7 @@ abort_test(void)
 	abort_search = time_limit_exceeded || ui_data_stop || uci_data_stop;
 }
 
-static uint32_t
+uint32_t
 load_root_nodes(board_t boards[MAX_POSITIONS])
 {
 	int32_t i;

@@ -820,6 +820,7 @@ extern void nm_init(void);
 extern board_t nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quiet);
 extern void nm_tune(const tune_t * new_tune);
 extern tune_t nm_current_tune(void);
+extern uint32_t load_root_nodes(board_t boards[MAX_POSITIONS]);
 
 extern uint32_t sample_game(board_t game[GAME_MAX]);
 extern void do_both(void);

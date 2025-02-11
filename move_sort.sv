@@ -1,11 +1,9 @@
 // Copyright (c) 2025 Stacey Campbell
 // SPDX-License-Identifier: MIT
 
-`include "numbat.vh"
+// Very large O(n) sort
 
-// Donald Shell's shellsort, algorithm from K&R, 2nd edition, page 62
-// Marcin Ciura's gap table https://web.archive.org/web/20180923235211/http://sun.aei.polsl.pl/~mciura/publikacje/shellsort.pdf
-// all writes are mirrored to block diagram BRAM for AXI4 burst DMA readout to Zynq
+`include "numbat.vh"
 
 module move_sort #
   (
@@ -26,249 +24,181 @@ module move_sort #
     input                                 ram_wr,
     input [MAX_POSITIONS_LOG2 - 1:0]      ram_rd_addr,
 
-    output [RAM_WIDTH - 1:0]              ram_rd_data,
+    output reg [RAM_WIDTH - 1:0]          ram_rd_data,
     output reg [MAX_POSITIONS_LOG2 - 1:0] ram_wr_addr,
 
-    output reg [31:0]                     all_moves_bram_addr,
-    output reg [511:0]                    all_moves_bram_din,
+    output reg [31:0]                     all_moves_bram_addr = 0,
+    output reg [511:0]                    all_moves_bram_din = 0,
     output reg [63:0]                     all_moves_bram_we,
 
-    output reg                            sort_complete
+    output reg                            sort_complete = 0
     );
 
-   reg                                    external_io = 0;
-   reg                                    sort_start_z = 0;
+   localparam BAD_EVAL = -(`GLOBAL_VALUE_KING + 500);
 
-   reg [MAX_POSITIONS_LOG2 - 1:0]         port_a_addr;
-   reg                                    port_a_wr_en = 0;
-   reg [RAM_WIDTH - 1:0]                  port_a_wr_data;
+   reg [RAM_WIDTH - 1:0]                  move_ram [0:`MAX_POSITIONS - 1];
 
-   reg [MAX_POSITIONS_LOG2 - 1:0]         port_b_addr;
-   reg                                    port_b_wr_en = 0;
-   reg [RAM_WIDTH - 1:0]                  port_b_wr_data;
+   reg signed [EVAL_WIDTH - 1:0]          sort_eval_table [0:`MAX_POSITIONS - 1];
+   reg [`MAX_POSITIONS - 1:0]             sort_pv_table;
+   reg [MAX_POSITIONS_LOG2 - 1:0]         sort_addr_table [0:`MAX_POSITIONS - 1];
+   reg [MAX_POSITIONS_LOG2 - 1:0]         table_count = 0;
+   reg                                    sorted_0, sorted_1;
+   reg [MAX_POSITIONS_LOG2 - 1:0]         index = 0;
+   reg                                    next_index = 0;
+   reg [31:0]                             all_moves_bram_addr_pre;
+   reg [511:0]                            all_moves_bram_din_pre;
+   reg [63:0]                             all_moves_bram_we_pre;
 
-   reg [31:0]                             all_moves_bram_addr_next;
-   reg [511:0]                            all_moves_bram_din_next;
+   integer                                i;
    
-   reg signed [MAX_POSITIONS_LOG2 + 2 + 1 - 1:0] i, j, n;
-   reg [2:0]                                     gap_index = 0;
-   reg signed [MAX_POSITIONS_LOG2 + 1:0]         gap_table [0:4];
+   wire [63:0]                            all_bytes_wren_clr = 64'h0000000000000000;
+   wire [63:0]                            all_bytes_wren_set = 64'hFFFFFFFFFFFFFFFF;
 
-   // should be empty
-   /*AUTOREGINPUT*/
+   //   initial
+   //     begin
+   //        $dumpfile("wave.vcd");
+   //        for (i = 0; i < 50; i = i + 1)
+   //          begin
+   //             $dumpvars(0, sort_eval_table[i]);
+   //             $dumpvars(0, sort_addr_table[i]);
+   //          end
+   //     end
 
-   /*AUTOWIRE*/
-   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [RAM_WIDTH-1:0] port_a_rd_data;         // From mram of mram.v
-   wire [RAM_WIDTH-1:0] port_b_rd_data;         // From mram of mram.v
-   // End of automatics
-
-   wire [MAX_POSITIONS_LOG2 - 1:0]               active_port_a_addr = external_io ? ram_wr_addr : port_a_addr; // external write to "a" port
-   wire [MAX_POSITIONS_LOG2 - 1:0]               active_port_b_addr = external_io ? ram_rd_addr : port_b_addr; // external read from "b" port
-
-   wire [RAM_WIDTH - 1:0]                        active_port_a_wr_data = external_io ? ram_wr_data : port_a_wr_data;
-
-   wire                                          active_port_a_wr_en = external_io ? ram_wr : port_a_wr_en;
-   wire                                          active_port_b_wr_en = external_io ? 1'b0 : port_b_wr_en;
-
-   wire signed [EVAL_WIDTH - 1:0]                eval_a = $signed(port_a_rd_data[EVAL_WIDTH - 1:0]);
-   wire signed [EVAL_WIDTH - 1:0]                eval_b = $signed(port_b_rd_data[EVAL_WIDTH - 1:0]);
-   wire                                          pv_a = port_a_rd_data[EVAL_WIDTH + 3];
-   wire                                          pv_b = port_b_rd_data[EVAL_WIDTH + 3];
-
-   wire [63:0]                                   all_bytes_wren_clr = 64'h0000000000000000;
-   wire [63:0]                                   all_bytes_wren_set = 64'hFFFFFFFFFFFFFFFF;
-
-   integer                                       gi;
-
-   initial
-     begin
-        // https://oeis.org/A102549
-        gap_table[0] = 0;
-        gap_table[1] = 1;
-        gap_table[2] = 4;
-        gap_table[3] = 10;
-        gap_table[4] = 23;
-     end
-
-   assign ram_rd_data = port_b_rd_data;
+   wire signed [EVAL_WIDTH - 1:0]         eval_test = $signed(all_moves_bram_din[EVAL_WIDTH - 1:0]);
+   wire signed [EVAL_WIDTH - 1:0]         input_eval = $signed(ram_wr_data[EVAL_WIDTH - 1:0]);
+   wire                                   input_pv = ram_wr_data[EVAL_WIDTH + 3];
 
    always @(posedge clk)
      begin
-        sort_start_z <= sort_start;
-
-        if (ram_wr_addr_init)
-          ram_wr_addr <= 0;
-        if (ram_wr)
-          ram_wr_addr <= ram_wr_addr + 1;
+        all_moves_bram_addr <= all_moves_bram_addr_pre;
+        all_moves_bram_din <= all_moves_bram_din_pre;
+        all_moves_bram_we <= all_moves_bram_we_pre;
      end
 
    localparam STATE_IDLE = 0;
-   localparam STATE_LOOP_OUTER_0 = 1;
-   localparam STATE_LOOP_OUTER_1 = 2;
-   localparam STATE_LOOP_MIDDLE_0 = 3;
-   localparam STATE_LOOP_MIDDLE_1 = 4;
-   localparam STATE_LOOP_INNER_0 = 5;
-   localparam STATE_LOOP_INNER_1 = 6;
-   localparam STATE_LOOP_INNER_2 = 7;
-   localparam STATE_LOOP_INNER_3 = 8;
-   localparam STATE_LOOP_INNER_4 = 9;
-   localparam STATE_LOOP_INNER_5 = 10;
-   localparam STATE_DONE = 11;
+   localparam STATE_TABLE_FILL = 1;
+   localparam STATE_TABLE_SORT0 = 2;
+   localparam STATE_TABLE_SORT1 = 3;
+   localparam STATE_REORDER = 4;
+   localparam STATE_DONE = 5;
 
-   reg [3:0]                              state = STATE_IDLE;
+   reg [2:0]                              state = STATE_IDLE;
 
    always @(posedge clk)
      if (reset)
-       state <= STATE_IDLE;
+       begin
+          state <= STATE_IDLE;
+          all_moves_bram_we_pre <= all_bytes_wren_clr;
+       end
      else
        case (state)
          STATE_IDLE :
            begin
-              port_a_wr_en <= 0;
-              port_b_wr_en <= 0;
-              external_io <= 1;
+              all_moves_bram_addr_pre <= 0;
+              index <= 0;
+              next_index <= 0;
+              all_moves_bram_we_pre <= all_bytes_wren_clr;
               sort_complete <= 0;
-              for (gi = 0; gi < 5; gi = gi + 1)
-                if (ram_wr_addr / 2 >= gap_table[gi])
-                  gap_index <= gi;
-              n <= ram_wr_addr;
-              if (sort_start && ~sort_start_z)
-                if (ram_wr_addr <= 1)
-                  state <= STATE_DONE;
-                else
-                  state <= STATE_LOOP_OUTER_0;
+              sorted_0 <= 0;
+              sorted_1 <= 0;
+              for (i = 0; i < `MAX_POSITIONS; i = i + 1)
+                begin
+                   sort_eval_table[i] <= BAD_EVAL;
+                   sort_pv_table[i] <= 1'b0;
+                   sort_addr_table[i] <= i;
+                end
+              if (ram_wr_addr_init)
+                state <= STATE_TABLE_FILL;
+           end
+         STATE_TABLE_FILL :
+           begin
+              if (ram_wr)
+                begin
+                   if (white_to_move)
+                     sort_eval_table[ram_wr_addr] <= $signed(ram_wr_data[EVAL_WIDTH - 1:0]);
+                   else
+                     sort_eval_table[ram_wr_addr] <= -$signed(ram_wr_data[EVAL_WIDTH - 1:0]);
+                   sort_pv_table[ram_wr_addr] <= ram_wr_data[EVAL_WIDTH + 3];
+                end
+              if (sort_start)
+                state <= STATE_TABLE_SORT0;
+           end
+         
+         STATE_TABLE_SORT0 :
+           begin
+              table_count <= ram_wr_addr;
+              sorted_0 <= 1;
+              for (i = 0; i < `MAX_POSITIONS - 1; i = i + 2)
+                if (! sort_pv_table[i] && sort_pv_table[i + 1] ? 1'b1 : sort_pv_table[i] && ! sort_pv_table[i + 1] ? 1'b0 : // principal variation 1st
+                    sort_eval_table[i] < sort_eval_table[i + 1]) // evaluation 2nd
+                  begin // swap
+                     sorted_0 <= 0; // not yet sorted
+                     sort_eval_table[i + 1] <= sort_eval_table[i];
+                     sort_eval_table[i] <= sort_eval_table[i + 1];
+                     sort_pv_table[i + 1] <= sort_pv_table[i];
+                     sort_pv_table[i] <= sort_pv_table[i + 1];
+                     sort_addr_table[i + 1] <= sort_addr_table[i];
+                     sort_addr_table[i] <= sort_addr_table[i + 1];
+                  end
+              if (sorted_0 && sorted_1)
+                state <= STATE_REORDER;
+              else
+                state <= STATE_TABLE_SORT1;
            end
 
-         STATE_LOOP_OUTER_0 :
+         STATE_TABLE_SORT1 :
            begin
-              external_io <= 0;
-              i <= gap_table[gap_index];
-              if (gap_index == 0)
+              sorted_1 <= 1;
+              for (i = 1; i < `MAX_POSITIONS - 1; i = i + 2)
+                if (! sort_pv_table[i] && sort_pv_table[i + 1] ? 1'b1 : sort_pv_table[i] && ! sort_pv_table[i + 1] ? 1'b0 : // principal variation 1st
+                    sort_eval_table[i] < sort_eval_table[i + 1]) // evaluation 2nd
+                  begin // swap
+                     sorted_1 <= 0; // not yet sorted
+                     sort_eval_table[i + 1] <= sort_eval_table[i];
+                     sort_eval_table[i] <= sort_eval_table[i + 1];
+                     sort_pv_table[i + 1] <= sort_pv_table[i];
+                     sort_pv_table[i] <= sort_pv_table[i + 1];
+                     sort_addr_table[i + 1] <= sort_addr_table[i];
+                     sort_addr_table[i] <= sort_addr_table[i + 1];
+                  end
+              if (sorted_1 && sorted_0)
+                state <= STATE_REORDER;
+              else
+                state <= STATE_TABLE_SORT0;
+           end
+         STATE_REORDER :
+           begin
+              all_moves_bram_din_pre <= move_ram[sort_addr_table[index]];
+              index <= index + 1;
+              all_moves_bram_we_pre <= all_bytes_wren_set;
+              next_index <= 1;
+              if (next_index)
+                all_moves_bram_addr_pre <= all_moves_bram_addr_pre + (1 << 6); // AXI byte address
+              if (index == table_count - 1)
                 state <= STATE_DONE;
-              else
-                state <= STATE_LOOP_MIDDLE_0;
            end
-         STATE_LOOP_OUTER_1 :
-           begin
-              gap_index <= gap_index - 1;
-              state <= STATE_LOOP_OUTER_0;
-           end
-
-         STATE_LOOP_MIDDLE_0 :
-           begin
-              j <= i - gap_table[gap_index];
-              if (i < n)
-                state <= STATE_LOOP_INNER_0;
-              else
-                state <= STATE_LOOP_OUTER_1;
-           end
-         STATE_LOOP_MIDDLE_1 :
-           begin
-              i <= i + 1;
-              state <= STATE_LOOP_MIDDLE_0;
-           end
-
-         STATE_LOOP_INNER_0 :
-           if (j < 0)
-             state <= STATE_LOOP_MIDDLE_1;
-           else
-             begin
-                port_a_addr <= j;
-                port_b_addr <= j + gap_table[gap_index];
-                state <= STATE_LOOP_INNER_1;
-             end
-         STATE_LOOP_INNER_1 :
-           state <= STATE_LOOP_INNER_2;
-         STATE_LOOP_INNER_2 :
-           state <= STATE_LOOP_INNER_3;
-         STATE_LOOP_INNER_3 :
-           // compare
-           if (! pv_a && pv_b ? 1'b1 : pv_a && ! pv_b ? 1'b0 : // principal variation 1st
-               white_to_move ? eval_a < eval_b : eval_a > eval_b) // evaluation 2nd
-             state <= STATE_LOOP_INNER_4;
-           else
-             state <= STATE_LOOP_MIDDLE_1;
-         STATE_LOOP_INNER_4 :
-           begin
-              // swap
-              port_a_wr_en <= 1;
-              port_b_wr_en <= 1;
-              port_a_wr_data <= port_b_rd_data;
-              port_b_wr_data <= port_a_rd_data;
-              state <= STATE_LOOP_INNER_5;
-           end
-         STATE_LOOP_INNER_5 :
-           begin
-              port_a_wr_en <= 0;
-              port_b_wr_en <= 0;
-              j <= j - gap_table[gap_index];
-              state <= STATE_LOOP_INNER_0;
-           end
-
          STATE_DONE :
            begin
+              all_moves_bram_we_pre <= all_bytes_wren_clr;
               sort_complete <= 1;
               if (sort_clear)
                 state <= STATE_IDLE;
            end
-
          default :
            state <= STATE_IDLE;
        endcase
 
-   localparam AM_PORT_A = 0;
-   localparam AM_PORT_B = 1;
-
-   reg [0:0] am_state = AM_PORT_A;
-
    always @(posedge clk)
-     case (am_state)
-       AM_PORT_A :
-         begin
-            all_moves_bram_din <= active_port_a_wr_data;
-            all_moves_bram_addr <= active_port_a_addr << 6;
+     begin
+        if (ram_wr_addr_init)
+          ram_wr_addr <= 0;
+        if (ram_wr)
+          ram_wr_addr <= ram_wr_addr + 1;
 
-            all_moves_bram_din_next <= port_b_wr_data;
-            all_moves_bram_addr_next <= port_b_addr << 6;
-
-            all_moves_bram_we <= all_bytes_wren_clr;
-            if (active_port_a_wr_en)
-              begin
-                 all_moves_bram_we <= all_bytes_wren_set;
-                 if (port_b_wr_en)
-                   am_state <= AM_PORT_B;
-              end
-         end
-       AM_PORT_B :
-         begin
-            all_moves_bram_din <= all_moves_bram_din_next;
-            all_moves_bram_addr <= all_moves_bram_addr_next;
-            all_moves_bram_we <= all_bytes_wren_set;
-            am_state <= AM_PORT_A;
-         end
-     endcase
-
-   /* mram AUTO_TEMPLATE (
-    );*/
-   mram #
-     (
-      .RAM_WIDTH (RAM_WIDTH),
-      .MAX_POSITIONS_LOG2 (MAX_POSITIONS_LOG2)
-      )
-   mram
-     (/*AUTOINST*/
-      // Outputs
-      .port_a_rd_data                   (port_a_rd_data[RAM_WIDTH-1:0]),
-      .port_b_rd_data                   (port_b_rd_data[RAM_WIDTH-1:0]),
-      // Inputs
-      .clk                              (clk),
-      .active_port_a_wr_en              (active_port_a_wr_en),
-      .active_port_a_addr               (active_port_a_addr[MAX_POSITIONS_LOG2-1:0]),
-      .active_port_b_wr_en              (active_port_b_wr_en),
-      .active_port_b_addr               (active_port_b_addr[MAX_POSITIONS_LOG2-1:0]),
-      .active_port_a_wr_data            (active_port_a_wr_data[RAM_WIDTH-1:0]),
-      .port_b_wr_data                   (port_b_wr_data[RAM_WIDTH-1:0]));
+        if (ram_wr)
+          move_ram[ram_wr_addr] <= ram_wr_data;
+        ram_rd_data <= move_ram[ram_rd_addr];
+     end
 
 endmodule
 

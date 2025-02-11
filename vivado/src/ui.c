@@ -413,9 +413,12 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 		game_moves = sample_game(game);
 		if (game_moves > 0)
 		{
+			board_t boards[MAX_POSITIONS];
+
 			printf("last move in sample game:\n");
 			numbat_write_board_basic(&game[game_moves - 1]);
 			numbat_write_board_wait(&game[game_moves - 1], 0);
+			load_root_nodes(boards);
 			numbat_print_board(&game[game_moves - 1], 1);
 			fen_print(&game[game_moves - 1], 1);
 			numbat_reset_all_moves();

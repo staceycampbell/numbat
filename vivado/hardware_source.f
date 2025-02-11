@@ -13,9 +13,7 @@ numbat/numbat_1.gen/sources_1/bd/mpsoc_block_diag/hdl/mpsoc_block_diag_wrapper.v
 ../evaluate_tropism.sv
 ../fan_ctrl.sv
 ../is_attacking.sv
-../latency_sm.sv
 ../move_sort.sv
-../mram.sv
 ../numbat_top.sv
 ../numbat.vh
 ../popcount.sv
