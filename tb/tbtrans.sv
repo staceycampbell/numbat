@@ -1,5 +1,7 @@
 `include "numbat.vh"
 
+// Test Zobrist hashing
+
 module tbtrans;
 
    localparam EVAL_WIDTH = 24;
