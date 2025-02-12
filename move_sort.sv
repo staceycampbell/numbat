@@ -15,6 +15,7 @@ module move_sort #
     input                                 clk,
     input                                 reset,
 
+    input                                 evaluate_go,
     input                                 sort_start,
     input                                 sort_clear,
     input                                 white_to_move,
@@ -53,16 +54,6 @@ module move_sort #
    
    wire [63:0]                            all_bytes_wren_clr = 64'h0000000000000000;
    wire [63:0]                            all_bytes_wren_set = 64'hFFFFFFFFFFFFFFFF;
-
-   //   initial
-   //     begin
-   //        $dumpfile("wave.vcd");
-   //        for (i = 0; i < 50; i = i + 1)
-   //          begin
-   //             $dumpvars(0, sort_eval_table[i]);
-   //             $dumpvars(0, sort_addr_table[i]);
-   //          end
-   //     end
 
    wire signed [EVAL_WIDTH - 1:0]         eval_test = $signed(all_moves_bram_din[EVAL_WIDTH - 1:0]);
    wire signed [EVAL_WIDTH - 1:0]         input_eval = $signed(ram_wr_data[EVAL_WIDTH - 1:0]);
@@ -107,8 +98,8 @@ module move_sort #
                    sort_pv_table[i] <= 1'b0;
                    sort_addr_table[i] <= i;
                 end
-              if (ram_wr_addr_init)
-                state <= STATE_TABLE_FILL;
+              if (evaluate_go)
+                state <= STATE_TABLE_FILL; // one or more legal moves to sort
            end
          STATE_TABLE_FILL :
            begin

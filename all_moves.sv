@@ -1212,7 +1212,7 @@ module all_moves #
      begin
         if (! initial_evaluation_complete)
           eval_input_count <= 0;
-        if (evaluate_go_r)
+        if (legal_evaluate_go)
           eval_input_count <= eval_input_count + 1;
      end
 
@@ -1314,6 +1314,7 @@ module all_moves #
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (reset),                 // Templated
+      .evaluate_go                      (legal_evaluate_go),     // Templated
       .sort_start                       (legal_sort_start),      // Templated
       .sort_clear                       (legal_sort_clear),      // Templated
       .white_to_move                    (white_to_move),         // Templated
