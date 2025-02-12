@@ -69,7 +69,6 @@ module control #
     input                                 trans_trans_idle_in,
     input                                 trans_collision_in,
     input [79:0]                          trans_hash_in,
-    input [31:0]                          trans_trans,
 
     output [`BOARD_WIDTH - 1:0]           q_trans_board_out,
     output                                q_trans_white_to_move_out,
@@ -98,7 +97,6 @@ module control #
     input                                 q_trans_trans_idle_in,
     input                                 q_trans_collision_in,
     input [79:0]                          q_trans_hash_in,
-    input [31:0]                          q_trans_trans,
 
     input                                 initial_mate,
     input                                 initial_stalemate,
@@ -307,7 +305,6 @@ module control #
        139 : ctrl0_dout[31:0] <= {am_uci_in[15:12], 1'b0, am_uci_in[11:9], 1'b0, am_uci_in[8:6], 1'b0, am_uci_in[5:3], 1'b0, am_uci_in[2:0]};
 
        252 : ctrl0_dout[31:0] <= random_score_mask;
-       253 : ctrl0_dout[31:0] <= trans_trans;
        254 : ctrl0_dout[31:0] <= xorshift32_reg;
        255 : ctrl0_dout[31:0] <= misc_status;
        256 : ctrl0_dout[31:0] <= {led_uf2, led_uf1};

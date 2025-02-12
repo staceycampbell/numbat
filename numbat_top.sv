@@ -149,7 +149,6 @@ module numbat_top
    wire [79:0]          q_trans_hash_out;       // From q_trans of trans.v
    wire [`TRANS_NODES_WIDTH-1:0] q_trans_nodes_in;// From control of control.v
    wire [`TRANS_NODES_WIDTH-1:0] q_trans_nodes_out;// From q_trans of trans.v
-   wire [31:0]          q_trans_trans;          // From q_trans of trans.v
    wire                 q_trans_trans_idle_out; // From q_trans of trans.v
    wire                 q_trans_white_to_move_in;// From control of control.v
    wire [EVAL_WIDTH-1:0] random_score_mask;     // From control of control.v
@@ -212,7 +211,6 @@ module numbat_top
    wire [79:0]          trans_hash_out;         // From trans of trans.v
    wire [`TRANS_NODES_WIDTH-1:0] trans_nodes_in;// From control of control.v
    wire [`TRANS_NODES_WIDTH-1:0] trans_nodes_out;// From trans of trans.v
-   wire [31:0]          trans_trans;            // From trans of trans.v
    wire                 trans_trans_idle_out;   // From trans of trans.v
    wire                 trans_white_to_move_in; // From control of control.v
    wire [31:0]          xorshift32_reg;         // From xorshift32 of xorshift32.v
@@ -385,7 +383,6 @@ module numbat_top
       .trans_axi_wvalid                 (trans_axi_wvalid),      // Templated
       .trans_axi_arregion               (trans_axi_arregion[3:0]), // Templated
       .trans_axi_awregion               (trans_axi_awregion[3:0]), // Templated
-      .trans_trans                      (trans_trans[31:0]),
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (reset),                 // Templated
@@ -465,7 +462,6 @@ module numbat_top
       .trans_axi_wvalid                 (q_trans_axi_wvalid),    // Templated
       .trans_axi_arregion               (q_trans_axi_arregion[3:0]), // Templated
       .trans_axi_awregion               (q_trans_axi_awregion[3:0]), // Templated
-      .trans_trans                      (q_trans_trans[31:0]),   // Templated
       // Inputs
       .clk                              (clk),                   // Templated
       .reset                            (reset),                 // Templated
@@ -570,7 +566,6 @@ module numbat_top
       .trans_trans_idle_in              (trans_trans_idle_out),  // Templated
       .trans_collision_in               (trans_collision_out),   // Templated
       .trans_hash_in                    (trans_hash_out[79:0]),  // Templated
-      .trans_trans                      (trans_trans[31:0]),
       .q_trans_depth_in                 (q_trans_depth_out[7:0]), // Templated
       .q_trans_entry_valid_in           (q_trans_entry_valid_out), // Templated
       .q_trans_eval_in                  (q_trans_eval_out[EVAL_WIDTH-1:0]), // Templated
@@ -580,7 +575,6 @@ module numbat_top
       .q_trans_trans_idle_in            (q_trans_trans_idle_out), // Templated
       .q_trans_collision_in             (q_trans_collision_out), // Templated
       .q_trans_hash_in                  (q_trans_hash_out[79:0]), // Templated
-      .q_trans_trans                    (q_trans_trans[31:0]),
       .initial_mate                     (initial_mate),
       .initial_stalemate                (initial_stalemate),
       .initial_eval                     (initial_eval[EVAL_WIDTH-1:0]),

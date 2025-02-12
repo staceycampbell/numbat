@@ -100,7 +100,6 @@ module tbtrans;
    wire [15:0]          trans_axi_wstrb;        // From trans of trans.v
    wire                 trans_axi_wvalid;       // From trans of trans.v
    wire                 trans_idle_out;         // From trans of trans.v
-   wire [31:0]          trans_trans;            // From trans of trans.v
    // End of automatics
    
    wire [3:0]                         uci_promotion;
@@ -227,7 +226,6 @@ module tbtrans;
       .trans_axi_wvalid                 (trans_axi_wvalid),
       .trans_axi_arregion               (trans_axi_arregion[3:0]),
       .trans_axi_awregion               (trans_axi_awregion[3:0]),
-      .trans_trans                      (trans_trans[31:0]),
       // Inputs
       .clk                              (clk),
       .reset                            (reset),

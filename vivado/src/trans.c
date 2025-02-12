@@ -39,7 +39,7 @@ trans_clear_table(void)
 {
 	XTime t_end, t_start, elapsed_ticks;
 	double elapsed_time;
-	uint32_t trans_idle, transaction;
+	uint32_t trans_idle;
 
 	trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
 	XTime_GetTime(&t_start);
@@ -54,8 +54,7 @@ trans_clear_table(void)
 	while (elapsed_time < 2.0 && !trans_idle);
 	if (!trans_idle)
 	{
-		transaction = numbat_read(253);
-		xil_printf("%s: timeout on trans_idle, transaction=%d, stopping.\n(%s %d)\n", __PRETTY_FUNCTION__, transaction, __FILE__, __LINE__);
+		xil_printf("%s: timeout on trans_idle, stopping.\n(%s %d)\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
 		while (1);
 	}
 }
@@ -121,7 +120,6 @@ void
 trans_wait_idle(const char *func, const char *file, int line)
 {
 	uint32_t i;
-	uint32_t transaction;
 	uint32_t trans_idle;
 
 	i = 0;
@@ -133,8 +131,7 @@ trans_wait_idle(const char *func, const char *file, int line)
 	while (!trans_idle && i < 1000);
 	if (!trans_idle)
 	{
-		transaction = numbat_read(253);
-		printf("%s: transaction=%d, transposition table state machine is not idle, stopping.\n(%s %d)\n", func, transaction, file, line);
+		printf("%s: transposition table state machine is not idle, stopping.\n(%s %d)\n", func, file, line);
 		while (1);
 	}
 }

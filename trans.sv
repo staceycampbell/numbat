@@ -32,13 +32,13 @@ module trans #
 
     output                                trans_idle_out,
 
-    output reg                            entry_valid_out,
-    output reg signed [EVAL_WIDTH - 1:0]  eval_out,
-    output reg [7:0]                      depth_out,
-    output reg [1:0]                      flag_out,
-    output reg [`TRANS_NODES_WIDTH - 1:0] nodes_out,
-    output reg                            capture_out,
-    output reg                            collision_out,
+    output reg                            entry_valid_out = 0,
+    output reg signed [EVAL_WIDTH - 1:0]  eval_out = 0,
+    output reg [7:0]                      depth_out = 0,
+    output reg [1:0]                      flag_out = 0,
+    output reg [`TRANS_NODES_WIDTH - 1:0] nodes_out = 0,
+    output reg                            capture_out = 0,
+    output reg                            collision_out = 0,
 
     output reg [79:0]                     hash_out,
    
@@ -60,7 +60,7 @@ module trans #
     output [2:0]                          trans_axi_arprot,
     output [3:0]                          trans_axi_arqos,
     output [2:0]                          trans_axi_arsize,
-    output reg                            trans_axi_arvalid,
+    output reg                            trans_axi_arvalid = 0,
     output reg [ADDRESS_WIDTH - 1:0]      trans_axi_awaddr,
     output [1:0]                          trans_axi_awburst,
     output [3:0]                          trans_axi_awcache,
@@ -71,15 +71,13 @@ module trans #
     output [2:0]                          trans_axi_awsize,
     output reg                            trans_axi_awvalid,
     output                                trans_axi_bready,
-    output reg                            trans_axi_rready,
+    output reg                            trans_axi_rready = 0,
     output reg [127:0]                    trans_axi_wdata,
     output                                trans_axi_wlast,
     output [15:0]                         trans_axi_wstrb,
     output                                trans_axi_wvalid,
     output [3:0]                          trans_axi_arregion,
-    output [3:0]                          trans_axi_awregion,
-
-    output reg [31:0]                     trans_trans = 0
+    output [3:0]                          trans_axi_awregion
     );
 
    localparam HASH_USED = 64;
@@ -100,13 +98,14 @@ module trans #
    localparam STATE_HASH_2 = 7;
    localparam STATE_HASH_3 = 8;
    localparam STATE_HASH_4 = 9;
-   localparam STATE_STORE = 10;
-   localparam STATE_STORE_WAIT_DATA = 11;
-   localparam STATE_STORE_WAIT_ADDR = 12;
-   localparam STATE_LOOKUP = 13;
-   localparam STATE_LOOKUP_WAIT_DATA = 14;
-   localparam STATE_LOOKUP_WAIT_ADDR = 15;
-   localparam STATE_LOOKUP_VALIDATE = 16;
+   localparam STATE_HASH_5 = 10;
+   localparam STATE_STORE = 11;
+   localparam STATE_STORE_WAIT_DATA = 12;
+   localparam STATE_STORE_WAIT_ADDR = 13;
+   localparam STATE_LOOKUP = 14;
+   localparam STATE_LOOKUP_WAIT_DATA = 15;
+   localparam STATE_LOOKUP_WAIT_ADDR = 16;
+   localparam STATE_LOOKUP_VALIDATE = 17;
    
    reg [4:0]                              state = STATE_IDLE;
 
@@ -114,6 +113,7 @@ module trans #
    reg [79:0]                             hash_1 [15:0];
    reg [79:0]                             hash_2 [ 3:0];
    reg [79:0]                             hash_side;
+   reg [79:0]                             hash_pre;
    reg [79:0]                             hash = 0;
 
    reg                                    entry_store, entry_lookup, hash_only, clear_trans;
@@ -281,7 +281,6 @@ module trans #
          end
        STATE_CLEAR_TRANS_INIT :
          begin
-            trans_trans <= trans_trans + 1;
             hash <= 0;
             trans_axi_awvalid <= 0;
             state <= STATE_CLEAR_TRANS;
@@ -320,8 +319,12 @@ module trans #
          end
        STATE_HASH_4 :
          begin
-            trans_trans <= trans_trans + 1;
-            hash <= hash_side ^ zob_rand_en_passant_col[en_passant_col] ^ zob_rand_castle_mask[castle_mask];
+            hash_pre <= hash_side ^ zob_rand_en_passant_col[en_passant_col] ^ zob_rand_castle_mask[castle_mask];
+            state <= STATE_HASH_5;
+         end
+       STATE_HASH_5 :
+         begin
+            hash <= hash_pre;
             if (entry_store)
               state <= STATE_STORE;
             else if (entry_lookup)
