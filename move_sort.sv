@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Stacey Campbell
 // SPDX-License-Identifier: MIT
 
-// Very large O(n) sort
+// O(n) sort
 
 `include "numbat.vh"
 
@@ -36,11 +36,12 @@ module move_sort #
     );
 
    localparam BAD_EVAL = -(`GLOBAL_VALUE_KING + 500);
+   localparam MAX_SORT_SIZE = 128;
 
    reg [RAM_WIDTH - 1:0]                  move_ram [0:`MAX_POSITIONS - 1];
 
-   reg signed [EVAL_WIDTH - 1:0]          sort_eval_table [0:`MAX_POSITIONS - 1];
-   reg [`MAX_POSITIONS - 1:0]             sort_pv_table;
+   reg signed [EVAL_WIDTH - 1:0]          sort_eval_table [0:MAX_SORT_SIZE - 1];
+   reg [MAX_SORT_SIZE - 1:0]              sort_pv_table;
    reg [MAX_POSITIONS_LOG2 - 1:0]         sort_addr_table [0:`MAX_POSITIONS - 1];
    reg [MAX_POSITIONS_LOG2 - 1:0]         sort_addr_table_r [0:`MAX_POSITIONS - 1];
    reg [MAX_POSITIONS_LOG2 - 1:0]         table_count = 0;
@@ -51,7 +52,7 @@ module move_sort #
    reg [511:0]                            all_moves_bram_din_pre;
    reg [63:0]                             all_moves_bram_we_pre;
 
-   integer                                i;
+   integer                                i, ti;
    
    wire [63:0]                            all_bytes_wren_clr = 64'h0000000000000000;
    wire [63:0]                            all_bytes_wren_set = 64'hFFFFFFFFFFFFFFFF;
@@ -98,11 +99,12 @@ module move_sort #
               sort_complete <= 0;
               sorted_0 <= 0;
               sorted_1 <= 0;
-              for (i = 0; i < `MAX_POSITIONS; i = i + 1)
+              for (ti = 0; ti < `MAX_POSITIONS; ti = ti + 1)
+                sort_addr_table[ti] <= ti;
+              for (i = 0; i < MAX_SORT_SIZE; i = i + 1)
                 begin
                    sort_eval_table[i] <= BAD_EVAL;
                    sort_pv_table[i] <= 1'b0;
-                   sort_addr_table[i] <= i;
                 end
               if (evaluate_go)
                 state <= STATE_TABLE_FILL; // one or more legal moves to sort
@@ -125,7 +127,7 @@ module move_sort #
            begin
               table_count <= ram_wr_addr;
               sorted_0 <= 1;
-              for (i = 0; i < `MAX_POSITIONS - 1; i = i + 2)
+              for (i = 0; i < MAX_SORT_SIZE - 1; i = i + 2)
                 if (! sort_pv_table[i] && sort_pv_table[i + 1] ? 1'b1 : sort_pv_table[i] && ! sort_pv_table[i + 1] ? 1'b0 : // principal variation 1st
                     sort_eval_table[i] < sort_eval_table[i + 1]) // evaluation 2nd
                   begin // swap
@@ -146,7 +148,7 @@ module move_sort #
          STATE_TABLE_SORT1 :
            begin
               sorted_1 <= 1;
-              for (i = 1; i < `MAX_POSITIONS - 1; i = i + 2)
+              for (i = 1; i < MAX_SORT_SIZE - 1; i = i + 2)
                 if (! sort_pv_table[i] && sort_pv_table[i + 1] ? 1'b1 : sort_pv_table[i] && ! sort_pv_table[i + 1] ? 1'b0 : // principal variation 1st
                     sort_eval_table[i] < sort_eval_table[i + 1]) // evaluation 2nd
                   begin // swap

@@ -196,6 +196,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	board_t *board_ptr[MAX_POSITIONS];
 	int32_t pv_next_index;
 	uint32_t collision;
+	uint32_t process_all_moves;
 	trans_t trans;
 	int32_t alpha_orig;
 	uint32_t in_check;
@@ -245,6 +246,8 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	if (value >= beta)
 		return value;
 
+	process_all_moves = move_count >= MAX_SORT_SIZE; // extremely unlikely, if not impossible
+
 	if (value > alpha)
 	{
 		alpha = value;
@@ -253,7 +256,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	}
 	else
 	{
-		if (value + tune.q_delta < alpha && !(board->black_in_check || board->white_in_check))
+		if (value + tune.q_delta < alpha && !(board->black_in_check || board->white_in_check) && ! process_all_moves)
 			return alpha;
 	}
 
@@ -330,6 +333,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	uint64_t node_start, node_stop, nodes;
 	int32_t pv_next_index = 0;
 	int32_t eval_delta;
+	uint32_t process_all_moves;
 
 	if (ply >= MAX_DEPTH - 1)
 	{
@@ -365,6 +369,8 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	move_count = numbat_move_count();
 	if (move_count == 0)
 		return value;
+
+	process_all_moves = move_count >= MAX_SORT_SIZE; // extremely unlikely
 
 	in_check = board->white_in_check || board->black_in_check;
 	if (repeat_draw(ply, board) && !in_check)
@@ -416,7 +422,8 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 		else if (depth == 0)
 			value = board_eval;
 		else if (depth > tune.futility_depth || index == 0 || in_check || alpha >= GLOBAL_VALUE_KING - 200 || beta >= GLOBAL_VALUE_KING - 200
-			 || board_eval + eval_delta > alpha || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check)
+			 || board_eval + eval_delta > alpha || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
+			 process_all_moves)
 			value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
 		else
 			value = -GLOBAL_VALUE_KING;     // prune

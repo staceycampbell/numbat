@@ -58,7 +58,8 @@
 #define GLOBAL_VALUE_KING 40000
 
 #define MAX_POSITIONS 219
-#define GAME_MAX 2048           // maximum half moves
+#define MAX_SORT_SIZE 128 // must match move_sort.sv
+#define GAME_MAX 2048     // maximum half moves
 #define BUF_SIZE 65536
 
 #define TRANS_EXACT 0
@@ -128,8 +129,7 @@ typedef struct board_t
         uint32_t fifty_move;
         uint32_t pv;
         uci_t uci;
-}
-board_t;
+} board_t;
 
 typedef struct tune_t
 {
