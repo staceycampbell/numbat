@@ -42,6 +42,7 @@ module move_sort #
    reg signed [EVAL_WIDTH - 1:0]          sort_eval_table [0:`MAX_POSITIONS - 1];
    reg [`MAX_POSITIONS - 1:0]             sort_pv_table;
    reg [MAX_POSITIONS_LOG2 - 1:0]         sort_addr_table [0:`MAX_POSITIONS - 1];
+   reg [MAX_POSITIONS_LOG2 - 1:0]         sort_addr_table_r [0:`MAX_POSITIONS - 1];
    reg [MAX_POSITIONS_LOG2 - 1:0]         table_count = 0;
    reg                                    sorted_0, sorted_1;
    reg [MAX_POSITIONS_LOG2 - 1:0]         index = 0;
@@ -61,9 +62,14 @@ module move_sort #
 
    always @(posedge clk)
      begin
+        for (i = 0; i < `MAX_POSITIONS; i = i + 1)
+          sort_addr_table_r[i] <= sort_addr_table[i];
+        all_moves_bram_din_pre <= move_ram[sort_addr_table_r[index]];
+        
         all_moves_bram_addr <= all_moves_bram_addr_pre;
         all_moves_bram_din <= all_moves_bram_din_pre;
         all_moves_bram_we <= all_moves_bram_we_pre;
+
      end
 
    localparam STATE_IDLE = 0;
@@ -159,7 +165,6 @@ module move_sort #
            end
          STATE_REORDER :
            begin
-              all_moves_bram_din_pre <= move_ram[sort_addr_table[index]];
               index <= index + 1;
               all_moves_bram_we_pre <= all_bytes_wren_set;
               next_index <= 1;
