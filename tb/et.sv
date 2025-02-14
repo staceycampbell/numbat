@@ -32,6 +32,7 @@ module et;
    reg [EVAL_WIDTH - 1:0]        random_score_mask = 0;
    reg [31:0]                    algorithm_enable = 0;
    reg [BYPASS_WIDTH - 1:0]      bp_in = 0;
+   reg                           eval_board_valid = 0;
 
    //should be empty
    /*AUTOREGINPUT*/
@@ -49,7 +50,6 @@ module et;
    wire                 white_in_check;         // From board_attack of board_attack.v
    wire [63:0]          white_is_attacking;     // From board_attack of board_attack.v
    // End of automatics
-   
 
    integer                       t = 0;
    integer                       i;
@@ -63,7 +63,7 @@ module et;
           board[i * `PIECE_WIDTH+:`PIECE_WIDTH] = `EMPTY_POSN;
 
 `include "et_board.vh"
-        
+
         clk = 0;
         forever
           #1 clk = ~clk;
@@ -72,17 +72,47 @@ module et;
    always @(posedge clk)
      begin
         t <= t + 1;
-        reset <= t < 64;
-        board_valid <= is_attacking_done;
-        if (eval_valid)
-          begin
-             $display("eval=%0d", eval);
-             $finish;
-          end
+        reset <= t < 16;
      end
+
+   localparam STATE_IDLE = 0;
+   localparam STATE_EVAL = 1;
+
+   reg [1:0] state = STATE_IDLE;
+
+   always @(posedge clk)
+     if (reset)
+       begin
+          state <= STATE_IDLE;
+          board_valid <= 0;
+          eval_board_valid <= 0;
+       end
+     else
+       case (state)
+         STATE_IDLE :
+           begin
+              board_valid <= 1;
+              if (is_attacking_done)
+                begin
+                   eval_board_valid <= 1;
+                   state <= STATE_EVAL;
+                end
+           end
+         STATE_EVAL :
+           begin
+              eval_board_valid <= 0;
+              clear_attack <= 1;
+              if (eval_valid)
+                begin
+                   $display("eval=%0d", eval);
+                   $finish;
+                end
+           end
+       endcase
 
    /* evaluate AUTO_TEMPLATE (
     .board_in (board[]),
+    .board_valid (eval_board_valid),
     );*/
    evaluate #
      (
@@ -104,7 +134,7 @@ module et;
       .random_score_mask                (random_score_mask[EVAL_WIDTH-1:0]),
       .random_number                    (random_number[EVAL_WIDTH-1:0]),
       .algorithm_enable                 (algorithm_enable[31:0]),
-      .board_valid                      (board_valid),
+      .board_valid                      (eval_board_valid),      // Templated
       .board_in                         (board[`BOARD_WIDTH-1:0]), // Templated
       .uci_in                           (uci_in[UCI_WIDTH-1:0]),
       .castle_mask                      (castle_mask[3:0]),
