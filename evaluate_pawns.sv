@@ -261,29 +261,27 @@ module evaluate_pawns #
                     op_king_col_t1 <= col;
                     op_king_row_t1 <= row;
                  end
+	       if (WHITE_PAWNS)
+		 begin
+		    enemy_is_attacking_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= black_is_attacking_t0[row << 3 | col];
+		    square_is_defended_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= white_is_attacking_t0[row << 3 | col];
+		 end
+	       else
+		 begin
+		    enemy_is_attacking_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= white_is_attacking_t0[row << 3 | col];
+		    square_is_defended_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= black_is_attacking_t0[row << 3 | col];
+		 end
                if (row != 0 && row != 7)
                  begin
                     board_neutral_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board_t0[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN;
                     enemy_neutral_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= board_t0[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == OP_PAWN;
                     if (board_t0[(row << 3 | col)  * `PIECE_WIDTH+:`PIECE_WIDTH] == MY_PAWN)
                       col_with_pawn_t1[col] <= 1;
-		    if (WHITE_PAWNS)
-		      begin
-			 enemy_is_attacking_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= black_is_attacking_t0[row << 3 | col];
-			 square_is_defended_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= white_is_attacking_t0[row << 3 | col];
-		      end
-		    else
-		      begin
-			 enemy_is_attacking_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= white_is_attacking_t0[row << 3 | col];
-			 square_is_defended_t1[(row_flip[WHITE_PAWNS][row] << 3) | col] <= black_is_attacking_t0[row << 3 | col];
-		      end
                  end
                else
                  begin
                     board_neutral_t1[row << 3 | col] <= 1'b0; // keep x's out of sim, tossed by optimizer
                     enemy_neutral_t1[row << 3 | col] <= 1'b0;
-		    enemy_is_attacking_t1[row << 3| col] <= 1'b0;
-		    square_is_defended_t1[row << 3| col] <= 1'b0;
                  end
             end
 

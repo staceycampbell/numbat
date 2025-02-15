@@ -142,6 +142,8 @@ gtkwave wave.vcd
   inside this module.
 * The code makes minimal use of System Verilog features and is mostly written in vanilla Verilog (2005).
 * All evaluation algorithms are performed in parallel for a given board.
+* Evaluation is fully pipelined. It is possible to evaluate a new position on every clock.
+* The evaluation pipeline latency is currently 18 clocks.
 * Several algorithms (legal moves, evaluations) are table driven, and those tables are created
   and output to Verilog header files on the host Linux computer prior to Vivado synthesis.
 * **All** module instantiation code is created with [Emacs Verilog-mode](https://veripool.org/verilog-mode/).

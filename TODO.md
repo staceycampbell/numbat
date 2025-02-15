@@ -1,1 +1,0 @@
-* Use full evaluation value for quiescence
