@@ -12,7 +12,7 @@ module board_attack
    input                      board_valid,
    input                      clear_attack,
 
-   output reg                 is_attacking_done = 0,
+   output                     is_attacking_done,
    output [63:0]              white_is_attacking,
    output [63:0]              black_is_attacking,
    output                     white_in_check,
@@ -31,6 +31,7 @@ module board_attack
 
    assign white_in_check = white_in_check_list != 0;
    assign black_in_check = black_in_check_list != 0;
+   assign is_attacking_done = white_is_attacking_valid[0];
 
    localparam STATE_IDLE = 0;
    localparam STATE_RUN = 1;
@@ -40,24 +41,15 @@ module board_attack
 
    always @(posedge clk)
      if (reset)
-       begin
-          is_attacking_done <= 0;
-          state <= STATE_IDLE;
-       end
+       state <= STATE_IDLE;
      else
        case (state)
          STATE_IDLE :
-           begin
-              is_attacking_done <= 0;
-              if (board_valid)
-                state <= STATE_RUN;
-           end
+           if (board_valid)
+             state <= STATE_RUN;
          STATE_RUN :
            if (white_is_attacking_valid != 0)
-             begin
-                is_attacking_done <= 1;
-                state <= STATE_DONE;
-             end
+             state <= STATE_DONE;
          STATE_DONE :
            if (clear_attack)
              state <= STATE_IDLE;

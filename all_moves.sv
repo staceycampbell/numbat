@@ -131,7 +131,7 @@ module all_moves #
    reg                                   initial_evaluation_complete = 0;
 
    reg [`BOARD_WIDTH - 1:0]              initial_evaluate_board, legal_evaluate_board, evaluate_board_r;
-   reg                                   initial_attack_go = 0, legal_attack_go = 0, attack_go_r;
+   reg                                   initial_attack_go = 0, legal_attack_go = 0;
    reg                                   initial_evaluate_go = 0, legal_evaluate_go = 0, evaluate_go_r;
    reg [UCI_WIDTH - 1:0]                 initial_evaluate_uci, legal_evaluate_uci, evaluate_uci_r;
    reg [3:0]                             initial_evaluate_castle_mask, legal_evaluate_castle_mask, evaluate_castle_mask_r;
@@ -534,6 +534,9 @@ module all_moves #
    assign pawn_adv1_col[1] = pawn_col_adv1;
    assign pawn_adv1_col[2] = pawn_col_cap_right;
 
+   wire [`BOARD_WIDTH - 1:0] attack_board = initial_evaluation_complete ? legal_evaluate_board : initial_evaluate_board;
+   wire                      attack_go = initial_evaluation_complete ? legal_attack_go : initial_attack_go;
+
    always @(posedge clk)
      begin
         piece <= board[idx[row][col]+:`PIECE_WIDTH];
@@ -547,7 +550,6 @@ module all_moves #
 
         if (initial_evaluation_complete)
           begin
-             attack_go_r <= legal_attack_go;
              evaluate_go_r <= legal_evaluate_go;
              evaluate_board_r <= legal_evaluate_board;
              evaluate_uci_r <= legal_evaluate_uci;
@@ -556,7 +558,6 @@ module all_moves #
           end
         else
           begin
-             attack_go_r <= initial_attack_go;
              evaluate_go_r <= initial_evaluate_go;
              evaluate_board_r <= initial_evaluate_board;
              evaluate_uci_r <= initial_evaluate_uci;
@@ -667,6 +668,7 @@ module all_moves #
              state <= STATE_DONE;
            else if (is_attacking_done)
              begin
+                initial_clear_attack <= 1;
                 initial_evaluate_go <= 1;
                 state <= STATE_INIT_WAIT_EVAL;
              end
@@ -681,7 +683,6 @@ module all_moves #
            end
          STATE_INIT :
            begin
-              initial_clear_attack <= 1;
               initial_attack_go <= 0;
 
               ram_wr_addr_init <= 0;
@@ -1220,8 +1221,8 @@ module all_moves #
      am_idle <= legal == LEGAL_INIT && state == STATE_IDLE;
 
    /* board_attack AUTO_TEMPLATE (
-    .board (evaluate_board_r[]),
-    .board_valid (attack_go_r),
+    .board (attack_board[]),
+    .board_valid (attack_go),
     );*/
    board_attack board_attack
      (/*AUTOINST*/
@@ -1234,8 +1235,8 @@ module all_moves #
       // Inputs
       .reset                            (reset),
       .clk                              (clk),
-      .board                            (evaluate_board_r[`BOARD_WIDTH-1:0]), // Templated
-      .board_valid                      (attack_go_r),           // Templated
+      .board                            (attack_board[`BOARD_WIDTH-1:0]), // Templated
+      .board_valid                      (attack_go),             // Templated
       .clear_attack                     (clear_attack));
 
    /* evaluate AUTO_TEMPLATE (
