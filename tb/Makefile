@@ -1,10 +1,10 @@
 CFLAGS := -Wall -g
 SRC := $(addprefix ../, is_attacking.sv board_attack.sv all_moves.sv \
 	evaluate.sv popcount.sv move_sort.sv evaluate_general.sv \
-	evaluate_pawns.sv evaluate_killer.sv \
+	evaluate_pawns.sv evaluate_killer.sv evaluate_material.sv \
 	evaluate_bishops.sv evaluate_castling.sv evaluate_rooks.sv evaluate_tropism.sv evaluate_pv.sv)
 EVSRC := $(addprefix ../, evaluate.sv evaluate_bishops.sv evaluate_castling.sv evaluate_general.sv \
-	evaluate_killer.sv evaluate_pawns.sv evaluate_pv.sv \
+	evaluate_killer.sv evaluate_pawns.sv evaluate_pv.sv evaluate_material.sv \
 	evaluate_rooks.sv evaluate_tropism.sv popcount.sv board_attack.sv \
 	is_attacking.sv)
 TBSRC := display_board.sv display_is_attacking.sv

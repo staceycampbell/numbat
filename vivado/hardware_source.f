@@ -6,6 +6,7 @@ numbat/numbat_1.gen/sources_1/bd/mpsoc_block_diag/hdl/mpsoc_block_diag_wrapper.v
 ../evaluate_castling.sv
 ../evaluate_general.sv
 ../evaluate_killer.sv
+../evaluate_material.sv
 ../evaluate_pawns.sv
 ../evaluate_pv.sv
 ../evaluate_rooks.sv

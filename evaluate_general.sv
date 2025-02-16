@@ -23,7 +23,6 @@ module evaluate_general #
     output reg                           eval_valid_t7
     );
 
-   reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] value [`EMPTY_POSN:`BLACK_KING];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_mg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg signed [$clog2(`GLOBAL_VALUE_KING) - 1 + 1:0] pst_eg [`EMPTY_POSN:`BLACK_KING][0:63];
    reg [$clog2(`BOARD_WIDTH) - 1:0]                  idx [0:7][0:7];
@@ -116,8 +115,8 @@ module evaluate_general #
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 1)
             begin
-               score_mg_t1[y][x] <= value[board_t0[idx[y][x]+:`PIECE_WIDTH]] + pst_mg[board_t0[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
-               score_eg_t1[y][x] <= value[board_t0[idx[y][x]+:`PIECE_WIDTH]] + pst_eg[board_t0[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
+               score_mg_t1[y][x] <= pst_mg[board_t0[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
+               score_eg_t1[y][x] <= pst_eg[board_t0[idx[y][x]+:`PIECE_WIDTH]][y << 3 | x];
             end
         for (y = 0; y < 8; y = y + 1)
           for (x = 0; x < 8; x = x + 4)
@@ -170,18 +169,12 @@ module evaluate_general #
           end
 
         for (ri = `EMPTY_POSN; ri <= `BLACK_KING; ri = ri + 1)
-          begin
-             value[ri] = 0;
-             for (i = 0; i < 64; i = i + 1)
-               pst_mg[ri][i] = 0;
-          end
+          for (i = 0; i < 64; i = i + 1)
+            pst_mg[ri][i] = 0;
 
         for (ri = `EMPTY_POSN; ri <= `BLACK_KING; ri = ri + 1)
-          begin
-             value[ri] = 0;
-             for (i = 0; i < 64; i = i + 1)
-               pst_eg[ri][i] = 0;
-          end
+          for (i = 0; i < 64; i = i + 1)
+            pst_eg[ri][i] = 0;
 
 `include "evaluate_general.vh"
 

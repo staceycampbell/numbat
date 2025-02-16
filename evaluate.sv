@@ -48,9 +48,25 @@ module evaluate #
     output [BYPASS_WIDTH - 1:0]      bp_out
     );
 
-   localparam EVALUATION_COUNT = 13;
+   localparam P_VAL_COUNT = 1 << `PIECE_WIDTH;
+   localparam P_VAL_WIDTH = 11;
+   localparam EVALUATION_COUNT = 14;
    localparam SUM_WIDTH = EVAL_WIDTH + EVALUATION_COUNT;
-   localparam PHASE_CALC_WIDTH = EVAL_WIDTH + 8 + 1 + $clog2('h100000 / 62);
+   localparam PHASE_CALC_WIDTH = EVAL_WIDTH + P_VAL_WIDTH + 1 + $clog2('h100000 / 62);
+
+   reg signed [P_VAL_WIDTH - 1:0]    p_val_white [0:P_VAL_COUNT - 1];
+   reg signed [P_VAL_WIDTH - 1:0]    p_val_black [0:P_VAL_COUNT - 1];
+   
+   reg signed [P_VAL_WIDTH - 1:0]    totp_black_t1 [0:63];
+   reg signed [P_VAL_WIDTH - 1:0]    totp_white_t1 [0:63];
+   reg signed [P_VAL_WIDTH - 1:0]    totp_black_t2 [0:15];
+   reg signed [P_VAL_WIDTH - 1:0]    totp_white_t2 [0:15];
+   reg signed [P_VAL_WIDTH - 1:0]    totp_black_t3 [0:3];
+   reg signed [P_VAL_WIDTH - 1:0]    totp_white_t3 [0:3];
+   reg signed [P_VAL_WIDTH - 1:0]    totp_black_t4;
+   reg signed [P_VAL_WIDTH - 1:0]    totp_white_t4;
+   reg signed [P_VAL_WIDTH - 1:0]    total_both_t5;
+
    
    reg signed [SUM_WIDTH - 1:0]      sum_mg_t4, sum_mg_t5, sum_mg_t6, sum_mg_t7, sum_mg_t8, sum_mg_t9, sum_mg_t10, sum_mg_t11;
    reg signed [SUM_WIDTH - 1:0]      sum_eg_t4, sum_eg_t5, sum_eg_t6, sum_eg_t7, sum_eg_t8, sum_eg_t9, sum_eg_t10, sum_eg_t11;
@@ -61,7 +77,7 @@ module evaluate #
    reg signed [PHASE_CALC_WIDTH - 1:0] score_t15, score_t16;
    reg signed [EVAL_WIDTH - 1:0]       eval_t17;
    
-   reg signed [7:0]                    phase_t2, phase_t3, phase_t4, phase_t5, phase_t6, phase_t7, phase_t8, phase_t9, phase_t10, phase_t11;
+   reg signed [P_VAL_WIDTH - 1:0]      phase_t6, phase_t7, phase_t8, phase_t9, phase_t10, phase_t11;
    reg                                 insufficient_material_t8, insufficient_material_t9, insufficient_material_t10,
                                        insufficient_material_t11, insufficient_material_t12, insufficient_material_t13,
                                        insufficient_material_t14, insufficient_material_t15, insufficient_material_t16,
@@ -98,6 +114,8 @@ module evaluate #
    wire signed [EVAL_WIDTH-1:0] evaluate_killer_eg_t3;// From evaluate_killer of evaluate_killer.v
    wire signed [EVAL_WIDTH-1:0] evaluate_killer_mg_t3;// From evaluate_killer of evaluate_killer.v
    wire                 evaluate_killer_valid_t3;// From evaluate_killer of evaluate_killer.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_material_eg_t8;// From evaluate_material of evaluate_material.v
+   wire signed [EVAL_WIDTH-1:0] evaluate_material_mg_t8;// From evaluate_material of evaluate_material.v
    wire signed [EVAL_WIDTH-1:0] evaluate_pawns_black_eg_t8;// From evaluate_pawns_black of evaluate_pawns.v
    wire signed [EVAL_WIDTH-1:0] evaluate_pawns_black_mg_t8;// From evaluate_pawns_black of evaluate_pawns.v
    wire                 evaluate_pawns_black_valid_t8;// From evaluate_pawns_black of evaluate_pawns.v
@@ -115,7 +133,6 @@ module evaluate #
    wire signed [EVAL_WIDTH-1:0] evaluate_tropism_white_mg_t10;// From evaluate_tropism_white of evaluate_tropism.v
    wire                 evaluate_tropism_white_valid_t10;// From evaluate_tropism_white of evaluate_tropism.v
    wire                 insufficient_material_t7;// From evaluate_general of evaluate_general.v
-   wire [5:0]           occupied_count_t1;      // From popcount_occupied of popcount.v
    // End of automatics
 
    genvar                              c;
@@ -126,22 +143,35 @@ module evaluate #
    wire [BYPASS_WIDTH - 1:0]           bp_t0 = bp_in;
    wire                                eval_valid_t0 = board_valid;
 
-   wire [63:0]                         occupied_t0;
-
    assign eval = eval_t17;
    assign eval_pv_flag = eval_pv_flag_t17;
    assign insufficient_material = insufficient_material_t17;
    assign bp_out = bp_t17;
    assign eval_valid = eval_valid_t17;
 
-   generate
-      for (c = 0; c < 64; c = c + 1)
-        begin : occupied_block
-           assign occupied_t0[c] = board_t0[c * `PIECE_WIDTH+:`PIECE_WIDTH] != `EMPTY_POSN &&
-                                   board_t0[c * `PIECE_WIDTH+:`PIECE_WIDTH - 1] != `PIECE_PAWN &&
-                                   board_t0[c * `PIECE_WIDTH+:`PIECE_WIDTH - 1] != `PIECE_KING;
-        end
-   endgenerate
+   initial
+     begin
+        for (i = 0; i < P_VAL_COUNT; i = i + 1)
+          begin
+             p_val_white[i] = 0;
+             p_val_black[i] = 0;
+          end
+        p_val_white[`EMPTY_POSN] = 0;
+        p_val_white[`WHITE_PAWN] = 0;
+        p_val_white[`WHITE_KNIT] = 3;
+        p_val_white[`WHITE_BISH] = 3;
+        p_val_white[`WHITE_ROOK] = 5;
+        p_val_white[`WHITE_QUEN] = 9;
+        p_val_white[`WHITE_KING] = 0;
+        
+        p_val_black[`EMPTY_POSN] = 0;
+        p_val_black[`BLACK_PAWN] = 0;
+        p_val_black[`BLACK_KNIT] = 3;
+        p_val_black[`BLACK_BISH] = 3;
+        p_val_black[`BLACK_ROOK] = 5;
+        p_val_black[`BLACK_QUEN] = 9;
+        p_val_black[`BLACK_KING] = 0;
+     end
 
    // From crafty:
    // phase = Min(62, TotalPieces(white, occupied) + TotalPieces(black, occupied));
@@ -149,10 +179,30 @@ module evaluate #
    // note: "occupied" excludes pawns in crafty phase calc
    always @(posedge clk)
      begin
-        if (occupied_count_t1 > 62)
-          phase_t2 <= 62;
+        for (i = 0; i < 64; i = i + 1)
+          begin
+             totp_black_t1[i] <= p_val_black[board_t0[i * `PIECE_WIDTH+:`PIECE_WIDTH]];
+             totp_white_t1[i] <= p_val_white[board_t0[i * `PIECE_WIDTH+:`PIECE_WIDTH]];
+          end
+        for (i = 0; i < 16; i = i + 1)
+          begin
+             totp_black_t2[i] <= totp_black_t1[i * 4 + 0] + totp_black_t1[i * 4 + 1] + totp_black_t1[i * 4 + 2] + totp_black_t1[i * 4 + 3];
+             totp_white_t2[i] <= totp_white_t1[i * 4 + 0] + totp_white_t1[i * 4 + 1] + totp_white_t1[i * 4 + 2] + totp_white_t1[i * 4 + 3];
+          end
+        for (i = 0; i < 4; i = i + 1)
+          begin
+             totp_black_t3[i] <= totp_black_t2[i * 4 + 0] + totp_black_t2[i * 4 + 1] + totp_black_t2[i * 4 + 2] + totp_black_t2[i * 4 + 3];
+             totp_white_t3[i] <= totp_white_t2[i * 4 + 0] + totp_white_t2[i * 4 + 1] + totp_white_t2[i * 4 + 2] + totp_white_t2[i * 4 + 3];
+          end
+        totp_black_t4 <= totp_black_t3[0] + totp_black_t3[1] + totp_black_t3[2] + totp_black_t3[3];
+        totp_white_t4 <= totp_white_t3[0] + totp_white_t3[1] + totp_white_t3[2] + totp_white_t3[3];
+
+        total_both_t5 <= totp_black_t4 + totp_white_t4;
+        
+        if (total_both_t5 < 62)
+          phase_t6 <= total_both_t5;
         else
-          phase_t2 <= occupied_count_t1;
+          phase_t6 <= 62;
 
         sum_mg_t4 <= evaluate_killer_mg_t3;
         sum_eg_t4 <= evaluate_killer_eg_t3;
@@ -177,9 +227,11 @@ module evaluate #
                      evaluate_general_eg_t7;
 
         sum_mg_t9 <= sum_mg_t8 +
-                     evaluate_pawns_black_mg_t8 + evaluate_pawns_white_mg_t8;
+                     evaluate_pawns_black_mg_t8 + evaluate_pawns_white_mg_t8 +
+                     evaluate_material_mg_t8;
         sum_eg_t9 <= sum_eg_t8 +
-                     evaluate_pawns_black_eg_t8 + evaluate_pawns_white_eg_t8;
+                     evaluate_pawns_black_eg_t8 + evaluate_pawns_white_eg_t8 +
+                     evaluate_material_eg_t8;
 
         sum_mg_t10 <= sum_mg_t9;
         sum_eg_t10 <= sum_eg_t9;
@@ -201,10 +253,6 @@ module evaluate #
    // infer shift regs
    always @(posedge clk)
      begin
-        phase_t3 <= phase_t2;
-	phase_t4 <= phase_t3;
-	phase_t5 <= phase_t4;
-	phase_t6 <= phase_t5;
 	phase_t7 <= phase_t6;
 	phase_t8 <= phase_t7;
 	phase_t9 <= phase_t8;
@@ -569,18 +617,27 @@ module evaluate #
       .pv_ply                           (killer_ply[MAX_DEPTH_LOG2-1:0]), // Templated
       .pv_ctrl_in                       (pv_ctrl_in[31:0]));
 
-   /* popcount AUTO_TEMPLATE (
-    .population (occupied_count_t1[]),
-    .x0 (occupied_t0[]),
+   /* evaluate_material AUTO_TEMPLATE (
+    .eval_\([me]\)g_\(.*\) (@"vl-cell-name"_\1g_\2[]),
     );*/
-   popcount popcount_occupied
+   evaluate_material #
+     (
+      .EVAL_WIDTH (EVAL_WIDTH),
+      .P_VAL_WIDTH (P_VAL_WIDTH)
+      )
+   evaluate_material
      (/*AUTOINST*/
       // Outputs
-      .population                       (occupied_count_t1[5:0]), // Templated
+      .eval_mg_t8                       (evaluate_material_mg_t8[EVAL_WIDTH-1:0]), // Templated
+      .eval_eg_t8                       (evaluate_material_eg_t8[EVAL_WIDTH-1:0]), // Templated
       // Inputs
       .clk                              (clk),
       .reset                            (reset),
-      .x0                               (occupied_t0[63:0]));     // Templated
+      .board_valid                      (board_valid),
+      .board                            (board[`BOARD_WIDTH-1:0]),
+      .white_to_move                    (white_to_move),
+      .totp_black_t4                    (totp_black_t4[P_VAL_WIDTH-1:0]),
+      .totp_white_t4                    (totp_white_t4[P_VAL_WIDTH-1:0]));
 
 endmodule
 
