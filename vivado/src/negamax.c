@@ -11,7 +11,7 @@
 #pragma GCC optimize ("O2")
 
 #define FIXED_TIME 5
-#define MID_GAME_HALF_MOVES 60
+#define MID_GAME_HALF_MOVES 40
 
 #define LBS_COUNT 3		// number of most recent best scores for one side
 #define LBS_RESIGN -600		// if this is seen LBS_COUNT times return resign as true
@@ -521,6 +521,8 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	board_t best_board = { 0 };
 	board_t best_complete_board = { 0 };
 	XTime t_end, t_report, t_start;
+	XTime depth_start, depth_end;
+	double depth_duration;
 	board_t root_node_boards[MAX_POSITIONS];
 	board_t *board_ptr[MAX_POSITIONS];
 	char uci_str[6];
@@ -594,12 +596,12 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	{
 		duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES) + 0.5;
 		duration_seconds += (double)tc->increment * 0.8 + 0.5;
-		if (duration_seconds * 5 > tc->main_remaining[tc->side])
-			duration_seconds /= 8;
+		if (duration_seconds * 10 > tc->main_remaining[tc->side])
+			duration_seconds = tc->main_remaining[tc->side] / 7;
 		if (duration_seconds <= 0)
 			duration_seconds = 1;
-		else if (duration_seconds > 15 && !opponent_time)
-			duration_seconds = 60;	// deal with "moretime" people on FICS
+		else if (duration_seconds > 60 && !opponent_time) // deal with "moretime" people on FICS
+			duration_seconds = 60;
 	}
 	if (!quiet)
 		printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
@@ -616,10 +618,13 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	overall_best = -LARGE_EVAL;
 	best_evaluation = -LARGE_EVAL;
 	depth_limit = tune.initial_depth_limit;
+	depth_start = 0;
+	depth_end = 0;
 	while (depth_limit < MAX_DEPTH - 1 && !abort_search)
 	{
 		i = 0;
 		best_evaluation = -LARGE_EVAL;
+		XTime_GetTime(&depth_start);
 		if (!quiet)
 			printf("dl=%d ", depth_limit);
 		while (i < move_count && !abort_search)
@@ -646,6 +651,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 			}
 			++i;
 		}
+		XTime_GetTime(&depth_end);
 		if (!quiet)
 			printf("\n");
 		if (debug_pv_info)
@@ -672,7 +678,9 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		if (q_ply_reached > valid_q_ply_reached)
 			valid_q_ply_reached = q_ply_reached;
 	}
-	best_board = best_complete_board;
+	depth_duration = (double)(depth_end - depth_start) / (double)COUNTS_PER_SECOND;
+	if (depth_duration < 3)
+		best_board = best_complete_board;
 	best_board.full_move_number = next_full_move();
 
 	last_best_score[wtm][(game_index / 2) % LBS_COUNT] = overall_best;
