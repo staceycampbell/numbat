@@ -24,6 +24,7 @@ extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
 
 static uint32_t nodes_visited, n_nodes_visited, q_nodes_visited, trans_collision, no_trans, q_no_trans, q_trans_hit;
+static uint32_t q_trans_collision;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
 static int32_t q_ply_reached, valid_q_ply_reached;
@@ -188,7 +189,7 @@ local_movcpy(uci_t * p_dst, const uci_t * p_src, int32_t n)
 }
 
 static int32_t
-quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int32_t pv_index)
+quiescence(const board_t * board, int32_t q_depth, int32_t alpha, int32_t beta, uint32_t ply, int32_t pv_index)
 {
 	uint32_t move_count, index;
 	uint32_t mate, stalemate, fifty_move;
@@ -200,6 +201,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	int32_t alpha_orig;
 	int32_t board_eval, initial_eval, initial_delta;
 	uint32_t in_check;
+	uint64_t node_start, node_stop, nodes;
 
 	++nodes_visited;
 	++q_nodes_visited;
@@ -207,6 +209,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	if (ply >= MAX_DEPTH - 1)
 		return beta;
 
+	node_start = q_nodes_visited;
 	alpha_orig = alpha;
 
 	pv_array[pv_index] = zero_move;
@@ -229,8 +232,10 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 		return value;
 
 	q_trans_test_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
-	numbat_q_trans_read(&collision, &trans.eval, 0, &trans.flag, 0, &trans.entry_valid);
-	if (trans.entry_valid)
+	numbat_q_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.entry_valid);
+	q_trans_collision += collision;
+
+	if (trans.entry_valid && trans.depth >= q_depth)
 	{
 		++q_trans_hit;
 		if (trans.flag == TRANS_EXACT)
@@ -285,7 +290,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 
 		if (board_ptr[index]->capture || initial_delta >= 150 || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
 		    in_check)
-			value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+			value = -quiescence(board_ptr[index], q_depth - 1, -beta, -alpha, ply + 1, pv_next_index);
 		else
 			value = board_eval;
 		if (abort_search)
@@ -299,9 +304,13 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	if (abort_search)
 		return 0;	// will be ignored
 
+	node_stop = q_nodes_visited;
+	nodes = node_stop - node_start;
+	if (nodes >= (1 << TRANS_NODES_WIDTH))
+		nodes = (1 << TRANS_NODES_WIDTH) - 1;
 	numbat_write_board_basic(board);
 	q_trans_lookup(&trans, &collision);
-	if (!trans.entry_valid)
+	if (!trans.entry_valid || trans.nodes < nodes)
 	{
 		trans.eval = alpha;
 		if (alpha <= alpha_orig)
@@ -310,7 +319,8 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 			trans.flag = TRANS_LOWER_BOUND;
 		else
 			trans.flag = TRANS_EXACT;
-		// trans.nodes, trans.depth, trans.capture unused in q transposition table
+		trans.nodes = nodes;
+		trans.depth = q_depth;
 		trans.entry_valid = 1;
 		q_trans_store(&trans);
 	}
@@ -415,7 +425,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 		initial_delta = abs(initial_eval - board_eval);
 		if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
 				   initial_delta >= 150))
-			value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+			value = -quiescence(board_ptr[index], 100, -beta, -alpha, ply + 1, pv_next_index);
 		else if (depth == 0)
 			value = board_eval;
 		else
@@ -549,6 +559,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	n_nodes_visited = 0;
 	no_trans = 0;
 	trans_collision = 0;
+	q_trans_collision = 0;
 	q_no_trans = 0;
 
 	numbat_reset_all_moves();
@@ -717,8 +728,9 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 			       trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
 			       ((double)trans_collision * 100.0) / (double)nodes_visited);
 			if (q_nodes_visited > 0)
-				printf("q_no_trans=%u, q_trans_hit=%u (%.2f%%)\n", q_no_trans, q_trans_hit,
-				       ((double)q_trans_hit * 100.0) / (double)(q_no_trans + q_trans_hit));
+				printf("q_no_trans=%u, q_trans_hit=%u (%.2f%%), q_trans_collision=%u (%.2f%%)\n", q_no_trans, q_trans_hit,
+				       ((double)q_trans_hit * 100.0) / (double)(q_nodes_visited),
+				       q_trans_collision, ((double)q_trans_collision * 100.0) / (double)q_nodes_visited);
 		}
 		printf("temps: %s%.2fC%s (max %s%.2fC%s min %s%.2fC%s)\n",
 		       ansi_bold, tmon_temperature, ansi_sgr0,

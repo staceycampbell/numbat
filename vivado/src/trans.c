@@ -14,7 +14,7 @@ extern uint32_t game_moves;
 
 #pragma GCC optimize ("O2")
 
-static inline void
+void
 q_trans_wait_idle(const char *func, const char *file, int line)
 {
 	uint32_t i;

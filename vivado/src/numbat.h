@@ -846,6 +846,7 @@ extern void trans_wait_idle(const char *func, const char *file, int line);
 extern void q_trans_clear_table(void);
 extern void q_trans_lookup(trans_t * trans, uint32_t * collision);
 extern void q_trans_store(const trans_t * trans);
+extern void q_trans_wait_idle(const char *func, const char *file, int line);
 extern void trans_test(void);
 
 extern void tc_init(tc_t * tc, int32_t main, int32_t increment);
