@@ -13,17 +13,17 @@
 #define FIXED_TIME 5
 #define MID_GAME_HALF_MOVES 60
 
-#define LBS_COUNT 3	     // number of most recent best scores for one side
-#define LBS_RESIGN -600	 // if this is seen LBS_COUNT times return resign as true
+#define LBS_COUNT 3		// number of most recent best scores for one side
+#define LBS_RESIGN -600		// if this is seen LBS_COUNT times return resign as true
 
 #define LARGE_EVAL (1 << 20)
 
-#define Q_DELTA 200	     // stop q search if eval + this doesn't beat alpha
+#define Q_DELTA 200		// stop q search if eval + this doesn't beat alpha
 
 extern board_t game[GAME_MAX];
 extern uint32_t game_moves;
 
-static uint32_t nodes_visited, n_nodes_visited, q_nodes_visited, trans_collision, no_trans, q_no_trans;
+static uint32_t nodes_visited, n_nodes_visited, q_nodes_visited, trans_collision, no_trans, q_no_trans, q_trans_hit;
 static board_t board_stack[MAX_DEPTH][MAX_POSITIONS];
 static board_t *board_vert[MAX_DEPTH];
 static int32_t q_ply_reached, valid_q_ply_reached;
@@ -89,7 +89,7 @@ repeat_draw(uint32_t ply_count, const board_t * board)
 static inline int32_t
 eval_side(int32_t value, uint32_t wtm, uint32_t ply)
 {
-	if (! wtm)
+	if (!wtm)
 		value = -value;
 	if (value == GLOBAL_VALUE_KING)
 		value = GLOBAL_VALUE_KING - ply;
@@ -196,9 +196,9 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	board_t *board_ptr[MAX_POSITIONS];
 	int32_t pv_next_index;
 	uint32_t collision;
-	uint32_t process_all_moves;
 	trans_t trans;
 	int32_t alpha_orig;
+	int32_t board_eval, initial_eval, initial_delta;
 	uint32_t in_check;
 
 	++nodes_visited;
@@ -214,15 +214,16 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 
 	numbat_reset_all_moves();
 	numbat_write_board_basic(board);
-	q_trans_lookup_init();  // trigger transposition table lookup
+	q_trans_lookup_init();	// trigger transposition table lookup
 
-	numbat_write_board_wait(board, 1);
+	numbat_write_board_wait(board, 0);
 	numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, 0, 0);
 	in_check = board->white_in_check || board->black_in_check;
 	if (repeat_draw(ply, board) && !in_check)
-		return 0;       // draw score
+		return 0;	// draw score
 
 	value = nm_initial_eval(board->white_to_move, ply);
+	initial_eval = value;
 	move_count = numbat_move_count();
 	if (move_count == 0)
 		return value;
@@ -231,6 +232,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	numbat_q_trans_read(&collision, &trans.eval, 0, &trans.flag, 0, &trans.entry_valid);
 	if (trans.entry_valid)
 	{
+		++q_trans_hit;
 		if (trans.flag == TRANS_EXACT)
 			return trans.eval;
 		else if (trans.flag == TRANS_LOWER_BOUND)
@@ -246,41 +248,27 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	if (value >= beta)
 		return value;
 
-	process_all_moves = move_count >= MAX_SORT_SIZE; // extremely unlikely, if not impossible
-
 	if (value > alpha)
 	{
 		alpha = value;
 		pv_array[pv_index] = board->uci;
 		local_movcpy(pv_array + pv_index + 1, pv_array + pv_next_index, MAX_DEPTH - ply - 1);
 	}
-	else
-	{
-		if (value + tune.q_delta < alpha && !(board->black_in_check || board->white_in_check) && ! process_all_moves)
-			return alpha;
-	}
+	else if (value + tune.q_delta < alpha && !in_check)
+		return alpha;
 
 	abort_test();
 	if (abort_search)
-		return 0;       // will be ignored
+		return 0;	// will be ignored
 
 	if (ply > q_ply_reached)
 		q_ply_reached = ply;
 
-	board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
+	board_ptr[0] = 0;	// stop gcc -Wuninitialized, move count is always > 0 here
 	for (index = 0; index < move_count; ++index)
 	{
 		numbat_read_board(&board_stack[ply][index], index);
 		board_ptr[index] = &board_stack[ply][index];
-		if (!board_ptr[index]->capture)
-		{
-			printf("%s - non capture move in quiescence, stopping.\n", __PRETTY_FUNCTION__);
-			printf("am input board: ");
-			fen_print(board, 1);
-			printf("am generated board: ");
-			fen_print(board_ptr[index], 1);
-			while (1);
-		}
 	}
 
 	numbat_reset_all_moves();
@@ -289,7 +277,17 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	do
 	{
 		board_vert[ply] = board_ptr[index];
-		value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+		if (board_ptr[index]->fifty_move)
+			board_eval = 0;
+		else
+			board_eval = eval_side(board_ptr[index]->eval, board->white_to_move, ply);
+		initial_delta = abs(initial_eval - board_eval);
+
+		if (board_ptr[index]->capture || initial_delta >= 150 || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
+		    in_check)
+			value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
+		else
+			value = board_eval;
 		if (abort_search)
 			return 0;
 		if (value > alpha)
@@ -299,7 +297,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	while (!abort_search && index < move_count && alpha < beta);
 
 	if (abort_search)
-		return 0;       // will be ignored
+		return 0;	// will be ignored
 
 	numbat_write_board_basic(board);
 	q_trans_lookup(&trans, &collision);
@@ -332,8 +330,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	board_t *board_ptr[MAX_POSITIONS];
 	uint64_t node_start, node_stop, nodes;
 	int32_t pv_next_index = 0;
-	int32_t eval_delta;
-	uint32_t process_all_moves;
+	int32_t initial_eval, initial_delta;
 
 	if (ply >= MAX_DEPTH - 1)
 	{
@@ -361,20 +358,19 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	numbat_reset_all_moves();
 	killer_ply(ply);
 	numbat_write_board_basic(board);
-	trans_lookup_init();    // trigger transposition table lookup
+	trans_lookup_init();	// trigger transposition table lookup
 
 	numbat_write_board_wait(board, 0);
 
 	value = nm_initial_eval(board->white_to_move, ply);
+	initial_eval = value;
 	move_count = numbat_move_count();
 	if (move_count == 0)
 		return value;
 
-	process_all_moves = move_count >= MAX_SORT_SIZE; // extremely unlikely
-
 	in_check = board->white_in_check || board->black_in_check;
 	if (repeat_draw(ply, board) && !in_check)
-		return 0;       // draw score
+		return 0;	// draw score
 
 	trans_wait_idle(__PRETTY_FUNCTION__, __FILE__, __LINE__);
 	numbat_trans_read(&collision, &trans.eval, &trans.depth, &trans.flag, &trans.nodes, &trans.entry_valid);
@@ -396,9 +392,9 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 
 	abort_test();
 	if (abort_search)
-		return 0;       // will be ignored
+		return 0;	// will be ignored
 
-	board_ptr[0] = 0;       // stop gcc -Wuninitialized, move count is always > 0 here
+	board_ptr[0] = 0;	// stop gcc -Wuninitialized, move count is always > 0 here
 	for (index = 0; index < move_count; ++index)
 	{
 		numbat_read_board(&board_stack[ply][index], index);
@@ -408,7 +404,6 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	numbat_reset_all_moves();
 
 	index = 0;
-	eval_delta = depth * tune.nm_delta_mult;
 	do
 	{
 		board_vert[ply] = board_ptr[index];
@@ -417,18 +412,16 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 		else
 			board_eval = eval_side(board_ptr[index]->eval, board->white_to_move, ply);
 
-		if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check))
+		initial_delta = abs(initial_eval - board_eval);
+		if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
+				   initial_delta >= 150))
 			value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
 		else if (depth == 0)
 			value = board_eval;
-		else if (depth > tune.futility_depth || index == 0 || in_check || alpha >= GLOBAL_VALUE_KING - 200 || beta >= GLOBAL_VALUE_KING - 200
-			 || board_eval + eval_delta > alpha || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-			 process_all_moves)
-			value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
 		else
-			value = -GLOBAL_VALUE_KING;     // prune
+			value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
 		if (abort_search)
-			return 0;       // will be ignored
+			return 0;	// will be ignored
 		if (value > alpha && value < beta)
 		{
 			pv_array[pv_index] = board_ptr[index]->uci;
@@ -442,9 +435,9 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	while (!abort_search && index < move_count && alpha < beta);
 
 	if (abort_search)
-		return 0;       // will be ignored
+		return 0;	// will be ignored
 
-	if (ply > 1 && index < move_count && !board_ptr[index - 1]->capture)    // beta cutoff
+	if (ply > 1 && index < move_count && !board_ptr[index - 1]->capture)	// beta cutoff
 	{
 		killer_ply(ply);
 		killer_write_board(board_ptr[index - 1]->board);
@@ -524,8 +517,9 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	uint64_t elapsed_ticks;
 	int64_t duration_seconds;
 	double elapsed_time, nps;
-	int32_t evaluate_move, best_evaluation, overall_best, trans_hit, q_trans_hit;
+	int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
 	board_t best_board = { 0 };
+	board_t best_complete_board = { 0 };
 	XTime t_end, t_report, t_start;
 	board_t root_node_boards[MAX_POSITIONS];
 	board_t *board_ptr[MAX_POSITIONS];
@@ -549,13 +543,14 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 
 	nodes_visited = 0;
 	q_nodes_visited = 0;
+	q_trans_hit = 0;
 	n_nodes_visited = 0;
 	no_trans = 0;
 	trans_collision = 0;
 	q_no_trans = 0;
 
 	numbat_reset_all_moves();
-	numbat_castle_mask_orig(game[game_index].castle_mask);  // pre-search castle state
+	numbat_castle_mask_orig(game[game_index].castle_mask);	// pre-search castle state
 	numbat_write_board_basic(&game[game_index]);
 	numbat_write_board_wait(&game[game_index], 0);
 	move_count = numbat_move_count();
@@ -573,6 +568,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 
 	load_root_nodes(root_node_boards);
 	best_board = root_node_boards[0];
+	best_complete_board = best_board;
 	if (move_count == 1)
 	{
 		if (!quiet)
@@ -603,7 +599,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		if (duration_seconds <= 0)
 			duration_seconds = 1;
 		else if (duration_seconds > 15 && !opponent_time)
-			duration_seconds = 60;  // deal with "moretime" people on FICS
+			duration_seconds = 60;	// deal with "moretime" people on FICS
 	}
 	if (!quiet)
 		printf("pondering %d moves for %d seconds\n", move_count, (int32_t) duration_seconds);
@@ -631,7 +627,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 			board_vert[0] = board_ptr[i];
 			uci_string(&board_ptr[i]->uci, uci_str);
 			evaluate_move = -negamax(board_ptr[i], depth_limit, alpha, beta, 0, 0);
-			board_ptr[i]->eval = evaluate_move;     // sort key for iterative deepening depth-first search
+			board_ptr[i]->eval = evaluate_move;	// sort key for iterative deepening depth-first search
 			if (!abort_search && evaluate_move > best_evaluation)
 			{
 				best_board = *board_ptr[i];
@@ -668,6 +664,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		}
 		if (!abort_search)
 		{
+			best_complete_board = best_board;
 			qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
 			pv_load_table(pv_array);
 			++depth_limit;
@@ -675,6 +672,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		if (q_ply_reached > valid_q_ply_reached)
 			valid_q_ply_reached = q_ply_reached;
 	}
+	best_board = best_complete_board;
 	best_board.full_move_number = next_full_move();
 
 	last_best_score[wtm][(game_index / 2) % LBS_COUNT] = overall_best;
@@ -691,13 +689,11 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	elapsed_time = (double)elapsed_ticks / (double)COUNTS_PER_SECOND;
 	nps = (double)nodes_visited / elapsed_time;
 	trans_hit = nodes_visited - no_trans;
-	q_trans_hit = q_nodes_visited - q_no_trans;
 
-	if (! quiet)
+	if (!quiet)
 	{
 		uci_currmove(depth_limit, valid_q_ply_reached, &best_board.uci, best_board.full_move_number, overall_best);
-		uci_pv(depth_limit, overall_best, (uint32_t) elapsed_time * 1000.0, nodes_visited, (uint32_t) nps,
-		       &best_board.uci, pv_array);
+		uci_pv(depth_limit, overall_best, (uint32_t) elapsed_time * 1000.0, nodes_visited, (uint32_t) nps, &best_board.uci, pv_array);
 	}
 
 	if (!quiet)
@@ -705,22 +701,20 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		printf("%sbest_evaluation=%s%d%s, %snps=%.0f%s, nodes_visited=%u, seconds=%.2f\n",
 		       opponent_time ? "" : ansi_bold,
 		       opponent_time ? "" : overall_best < 0 ? ansi_red : overall_best > 0 ? ansi_green : "",
-		       overall_best, ansi_sgr0,
-		       opponent_time ? "" : ansi_bold, nps, ansi_sgr0, nodes_visited, elapsed_time);
-		if (0) // disabled for now
+		       overall_best, ansi_sgr0, opponent_time ? "" : ansi_bold, nps, ansi_sgr0, nodes_visited, elapsed_time);
+		if (1)
 		{
 			printf("depth_limit=%d, q_depth=%d\n", depth_limit, valid_q_ply_reached);
 			printf("no_trans=%u, trans_hit=%d (%.2f%%), trans_collision=%u (%.2f%%)\n", no_trans,
 			       trans_hit, ((double)trans_hit * 100.0) / (double)nodes_visited, trans_collision,
 			       ((double)trans_collision * 100.0) / (double)nodes_visited);
 			if (q_nodes_visited > 0)
-				printf("q_no_trans=%u, q_trans_hit=%d (%.2f%%)\n", q_no_trans, q_trans_hit,
-				       ((double)q_trans_hit * 100.0) / (double)q_nodes_visited);
+				printf("q_no_trans=%u, q_trans_hit=%u (%.2f%%)\n", q_no_trans, q_trans_hit,
+				       ((double)q_trans_hit * 100.0) / (double)(q_no_trans + q_trans_hit));
 		}
 		printf("temps: %s%.2fC%s (max %s%.2fC%s min %s%.2fC%s)\n",
 		       ansi_bold, tmon_temperature, ansi_sgr0,
-		       ansi_red, tmon_max_temperature, ansi_sgr0,
-		       ansi_green, tmon_min_temperature, ansi_sgr0);
+		       ansi_red, tmon_max_temperature, ansi_sgr0, ansi_green, tmon_min_temperature, ansi_sgr0);
 	}
 
 	numbat_led(0);
