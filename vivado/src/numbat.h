@@ -133,11 +133,12 @@ typedef struct board_t
 
 typedef struct tune_t
 {
-        int32_t nm_delta_mult;
-        int32_t futility_depth;
         uint32_t algorithm_enable;
         int32_t q_delta;
 	int32_t initial_depth_limit;
+	int32_t q_enter_0;
+	int32_t q_enter_1;
+	double depth_duration;
 } tune_t;
 
 static inline void
@@ -541,12 +542,6 @@ numbat_move_index(uint32_t move_index)
         numbat_write(1, move_index);
 }
 
-static inline void
-numbat_quiescence_moves(uint32_t quiescence_moves)
-{
-        numbat_write(4, quiescence_moves);
-}
-
 static inline uint32_t
 numbat_status(uint32_t * move_ready, uint32_t * moves_ready, uint32_t * mate, uint32_t * stalemate,
               uint32_t * am_idle, uint32_t * fifty_move, uint32_t * insufficient, uint32_t * check)
@@ -808,7 +803,7 @@ extern void numbat_init(void);
 extern uint32_t numbat_move_piece(board_t * board, uint32_t row_from, uint32_t col_from, uint32_t row_to, uint32_t col_to);
 extern void numbat_init_board(board_t * board);
 extern void numbat_write_board_basic(const board_t * board);
-extern void numbat_write_board_wait(const board_t * board, uint32_t quiescence);
+extern void numbat_write_board_wait(const board_t * board);
 extern void numbat_init_board(board_t * board);
 extern void numbat_print_board(const board_t * board, uint32_t initial_board);
 extern uint32_t numbat_read_board(board_t * board, uint32_t index);

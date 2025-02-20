@@ -217,7 +217,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	numbat_write_board_basic(board);
 	q_trans_lookup_init();	// trigger transposition table lookup
 
-	numbat_write_board_wait(board, 0);
+	numbat_write_board_wait(board);
 	numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, 0, 0);
 	in_check = board->white_in_check || board->black_in_check;
 	if (repeat_draw(ply, board) && !in_check)
@@ -286,8 +286,8 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 			board_eval = eval_side(board_ptr[index]->eval, board->white_to_move, ply);
 		initial_delta = abs(initial_eval - board_eval);
 
-		if (board_ptr[index]->capture || initial_delta >= 150 || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-		    in_check)
+		if (board_ptr[index]->capture || initial_delta >= tune.q_enter_1 || board_ptr[index]->white_in_check
+		    || board_ptr[index]->black_in_check || in_check)
 			value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
 		else
 			value = board_eval;
@@ -358,7 +358,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	numbat_write_board_basic(board);
 	trans_lookup_init();	// trigger transposition table lookup
 
-	numbat_write_board_wait(board, 0);
+	numbat_write_board_wait(board);
 
 	value = nm_initial_eval(board->white_to_move, ply);
 	initial_eval = value;
@@ -412,7 +412,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 
 		initial_delta = abs(initial_eval - board_eval);
 		if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-				   initial_delta >= 150))
+				   initial_delta >= tune.q_enter_0))
 			value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
 		else if (depth == 0)
 			value = board_eval;
@@ -497,11 +497,12 @@ nm_current_tune(void)
 void
 nm_init(void)
 {
-	tune.nm_delta_mult = 10;
-	tune.futility_depth = 3;
+	tune.q_enter_0 = 50;
+	tune.q_enter_1 = 50;
 	tune.algorithm_enable = 0;
 	tune.q_delta = Q_DELTA;
 	tune.initial_depth_limit = 1;
+	tune.depth_duration = 0;
 }
 
 board_t
@@ -553,7 +554,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	numbat_reset_all_moves();
 	numbat_castle_mask_orig(game[game_index].castle_mask);	// pre-search castle state
 	numbat_write_board_basic(&game[game_index]);
-	numbat_write_board_wait(&game[game_index], 0);
+	numbat_write_board_wait(&game[game_index]);
 	move_count = numbat_move_count();
 	if (move_count == 0)
 	{
@@ -599,7 +600,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 			duration_seconds = tc->main_remaining[tc->side] / 7;
 		if (duration_seconds <= 0)
 			duration_seconds = 1;
-		else if (duration_seconds > 60 && !opponent_time) // deal with "moretime" people on FICS
+		else if (duration_seconds > 60 && !opponent_time)	// deal with "moretime" people on FICS
 			duration_seconds = 60;
 	}
 	if (!quiet)
@@ -678,7 +679,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 			valid_q_ply_reached = q_ply_reached;
 	}
 	depth_duration = (double)(depth_end - depth_start) / (double)COUNTS_PER_SECOND;
-	if (depth_duration < 3)
+	if (depth_duration < tune.depth_duration)
 		best_board = best_complete_board;
 	best_board.full_move_number = next_full_move();
 

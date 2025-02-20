@@ -31,7 +31,6 @@ module control #
 
     output reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index,
     output reg                            am_clear_moves,
-    output reg                            am_quiescence_moves,
 
     output reg [31:0]                     am_pv_ctrl_out,
 
@@ -193,7 +192,6 @@ module control #
             5'h01 : am_move_index <= ctrl0_din[MAX_POSITIONS_LOG2 - 1:0];
             5'h02 : {am_white_to_move_out, am_castle_mask_out, am_en_passant_col_out} <= ctrl0_din;
             5'h03 : am_half_move_out <= ctrl0_din;
-            5'h04 : am_quiescence_moves <= ctrl0_din[0];
             5'h05 : am_castle_mask_orig_out[3:0] <= ctrl0_din[3:0];
 
             5'h08 : // 128 bit transaction
@@ -289,7 +287,6 @@ module control #
        5'h01 : ctrl0_dout[31:0] <= am_move_index;
        5'h02 : ctrl0_dout[31:0] <= {am_white_to_move_out, am_castle_mask_out, am_en_passant_col_out};
        5'h03 : ctrl0_dout[31:0] <= am_half_move_out;
-       5'h04 : ctrl0_dout[31:0] <= am_quiescence_moves;
 
        128 : ctrl0_dout[31:0] <= am_white_is_attacking_in[31:0];
        129 : ctrl0_dout[31:0] <= am_white_is_attacking_in[63:32];

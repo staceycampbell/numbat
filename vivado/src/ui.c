@@ -41,7 +41,7 @@ do_both(void)
 	{
 		best_board = nm_top(&tc, 0, 1, 0);
 		numbat_write_board_basic(&best_board);
-		numbat_write_board_wait(&best_board, 0);
+		numbat_write_board_wait(&best_board);
 		move_count = numbat_move_count();
 		numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, &insufficient, 0);
 		numbat_reset_all_moves();
@@ -353,7 +353,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 			q_trans_clear_table();	// for ease of debug
 			best_board = nm_top(&tc, 0, 0, 0);
 			numbat_write_board_basic(&best_board);
-			numbat_write_board_wait(&best_board, 0);
+			numbat_write_board_wait(&best_board);
 			numbat_print_board(&best_board, 1);
 			fen_print(&best_board, 1);
 			numbat_reset_all_moves();
@@ -417,7 +417,7 @@ process_cmd(uint8_t cmd[BUF_SIZE])
 
 			printf("last move in sample game:\n");
 			numbat_write_board_basic(&game[game_moves - 1]);
-			numbat_write_board_wait(&game[game_moves - 1], 0);
+			numbat_write_board_wait(&game[game_moves - 1]);
 			load_root_nodes(boards);
 			numbat_print_board(&game[game_moves - 1], 1);
 			fen_print(&game[game_moves - 1], 1);

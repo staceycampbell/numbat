@@ -136,12 +136,11 @@ numbat_write_board_basic(const board_t * board)
 }
 
 void
-numbat_write_board_wait(const board_t * board, uint32_t quiescence)
+numbat_write_board_wait(const board_t * board)
 {
 	int32_t i;
 	uint32_t moves_ready, move_count;
 
-	numbat_quiescence_moves(quiescence);
 	numbat_write_control(0, 1, 0);	// new board valid bit, auto-clear
 	i = 0;
 	do

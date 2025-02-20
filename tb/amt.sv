@@ -25,7 +25,6 @@ module amt;
 
    reg [MAX_POSITIONS_LOG2 - 1:0] am_move_index = 0;
    reg                            display_move = 0;
-   reg                            am_quiescence_moves = 0; // 0 - all moves to be considered for this testbench
    reg [`BOARD_WIDTH-1:0]         killer_board = 0;
    reg signed [EVAL_WIDTH-1:0]    killer_bonus0 = 0;
    reg signed [EVAL_WIDTH-1:0]    killer_bonus1 = 0;
@@ -251,7 +250,6 @@ module amt;
       .killer_bonus0_in                 (killer_bonus0[EVAL_WIDTH-1:0]), // Templated
       .killer_bonus1_in                 (killer_bonus1[EVAL_WIDTH-1:0]), // Templated
       .pv_ctrl_in                       (pv_ctrl[31:0]),         // Templated
-      .am_quiescence_moves              (am_quiescence_moves),
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));
 

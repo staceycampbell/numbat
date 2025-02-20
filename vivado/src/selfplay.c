@@ -51,14 +51,18 @@ selfplay(void)
 	uint32_t player_a_win, player_b_win, draw;
 	uint32_t resign;
 
-	tc_fixed(&tc, 3);	// seconds per move
+	tc_fixed(&tc, 4);	// seconds per move
 
 	player_a_tune = nm_current_tune();
 	player_b_tune = nm_current_tune();
 
-	player_a_tune.initial_depth_limit = 0;
+	player_a_tune.q_enter_0 = 50;
+	player_a_tune.q_enter_1 = 50;
+	player_a_tune.depth_duration = 0;
 
-	player_b_tune.initial_depth_limit = 1;
+	player_b_tune.q_enter_0 = 50;
+	player_b_tune.q_enter_1 = 50;
+	player_b_tune.depth_duration = 2;
 
 	player_a_win = 0;
 	player_b_win = 0;
@@ -110,7 +114,7 @@ selfplay(void)
 			game[game_moves] = best_board;
 			++game_moves;
 			numbat_write_board_basic(&best_board);
-			numbat_write_board_wait(&best_board, 0);
+			numbat_write_board_wait(&best_board);
 			move_count = numbat_move_count();
 			numbat_status(0, 0, &mate, &stalemate, 0, &fifty_move, &insufficient, 0);
 			numbat_reset_all_moves();

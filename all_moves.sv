@@ -37,7 +37,6 @@ module all_moves #
 
     input [31:0]                         pv_ctrl_in,
 
-    input                                am_quiescence_moves,
     input [MAX_POSITIONS_LOG2 - 1:0]     am_move_index,
     input                                am_clear_moves,
 
@@ -1124,9 +1123,8 @@ module all_moves #
                 legal_attack_go <= 0;
                 legal_clear_attack <= 1;
                 if ((white_to_move && white_in_check) ||
-                    (black_to_move && black_in_check) ||
-                    (am_quiescence_moves && ! attack_test_capture))
-                  legal <= LEGAL_NEXT; // side to move still in check, or user only wants captures (see todo)
+                    (black_to_move && black_in_check))
+                  legal <= LEGAL_NEXT; // side to move still in check
                 else
                   legal <= LEGAL_EVAL; // evaluate a legal move
              end
@@ -1169,7 +1167,7 @@ module all_moves #
               legal_clear_attack <= 0;
               if (all_generated_moves_complete && ram_wr_addr == ram_rd_addr) // all moves checked for legality
                 if (legal_evaluate_go == 0 && eval_input_count == 0)
-                  legal <= LEGAL_DONE; // no legal moves, either mate, stalemate, or quiescence with no capture, etc moves
+                  legal <= LEGAL_DONE; // no legal moves, either mate or stalemate
                 else
                   legal <= LEGAL_WS; // legal moves, start eval sort
               else

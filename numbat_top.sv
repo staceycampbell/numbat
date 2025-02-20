@@ -66,7 +66,6 @@ module numbat_top
    wire                 am_new_board_valid_in;  // From control of control.v
    wire [31:0]          am_pv_ctrl_in;          // From control of control.v
    wire                 am_pv_out;              // From all_moves of all_moves.v
-   wire                 am_quiescence_moves;    // From control of control.v
    wire [UCI_WIDTH-1:0] am_uci_out;             // From all_moves of all_moves.v
    wire                 am_white_in_check_out;  // From all_moves of all_moves.v
    wire [63:0]          am_white_is_attacking_out;// From all_moves of all_moves.v
@@ -327,7 +326,6 @@ module numbat_top
       .killer_bonus0_in                 (am_killer_bonus0_in[EVAL_WIDTH-1:0]), // Templated
       .killer_bonus1_in                 (am_killer_bonus1_in[EVAL_WIDTH-1:0]), // Templated
       .pv_ctrl_in                       (am_pv_ctrl_in[31:0]),   // Templated
-      .am_quiescence_moves              (am_quiescence_moves),
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves));
 
@@ -515,7 +513,6 @@ module numbat_top
       .am_castle_mask_orig_out          (am_castle_mask_orig_in[3:0]), // Templated
       .am_move_index                    (am_move_index[MAX_POSITIONS_LOG2-1:0]),
       .am_clear_moves                   (am_clear_moves),
-      .am_quiescence_moves              (am_quiescence_moves),
       .am_pv_ctrl_out                   (am_pv_ctrl_in[31:0]),   // Templated
       .am_killer_ply_out                (am_killer_ply_in[MAX_DEPTH_LOG2-1:0]), // Templated
       .am_killer_board_out              (am_killer_board_in[`BOARD_WIDTH-1:0]), // Templated
