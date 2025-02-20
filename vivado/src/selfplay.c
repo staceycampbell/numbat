@@ -51,7 +51,7 @@ selfplay(void)
 	uint32_t player_a_win, player_b_win, draw;
 	uint32_t resign;
 
-	tc_fixed(&tc, 4);	// seconds per move
+	tc_fixed(&tc, 2);	// seconds per move
 
 	player_a_tune = nm_current_tune();
 	player_b_tune = nm_current_tune();
@@ -59,10 +59,12 @@ selfplay(void)
 	player_a_tune.q_enter_0 = 50;
 	player_a_tune.q_enter_1 = 50;
 	player_a_tune.depth_duration = 0;
+	player_a_tune.algorithm_enable = 0;
 
 	player_b_tune.q_enter_0 = 50;
 	player_b_tune.q_enter_1 = 50;
-	player_b_tune.depth_duration = 2;
+	player_b_tune.depth_duration = 0;
+	player_b_tune.algorithm_enable = 1;
 
 	player_a_win = 0;
 	player_b_win = 0;

@@ -284,7 +284,10 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 			board_eval = 0;
 		else
 			board_eval = eval_side(board_ptr[index]->eval, board->white_to_move, ply);
-		initial_delta = abs(initial_eval - board_eval);
+		if (tune.algorithm_enable & 1)
+			initial_delta = abs(initial_eval - board_eval) + ply * 2;
+		else
+			initial_delta = abs(initial_eval - board_eval);
 
 		if (board_ptr[index]->capture || initial_delta >= tune.q_enter_1 || board_ptr[index]->white_in_check
 		    || board_ptr[index]->black_in_check || in_check)
