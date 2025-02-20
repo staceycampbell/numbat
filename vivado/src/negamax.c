@@ -201,6 +201,7 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	int32_t alpha_orig;
 	int32_t board_eval, initial_eval, initial_delta;
 	uint32_t in_check;
+	uint32_t go_deeper;
 
 	++nodes_visited;
 	++q_nodes_visited;
@@ -284,13 +285,13 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 			board_eval = 0;
 		else
 			board_eval = eval_side(board_ptr[index]->eval, board->white_to_move, ply);
-		if (tune.algorithm_enable & 1)
-			initial_delta = abs(initial_eval - board_eval) + ply * 2;
-		else
-			initial_delta = abs(initial_eval - board_eval);
+		initial_delta = abs(initial_eval - board_eval) + ply * 2;
 
-		if (board_ptr[index]->capture || initial_delta >= tune.q_enter_1 || board_ptr[index]->white_in_check
-		    || board_ptr[index]->black_in_check || in_check)
+		go_deeper = board_ptr[index]->capture || // traditional quiescense search
+			board_ptr[index]->white_in_check || board_ptr[index]->black_in_check || in_check || // check quiescence criteria
+			initial_delta >= tune.q_enter_1; // take advantage of full eval being available for all moves
+
+		if (go_deeper)
 			value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
 		else
 			value = board_eval;
