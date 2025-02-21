@@ -333,6 +333,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	uint64_t node_start, node_stop, nodes;
 	int32_t pv_next_index = 0;
 	int32_t initial_eval, initial_delta;
+	uint32_t do_quiescence;
 
 	if (ply >= MAX_DEPTH - 1)
 	{
@@ -413,10 +414,16 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 			board_eval = 0;
 		else
 			board_eval = eval_side(board_ptr[index]->eval, board->white_to_move, ply);
-
 		initial_delta = abs(initial_eval - board_eval);
-		if (depth <= 0 && (in_check || board_ptr[index]->capture || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
-				   initial_delta >= tune.q_enter_0))
+
+		if (depth <= 0)
+			do_quiescence = board_ptr[index]->capture || // traditional quiescence search
+				in_check || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
+				initial_delta >= tune.q_enter_0; // take advantage of full eval being available
+		else
+			do_quiescence = 0;
+
+		if (do_quiescence)
 			value = -quiescence(board_ptr[index], -beta, -alpha, ply + 1, pv_next_index);
 		else if (depth == 0)
 			value = board_eval;
@@ -501,12 +508,10 @@ nm_current_tune(void)
 void
 nm_init(void)
 {
-	tune.q_enter_0 = 50;
-	tune.q_enter_1 = 50;
+	tune.q_enter_0 = 100;
+	tune.q_enter_1 = 100;
 	tune.algorithm_enable = 0;
 	tune.q_delta = Q_DELTA;
-	tune.initial_depth_limit = 1;
-	tune.depth_duration = 0;
 }
 
 board_t
@@ -522,10 +527,8 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	double elapsed_time, nps;
 	int32_t evaluate_move, best_evaluation, overall_best, trans_hit;
 	board_t best_board = { 0 };
-	board_t best_complete_board = { 0 };
 	XTime t_end, t_report, t_start;
 	XTime depth_start, depth_end;
-	double depth_duration;
 	board_t root_node_boards[MAX_POSITIONS];
 	board_t *board_ptr[MAX_POSITIONS];
 	char uci_str[6];
@@ -574,7 +577,6 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 
 	load_root_nodes(root_node_boards);
 	best_board = root_node_boards[0];
-	best_complete_board = best_board;
 	if (move_count == 1)
 	{
 		if (!quiet)
@@ -621,7 +623,7 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	beta = LARGE_EVAL;
 	overall_best = -LARGE_EVAL;
 	best_evaluation = -LARGE_EVAL;
-	depth_limit = tune.initial_depth_limit;
+	depth_limit = 1;
 	depth_start = 0;
 	depth_end = 0;
 	while (depth_limit < MAX_DEPTH - 1 && !abort_search)
@@ -674,7 +676,6 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		}
 		if (!abort_search)
 		{
-			best_complete_board = best_board;
 			qsort(board_ptr, move_count, sizeof(board_t *), nm_move_sort_compare);
 			pv_load_table(pv_array);
 			++depth_limit;
@@ -682,9 +683,6 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 		if (q_ply_reached > valid_q_ply_reached)
 			valid_q_ply_reached = q_ply_reached;
 	}
-	depth_duration = (double)(depth_end - depth_start) / (double)COUNTS_PER_SECOND;
-	if (depth_duration < tune.depth_duration)
-		best_board = best_complete_board;
 	best_board.full_move_number = next_full_move();
 
 	last_best_score[wtm][(game_index / 2) % LBS_COUNT] = overall_best;

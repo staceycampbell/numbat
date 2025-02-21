@@ -56,15 +56,11 @@ selfplay(void)
 	player_a_tune = nm_current_tune();
 	player_b_tune = nm_current_tune();
 
-	player_a_tune.q_enter_0 = 50;
-	player_a_tune.q_enter_1 = 50;
-	player_a_tune.depth_duration = 0;
-	player_a_tune.algorithm_enable = 0;
+	player_a_tune.q_enter_0 = 100;
+	player_a_tune.q_enter_1 = 100;
 
-	player_b_tune.q_enter_0 = 50;
-	player_b_tune.q_enter_1 = 50;
-	player_b_tune.depth_duration = 0;
-	player_b_tune.algorithm_enable = 1;
+	player_b_tune.q_enter_0 = 75;
+	player_b_tune.q_enter_1 = 75;
 
 	player_a_win = 0;
 	player_b_win = 0;
