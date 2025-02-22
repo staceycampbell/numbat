@@ -331,9 +331,7 @@ lmr(int32_t depth, int32_t index, uint32_t check)
 	int32_t lmr_depth, lmr_moves;
 	int32_t reduce;
 
-	if ((tune.algorithm_enable & 0x1) == 0x0)
-		reduce = 0;
-	else if (check)
+	if (check)
 		reduce = 0;
 	else
 	{
@@ -465,7 +463,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 			value = board_eval;
 		else
 		{
-			if ((tune.algorithm_enable & 0x2) == 0x2 && index > 0 && depth < fp_depth && ! in_check &&
+			if (index > 0 && depth < fp_depth && ! in_check &&
 			    ! board_ptr[index]->white_in_check && ! board_ptr[index]->black_in_check &&
 			    board_eval + fp_margin[depth] <= alpha)
 				value = -(GLOBAL_VALUE_KING); // prune
@@ -560,7 +558,7 @@ nm_init(void)
 {
 	tune.q_enter_0 = 100;
 	tune.q_enter_1 = 100;
-	tune.algorithm_enable = 3;
+	tune.algorithm_enable = 0;
 	tune.q_delta = Q_DELTA;
 }
 

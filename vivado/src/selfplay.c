@@ -58,7 +58,7 @@ selfplay(void)
 
 	player_a_tune.algorithm_enable = 0;
 
-	player_b_tune.algorithm_enable = 3;
+	player_b_tune.algorithm_enable = 0;
 
 	player_a_win = 0;
 	player_b_win = 0;
