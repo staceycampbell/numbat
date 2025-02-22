@@ -230,7 +230,8 @@ uci_dispatch(void)
 		uci_reply(best_move);
 		{
 			pondering = 1;
-			tc_set(&pondering_tc, !side, 10 * 60 * 1000, 0);	// ponder for 10 minutes or until interupted
+			pondering_tc.valid = 1;
+			pondering_tc.fixed = 10 * 60 * 1000; // ponder for 10 minutes or until interupted
 			(void)nm_top(&pondering_tc, 0, 1, 0);
 			pondering = 0;
 		}

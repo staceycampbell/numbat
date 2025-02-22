@@ -11,10 +11,13 @@
 #pragma GCC optimize ("O2")
 
 #define FIXED_TIME 5
-#define MID_GAME_HALF_MOVES 40
+#define MID_GAME_HALF_MOVES 37
 
 #define LBS_COUNT 3		// number of most recent best scores for one side
 #define LBS_RESIGN -600		// if this is seen LBS_COUNT times return resign as true
+
+#define LMR_DEPTH 32
+#define LMR_MOVES 64
 
 #define LARGE_EVAL (1 << 20)
 
@@ -38,6 +41,8 @@ static const uci_t zero_move = { 0, 0, 0, 0, 0 };
 static uint32_t abort_test_move_count;
 
 static const uint32_t debug_pv_info = 0;
+
+static const int8_t lmr_table[LMR_DEPTH][LMR_MOVES];
 
 static tune_t tune;
 
@@ -287,8 +292,8 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 			board_eval = eval_side(board_ptr[index]->eval, board->white_to_move, ply);
 		initial_delta = abs(initial_eval - board_eval) + ply * 2;
 
-		go_deeper = board_ptr[index]->capture || // traditional quiescense search
-			board_ptr[index]->white_in_check || board_ptr[index]->black_in_check || in_check || // check quiescence criteria
+		go_deeper = board_ptr[index]->capture ||
+			board_ptr[index]->white_in_check || board_ptr[index]->black_in_check || in_check ||
 			initial_delta >= tune.q_enter_1; // take advantage of full eval being available for all moves
 
 		if (go_deeper)
@@ -320,6 +325,32 @@ quiescence(const board_t * board, int32_t alpha, int32_t beta, uint32_t ply, int
 	return alpha;
 }
 
+static inline int32_t
+lmr(int32_t depth, int32_t index, uint32_t check)
+{
+	int32_t lmr_depth, lmr_moves;
+	int32_t reduce;
+
+	if ((tune.algorithm_enable & 0x1) == 0x0)
+		reduce = 0;
+	else if (check)
+		reduce = 0;
+	else
+	{
+		lmr_depth = depth;
+		if (lmr_depth < 0)
+			lmr_depth = 0;
+		else if (lmr_depth >= LMR_DEPTH)
+			lmr_depth = lmr_depth - 1;
+		lmr_moves = index;
+		if (lmr_moves >= LMR_MOVES)
+			lmr_moves = LMR_MOVES - 1;
+		reduce = lmr_table[lmr_depth][lmr_moves];
+	}
+
+	return reduce;
+}
+
 static int32_t
 negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint32_t ply, int32_t pv_index)
 {
@@ -334,6 +365,11 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 	int32_t pv_next_index = 0;
 	int32_t initial_eval, initial_delta;
 	uint32_t do_quiescence;
+	int32_t reduce;
+	static const int32_t fp_margin[16] = {  0, 100, 150, 200,  250,  300,  400,  500,
+		600, 700, 800, 900, 1000, 1100, 1200, 1300 };
+	static const int32_t fp_depth = 7;
+	
 
 	if (ply >= MAX_DEPTH - 1)
 	{
@@ -417,7 +453,7 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 		initial_delta = abs(initial_eval - board_eval);
 
 		if (depth <= 0)
-			do_quiescence = board_ptr[index]->capture || // traditional quiescence search
+			do_quiescence = board_ptr[index]->capture ||
 				in_check || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check ||
 				initial_delta >= tune.q_enter_0; // take advantage of full eval being available
 		else
@@ -428,7 +464,21 @@ negamax(const board_t * board, int32_t depth, int32_t alpha, int32_t beta, uint3
 		else if (depth == 0)
 			value = board_eval;
 		else
-			value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
+		{
+			if ((tune.algorithm_enable & 0x2) == 0x2 && index > 0 && depth < fp_depth && ! in_check &&
+			    ! board_ptr[index]->white_in_check && ! board_ptr[index]->black_in_check &&
+			    board_eval + fp_margin[depth] <= alpha)
+				value = -(GLOBAL_VALUE_KING); // prune
+			else
+			{
+				reduce = lmr(depth, index, in_check || board_ptr[index]->white_in_check || board_ptr[index]->black_in_check);
+				value = -negamax(board_ptr[index], depth - 1 - reduce, -beta, -alpha, ply + 1, pv_next_index);
+				if (reduce)
+					if (value > alpha && value < beta)
+						// reduced depth search needs to be re-searched at full depth
+						value = -negamax(board_ptr[index], depth - 1, -beta, -alpha, ply + 1, pv_next_index);
+			}
+		}
 		if (abort_search)
 			return 0;	// will be ignored
 		if (value > alpha && value < beta)
@@ -510,7 +560,7 @@ nm_init(void)
 {
 	tune.q_enter_0 = 100;
 	tune.q_enter_1 = 100;
-	tune.algorithm_enable = 0;
+	tune.algorithm_enable = 3;
 	tune.q_delta = Q_DELTA;
 }
 
@@ -732,3 +782,37 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 
 	return best_board;
 }
+
+static const int8_t lmr_table[LMR_DEPTH][LMR_MOVES] = {
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+	{0,0,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3},
+	{0,0,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3},
+	{0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4},
+	{0,0,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+	{0,0,1,1,1,1,1,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+	{0,0,1,1,1,1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+	{0,0,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4},
+	{0,0,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5},
+	{0,0,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5},
+	{0,0,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5},
+	{0,0,1,1,1,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5},
+	{0,0,1,1,1,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5},
+	{0,0,1,1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5},
+	{0,0,1,1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5},
+	{0,0,1,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5},
+	{0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5},
+	{0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6},
+	{0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6},
+	{0,0,1,1,2,2,2,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6}};
