@@ -43,6 +43,8 @@ at J4 (115200 baud, 8N1).
 
 Generally, it will be necessary to delete all Vivado-generated files after a `git pull` and rebuild
 the project from scratch.
+
+Close all Vivado/Vitis processes then:
 ```
 cd numbat/vivado
 make distclean
@@ -161,5 +163,5 @@ gtkwave wave.vcd
   a PL PWM driver to reduce fan noise. The PWM operates at 25kHz and has a programmable duty cycle.
   PS core temperature is monitored at 5 second intervals and the project is put in reset if the PS
   core exceeds 50C. The duty cycle has a floor setting of 10% to ensure the fan doesn't stall.
-* There are two user-controlable LEDs on the KR260, these blink to indicate that a negamax operation
+* There are two user-controllable LEDs on the KR260, these blink to indicate that a negamax operation
   is underway and are off when the PL is idle.
