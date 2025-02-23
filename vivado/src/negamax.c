@@ -11,7 +11,7 @@
 #pragma GCC optimize ("O2")
 
 #define FIXED_TIME 5
-#define MID_GAME_HALF_MOVES 37
+#define MID_GAME_HALF_MOVES 40
 
 #define LBS_COUNT 3		// number of most recent best scores for one side
 #define LBS_RESIGN -600		// if this is seen LBS_COUNT times return resign as true
@@ -649,9 +649,9 @@ nm_top(const tc_t * tc, uint32_t * resign, uint32_t opponent_time, uint32_t quie
 	else
 	{
 		duration_seconds = (double)(tc->main_remaining[tc->side] / (double)MID_GAME_HALF_MOVES) + 0.5;
-		duration_seconds += (double)tc->increment * 0.8 + 0.5;
+		duration_seconds += (double)tc->increment * 0.666 + 0.5;
 		if (duration_seconds * 10 > tc->main_remaining[tc->side])
-			duration_seconds = tc->main_remaining[tc->side] / 7;
+			duration_seconds = tc->main_remaining[tc->side] / 10;
 		if (duration_seconds <= 0)
 			duration_seconds = 1;
 		else if (duration_seconds > 60 && !opponent_time)	// deal with "moretime" people on FICS
